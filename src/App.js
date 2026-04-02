@@ -5,6 +5,8 @@
  * classes from the original monolithic HTML.
  */
 
+import { load } from './load.js';
+
 // ---------------------------------------------------------------------------
 // Logo SVG (brand asset — used in header + login)
 // ---------------------------------------------------------------------------
