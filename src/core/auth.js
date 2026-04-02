@@ -39,6 +39,13 @@ const SUPA_URL   = getEnv('VITE_SUPA_URL');
 const SUPA_KEY   = getEnv('VITE_SUPA_KEY');
 const GID        = getEnv('VITE_GID');
 
+// Debug: log env status at load time
+console.log('[auth] ENV check:', {
+  SUPA_URL: SUPA_URL ? SUPA_URL.slice(0, 30) + '...' : 'MISSING',
+  SUPA_KEY: SUPA_KEY ? SUPA_KEY.slice(0, 20) + '...' : 'MISSING',
+  GID: GID ? GID.slice(0, 20) + '...' : 'MISSING',
+});
+
 // ─── Supabase client (lazy singleton) ────────────────────────────
 
 let _sb = null;
@@ -299,14 +306,17 @@ export function initAuth(options = {}) {
     return { hasSession: !!userStore.get() };
   }
   _initialized = true;
+  console.log('[auth] initAuth() starting...');
 
   // 1. Try to restore existing session
   const restored = userStore.restore();
+  console.log('[auth] Session restored:', restored, restored ? userStore.get()?.nombre : 'none');
   if (restored) {
     _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userStore.get());
   }
 
   // 2. Initialize Google One Tap
+  console.log('[auth] Initializing Google One Tap...');
   _initGoogle(options);
 
   return { hasSession: restored };
@@ -320,9 +330,11 @@ function _initGoogle(options) {
 
   // Google GSI may not be loaded yet — retry
   if (typeof google === 'undefined' || !google.accounts) {
+    console.log('[auth] Google GSI not ready, retrying in 200ms...');
     setTimeout(() => _initGoogle(options), 200);
     return;
   }
+  console.log('[auth] Google GSI loaded, initializing...');
 
   google.accounts.id.initialize({
     client_id: GID,
