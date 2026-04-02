@@ -67,7 +67,7 @@ function renderShell(container) {
           <span id="themeIcon">\u{1F319}</span>
         </button>
         <div class="avatar-wrap" id="avatarWrap" onclick="go('perfil')">
-          <img id="avatarImg" class="avatar" src="/img/avatar-default.png" alt="Avatar" />
+          <img id="avatarImg" class="avatar" src="/img/avatar-default.svg" alt="Avatar" />
         </div>
       </div>
     </header>
