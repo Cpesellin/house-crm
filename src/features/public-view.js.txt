@@ -1,0 +1,2 @@
+// Placeholder - Módulo público en desarrollo
+export default {}
