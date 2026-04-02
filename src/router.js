@@ -95,10 +95,9 @@ function navigateTo(route) {
   }
 
   // --- Hide all sections ---
-  const sections = document.querySelectorAll('[id^="sec-"]');
-  sections.forEach((el) => {
+  document.querySelectorAll('.sec').forEach((el) => {
+    el.classList.remove('act');
     el.style.display = 'none';
-    el.classList.remove('sec-active');
   });
 
   // --- Show target section ---
@@ -107,20 +106,20 @@ function navigateTo(route) {
     const target = document.getElementById(targetCfg.section);
     if (target) {
       target.style.display = '';
-      target.classList.add('sec-active');
+      target.classList.add('act');
     }
   }
 
-  // --- Sidebar active state ---
-  document.querySelectorAll('#mpnl .mn-item').forEach((item) => {
-    item.classList.toggle('active', item.dataset.route === route);
+  // --- Sidebar active state (uses original .mi buttons with data-s) ---
+  document.querySelectorAll('.mi').forEach((btn) => {
+    btn.classList.toggle('act', btn.dataset.s === route);
   });
 
   // --- Close mobile sidebar if open ---
   const overlay = document.getElementById('mov');
-  if (overlay) overlay.classList.remove('open');
+  if (overlay) overlay.classList.remove('op');
   const panel = document.getElementById('mpnl');
-  if (panel) panel.classList.remove('open');
+  if (panel) panel.classList.remove('op');
 
   // --- Call the route's render function (window global) ---
   const rendererName = ROUTE_RENDERERS[route];

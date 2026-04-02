@@ -4,6 +4,8 @@
  */
 
 import './styles/global.css';
+import './load.js';
+import './sections.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 
