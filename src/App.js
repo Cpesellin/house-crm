@@ -53,7 +53,7 @@ function renderShell(container) {
           <span class="hamburger"></span>
         </button>
         <div class="logo" onclick="go('inv')">
-          <img src="/img/logo.svg" alt="House CRM" class="logo-img" />
+          <img src="/img/logo.png" alt="House CRM" class="logo-img" />
           <span class="logo-text">House CRM</span>
         </div>
       </div>
@@ -67,7 +67,7 @@ function renderShell(container) {
           <span id="themeIcon">\u{1F319}</span>
         </button>
         <div class="avatar-wrap" id="avatarWrap" onclick="go('perfil')">
-          <img id="avatarImg" class="avatar" src="/img/avatar-default.svg" alt="Avatar" />
+          <img id="avatarImg" class="avatar" src="/img/avatar-default.png" alt="Avatar" />
         </div>
       </div>
     </header>
@@ -101,7 +101,7 @@ function renderShell(container) {
     <div id="lov" class="lov">
       <div class="lov-card">
         <div class="lov-logo">
-          <img src="/img/logo.svg" alt="House CRM" />
+          <img src="/img/logo.png" alt="House CRM" />
         </div>
         <h2>Iniciar Sesi\u00F3n</h2>
         <div id="loginContent"></div>
