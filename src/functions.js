@@ -723,8 +723,14 @@ window.renderSel = function() {
   if(vnMin||vnMax){n++;h+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--cd);border:1.5px solid var(--green);color:#065f46;border-radius:14px;padding:3px 9px;font-size:10px;font-weight:700">💰 ${vnMin?'$'+Number(vnMin).toLocaleString('es-CO'):'$0'} – ${vnMax?'$'+Number(vnMax).toLocaleString('es-CO'):'∞'}<span style="cursor:pointer;color:var(--b400);font-size:9px;margin-left:2px" onclick="document.getElementById('vnMin').value='';document.getElementById('vnMax').value='';renderSel();doSearch()">✕</span></span>`;}
   const qv=(document.getElementById('q')?.value||'').trim();
   if(qv){n++;h+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--cd);border:1.5px solid var(--gold);color:#92400e;border-radius:14px;padding:3px 9px;font-size:10px;font-weight:700">🔍 "${qv}"<span style="cursor:pointer;color:var(--b400);font-size:9px;margin-left:2px" onclick="document.getElementById('q').value='';renderSel();doSearch()">✕</span></span>`;}
-  document.getElementById('seltags').innerHTML=h;
-  document.getElementById('selbar').style.display=n>0?'block':'none';
+  // Update compact bar (collapsed state)
+  const compact=document.getElementById('seltagsCompact');
+  if(compact)compact.innerHTML=h;
+  // Show/hide collapsed bar if filters are active and panel is collapsed
+  const collapsed=document.getElementById('filterCollapsed');
+  if(collapsed&&document.getElementById('filterExpanded')?.style.display==='none'){
+    collapsed.style.display=n>0?'block':'none';
+  }
 };
 
 window.toggleMis = function() {
