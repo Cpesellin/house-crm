@@ -6,6 +6,7 @@
 import './styles/global.css';
 import './load.js';
 import './sections.js';
+import './functions.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 
@@ -48,16 +49,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const verId = params.get('ver');
 
   if (verId) {
-    // Public property view - load only what is needed
-    try {
-      const { showPublicView } = await import('./features/public-view.js');
-      showPublicView(verId);
-    } catch (err) {
-      console.error('[main] Failed to load public view module:', err);
+    // Public property view — uses showPublicView from functions.js
+    if (typeof window.showPublicView === 'function') {
+      window.showPublicView(verId);
+    } else {
       document.getElementById('app').innerHTML =
         '<div style="padding:2rem;text-align:center;">' +
-        '<h2>Error al cargar vista p\u00FAblica</h2>' +
-        '<p>No se pudo cargar la propiedad solicitada.</p></div>';
+        '<h2>Cargando...</h2></div>';
+      // Wait for functions.js to load then retry
+      setTimeout(() => window.showPublicView?.(verId), 500);
     }
     return;
   }
