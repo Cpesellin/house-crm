@@ -508,28 +508,44 @@ window.shareInm = function(id) {
   const tip=p.tipo||'Inmueble',ciu=p.ciudad||'',cod=p.codigo_house||'';
   const ubPub=p.direccion_publica||p.barrio||ciu;
   const pv=p.precio_venta||0,pa=p.precio_arriendo||0;
+  const hab=p.habitaciones||'',ban=p.banos||'',area=p.area_construida||'',est=p.estrato||'';
   const capTel=u?.telefono_contacto||'573105922763';
   const capNom=u?.nombre||'Inmobiliaria House';
+
+  // Use inmobiliariahouse.com.co domain with Edge Function
   const SUPA_URL=import.meta.env?.VITE_SUPA_URL||'';
   const previewUrl=cod?SUPA_URL+'/functions/v1/ver?ref='+encodeURIComponent(cod):SUPA_URL+'/functions/v1/ver?id='+id;
 
-  let msg='🏠 *Inmobiliaria House*\n';
-  if(cod)msg+='📋 '+cod+'\n\n';
+  const specs=[];
+  if(hab&&hab!=0)specs.push(hab+' Hab');
+  if(ban&&ban!=0)specs.push(ban+' Baños');
+  if(area)specs.push(area+'m²');
+  if(est)specs.push('E'+est);
+
+  // Clean message — only what shows in the WhatsApp card
+  let msg='🏠 *Inmobiliaria House*\n\n';
   msg+='*'+tip+' en '+(pv>0&&pa>0?'Venta y Arriendo':pa>0?'Arriendo':'Venta')+'*\n';
-  msg+='📍 '+ubPub+'\n';
+  msg+='📍 '+ubPub+(ciu&&!ubPub.toLowerCase().includes(ciu.toLowerCase())?' · '+ciu:'')+'\n';
   if(pv>0)msg+='💰 *'+fm(pv)+'*\n';
   if(pa>0)msg+='🔑 *'+fm(pa)+'/mes*\n';
-  msg+='\n📲 *'+capNom+'*\n💬 wa.me/'+capTel+'\n\n'+previewUrl;
+  if(specs.length)msg+=specs.join(' · ')+'\n';
+  msg+='\n'+previewUrl;
+
+  const sortedF=p.fotos?[...p.fotos].sort((a,b)=>a.orden-b.orden):[];
+  const fotoThumb=sortedF.length>0?(sortedF[0].url_thumb||sortedF[0].url):'';
 
   const html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px" id="shareModal" onclick="if(event.target===this)this.remove()"><div style="background:var(--cd);border-radius:14px;padding:20px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto">
-  <div style="font-size:16px;font-weight:800;margin-bottom:12px">📤 Compartir</div>
+  <div style="font-size:16px;font-weight:800;margin-bottom:12px">📤 Compartir inmueble</div>
+  ${fotoThumb?`<div style="margin-bottom:10px;border-radius:10px;overflow:hidden;border:1px solid var(--brd)"><img src="${fotoThumb}" style="width:100%;height:160px;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'"></div>`:''}
   <div style="background:var(--cd2);border:1px solid var(--brd);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;white-space:pre-wrap;line-height:1.5;max-height:140px;overflow-y:auto">${msg.replace(/\*/g,'').replace(/\n/g,'<br>')}</div>
   <div style="display:flex;flex-direction:column;gap:8px">
     <button style="width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;background:#25d366;color:#fff;cursor:pointer" onclick="window.open('https://wa.me/?text='+encodeURIComponent(window._shareMsg),'_blank');document.getElementById('shareModal').remove()">💬 Enviar por WhatsApp</button>
     <button style="width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;background:var(--b600);color:#fff;cursor:pointer" onclick="navigator.clipboard.writeText(window._shareMsg);toast('📋 Copiado');document.getElementById('shareModal').remove()">📋 Copiar mensaje</button>
-    <button style="width:100%;padding:10px;border:none;border-radius:10px;font-size:12px;font-family:inherit;background:var(--cd2);color:var(--sub);cursor:pointer" onclick="document.getElementById('shareModal').remove()">Cancelar</button>
+    <button style="width:100%;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;background:var(--cd2);color:var(--tx);border:1.5px solid var(--brd);cursor:pointer" onclick="navigator.clipboard.writeText(window._sharePreview);toast('🔗 Enlace copiado');document.getElementById('shareModal').remove()">🔗 Copiar solo el enlace</button>
+    <button style="width:100%;padding:10px;border:none;border-radius:10px;font-size:12px;font-family:inherit;background:var(--cd);color:var(--sub);cursor:pointer" onclick="document.getElementById('shareModal').remove()">Cancelar</button>
   </div></div></div>`;
   window._shareMsg=msg;
+  window._sharePreview=previewUrl;
   document.body.insertAdjacentHTML('beforeend',html);
 };
 
@@ -688,7 +704,32 @@ window.tc = function(el) {
   const g=el.dataset.g,v=el.dataset.v,c=el.dataset.c||'';
   if(F[g].has(v)){F[g].delete(v);el.classList.remove('on','cg','cy');}
   else{F[g].add(v);el.classList.remove('cg','cy');el.classList.add('on');if(c)el.classList.add(c);}
+  window.renderSel();
   window.doSearch();
+};
+
+// Remove a single filter tag
+window.qf = function(g,v) {
+  F[g].delete(v);
+  const el=document.querySelector(`.ch[data-g="${g}"][data-v="${v}"]`);
+  if(el)el.classList.remove('on','cg','cy');
+  window.renderSel();
+  window.doSearch();
+};
+
+// Render selection bar with active filter tags
+window.renderSel = function() {
+  const L={neg:{venta:'💰 Venta',arriendo:'🔑 Arriendo',ambas:'🔄 Ambas'},ciu:{pereira:'📍 Pereira',dosquebradas:'📍 Dosq.','santa rosa':'📍 Sta Rosa',cerritos:'📍 Cerritos'},tipo:{apartamento:'🏢 Apto',casa:'🏡 Casa',finca:'🌾 Finca',local:'🏪 Local',lote:'🌳 Lote',oficina:'💼 Oficina',bodega:'🏭 Bodega',penthouse:'👑 PH'},fresco:{si:'✅ Frescos ≤7d',atencion:'⚠️ Necesitan atención'}};
+  let h='',n=0;
+  for(const[g,s]of Object.entries(F))for(const v of s){n++;h+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--cd);border:1.5px solid var(--b300);color:var(--b700);border-radius:14px;padding:3px 9px;font-size:10px;font-weight:700">${L[g]?.[v]||v}<span style="cursor:pointer;color:var(--b400);font-size:9px;margin-left:2px" onclick="qf('${g}','${v}')">✕</span></span>`;}
+  const arMin=document.getElementById('arMin')?.value,arMax=document.getElementById('arMax')?.value;
+  if(arMin||arMax){n++;h+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--cd);border:1.5px solid var(--b300);color:var(--b700);border-radius:14px;padding:3px 9px;font-size:10px;font-weight:700">🔑 ${arMin?'$'+Number(arMin).toLocaleString('es-CO'):'$0'} – ${arMax?'$'+Number(arMax).toLocaleString('es-CO'):'∞'}<span style="cursor:pointer;color:var(--b400);font-size:9px;margin-left:2px" onclick="document.getElementById('arMin').value='';document.getElementById('arMax').value='';renderSel();doSearch()">✕</span></span>`;}
+  const vnMin=document.getElementById('vnMin')?.value,vnMax=document.getElementById('vnMax')?.value;
+  if(vnMin||vnMax){n++;h+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--cd);border:1.5px solid var(--green);color:#065f46;border-radius:14px;padding:3px 9px;font-size:10px;font-weight:700">💰 ${vnMin?'$'+Number(vnMin).toLocaleString('es-CO'):'$0'} – ${vnMax?'$'+Number(vnMax).toLocaleString('es-CO'):'∞'}<span style="cursor:pointer;color:var(--b400);font-size:9px;margin-left:2px" onclick="document.getElementById('vnMin').value='';document.getElementById('vnMax').value='';renderSel();doSearch()">✕</span></span>`;}
+  const qv=(document.getElementById('q')?.value||'').trim();
+  if(qv){n++;h+=`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--cd);border:1.5px solid var(--gold);color:#92400e;border-radius:14px;padding:3px 9px;font-size:10px;font-weight:700">🔍 "${qv}"<span style="cursor:pointer;color:var(--b400);font-size:9px;margin-left:2px" onclick="document.getElementById('q').value='';renderSel();doSearch()">✕</span></span>`;}
+  document.getElementById('seltags').innerHTML=h;
+  document.getElementById('selbar').style.display=n>0?'block':'none';
 };
 
 window.toggleMis = function() {
@@ -718,20 +759,35 @@ window.renderRecent = function() {
 window.doSearch = function() {
   const allD = D();
   if (!allD.length) return;
+  window.renderSel();
   const qv = (document.getElementById('q')?.value || '').trim().toLowerCase();
   if (qv.length >= 2) { let r = []; try { r = JSON.parse(localStorage.getItem('hcrm_recent') || '[]'); } catch(e){} r = r.filter(x => x !== qv); r.unshift(qv); localStorage.setItem('hcrm_recent', JSON.stringify(r.slice(0, 5))); }
+
+  // Price range inputs
+  const arMin = parseFloat(document.getElementById('arMin')?.value) || 0;
+  const arMax = parseFloat(document.getElementById('arMax')?.value) || 0;
+  const vnMin = parseFloat(document.getElementById('vnMin')?.value) || 0;
+  const vnMax = parseFloat(document.getElementById('vnMax')?.value) || 0;
+
   let list = allD;
   if (window._myFilter) list = list.filter(p => p.captador_id === U()?.id);
   const af = document.getElementById('asesorFilter');
   if (af && af.value) list = list.filter(p => p.captador_id === af.value);
-  const hasFilters = Object.values(F).some(s => s.size > 0) || qv.length > 0;
+
+  const hasFilters = Object.values(F).some(s => s.size > 0) || qv.length > 0 || arMin > 0 || arMax > 0 || vnMin > 0 || vnMax > 0;
   if (hasFilters) {
     list = list.filter(p => {
       const c = (p.ciudad || '').toLowerCase(), t = (p.tipo || '').toLowerCase();
+      const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
       if (F.neg.size > 0) { let ok = false; if (F.neg.has('venta') && eV(p)) ok = true; if (F.neg.has('arriendo') && eA(p)) ok = true; if (F.neg.has('ambas') && eA2(p)) ok = true; if (!ok) return false; }
       if (F.ciu.size > 0 && !Array.from(F.ciu).some(x => c.includes(x))) return false;
       if (F.tipo.size > 0 && !Array.from(F.tipo).some(x => t.includes(x))) return false;
       if (F.fresco.size > 0) { const d = p._dias || 999; if (F.fresco.has('si') && d > 7) return false; if (F.fresco.has('atencion') && d <= 7) return false; }
+      // Price ranges
+      if (arMin > 0 && (pa <= 0 || pa < arMin)) return false;
+      if (arMax > 0 && (pa <= 0 || pa > arMax)) return false;
+      if (vnMin > 0 && (pv <= 0 || pv < vnMin)) return false;
+      if (vnMax > 0 && (pv <= 0 || pv > vnMax)) return false;
       if (qv) { const all = Object.values(p).join(' ').toLowerCase() + (p.captador ? p.captador.nombre : ''); if (!qv.split(/\s+/).every(w => all.toLowerCase().includes(w))) return false; }
       return true;
     });
