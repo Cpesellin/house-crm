@@ -231,10 +231,10 @@ window.oM = function(idx) {
     b += `<div class="desc-box"><div class="desc-hdr team">👥 Para equipo — Todos los asesores</div><textarea id="me_obs" placeholder="Info general...">${p.observaciones||''}</textarea></div></div>`;
 
     // Foto upload
-    b += `<div class="msc"><div class="msct">📷 Fotos (${fotos.length})</div>`;
+    b += `<div class="msc"><div class="msct">📷 Fotos (${fotos.length}) <span style="font-size:10px;color:var(--sub);font-weight:500">— mantén presionado para reordenar</span></div>`;
     if (fotos.length > 0) {
-      b += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
-      fotos.forEach(f => { b += `<div class="foto-prev-item"><img src="${f.url_thumb||f.url}" onerror="this.src='${f.url}'"><button class="foto-del" onclick="event.stopPropagation();delFoto('${f.id}','${p.id}')" type="button">✕</button></div>`; });
+      b += `<div id="fotoSortWrap" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
+      fotos.forEach((f,i) => { b += `<div class="foto-prev-item foto-sortable" draggable="true" data-foto-id="${f.id}" data-foto-idx="${i}" data-inm-id="${p.id}" style="cursor:grab;position:relative;touch-action:none"><img src="${f.url_thumb||f.url}" onerror="this.src='${f.url}'" style="pointer-events:none"><button class="foto-del" onclick="event.stopPropagation();delFoto('${f.id}','${p.id}')" type="button">✕</button><span style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px">${i+1}</span></div>`; });
       b += '</div>';
     }
     b += `<div id="fotoUpModal"></div></div>`;
@@ -924,4 +924,137 @@ window.iSl = function() {
 // DONE — Log confirmation
 // ══════════════════════════════════════════════════════════════════
 
-console.log('[functions] ✅ All 56 window functions registered');
+// ══════════════════════════════════════════════════════════════════
+// 17. PHOTO REORDER (drag & drop + touch)
+// ══════════════════════════════════════════════════════════════════
+
+(function initPhotoReorder() {
+  let dragEl = null;
+  let dragIdx = -1;
+  let touchClone = null;
+  let touchStartY = 0, touchStartX = 0;
+  let touchMoved = false;
+
+  // Desktop drag & drop
+  document.addEventListener('dragstart', e => {
+    const item = e.target.closest('.foto-sortable');
+    if (!item) return;
+    dragEl = item;
+    dragIdx = +item.dataset.fotoIdx;
+    item.style.opacity = '0.4';
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.dataset.fotoId);
+  });
+
+  document.addEventListener('dragover', e => {
+    const item = e.target.closest('.foto-sortable');
+    if (!item || !dragEl || item === dragEl) return;
+    e.preventDefault();
+    const wrap = document.getElementById('fotoSortWrap');
+    if (!wrap) return;
+    const items = [...wrap.querySelectorAll('.foto-sortable')];
+    const dragI = items.indexOf(dragEl);
+    const overI = items.indexOf(item);
+    if (dragI < overI) wrap.insertBefore(dragEl, item.nextSibling);
+    else wrap.insertBefore(dragEl, item);
+  });
+
+  document.addEventListener('dragend', async e => {
+    if (!dragEl) return;
+    dragEl.style.opacity = '1';
+    await savePhotoOrder();
+    dragEl = null;
+    dragIdx = -1;
+  });
+
+  // Touch reorder (mobile)
+  document.addEventListener('touchstart', e => {
+    const item = e.target.closest('.foto-sortable');
+    if (!item) return;
+    touchMoved = false;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    // Long press detection
+    item._longPressTimer = setTimeout(() => {
+      dragEl = item;
+      dragIdx = +item.dataset.fotoIdx;
+      item.style.opacity = '0.4';
+      item.style.transform = 'scale(1.1)';
+      item.style.zIndex = '100';
+      touchMoved = true;
+
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 400);
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    const item = e.target.closest('.foto-sortable');
+    if (!item || !dragEl) {
+      if (item?._longPressTimer) { clearTimeout(item._longPressTimer); item._longPressTimer = null; }
+      return;
+    }
+    if (!touchMoved) { clearTimeout(item._longPressTimer); return; }
+
+    e.preventDefault();
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const over = target?.closest('.foto-sortable');
+
+    if (over && over !== dragEl) {
+      const wrap = document.getElementById('fotoSortWrap');
+      if (!wrap) return;
+      const items = [...wrap.querySelectorAll('.foto-sortable')];
+      const dragI = items.indexOf(dragEl);
+      const overI = items.indexOf(over);
+      if (dragI < overI) wrap.insertBefore(dragEl, over.nextSibling);
+      else wrap.insertBefore(dragEl, over);
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', async e => {
+    const item = e.target.closest('.foto-sortable');
+    if (item?._longPressTimer) { clearTimeout(item._longPressTimer); item._longPressTimer = null; }
+
+    if (dragEl && touchMoved) {
+      dragEl.style.opacity = '1';
+      dragEl.style.transform = '';
+      dragEl.style.zIndex = '';
+      await savePhotoOrder();
+      dragEl = null;
+      dragIdx = -1;
+      touchMoved = false;
+    }
+  }, { passive: true });
+
+  // Save new order to Supabase
+  async function savePhotoOrder() {
+    const wrap = document.getElementById('fotoSortWrap');
+    if (!wrap) return;
+    const items = [...wrap.querySelectorAll('.foto-sortable')];
+    const newOrder = items.map((el, i) => {
+      // Update visual number badge
+      const badge = el.querySelector('span:last-child');
+      if (badge && badge.style.position === 'absolute') badge.textContent = i + 1;
+      return { id: el.dataset.fotoId, orden: i };
+    });
+
+    try {
+      // Try RPC first (batch update)
+      const { error } = await SB().rpc('update_foto_orden', { items: JSON.stringify(newOrder) });
+      if (error) {
+        // Fallback: update one by one
+        for (const item of newOrder) {
+          await SB().from('fotos').update({ orden: item.orden }).eq('id', item.id);
+        }
+      }
+      window.toast('📷 Orden actualizado');
+    } catch(e) {
+      console.error('[photos] Reorder error:', e);
+      window.toast('Error al reordenar', 'terr');
+    }
+  }
+})();
+
+console.log('[functions] ✅ All window functions registered');
