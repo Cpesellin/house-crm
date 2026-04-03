@@ -897,7 +897,7 @@ window.showPublicView = async function(id) {
       <img src="/img/logo.png" style="height:30px">
       <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>
       <div style="flex:1"></div>
-      <a href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola, vi un inmueble en su página')}" target="_blank" style="padding:6px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Contactar</a>
+      <a href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id))}" target="_blank" style="padding:6px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Contactar</a>
     </div>`;
 
     h += '<div style="max-width:560px;margin:0 auto;padding:0 0 80px;background:#fff;min-height:100vh">';
@@ -991,7 +991,7 @@ window.showPublicView = async function(id) {
 
     // ── FOOTER CON BOTONES STICKY ──
     h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;display:flex;gap:8px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-      <a href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola ' + capNom + ', me interesa el ' + (p.tipo || 'inmueble') + ' en ' + (p.ciudad || '') + (cod ? ' (' + cod + ')' : ''))}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
+      <a href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id))}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
       <a href="tel:+${capTel}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
     </div>`;
 
