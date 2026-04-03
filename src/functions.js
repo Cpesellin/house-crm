@@ -523,14 +523,8 @@ window.shareInm = function(id) {
   if(area)specs.push(area+'m²');
   if(est)specs.push('E'+est);
 
-  // Clean message — only what shows in the WhatsApp card
-  let msg='🏠 *Inmobiliaria House*\n\n';
-  msg+='*'+tip+' en '+(pv>0&&pa>0?'Venta y Arriendo':pa>0?'Arriendo':'Venta')+'*\n';
-  msg+='📍 '+ubPub+(ciu&&!ubPub.toLowerCase().includes(ciu.toLowerCase())?' · '+ciu:'')+'\n';
-  if(pv>0)msg+='💰 *'+fm(pv)+'*\n';
-  if(pa>0)msg+='🔑 *'+fm(pa)+'/mes*\n';
-  if(specs.length)msg+=specs.join(' · ')+'\n';
-  msg+='\n'+previewUrl;
+  // Only the link — WhatsApp auto-generates the preview card from OG tags
+  let msg = previewUrl;
 
   const sortedF=p.fotos?[...p.fotos].sort((a,b)=>a.orden-b.orden):[];
   const fotoThumb=sortedF.length>0?(sortedF[0].url_thumb||sortedF[0].url):'';
@@ -798,6 +792,22 @@ window.doSearch = function() {
 
 window.autoSearch = function() { clearTimeout(window._searchTimer); window._searchTimer = setTimeout(() => window.doSearch(), 300); };
 window._searchTimer = null;
+
+// Collapse/expand filters
+window.collapseFilters = function() {
+  const hasAny = Object.values(F).some(s=>s.size>0) || document.getElementById('arMin')?.value || document.getElementById('arMax')?.value || document.getElementById('vnMin')?.value || document.getElementById('vnMax')?.value || (document.getElementById('q')?.value||'').trim();
+  if (!hasAny) return; // Don't collapse if nothing selected
+  document.getElementById('filterExpanded').style.display = 'none';
+  const collapsed = document.getElementById('filterCollapsed');
+  collapsed.style.display = 'block';
+  // Copy tags to compact bar
+  document.getElementById('seltagsCompact').innerHTML = document.getElementById('seltags')?.innerHTML || '';
+};
+
+window.expandFilters = function() {
+  document.getElementById('filterExpanded').style.display = '';
+  document.getElementById('filterCollapsed').style.display = 'none';
+};
 
 // ══════════════════════════════════════════════════════════════════
 // 14. CONCILIACION

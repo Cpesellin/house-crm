@@ -56,23 +56,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (verId) {
-    // If it's a HOUSE code (not UUID), resolve it to UUID first
+    console.log('[main] Public view mode for:', verId);
+
+    // Wait for Supabase SDK and functions.js to load
+    const waitReady = () => new Promise(resolve => {
+      const check = () => {
+        if (typeof window.supabase !== 'undefined' && typeof window.showPublicView === 'function') resolve();
+        else setTimeout(check, 100);
+      };
+      check();
+    });
+
+    await waitReady();
+
+    // If it's a HOUSE code, resolve to UUID
     if (verId.startsWith('HOUSE-')) {
       try {
-        const { data } = await import('./config/supabase.js').then(m => m.getSupabaseClient().from('inmuebles').select('id').eq('codigo_house', verId).eq('eliminado', false).single());
+        const { getSupabaseClient } = await import('./config/supabase.js');
+        const { data } = await getSupabaseClient().from('inmuebles').select('id').eq('codigo_house', verId).eq('eliminado', false).single();
         if (data?.id) verId = data.id;
-      } catch(e) { console.error('[main] Could not resolve HOUSE code:', e); }
+        else { document.getElementById('app').innerHTML = '<div class="emp" style="margin-top:40px"><span class="emp-i">🏠</span><h3>Inmueble no encontrado</h3><p>El código ' + verId + ' no existe o fue retirado.</p></div>'; return; }
+      } catch(e) { console.error('[main] Resolve error:', e); }
     }
 
-    // Render public view
-    const tryShow = () => {
-      if (typeof window.showPublicView === 'function') {
-        window.showPublicView(verId);
-      } else {
-        setTimeout(tryShow, 200);
-      }
-    };
-    tryShow();
+    window.showPublicView(verId);
     return;
   }
 

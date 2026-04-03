@@ -322,6 +322,7 @@ window.limpiar = () => {
   window._myFilter=false;document.getElementById('myToggle')?.classList.remove('act');
   const af=document.getElementById('asesorFilter');if(af)af.value='';
   if(window.renderSel)window.renderSel();
+  if(window.expandFilters)window.expandFilters();
   render(window.D||[]);
 };
 window.mostrarTodo = window.limpiar;
