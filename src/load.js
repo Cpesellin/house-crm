@@ -90,8 +90,10 @@ function renderWelcome() {
   const h2 = new Date().getHours();
   const sal = h2 < 12 ? 'Buenos días' : h2 < 18 ? 'Buenas tardes' : 'Buenas noches';
 
+  // Show as floating toast that auto-hides
   el.innerHTML = `<div class="wban-hi">${sal}, ${U.nombre.split(' ')[0]} 👋</div><div class="wban-sub">Tienes ${my.length} inmuebles · ${pendVer > 0 ? '¡' + pendVer + ' requieren acción!' : 'Todo bajo control'}</div><div class="wban-tasks">${tasks.join('')}</div>`;
-  el.style.display = 'block';
+  el.style.cssText = 'display:block;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:89;max-width:90%;width:420px;box-shadow:0 12px 40px rgba(0,0,0,.15);animation:fi .3s';
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .5s'; setTimeout(() => { el.style.display = 'none'; el.style.opacity = '1'; el.style.transition = ''; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = ''; el.style.zIndex = ''; el.style.maxWidth = ''; el.style.width = ''; el.style.boxShadow = ''; }, 500); }, 4000);
 }
 
 // ─── Render inventory list ───────────────────────────────────────
@@ -328,7 +330,10 @@ window.limpiar = () => {
   const arMax=document.getElementById('arMax');if(arMax)arMax.value='';
   const vnMin=document.getElementById('vnMin');if(vnMin)vnMin.value='';
   const vnMax=document.getElementById('vnMax');if(vnMax)vnMax.value='';
-  window._myFilter=false;document.getElementById('myToggle')?.classList.remove('act');
+  // Reset "Mis inmuebles" button
+  window._myFilter=false;
+  const btn=document.getElementById('myToggle');
+  if(btn){btn.style.background='linear-gradient(135deg,#fdf2f8,#fce7f3)';btn.style.color='#be185d';btn.style.borderColor='#e11d73';btn.style.boxShadow='0 2px 8px rgba(225,29,115,.15)';btn.innerHTML='🏠 Mostrar mis inmuebles';}
   const af=document.getElementById('asesorFilter');if(af)af.value='';
   if(window.renderSel)window.renderSel();
   if(window.expandFilters)window.expandFilters();
