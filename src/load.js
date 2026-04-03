@@ -276,6 +276,15 @@ export async function load() {
     render(D);
     renderWelcome();
 
+    // Show hero float notification (auto-hide after 3s)
+    const heroFloat = document.getElementById('heroFloat');
+    if (heroFloat) {
+      heroFloat.style.display = 'block';
+      const heroSub = document.getElementById('heroSub');
+      if (heroSub) heroSub.textContent = D.length + ' inmuebles · ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      setTimeout(() => { heroFloat.style.opacity = '0'; heroFloat.style.transition = 'opacity .5s'; setTimeout(() => { heroFloat.style.display = 'none'; heroFloat.style.opacity = '1'; heroFloat.style.transition = ''; }, 500); }, 3000);
+    }
+
     document.getElementById('stt').textContent = 'Act. ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
     if (rlb) rlb.style.display = 'flex';
 

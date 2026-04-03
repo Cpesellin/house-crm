@@ -735,7 +735,24 @@ window.renderSel = function() {
 
 window.toggleMis = function() {
   window._myFilter = !window._myFilter;
-  document.getElementById('myToggle')?.classList.toggle('act', window._myFilter);
+  const btn = document.getElementById('myToggle');
+  if (btn) {
+    if (window._myFilter) {
+      btn.style.background = '#e11d73';
+      btn.style.color = '#fff';
+      btn.style.borderColor = '#e11d73';
+      btn.style.boxShadow = '0 2px 12px rgba(225,29,115,.35)';
+      btn.innerHTML = '🏠 Mis inmuebles ✓';
+      // Collapse filters when showing my properties
+      if (window.collapseFilters) setTimeout(() => window.collapseFilters(), 100);
+    } else {
+      btn.style.background = 'linear-gradient(135deg,#fdf2f8,#fce7f3)';
+      btn.style.color = '#be185d';
+      btn.style.borderColor = '#e11d73';
+      btn.style.boxShadow = '0 2px 8px rgba(225,29,115,.15)';
+      btn.innerHTML = '🏠 Mostrar mis inmuebles';
+    }
+  }
   window.doSearch();
 };
 window._myFilter = false;
