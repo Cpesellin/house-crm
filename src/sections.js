@@ -66,45 +66,153 @@ window.rPipe = function () {
   const u = U();
   if (!u) return;
 
-  const D = window.D || [];
-  const MIS = D.filter(p => p.captador_id === u.id);
+  const allD = window.D || [];
+  const MIS = allD.filter(p => p.captador_id === u.id);
   const SOL = window.SOL || [];
 
+  // P7: Search & sort from inputs
+  const pipeQv = (document.getElementById('pipeQ')?.value || '').trim().toLowerCase();
+  const pipeSortV = document.getElementById('pipeSort')?.value || 'dias';
+
+  const pipeFilter = p => {
+    if (!pipeQv) return true;
+    const all = [p.tipo||'', p.ciudad||'', p.direccion||'', p.barrio||'', p.codigo_house||'', fm(p.precio_venta||0), fm(p.precio_arriendo||0)].join(' ').toLowerCase();
+    return all.includes(pipeQv);
+  };
+
+  const pipeSortFn = (a, b) => {
+    if (pipeSortV === 'precio_desc') return Math.max(b.precio_venta||0, b.precio_arriendo||0) - Math.max(a.precio_venta||0, a.precio_arriendo||0);
+    if (pipeSortV === 'precio_asc') return Math.max(a.precio_venta||0, a.precio_arriendo||0) - Math.max(b.precio_venta||0, b.precio_arriendo||0);
+    return (b._dias||0) - (a._dias||0);
+  };
+
+  // P5: My pending solicitudes
+  const mySolsPend = SOL.filter(s => s.solicitante_id === u.id && s.estado === 'pendiente');
+  const solsOnMyInm = SOL.filter(s => MIS.some(p => p.id === s.inmueble_id) && s.estado === 'pendiente');
+
+  // Column counts for nav
   const colCounts = {};
   PCOLS.forEach(col => {
     colCounts[col.id] = MIS.filter(p => p.estado === col.id || (col.id === 'Disponible' && (!p.estado || p.estado === 'Disponible' || p.estado === 'Verificar Disponibilidad'))).length;
   });
 
+  // P6: Arriendos for gestor
+  const arrDisp = u.es_gestor_arriendos ? allD.filter(p => p.captador_id !== u.id && !p.eliminado && (p.negociacion||'').toLowerCase().includes('arriendo') && (p.estado === 'Disponible' || p.estado === 'Aún Disponible' || !p.estado || p.estado === 'Verificar Disponibilidad')) : [];
+
+  // NAV BADGES
   if (nav) {
-    nav.innerHTML = PCOLS.map((col, i) =>
+    let navH = PCOLS.map((col, i) =>
       `<button class="pnav-btn ${col.c}" onclick="scrollToCol(${i})">${col.e} ${col.l} <span class="pnav-n">${colCounts[col.id]}</span></button>`
     ).join('');
+    if (mySolsPend.length) navH += `<button class="pnav-btn c-vd" onclick="scrollToCol(${PCOLS.length})">🔍 Mis consultas <span class="pnav-n" style="background:var(--gold)">${mySolsPend.length}</span></button>`;
+    if (solsOnMyInm.length) navH += `<button class="pnav-btn c-vd" onclick="scrollToCol(${PCOLS.length+1})">📩 Me consultan <span class="pnav-n" style="background:var(--red)">${solsOnMyInm.length}</span></button>`;
+    if (u.es_gestor_arriendos) navH += `<button class="pnav-btn" style="border-color:#065f46" onclick="scrollToCol(99)">🔑 Arriendos <span class="pnav-n" style="background:#065f46">${arrDisp.length}</span></button>`;
+    nav.innerHTML = navH;
   }
 
+  // BUILD COLUMNS
   let h = '';
+
   PCOLS.forEach(col => {
-    const items = MIS.filter(p => (p.estado === col.id || (col.id === 'Disponible' && (!p.estado || p.estado === 'Disponible' || p.estado === 'Verificar Disponibilidad'))));
+    const items = MIS.filter(p => (p.estado === col.id || (col.id === 'Disponible' && (!p.estado || p.estado === 'Disponible' || p.estado === 'Verificar Disponibilidad'))) && pipeFilter(p));
+    items.sort(pipeSortFn);
+    const otherCols = PCOLS.filter(c2 => c2.id !== col.id);
 
     h += `<div class="pcol ${col.c}" data-estado="${col.id}"><div class="pch"><span class="pct">${col.e} ${col.l}</span><span class="pcc">${items.length}</span></div><div class="pcb">`;
 
     items.forEach(p => {
-      const idx = D.indexOf(p);
+      const idx = allD.indexOf(p);
       const dias = p._dias || 0, umb = UMBRAL[col.id] || 15;
       const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
+      const m2 = !!(p.url_metrocuadrado||'').trim(), fr = !!(p.url_fincaraiz||'').trim();
+      const hab = p.habitaciones||'', ban = p.banos||'', area = p.area_construida||'';
+      const sps = [hab&&hab!=0?'🛏️ '+hab:'', ban&&ban!=0?'🚿 '+ban:'', area?'📐 '+area+'m²':''].filter(Boolean);
 
-      h += `<div class="pkc" onclick="oM&&oM(${idx})">`;
-      h += `<div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}${p.codigo_house ? ` <span class="cod-badge" style="font-size:9px">${p.codigo_house}</span>` : ''}</div>`;
+      // P3: Solicitudes on this property
+      const pSols = SOL.filter(s => s.inmueble_id === p.id && s.estado === 'pendiente');
+
+      // P1: Draggable card
+      h += `<div class="pkc" id="pkc-${p.id}" draggable="true" ondragstart="dStart(event,'${p.id}')" onclick="oM&&oM(${idx})">`;
+
+      // P3: Solicitud badge
+      if (pSols.length > 0) h += `<span class="pk-new" style="background:var(--gold)">📩 ${pSols.length}</span>`;
+
+      h += `<div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}${p.codigo_house ? ` <span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${p.codigo_house}');toast('📋 Copiado')" style="font-size:9px;margin-left:4px">${p.codigo_house}</span>` : ''}</div>`;
       h += `<div class="pkci">📍 ${p.ciudad || ''}</div>`;
+
       if (pv > 0 || pa > 0) h += `<div class="pkpr">${pv > 0 ? fm(pv) : ''}${pv > 0 && pa > 0 ? ' · ' : ''}${pa > 0 ? fm(pa) + '/mes' : ''}</div>`;
+
+      if (sps.length) h += `<div class="pksp">${sps.map(s => '<span>' + s + '</span>').join('')}</div>`;
+
       h += timerBadge(dias, umb);
-      h += `<div class="pkbt"><span class="pkas">👤 ${p.captador ? p.captador.nombre : ''}</span></div>`;
-      h += `</div>`;
+
+      // P3: Respond to solicitudes inline
+      if (pSols.length > 0) {
+        h += `<div style="margin-top:6px;padding:8px;background:var(--redbg);border:1px solid var(--rb);border-radius:6px">`;
+        pSols.forEach(s => {
+          h += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:10px"><span>🔍 <b>${s.solicitante ? s.solicitante.nombre : '?'}</b>${s.nota_solicitante ? ' — "' + s.nota_solicitante + '"' : ''}</span></div>`;
+          h += `<div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button style="flex:1;padding:5px;border:none;border-radius:4px;font-size:10px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','si')">✅ Disponible</button><button style="flex:1;padding:5px;border:none;border-radius:4px;font-size:10px;font-weight:700;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','no')">❌ No disponible</button></div>`;
+        });
+        h += `</div>`;
+      }
+
+      // P4: Revalidate button
+      if (col.id === 'Aún Disponible') h += `<button class="pk-reval" onclick="event.stopPropagation();reVal('${p.id}')">🔄 Volver a validar</button>`;
+
+      // Footer: asesor + portals
+      h += `<div class="pkbt"><span class="pkas">👤 ${p.captador ? p.captador.nombre : ''}</span><div class="pkpt">${m2 ? '<span class="pp ppok">M²</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR</span>' : '<span class="pp ppno">FR</span>'}</div></div>`;
+
+      // P2: Move-to dropdown
+      h += `<div class="pk-move" onclick="event.stopPropagation()"><select class="esel" style="width:100%;font-size:10px;margin-top:6px;padding:6px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover a...</option>${otherCols.map(c2 => `<option value="${c2.id}">${c2.e} ${c2.l}</option>`).join('')}</select></div>`;
+
+      h += `</div>`; // close pkc
     });
 
-    h += '</div></div>';
+    h += '</div></div>'; // close pcb + pcol
   });
 
+  // P5: "Mis consultas" column
+  if (mySolsPend.length > 0) {
+    h += `<div class="pcol c-vd" style="border-color:var(--gold)"><div class="pch" style="background:rgba(245,158,11,.08)"><span class="pct" style="color:var(--gold)">🔍 Mis consultas</span><span class="pcc">${mySolsPend.length}</span></div><div class="pcb">`;
+    mySolsPend.forEach(s => {
+      const p = allD.find(x => x.id === s.inmueble_id);
+      if (!p) return;
+      const idx = allD.indexOf(p);
+      const dias2 = diasDesde(s.created_at);
+      const capNom = p.captador ? p.captador.nombre : '?';
+      h += `<div class="sol-card" onclick="oM&&oM(${idx})"><div class="sol-badge">🔍 Esperando respuesta de ${capNom}</div><div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div><div class="pkci">📍 ${p.ciudad || ''}</div>${timerBadge(dias2, 5)}${s.nota_solicitante ? `<div style="font-size:10px;color:var(--sub);margin-top:4px;font-style:italic">"${s.nota_solicitante}"</div>` : ''}</div>`;
+    });
+    h += '</div></div>';
+  }
+
+  // P6: Arriendos column (gestor)
+  if (u.es_gestor_arriendos) {
+    h += `<div class="pcol" style="border-color:#065f46;border-width:2px"><div class="pch" style="background:rgba(6,95,70,.08)"><span class="pct" style="color:#065f46">🔑 Arriendos del inventario</span><span class="pcc" style="background:#065f46">${arrDisp.length}</span></div><div class="pcb">`;
+    if (!arrDisp.length) h += `<div style="text-align:center;padding:16px;font-size:12px;color:var(--sub)">✅ Sin arriendos pendientes</div>`;
+    arrDisp.forEach(p => {
+      const idx = allD.indexOf(p);
+      const dias2 = p._dias || 0;
+      h += `<div class="pkc" style="border-color:#065f46;border-width:2px" onclick="oM&&oM(${idx >= 0 ? idx : 0})"><div class="pktp">🔑 ${p.tipo || 'Inmueble'}</div><div class="pkci">📍 ${p.ciudad || ''}</div>`;
+      if (p.precio_arriendo > 0) h += `<div class="pkpr">${fm(p.precio_arriendo)}/mes</div>`;
+      h += timerBadge(dias2, 15);
+      h += `<div class="pkbt"><span class="pkas">👤 ${p.captador ? p.captador.nombre : '?'}</span></div>`;
+      h += `<div style="display:flex;gap:4px;margin-top:6px" onclick="event.stopPropagation()"><button style="flex:1;padding:6px;border:none;border-radius:5px;font-size:10px;font-weight:700;background:var(--b600);color:#fff;font-family:inherit;cursor:pointer" onclick="abrirAgendarEvt('${p.id}')">📅 Agendar</button><select class="esel" style="flex:1;font-size:10px;padding:6px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover</option><option value="Arrendado">🔑 Arrendado</option><option value="Retirado">⛔ Retirado</option></select></div></div>`;
+    });
+    h += '</div></div>';
+  }
+
   el.innerHTML = h;
+
+  // P1: Bind drag-drop on columns
+  el.querySelectorAll('.pcol').forEach(c => {
+    c.addEventListener('dragover', e => { e.preventDefault(); c.classList.add('drag-over'); });
+    c.addEventListener('dragleave', () => c.classList.remove('drag-over'));
+    c.addEventListener('drop', e => {
+      e.preventDefault(); c.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      if (id && c.dataset.estado) window.quickMove(id, c.dataset.estado);
+    });
+  });
 };
 
 window.scrollToCol = function (i) {
