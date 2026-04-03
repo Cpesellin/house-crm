@@ -57,27 +57,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (verId) {
     console.log('[main] Public view mode for:', verId);
+    const app = document.getElementById('app');
 
-    // Wait for Supabase SDK and functions.js to load
-    const waitReady = () => new Promise(resolve => {
-      const check = () => {
-        if (typeof window.supabase !== 'undefined' && typeof window.showPublicView === 'function') resolve();
-        else setTimeout(check, 100);
-      };
+    // Show loading while we resolve
+    app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:32px;margin-bottom:12px">🏠</div><div style="font-size:14px;color:var(--sub);font-weight:600">Cargando inmueble...</div></div></div>';
+
+    // Wait for Supabase SDK to be available
+    await new Promise(resolve => {
+      const check = () => (typeof window.supabase !== 'undefined') ? resolve() : setTimeout(check, 100);
       check();
     });
 
-    await waitReady();
+    const { getSupabaseClient } = await import('./config/supabase.js');
+    const SB = getSupabaseClient();
 
     // If it's a HOUSE code, resolve to UUID
     if (verId.startsWith('HOUSE-')) {
       try {
-        const { getSupabaseClient } = await import('./config/supabase.js');
-        const { data } = await getSupabaseClient().from('inmuebles').select('id').eq('codigo_house', verId).eq('eliminado', false).single();
-        if (data?.id) verId = data.id;
-        else { document.getElementById('app').innerHTML = '<div class="emp" style="margin-top:40px"><span class="emp-i">🏠</span><h3>Inmueble no encontrado</h3><p>El código ' + verId + ' no existe o fue retirado.</p></div>'; return; }
-      } catch(e) { console.error('[main] Resolve error:', e); }
+        const { data } = await SB.from('inmuebles').select('id').eq('codigo_house', verId).eq('eliminado', false).single();
+        if (data?.id) { verId = data.id; }
+        else { app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:40px;margin-bottom:12px">🏠</div><h3 style="font-family:Fraunces,serif;font-size:18px;margin-bottom:8px">Inmueble no encontrado</h3><p style="color:var(--sub);font-size:13px">Este enlace puede haber expirado.</p></div></div>'; return; }
+      } catch(e) {
+        console.error('[main] Resolve error:', e);
+        app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh"><div style="text-align:center"><div style="font-size:40px;margin-bottom:12px">❌</div><h3>Error de conexión</h3></div></div>';
+        return;
+      }
     }
+
+    // Wait for showPublicView to be available (from functions.js)
+    await new Promise(resolve => {
+      const check = () => (typeof window.showPublicView === 'function') ? resolve() : setTimeout(check, 100);
+      check();
+    });
 
     window.showPublicView(verId);
     return;

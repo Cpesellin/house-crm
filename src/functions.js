@@ -875,7 +875,8 @@ window.concGuardar = async function() {
 // ══════════════════════════════════════════════════════════════════
 
 window.showPublicView = async function(id) {
-  document.getElementById('lov').style.display = 'none';
+  const lov = document.getElementById('lov');
+  if (lov) lov.style.display = 'none';
   const app = document.getElementById('app');
   app.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div><div style="font-size:12px;color:var(--sub);margin-top:8px">Cargando inmueble...</div></div>';
   try {
