@@ -103,18 +103,8 @@ function renderShell(container) {
 
 <!-- SECTIONS -->
 <div class="sec act" id="sec-inv">
-  <!-- Hero: floating notification that auto-hides -->
-  <div id="heroFloat" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:90;background:linear-gradient(155deg,var(--b900),var(--b700),var(--b600));border-radius:14px;padding:14px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);animation:fi .3s;max-width:90%;width:420px">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div><div style="font-family:Fraunces,serif;font-size:15px;font-weight:800;color:#fff" id="heroTitle">Portafolio</div><div style="font-size:9px;color:rgba(255,255,255,.5)" id="heroSub"></div></div>
-      <div style="display:flex;gap:1px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;overflow:hidden">
-        <div class="st"><div class="stn" id="hst">\u2014</div><div class="stl">Total</div></div>
-        <div class="st"><div class="stn" id="hsv">\u2014</div><div class="stl">Venta</div></div>
-        <div class="st"><div class="stn" id="hsa">\u2014</div><div class="stl">Arriendo</div></div>
-        <div class="st"><div class="stn" id="hsb">\u2014</div><div class="stl">Ambas</div></div>
-      </div>
-    </div>
-  </div>
+  <!-- Hidden counters for uSt() compatibility -->
+  <div style="display:none"><span id="hst"></span><span id="hsv"></span><span id="hsa"></span><span id="hsb"></span></div>
   <div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px">
     <div class="wban" id="wban" style="display:none"></div>
     <div class="rsrch" id="rsrch"></div>
