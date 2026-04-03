@@ -1,5 +1,10 @@
 {
   "rewrites": [
+    {
+      "source": "/ver/:ref",
+      "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
+      "destination": "https://keasjfgcjkskvdcudoml.supabase.co/functions/v1/ver?ref=:ref"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

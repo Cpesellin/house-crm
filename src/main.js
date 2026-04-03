@@ -44,21 +44,35 @@ window.addEventListener('unhandledrejection', (event) => {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('House CRM v2.0 \u2014 Modular Architecture');
 
-  // Check for public view mode  (?ver=<id>)
+  // Check for public view mode
+  // Supports: ?ver=UUID, ?ver=HOUSE-141, or /ver/HOUSE-141
   const params = new URLSearchParams(window.location.search);
-  const verId = params.get('ver');
+  let verId = params.get('ver');
+
+  // Also check path-based URL: /ver/HOUSE-141 or /ver/UUID
+  if (!verId) {
+    const pathMatch = window.location.pathname.match(/^\/ver\/(.+)$/);
+    if (pathMatch) verId = decodeURIComponent(pathMatch[1]);
+  }
 
   if (verId) {
-    // Public property view — uses showPublicView from functions.js
-    if (typeof window.showPublicView === 'function') {
-      window.showPublicView(verId);
-    } else {
-      document.getElementById('app').innerHTML =
-        '<div style="padding:2rem;text-align:center;">' +
-        '<h2>Cargando...</h2></div>';
-      // Wait for functions.js to load then retry
-      setTimeout(() => window.showPublicView?.(verId), 500);
+    // If it's a HOUSE code (not UUID), resolve it to UUID first
+    if (verId.startsWith('HOUSE-')) {
+      try {
+        const { data } = await import('./config/supabase.js').then(m => m.getSupabaseClient().from('inmuebles').select('id').eq('codigo_house', verId).eq('eliminado', false).single());
+        if (data?.id) verId = data.id;
+      } catch(e) { console.error('[main] Could not resolve HOUSE code:', e); }
     }
+
+    // Render public view
+    const tryShow = () => {
+      if (typeof window.showPublicView === 'function') {
+        window.showPublicView(verId);
+      } else {
+        setTimeout(tryShow, 200);
+      }
+    };
+    tryShow();
     return;
   }
 

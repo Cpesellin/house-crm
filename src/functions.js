@@ -512,9 +512,10 @@ window.shareInm = function(id) {
   const capTel=u?.telefono_contacto||'573105922763';
   const capNom=u?.nombre||'Inmobiliaria House';
 
-  // Use inmobiliariahouse.com.co domain with Edge Function
-  const SUPA_URL=import.meta.env?.VITE_SUPA_URL||'';
-  const previewUrl=cod?SUPA_URL+'/functions/v1/ver?ref='+encodeURIComponent(cod):SUPA_URL+'/functions/v1/ver?id='+id;
+  // Clean URL with custom domain
+  const previewUrl = cod
+    ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod)
+    : 'https://inmobiliariahouse.com.co/ver/' + id;
 
   const specs=[];
   if(hab&&hab!=0)specs.push(hab+' Hab');
@@ -867,7 +868,7 @@ window.showPublicView = async function(id) {
     const fotos = p.fotos ? p.fotos.sort((a, b) => a.orden - b.orden) : [];
     const capTel = p.captador?.telefono_contacto || '573105922763';
     const capNom = p.captador?.nombre || 'Inmobiliaria House';
-    let h = '<div class="pub-wrap"><div class="pub-brand">🏠 Inmobiliaria House</div><div class="pub-card">';
+    let h = '<div class="pub-wrap"><div class="pub-brand"><img src="/img/logo.png" style="height:32px;border-radius:8px"> Inmobiliaria House</div><div class="pub-card">';
     if (fotos.length > 0) {
       h += `<div class="pub-gal" id="pub-gal"><img id="pub-img" src="${fotos[0].url}" onerror="drFallback(this)">`;
       if (fotos.length > 1) h += `<button class="gal-nav prev" onclick="pubNav(-1)">‹</button><button class="gal-nav next" onclick="pubNav(1)">›</button>`;
