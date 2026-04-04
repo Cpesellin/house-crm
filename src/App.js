@@ -29,22 +29,28 @@ function renderShell(container) {
     <div style="display:flex;justify-content:center;margin-bottom:20px">${LOGO_SVG_LG}</div>
     <div class="lbr">House</div>
     <div class="lsb">Gesti\u00F3n Inmobiliaria Inteligente</div>
-    <div id="g_id_signin"></div>
-    <div class="lor"><span>o ingresa con</span></div>
-    <div class="lfrm">
-      <input id="lin_usr" type="text" placeholder="Usuario" autocomplete="username">
-      <input id="lin_pwd" type="password" placeholder="Contrase\u00F1a" autocomplete="current-password">
-      <button id="lin_btn" type="button">Ingresar</button>
+
+    <!-- PANEL LOGIN (default) -->
+    <div id="lov_login">
+      <div id="g_id_signin" style="margin-bottom:12px"></div>
+      <div class="lor"><span>o ingresa con</span></div>
+      <div class="lfrm">
+        <input id="lin_usr" type="text" placeholder="Usuario" autocomplete="username">
+        <input id="lin_pwd" type="password" placeholder="Contrase\u00F1a" autocomplete="current-password">
+        <button id="lin_btn" type="button">Ingresar</button>
+      </div>
+      <div id="lerr" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>
+      <div style="margin-top:16px;text-align:center">
+        <button onclick="toggleRegForm()" style="background:none;border:none;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:inherit">\u{1F4DD} Crear cuenta gratis</button>
+      </div>
     </div>
-    <div class="ldiv"></div>
-    <div class="lfooter">Ingresa con Google o con tus credenciales</div>
-    <div id="lerr" style="display:none"></div>
-    <div style="margin-top:16px;text-align:center">
-      <button onclick="toggleRegForm()" id="lreg_toggle" style="background:none;border:none;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:inherit">\u{1F4DD} Crear cuenta gratis</button>
-    </div>
-    <!-- REGISTRO EXTERNO (hidden by default) -->
-    <div id="lreg_form" style="display:none;margin-top:16px">
-      <div style="font-size:14px;font-weight:800;text-align:center;color:#fff;margin-bottom:12px">\u{1F3E0} Crear cuenta</div>
+
+    <!-- PANEL REGISTRO (hidden by default) -->
+    <div id="lov_register" style="display:none">
+      <div style="font-size:15px;font-weight:800;text-align:center;color:#fff;margin-bottom:4px">\u{1F3E0} Crear cuenta</div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:14px">Gratis \u00B7 Sin spam \u00B7 Cancela cuando quieras</div>
+      <div id="g_id_signin_reg" style="margin-bottom:12px"></div>
+      <div class="lor"><span>o con email</span></div>
       <div class="lfrm">
         <input id="reg_nombre" type="text" placeholder="Tu nombre completo" autocomplete="name" style="margin-bottom:8px">
         <input id="reg_email" type="email" placeholder="Email" autocomplete="email" style="margin-bottom:8px">
@@ -53,10 +59,11 @@ function renderShell(container) {
         <button type="button" onclick="registerExternal()" id="reg_btn" style="background:#2563eb;color:#fff;font-weight:700">Crear mi cuenta</button>
       </div>
       <div id="reg_err" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>
-      <div style="text-align:center;margin-top:10px">
-        <button onclick="toggleRegForm()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">\u2190 Volver al inicio de sesi\u00F3n</button>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="toggleRegForm()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">\u00BFYa tienes cuenta? Inicia sesi\u00F3n</button>
       </div>
     </div>
+
     <div style="margin-top:12px;text-align:center">
       <a href="#/portafolio" onclick="document.getElementById('lov').style.display='none'" style="color:#94a3b8;font-size:12px;text-decoration:underline;cursor:pointer">\u{1F50D} Explorar inmuebles sin cuenta</a>
     </div>

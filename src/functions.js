@@ -1384,33 +1384,25 @@ window.completarEvt = async function(id) {
 // ══════════════════════════════════════════════════════════════════
 
 window.toggleRegForm = function() {
-  const loginForm = document.querySelector('#lov .lfrm');
-  const googleBtn = document.getElementById('g_id_signin');
-  const orDiv = document.querySelector('#lov .lor');
-  const footer = document.querySelector('#lov .lfooter');
-  const regForm = document.getElementById('lreg_form');
-  const regToggle = document.getElementById('lreg_toggle');
-  const errEl = document.getElementById('lerr');
+  const loginPanel = document.getElementById('lov_login');
+  const regPanel = document.getElementById('lov_register');
+  if (!loginPanel || !regPanel) return;
 
-  if (regForm.style.display === 'none') {
-    // Show register, hide login
-    if (loginForm) loginForm.style.display = 'none';
-    if (googleBtn) googleBtn.style.display = 'none';
-    if (orDiv) orDiv.style.display = 'none';
-    if (footer) footer.style.display = 'none';
-    if (regToggle) regToggle.style.display = 'none';
-    if (errEl) errEl.style.display = 'none';
-    regForm.style.display = 'block';
-  } else {
-    // Show login, hide register
-    if (loginForm) loginForm.style.display = '';
-    if (googleBtn) googleBtn.style.display = '';
-    if (orDiv) orDiv.style.display = '';
-    if (footer) footer.style.display = '';
-    if (regToggle) regToggle.style.display = '';
-    regForm.style.display = 'none';
-    document.getElementById('reg_err').style.display = 'none';
+  const showingLogin = loginPanel.style.display !== 'none';
+  loginPanel.style.display = showingLogin ? 'none' : '';
+  regPanel.style.display = showingLogin ? '' : 'none';
+
+  // Render Google button in register panel if not already done
+  if (showingLogin && typeof google !== 'undefined' && google.accounts) {
+    const regGoogleBtn = document.getElementById('g_id_signin_reg');
+    if (regGoogleBtn && !regGoogleBtn.hasChildNodes()) {
+      google.accounts.id.renderButton(regGoogleBtn, { theme: 'outline', size: 'large', width: 260, text: 'signup_with', shape: 'pill' });
+    }
   }
+
+  // Clear errors
+  const regErr = document.getElementById('reg_err');
+  if (regErr) regErr.style.display = 'none';
 };
 
 window.registerExternal = async function() {
