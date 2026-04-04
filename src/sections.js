@@ -451,27 +451,7 @@ window.rPort = function () {
   el.innerHTML = h;
 };
 
-// ══════════════════════════════════════════════════════════════════
-// F14-F16: rUsers — Usuarios COMPLETO
-// ══════════════════════════════════════════════════════════════════
-
-window.rUsers = async function () {
-  const el = document.getElementById('usrl'); if (!el) return;
-  el.innerHTML = '<div class="ldr"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
-  const { data } = await SB().from('usuarios').select('*').order('nombre');
-  if (!data) { el.innerHTML='<div class="emp"><span class="emp-i">❌</span></div>'; return; }
-
-  el.innerHTML = data.map(u2 => {
-    const act=u2.activo, rol=u2.rol||'asesor';
-    // F16: Badge de rol con color — gestor de arriendos overrides asesor label
-    const isGestor = u2.es_gestor_arriendos === true;
-    const displayRol = isGestor ? 'Gestor Arriendos' : rol;
-    const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : 'background:var(--b50);color:var(--b700)';
-    const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
-    const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
-    return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}</div>`;
-  }).join('');
-};
+// F14-F16: rUsers — moved to bottom of file (with Solicitudes tab)
 
 // ══════════════════════════════════════════════════════════════════
 // F17-F18: rPerfil — Mi Perfil EDITABLE
@@ -943,6 +923,14 @@ window.rPublicar = function() {
     h += `</div>`;
     h += `<div style="display:flex;gap:8px;margin-bottom:12px"><div class="wiz-field" style="flex:1"><div class="wiz-label">ÁREA (m²)</div><input id="ow_area" type="number" class="wiz-input" value="${d.area_construida||''}"></div><div class="wiz-field" style="flex:1"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">—</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div></div>`;
     h += `<div class="wiz-field"><div class="wiz-label">DESCRIPCIÓN (lo que verá el público)</div><textarea id="ow_desc" class="wiz-input" style="min-height:80px;resize:vertical" placeholder="Describe tu inmueble...">${d.descripcion_cliente||''}</textarea></div>`;
+    // Photo upload
+    h += `<div class="wiz-field"><div class="wiz-label">FOTOS (hasta 10)</div><div id="ow_fotos_zone"></div></div>`;
+    // Show existing uploaded photos
+    if (d._fotos && d._fotos.length) {
+      h += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
+      d._fotos.forEach((f,i) => { h += `<div style="position:relative;width:60px;height:60px"><img src="${f.thumb}" style="width:60px;height:60px;object-fit:cover;border-radius:6px"><button onclick="window._ownerData._fotos.splice(${i},1);rPublicar()" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:10px;cursor:pointer;line-height:18px">✕</button></div>`; });
+      h += `</div>`;
+    }
     h += `<div style="display:flex;gap:8px;margin-top:16px"><button onclick="ownerWizardPrev()" style="flex:1;padding:14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">← Atrás</button><button onclick="if(ownerSaveStep(2))ownerWizardNext()" style="flex:1;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">Continuar →</button></div>`;
 
   } else if (step === 3) {
@@ -967,6 +955,14 @@ window.rPublicar = function() {
 
   h += '</div></div>';
   el.innerHTML = h;
+
+  // Init photo upload zone on step 2
+  if (step === 2 && typeof window.initFotoUpload === 'function') {
+    if (!d._fotos) d._fotos = [];
+    window.initFotoUpload('ow_fotos_zone', (result) => {
+      d._fotos.push(result);
+    }, d._fotos.length);
+  }
 };
 
 // --- Espera (pendiente approval) ---

@@ -353,6 +353,14 @@ export async function initApp(container) {
 
     if (hasSession) {
       sApp();
+    } else {
+      // Check if visitor wants to access public portal
+      const hash = location.hash.replace(/^#\/?/, '');
+      if (hash === 'portafolio' || hash === '') {
+        // Hide login, show portafolio for visitors
+        document.getElementById('lov').style.display = 'none';
+        // Don't show main header — rPortafolio renders its own
+      }
     }
 
     // Bind credential login button

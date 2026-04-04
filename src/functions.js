@@ -1410,6 +1410,20 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
   const modal = document.getElementById('onbModal');
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
   try {
+    // Check if user already exists (could be inactive)
+    const { data: existingUser } = await SB().from('usuarios').select('*').eq('email', email).single();
+    if (existingUser) {
+      // Reactivate existing user
+      const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
+      await SB().from('usuarios').update({ activo: true, tipo_usuario: tipoU, foto: foto || existingUser.foto }).eq('id', existingUser.id);
+      existingUser.activo = true; existingUser.tipo_usuario = tipoU;
+      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: false, tipo_usuario: tipoU, token: 'google:' + email };
+      window.userStore.set(userData);
+      if (modal) modal.remove();
+      if (typeof window.sApp === 'function') window.sApp();
+      window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+      return;
+    }
     const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
@@ -1435,8 +1449,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     };
     window.userStore.set(userData);
     if (modal) modal.remove();
-    location.hash = tipoU === 'pendiente' ? '#/espera' : '#/portafolio';
-    location.reload();
+    if (typeof window.sApp === 'function') window.sApp();
+    window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
   } catch(e) {
     console.error('[selectProfile]', e);
     if (modal) modal.remove();
@@ -1518,7 +1532,7 @@ window.ownerPublish = async function() {
     // Generate next HOUSE code
     const code = typeof window.nextHouseCode === 'function' ? await window.nextHouseCode() : null;
 
-    const { error } = await SB().from('inmuebles').insert({
+    const { data: newInm, error } = await SB().from('inmuebles').insert({
       tipo: d.tipo, negociacion: d.negociacion, ciudad: d.ciudad,
       direccion: d.direccion, barrio: d.barrio, direccion_publica: d.barrio + ', ' + d.ciudad,
       precio_venta: d.precio_venta || 0, precio_arriendo: d.precio_arriendo || 0,
@@ -1527,10 +1541,20 @@ window.ownerPublish = async function() {
       parqueaderos: d.parqueaderos || 0, descripcion_cliente: d.descripcion_cliente || '',
       captador_id: u.id, origen: 'externo', estado_revision: 'en_revision',
       estado: 'Disponible', codigo_house: code, eliminado: false
-    });
+    }).select('id').single();
     if (error) throw error;
 
-    await window.noti('inmueble_externo', 'amarillo', '🏠 Nuevo inmueble externo: ' + d.tipo + ' en ' + d.ciudad, u.nombre + ' publicó ' + d.tipo + ' en ' + d.barrio + ', ' + d.ciudad, null, 'admin', null);
+    // Save photos to fotos table
+    if (d._fotos && d._fotos.length && newInm?.id) {
+      for (let i = 0; i < d._fotos.length; i++) {
+        await SB().from('fotos').insert({
+          inmueble_id: newInm.id, url: d._fotos[i].url,
+          url_thumb: d._fotos[i].thumb, origen: 'cloudinary', orden: i
+        });
+      }
+    }
+
+    await window.noti('inmueble_externo', 'amarillo', '🏠 Nuevo inmueble externo: ' + d.tipo + ' en ' + d.ciudad, u.nombre + ' publicó ' + d.tipo + ' en ' + d.barrio + ', ' + d.ciudad + (d._fotos?.length ? ' (' + d._fotos.length + ' fotos)' : ''), null, 'admin', newInm?.id);
     window.toast('🏠 Tu inmueble fue enviado para revisión');
     window._ownerStep = 1; window._ownerData = {};
     window.go('mis-pub');
