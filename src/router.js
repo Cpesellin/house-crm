@@ -27,7 +27,7 @@ const ROUTES = {
   'papelera': { section: 'sec-papelera', label: 'Papelera',       icon: '\u{1F5D1}\uFE0F', auth: true, internal: true, roles: ['admin'] },
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
   // External user routes
-  'portafolio': { section: 'sec-portafolio', label: 'Explorar',        icon: '\u{1F50D}', auth: false },
+  'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
   'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
   'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo'] },
@@ -155,11 +155,15 @@ function navigateTo(route) {
 
   // --- Show target section ---
   const targetCfg = ROUTES[route];
-  if (targetCfg && targetCfg.section) {
-    const target = document.getElementById(targetCfg.section);
-    if (target) {
-      target.style.display = '';
-      target.classList.add('act');
+  if (targetCfg) {
+    // Use sectionLoggedIn if user is logged in and the route has it
+    const sectionId = (user && targetCfg.sectionLoggedIn) ? targetCfg.sectionLoggedIn : targetCfg.section;
+    if (sectionId) {
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.style.display = '';
+        target.classList.add('act');
+      }
     }
   }
 
@@ -175,7 +179,11 @@ function navigateTo(route) {
   if (panel) panel.classList.remove('op');
 
   // --- Call the route's render function (window global) ---
-  const rendererName = ROUTE_RENDERERS[route];
+  let rendererName = ROUTE_RENDERERS[route];
+  // For logged-in external users on portafolio, use rInv (CRM inventory renderer)
+  if (route === 'portafolio' && user && (user.tipo_usuario === 'cliente' || user.tipo_usuario === 'vendedor_externo')) {
+    rendererName = 'rInv';
+  }
   if (rendererName && typeof window[rendererName] === 'function') {
     try {
       window[rendererName]();

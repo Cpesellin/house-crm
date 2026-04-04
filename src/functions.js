@@ -1623,6 +1623,27 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
   }
 };
 
+// --- Favoritos filter toggle (replaces toggleMis for external users) ---
+window._favFilterActive = false;
+window.toggleFavFilter = function() {
+  window._favFilterActive = !window._favFilterActive;
+  const btn = document.getElementById('myToggle');
+  if (btn) {
+    btn.style.background = window._favFilterActive ? '#e11d73' : 'linear-gradient(135deg,#fdf2f8,#fce7f3)';
+    btn.style.color = window._favFilterActive ? '#fff' : '#be185d';
+  }
+  // Filter window.D to show only favorites
+  const D = window.D || [];
+  const favs = window.FAVS || [];
+  if (window._favFilterActive && favs.length) {
+    window.render(D.filter(p => favs.includes(p.id)));
+  } else {
+    window._favFilterActive = false;
+    if (typeof window.doSearch === 'function') window.doSearch();
+    else window.render(D);
+  }
+};
+
 // --- Favoritos ---
 window.toggleFavorito = async function(inmId) {
   const u = U(); if (!u) { window.toast('Inicia sesión para guardar favoritos', 'twarn'); return; }
@@ -1636,9 +1657,12 @@ window.toggleFavorito = async function(inmId) {
       await SB().from('favoritos').insert({ usuario_id: u.id, inmueble_id: inmId });
       window.toast('❤️ Guardado en favoritos');
     }
-    // Refresh UI if on favoritos or portafolio page
+    // Update FAVS array
+    if (existing) { window.FAVS = (window.FAVS||[]).filter(id => id !== inmId); }
+    else { window.FAVS = [...(window.FAVS||[]), inmId]; }
+    // Refresh UI
     if (typeof window.rFavoritos === 'function' && location.hash === '#/favoritos') window.rFavoritos();
-    if (typeof window.rPortafolio === 'function' && location.hash === '#/portafolio') window.rPortafolio();
+    if (location.hash === '#/portafolio') window.render(window.D || []);
   } catch(e) { console.error('[toggleFavorito]', e); }
 };
 

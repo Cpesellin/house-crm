@@ -104,6 +104,8 @@ function render(ls) {
   const D = window.D || [];
   const U = window.userStore?.get();
   const SOL = window.SOL || [];
+  const _tipoU = U?.tipo_usuario || 'interno';
+  const _isExt = _tipoU === 'cliente' || _tipoU === 'vendedor_externo';
 
   if (!ls || !ls.length) {
     el.innerHTML = '<div class="emp"><span class="emp-i">🔍</span><h3>Sin resultados</h3></div>';
@@ -115,21 +117,21 @@ function render(ls) {
   ls.slice(0, 60).forEach(p => {
     const idx = D.indexOf(p);
     const tip = p.tipo || 'Inmueble', ciu = p.ciudad || '';
-    const ase = p.captador ? p.captador.nombre : '';
+    const ase = _isExt ? '' : (p.captador ? p.captador.nombre : '');
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
     const hab = p.habitaciones || '', ban = p.banos || '';
     const area = p.area_construida || '', est = p.estrato || '';
     const dias = p._dias || 0;
     const am = eA2(p), sv = eV(p) && !am, sa = eA(p) && !am;
     const hc = am ? 'tb' : sv ? 'tv' : 'ta';
-    const m2 = !!(p.url_metrocuadrado || '').trim();
-    const fr = !!(p.url_fincaraiz || '').trim();
-    const cod = p.codigo_house || '';
+    const m2 = _isExt ? false : !!(p.url_metrocuadrado || '').trim();
+    const fr = _isExt ? false : !!(p.url_fincaraiz || '').trim();
+    const cod = _isExt ? '' : (p.codigo_house || '');
     const esMio = U && p.captador_id === U.id;
 
-    const canSeeDir = esMio || U?.rol === 'admin' || U?.rol === 'oficina' ||
-      (U?.es_gestor_arriendos && (p.negociacion || '').toLowerCase().includes('arriendo'));
-    const dirTxt = canSeeDir ? (p.direccion || '') : (p.direccion_publica || '');
+    const canSeeDir = _isExt ? false : (esMio || U?.rol === 'admin' || U?.rol === 'oficina' ||
+      (U?.es_gestor_arriendos && (p.negociacion || '').toLowerCase().includes('arriendo')));
+    const dirTxt = canSeeDir ? (p.direccion || '') : (p.direccion_publica || p.barrio || '');
     const ubiTxt = dirTxt ? (dirTxt + (ciu ? ' · ' + ciu : '')) : ('📍 ' + ciu);
 
     let ab = '';
@@ -170,12 +172,24 @@ function render(ls) {
       cardTop = `<div class="pctop ${hc}" style="position:relative">${ab}<div class="pce">${emo(tip)}</div><div class="pctt">${tip}</div><div class="pccy">${ciu}</div></div><div class="pc-nofoto">📷 Sin foto disponible</div>`;
     }
 
-    let actBtn = `<button class="vb" onclick="oM&&oM(${idx})">Ver detalle →</button>`;
+    // For external users: show WhatsApp button instead of "Ver detalle" to internal modal
+    const capTel2 = p.captador?.telefono_contacto || '573105922763';
+    const capNom2 = p.captador?.nombre || 'House';
+    const prevUrl2 = (p.codigo_house || '') ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(p.codigo_house) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
+    let actBtn = _isExt
+      ? `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`
+      : `<button class="vb" onclick="oM&&oM(${idx})">Ver detalle →</button>`;
+
+    // Portales badge (hidden for external users)
+    const ptbHtml = _isExt ? '' : `<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>`;
+
+    // Fav button for external users
+    const favBtn = _isExt ? `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)${(window.FAVS||[]).includes(p.id)?';background:#e11d73':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${(window.FAVS||[]).includes(p.id)?'❤️':'🤍'}</button>` : '';
 
     if (hasF) {
-      h += `<div class="pc">${cardTop}<div class="pcbd"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:18px">${emo(tip)}</span><div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><div style="font-size:14px;font-weight:800">${tip}</div>${cod ? `<span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${cod}');toast('📋 ${cod} copiado')">${cod}</span>` : ''}</div><div style="font-size:11px;color:var(--sub)">${ubiTxt}</div></div></div><div class="mods">${md}</div>${pr}${sp2 ? `<div class="sps">${sp2}</div>` : ''}${ase ? `<div class="asl">👤 ${ase}</div>` : ''}<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>${actBtn}</div></div>`;
+      h += `<div class="pc" style="position:relative">${favBtn}${cardTop}<div class="pcbd"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:18px">${emo(tip)}</span><div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><div style="font-size:14px;font-weight:800">${tip}</div>${cod ? `<span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${cod}');toast('📋 ${cod} copiado')">${cod}</span>` : ''}</div><div style="font-size:11px;color:var(--sub)">${ubiTxt}</div></div></div><div class="mods">${md}</div>${pr}${sp2 ? `<div class="sps">${sp2}</div>` : ''}${ase ? `<div class="asl">👤 ${ase}</div>` : ''}${ptbHtml}${actBtn}</div></div>`;
     } else {
-      h += `<div class="pc">${cardTop}<div class="pcbd">${cod ? `<div style="margin-bottom:4px"><span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${cod}');toast('📋 ${cod} copiado')">${cod}</span></div>` : ''}<div class="mods">${md}</div>${pr}${sp2 ? `<div class="sps">${sp2}</div>` : ''}${ase ? `<div class="asl">👤 ${ase}</div>` : ''}<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>${actBtn}</div></div>`;
+      h += `<div class="pc" style="position:relative">${favBtn}${cardTop}<div class="pcbd">${cod ? `<div style="margin-bottom:4px"><span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${cod}');toast('📋 ${cod} copiado')">${cod}</span></div>` : ''}<div class="mods">${md}</div>${pr}${sp2 ? `<div class="sps">${sp2}</div>` : ''}${ase ? `<div class="asl">👤 ${ase}</div>` : ''}${ptbHtml}${actBtn}</div></div>`;
     }
   });
 
@@ -226,10 +240,24 @@ export async function load() {
     return;
   }
 
-  // External users use loadPublic instead
+  // External users: load public data into window.D so CRM UI works
   const tipoU = U.tipo_usuario || 'interno';
   if (tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'pendiente') {
-    await loadPublic();
+    const pubData = await loadPublic();
+    // Feed public data into the same window.D used by CRM render/filters
+    window.D = pubData || [];
+    window.D.forEach(p => { p._dias = diasDesde(p.fecha_estado || p.created_at); });
+    window.MIS = tipoU === 'vendedor_externo' ? window.D.filter(p => p.captador_id === U.id) : [];
+    window.SOL = []; window.USERS = []; window.ALS = []; window.ALU = [];
+    // Load favorites
+    try {
+      const { data: favs } = await getSupabaseClient().from('favoritos').select('inmueble_id').eq('usuario_id', U.id);
+      window.FAVS = (favs || []).map(f => f.inmueble_id);
+    } catch(e) { window.FAVS = []; }
+    sSt('ok', window.D.length + ' inmuebles');
+    render(window.D);
+    uSt();
+    renderWelcome();
     return;
   }
 

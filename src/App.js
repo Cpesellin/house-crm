@@ -295,8 +295,16 @@ function sApp() {
   }
 
   if (isExterno) {
-    // External user: hide internal menu, show external menu
+    // External user: hide internal-only UI elements
     document.getElementById('stbar').style.display = 'none';
+    // Replace "Mostrar mis inmuebles" with "Mis favoritos"
+    const myTgl = document.getElementById('myToggle');
+    if (myTgl) { myTgl.textContent = '♥ Mis favoritos'; myTgl.setAttribute('onclick', 'toggleFavFilter()'); }
+    // Hide asesor filter and internal nav items not relevant
+    const aseFilter = document.getElementById('asesorFilter');
+    if (aseFilter) aseFilter.style.display = 'none';
+    // Hide internal sections from sidebar that shouldn't show
+    ['mis','reg','alertas','portales','dash','conc'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
     document.getElementById('murole').textContent = tipoU === 'vendedor_externo' ? 'Asesor Externo' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';
