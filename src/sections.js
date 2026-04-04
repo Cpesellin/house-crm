@@ -443,11 +443,11 @@ window.rPapelera = async function () {
 // F10-F13: rAgenda — Agenda COMPLETA
 // ══════════════════════════════════════════════════════════════════
 
-let _agDate = new Date();
-let _agView = 'day';
+window._agDate = new Date();
+window._agView = 'day';
 
-window.agNavDay = function(off) { _agDate.setDate(_agDate.getDate()+(_agView==='week'?off*7:off)); window.rAgenda(); };
-window.agSetView = function(v) { _agView=v; window.rAgenda(); };
+window.agNavDay = function(off) { window._agDate.setDate(window._agDate.getDate()+(window._agView==='week'?off*7:off)); window.rAgenda(); };
+window.agSetView = function(v) { window._agView=v; window.rAgenda(); };
 
 window.rAgenda = async function () {
   const el = document.getElementById('agc'); if (!el) return;
@@ -455,7 +455,7 @@ window.rAgenda = async function () {
   el.innerHTML='<div class="ldr"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
 
   const isAdmin=u.rol==='admin'||u.rol==='oficina';
-  const startW=new Date(_agDate);startW.setDate(startW.getDate()-startW.getDay());
+  const startW=new Date(window._agDate);startW.setDate(startW.getDate()-startW.getDay());
   const endW=new Date(startW);endW.setDate(endW.getDate()+7);
 
   let q=SB().from('agenda').select('*,inmueble:inmuebles(id,tipo,ciudad,direccion,captador:usuarios!captador_id(nombre))').gte('fecha',startW.toISOString().split('T')[0]).lte('fecha',endW.toISOString().split('T')[0]).order('hora_inicio');
@@ -465,17 +465,17 @@ window.rAgenda = async function () {
   const dias2=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const hoy=new Date().toISOString().split('T')[0];
-  const selDay=_agDate.toISOString().split('T')[0];
+  const selDay=window._agDate.toISOString().split('T')[0];
 
   let h=`<div class="card"><div class="cdh"><div class="chl"><div class="chi">📅</div><div><div class="cht">Agenda${isAdmin?' — Gestión':''}</div></div></div></div><div class="cdb">`;
 
   // F10: Nav ◀ ▶
-  h+=`<div class="ag-nav"><button onclick="agNavDay(-1)">◀</button><div class="ag-date">${dias2[_agDate.getDay()]} ${_agDate.getDate()} de ${meses[_agDate.getMonth()]}</div><button onclick="agNavDay(1)">▶</button></div>`;
+  h+=`<div class="ag-nav"><button onclick="agNavDay(-1)">◀</button><div class="ag-date">${dias2[window._agDate.getDay()]} ${window._agDate.getDate()} de ${meses[window._agDate.getMonth()]}</div><button onclick="agNavDay(1)">▶</button></div>`;
 
   // F11: Toggle día/semana + nuevo evento
-  h+=`<div class="ag-nav" style="margin-bottom:16px"><button class="${_agView==='day'?'act':''}" onclick="agSetView('day')">📋 Día</button><button class="${_agView==='week'?'act':''}" onclick="agSetView('week')">📅 Semana</button><button style="margin-left:auto;background:var(--b600);color:#fff;border-color:var(--b600)" onclick="abrirAgendarEvt()">+ Nuevo</button></div>`;
+  h+=`<div class="ag-nav" style="margin-bottom:16px"><button class="${window._agView==='day'?'act':''}" onclick="agSetView('day')">📋 Día</button><button class="${window._agView==='week'?'act':''}" onclick="agSetView('week')">📅 Semana</button><button style="margin-left:auto;background:var(--b600);color:#fff;border-color:var(--b600)" onclick="abrirAgendarEvt()">+ Nuevo</button></div>`;
 
-  if (_agView==='day') {
+  if (window._agView==='day') {
     // DAY VIEW
     const evtsDay=evts.filter(e=>e.fecha===selDay);
     const slots={};for(let hr=7;hr<=20;hr++)slots[hr]=null;
@@ -509,7 +509,7 @@ window.rAgenda = async function () {
       const dt=new Date(startW);dt.setDate(dt.getDate()+d);
       const ds=dt.toISOString().split('T')[0];const isToday=ds===hoy;
       const dayEvts=evts.filter(e=>e.fecha===ds);
-      h+=`<div class="ag-week-day${isToday?' today':''}" onclick="_agDate=new Date('${ds}T12:00');agSetView('day')"><div class="ag-wd-name">${dias2[d]}</div><div class="ag-wd-num">${dt.getDate()}</div>`;
+      h+=`<div class="ag-week-day${isToday?' today':''}" onclick="window._agDate=new Date('${ds}T12:00');agSetView('day')"><div class="ag-wd-name">${dias2[d]}</div><div class="ag-wd-num">${dt.getDate()}</div>`;
       dayEvts.slice(0,3).forEach(e=>{const isPers=e.es_personal;if(isPers&&isAdmin){h+=`<div class="ag-wd-evt pers">🔒 Ocupado</div>`;}else{const inm=e.inmueble;h+=`<div class="ag-wd-evt inm">${(e.hora_inicio||'').slice(0,5)} ${isPers?'🔒':(inm?inm.tipo:'📌')}</div>`;}});
       if(dayEvts.length>3)h+=`<div style="font-size:8px;color:var(--sub);font-weight:700">+${dayEvts.length-3} más</div>`;
       if(!dayEvts.length)h+=`<div style="font-size:9px;color:var(--g400);margin-top:6px">Sin eventos</div>`;
@@ -525,7 +525,7 @@ window.rAgenda = async function () {
 // F24-F27: rConc — Conciliación COMPLETA
 // ══════════════════════════════════════════════════════════════════
 
-let _concFilter2 = 'all';
+window._concFilter2 = 'all';
 
 window.rConc = async function () {
   const el = document.getElementById('concc'); if (!el) return;
@@ -540,11 +540,11 @@ window.rConc = async function () {
   let h=`<div style="display:flex;gap:8px;margin-bottom:12px"><div style="flex:1;padding:10px;background:var(--redbg);border:1.5px solid var(--rb);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:var(--red)">${pend}</div><div style="font-size:10px;font-weight:700;color:var(--red)">Pendientes</div></div><div style="flex:1;padding:10px;background:var(--greenbg);border:1.5px solid var(--gb);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:var(--green)">${done}</div><div style="font-size:10px;font-weight:700;color:var(--green)">Completados</div></div><div style="flex:1;padding:10px;background:var(--b50);border:1.5px solid var(--b200);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:var(--b700)">${items.length}</div><div style="font-size:10px;font-weight:700;color:var(--b700)">Total</div></div></div>`;
 
   // F27: Filtros
-  h+=`<div class="conc-filters">${Object.entries(tipos).map(([k,v])=>`<button class="${_concFilter2===k?'act':''}" onclick="_concFilter2='${k}';rConc()">${v}</button>`).join('')}</div>`;
+  h+=`<div class="conc-filters">${Object.entries(tipos).map(([k,v])=>`<button class="${window._concFilter2===k?'act':''}" onclick="window._concFilter2='${k}';rConc()">${v}</button>`).join('')}</div>`;
 
   if(isAdmin)h+=`<button style="width:100%;padding:10px;background:var(--b600);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:14px" onclick="concNuevo()">+ Agregar diferencia</button>`;
 
-  const filtered=items.filter(c=>{if(_concFilter2==='all')return true;return c.tipo_diferencia===_concFilter2;});
+  const filtered=items.filter(c=>{if(window._concFilter2==='all')return true;return c.tipo_diferencia===window._concFilter2;});
 
   if(!filtered.length){el.innerHTML=h+'<div class="emp"><span class="emp-i">✅</span><h3>Sin diferencias</h3></div>';return;}
 
