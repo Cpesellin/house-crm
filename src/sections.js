@@ -673,7 +673,7 @@ window.rPortafolio = async function() {
   const u = U();
   const tipoU = u?.tipo_usuario || null;
   const isVisitor = !u;
-  const isExterno = tipoU === 'cliente' || tipoU === 'propietario';
+  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo';
   const loginUrl = window.location.origin + '/';
   const regUrl = window.location.origin + '/?reg=1';
 
@@ -695,7 +695,15 @@ window.rPortafolio = async function() {
 
   // Apply filters
   const f = window._pubFilters;
-  let filtered = data.filter(p => {
+  let filtered = data;
+  // Toggle filters (mutually exclusive)
+  if (window._pubFavFilter && favIds.size > 0) {
+    filtered = filtered.filter(p => favIds.has(p.id));
+  }
+  if (window._pubMyFilter && u) {
+    filtered = filtered.filter(p => p.captador_id === u.id || (p.captador && p.captador.id === u.id));
+  }
+  filtered = filtered.filter(p => {
     if (f.neg) { const n = (p.negociacion||'').toLowerCase(); if (f.neg === 'arriendo' && !n.includes('arriendo')) return false; if (f.neg === 'venta' && !n.includes('venta')) return false; }
     if (f.tipo && !(p.tipo||'').toLowerCase().includes(f.tipo)) return false;
     if (f.ciudad && !(p.ciudad||'').toLowerCase().includes(f.ciudad)) return false;
@@ -739,6 +747,14 @@ window.rPortafolio = async function() {
   h += `<button class="pub-chip${f.tipo==='casa'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','casa',this)">🏡 Casa</button>`;
   h += `<button class="pub-chip${f.tipo==='finca'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','finca',this)">🌾 Finca</button>`;
   h += `<button class="pub-chip${f.tipo==='local'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','local',this)">🏪 Local</button>`;
+  // Toggle Mis favoritos + Mis inmuebles (logged-in external users)
+  if (u && isExterno) {
+    h += `<div style="flex-shrink:0;width:1px;background:var(--brd);margin:4px 2px"></div>`;
+    h += `<button class="pub-chip${window._pubFavFilter?' act':''}" style="${window._pubFavFilter?'background:#e11d73;color:#fff;border-color:#e11d73':''}" onclick="window._pubFavFilter=!window._pubFavFilter;if(window._pubFavFilter)window._pubMyFilter=false;rPortafolio()">♥ Mis favoritos</button>`;
+    if (tipoU === 'vendedor_externo') {
+      h += `<button class="pub-chip${window._pubMyFilter?' act':''}" style="${window._pubMyFilter?'background:#e11d73;color:#fff;border-color:#e11d73':''}" onclick="window._pubMyFilter=!window._pubMyFilter;if(window._pubMyFilter)window._pubFavFilter=false;rPortafolio()">🏠 Mis inmuebles</button>`;
+    }
+  }
   h += `</div>`;
 
   // ── RESULTS COUNT ──
@@ -767,7 +783,7 @@ window.rPortafolio = async function() {
     if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
     else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:#f1f5f9">${emo(p.tipo)}</div>`;
     if (u && isExterno) h += `<button class="pub-fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${isFav?'❤️':'🤍'}</button>`;
-    if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏠 Propietario</span>`;
+    if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏢 Asesor externo</span>`;
     h += `<div class="pub-card-body">`;
     h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
     h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
@@ -861,7 +877,7 @@ window.rCuenta = function() {
   if (u.foto) h += `<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
   else h += `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0]}</div>`;
   h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div>`;
-  h += `<div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${u.tipo_usuario==='propietario'?'Propietario':'Cliente'}</div></div>`;
+  h += `<div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${u.tipo_usuario==='vendedor_externo'?'Asesor Externo':'Cliente'}</div></div>`;
   h += `<div style="padding:0 16px 16px"><div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Nombre</label><input id="ext_nombre" value="${(u.nombre||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
   h += `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Email</label><input value="${u.email}" disabled style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--sub);background:var(--cd2);font-family:inherit"></div>`;
   h += `<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Teléfono</label><input id="ext_tel" value="${(u.telefono_contacto||'').replace(/"/g,'&quot;')}" placeholder="573001234567" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
@@ -871,9 +887,10 @@ window.rCuenta = function() {
   // Upgrade banner for clients
   if (u.tipo_usuario === 'cliente') {
     h += `<div style="margin:0 16px 16px;padding:18px;border-radius:12px;background:linear-gradient(135deg,#f0fdf4,#f0fdf8);border:1.5px solid #bbf7d0;text-align:center">
-      <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">🏠 ¿Tienes un inmueble?</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:10px">Publícalo gratis y llega a miles de clientes en Pereira</div>
-      <button onclick="requestUpgrade()" style="padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Quiero publicar mi inmueble →</button>
+      <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">🏢 ¿Quieres publicar inmuebles?</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:4px">Sé asesor externo y publica gratis</div>
+      <div style="font-size:11px;color:#065f46;font-weight:600;margin-bottom:10px">✓ 3 publicaciones gratis · Te conectamos con cientos de inversionistas</div>
+      <button onclick="requestUpgrade()" style="padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Quiero publicar inmuebles →</button>
     </div>`;
   }
 
@@ -893,19 +910,34 @@ window.saveExtCuenta = async function() {
   } catch(e) { window.toast('Error: ' + e.message, 'terr'); }
 };
 
-// --- Mis Publicaciones (propietario) ---
+// --- Mis Publicaciones (asesor externo) con barra de progreso ---
 window.rMisPub = async function() {
   const el = document.getElementById('mispubc'); if (!el) return;
   const u = U(); if (!u) return;
+  const LIMITE = 3;
   el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
   try {
     const { data } = await SB().from('inmuebles').select('*,fotos(url,url_thumb,orden)').eq('captador_id', u.id).eq('origen', 'externo').eq('eliminado', false).order('created_at', { ascending: false });
     const items = data || [];
-    let h = '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:6px">🏠 Mis Publicaciones</div>';
-    h += `<div style="font-size:12px;color:var(--sub);margin-bottom:16px">${items.length}/5 publicaciones</div>`;
-    if (items.length < 5) h += `<button onclick="go('publicar')" style="margin-bottom:16px;padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">+ Publicar nuevo inmueble</button>`;
+    const pct = Math.min(100, Math.round(items.length / LIMITE * 100));
+    const restantes = Math.max(0, LIMITE - items.length);
+    const barColor = pct >= 100 ? 'var(--gold)' : pct >= 67 ? '#f59e0b' : '#2563eb';
+
+    let h = '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:14px">🏠 Mis Publicaciones</div>';
+
+    // Progress bar
+    h += `<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:16px">`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:13px;font-weight:700">📦 Plan Gratuito</span><span style="font-size:13px;font-weight:800;color:${barColor}">${items.length}/${LIMITE}</span></div>`;
+    h += `<div style="height:6px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s"></div></div>`;
+    if (restantes > 0) h += `<div style="font-size:11px;color:var(--sub);margin-top:6px">${restantes} publicación${restantes!==1?'es':''} gratuita${restantes!==1?'s':''} restante${restantes!==1?'s':''}</div>`;
+    else h += `<div style="font-size:11px;color:#92400e;margin-top:6px;font-weight:600">⚠️ Límite alcanzado — <a href="#" onclick="event.preventDefault();showPaywall(${items.length},${LIMITE})" style="color:#2563eb;text-decoration:underline">Ver Plan Profesional</a></div>`;
+    h += `</div>`;
+
+    // Publish button
+    if (restantes > 0) h += `<button onclick="go('publicar')" style="margin-bottom:16px;width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#2563eb;color:#fff;cursor:pointer;font-family:inherit">➕ Publicar nuevo inmueble</button>`;
+
     if (!items.length) {
-      h += '<div style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:8px">📭</div><p style="color:var(--sub)">Aún no has publicado inmuebles</p></div>';
+      h += '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:10px">📭</div><div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">Aún no has publicado inmuebles</div><div style="font-size:13px;color:var(--sub)">Publica tu primer inmueble gratis y llega a cientos de clientes</div></div>';
     }
     items.forEach(p => {
       const rev = p.estado_revision || 'en_revision';
@@ -916,25 +948,54 @@ window.rMisPub = async function() {
       const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
       h += `<div style="display:flex;gap:12px;padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;margin-bottom:8px">`;
       if (thumb) h += `<img src="${thumb}" style="width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0">`;
+      else h += `<div style="width:70px;height:70px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${emo(p.tipo)}</div>`;
       h += `<div style="flex:1"><div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo||''}</div><div style="font-size:12px;color:var(--sub)">📍 ${p.ciudad||''} · ${p.barrio||''}</div>`;
       if (p.precio_arriendo > 0) h += `<div style="font-size:13px;font-weight:700;color:var(--b700)">${fm(p.precio_arriendo)}/mes</div>`;
       if (p.precio_venta > 0) h += `<div style="font-size:13px;font-weight:700">${fm(p.precio_venta)}</div>`;
       h += `<span style="display:inline-block;margin-top:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${revBg};color:${revColor}">${revLabel}</span>`;
       h += `</div></div>`;
     });
+
+    // Empty slot indicator
+    if (items.length > 0 && restantes > 0) {
+      h += `<div style="border:2px dashed var(--brd);border-radius:12px;padding:20px;text-align:center;margin-top:8px">`;
+      h += `<div style="font-size:13px;color:var(--sub)">Espacio disponible: ${restantes} restante${restantes!==1?'s':''}</div>`;
+      h += `<button onclick="go('publicar')" style="margin-top:8px;padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;background:var(--b50);color:var(--b700);cursor:pointer;font-family:inherit">➕ Publicar nuevo</button>`;
+      h += `</div>`;
+    }
+
+    // Plan CTA
+    h += `<div style="margin-top:20px;padding:16px;border-top:1px solid var(--brd);text-align:center"><div style="font-size:13px;color:var(--sub);margin-bottom:8px">¿Necesitas más espacio?</div><button onclick="showPaywall(${items.length},${LIMITE})" style="padding:8px 16px;border:1.5px solid var(--b300);border-radius:8px;font-size:12px;font-weight:700;background:var(--cd);color:var(--b700);cursor:pointer;font-family:inherit">📦 Ver Plan Profesional →</button></div>`;
+
     el.innerHTML = h;
   } catch(e) { el.innerHTML = '<div style="color:var(--red)">Error: ' + e.message + '</div>'; }
 };
 
 // --- Wizard Publicar (propietario) ---
-window.rPublicar = function() {
+window.rPublicar = async function() {
   const el = document.getElementById('publicarc'); if (!el) return;
+  const u = U(); if (!u) return;
   const step = window._ownerStep || 1;
   const d = window._ownerData || {};
   const tipos = ['Apartamento','Casa','Finca','Local','Lote','Oficina','Bodega','Penthouse'];
   const ciudades = ['Pereira','Dosquebradas','Santa Rosa de Cabal','Cerritos','Cartago'];
+  const LIMITE = 3;
 
-  let h = '<div class="card"><div class="cdh"><div class="chl"><div class="chi">🏠</div><div><div class="cht">Publicar Inmueble</div><div class="chsb">Paso ' + step + '/3</div></div></div></div><div class="cdb">';
+  // Check count
+  const { data: existPub } = await SB().from('inmuebles').select('id').eq('captador_id', u.id).eq('origen', 'externo').eq('eliminado', false);
+  const usados = (existPub||[]).length;
+  if (usados >= LIMITE) { window.showPaywall(usados, LIMITE); return; }
+  const numPub = usados + 1;
+  const isLast = numPub === LIMITE;
+
+  let h = '';
+  // Publication count badge
+  h += `<div style="background:${isLast?'var(--goldbg)':'var(--b50)'};border:1.5px solid ${isLast?'var(--yb)':'var(--b200)'};border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">`;
+  h += `<span style="font-size:13px;font-weight:700;color:${isLast?'#92400e':'var(--b700)'}">${isLast?'⚠️ Última publicación gratuita':'📦 Publicación '+numPub+' de '+LIMITE+' gratis'}</span>`;
+  h += `<div style="flex:1;height:5px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.round(numPub/LIMITE*100)}%;background:${isLast?'var(--gold)':'var(--b500)'};border-radius:3px"></div></div>`;
+  h += `</div>`;
+
+  h += '<div class="card"><div class="cdh"><div class="chl"><div class="chi">🏠</div><div><div class="cht">Publicar Inmueble</div><div class="chsb">Paso ' + step + '/3</div></div></div></div><div class="cdb">';
 
   // Steps indicator
   h += '<div class="wiz-steps">';
@@ -1008,8 +1069,9 @@ window.rEspera = function() {
   el.innerHTML = `<div style="font-size:48px;margin-bottom:16px">⏳</div>
     <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:8px">Tu solicitud está en revisión</div>
     <div style="font-size:14px;color:var(--sub);line-height:1.6;margin-bottom:20px">Nuestro equipo revisará tu solicitud y te notificaremos cuando esté aprobada. Esto normalmente toma menos de 24 horas.</div>
+    <a href="#/portafolio" onclick="document.getElementById('lov')&&(document.getElementById('lov').style.display='none')" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:16px">🔍 Explorar inmuebles mientras esperas</a>
     <div style="padding:16px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:12px;margin-bottom:20px">
-      <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:4px">Mientras tanto puedes:</div>
+      <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:4px">¿Preguntas?</div>
       <div style="font-size:13px;color:var(--tx);margin-top:6px">📱 Llamarnos: <a href="tel:+573105922763" style="color:var(--b600);font-weight:700">310 592 2763</a></div>
       <div style="font-size:13px;color:var(--tx);margin-top:4px">💬 WhatsApp: <a href="https://wa.me/573105922763" target="_blank" style="color:#25d366;font-weight:700">Enviar mensaje</a></div>
     </div>
@@ -1043,9 +1105,9 @@ window.rUsers = async function() {
       const act=u2.activo, rol=u2.rol||'asesor';
       const isGestor = u2.es_gestor_arriendos === true;
       const displayRol = isGestor ? 'Gestor Arriendos' : rol;
-      const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='cliente'?'background:var(--b50);color:var(--b500)':u2.tipo_usuario==='propietario'?'background:#065f4615;color:#065f46':'background:var(--b50);color:var(--b700)';
+      const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='cliente'?'background:var(--b50);color:var(--b500)':u2.tipo_usuario==='vendedor_externo'?'background:#065f4615;color:#065f46':'background:var(--b50);color:var(--b700)';
       const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
-      const externoBadge = u2.tipo_usuario==='cliente'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">Cliente</span>':u2.tipo_usuario==='propietario'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">Propietario</span>':'';
+      const externoBadge = u2.tipo_usuario==='cliente'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">Cliente</span>':u2.tipo_usuario==='vendedor_externo'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">Asesor Ext.</span>':'';
       const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
       return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}${externoBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}</div>`;
     }).join('');

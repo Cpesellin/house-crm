@@ -228,7 +228,7 @@ export async function load() {
 
   // External users use loadPublic instead
   const tipoU = U.tipo_usuario || 'interno';
-  if (tipoU === 'cliente' || tipoU === 'propietario' || tipoU === 'pendiente') {
+  if (tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'pendiente') {
     await loadPublic();
     return;
   }

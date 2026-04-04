@@ -277,7 +277,7 @@ function sApp() {
   if (!U) return;
 
   const tipoU = U.tipo_usuario || 'interno';
-  const isExterno = tipoU === 'cliente' || tipoU === 'propietario' || tipoU === 'pendiente';
+  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'pendiente';
 
   document.getElementById('lov').style.display = 'none';
   document.getElementById('mhdr').style.display = 'block';
@@ -292,7 +292,7 @@ function sApp() {
     document.getElementById('stbar').style.display = 'none';
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
-    document.getElementById('murole').textContent = tipoU === 'propietario' ? 'Propietario' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';
+    document.getElementById('murole').textContent = tipoU === 'vendedor_externo' ? 'Asesor Externo' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';
 
     // Replace sidebar menu with external options
     const menuDiv = document.querySelector('#mpnl > div:nth-child(2)');
@@ -303,7 +303,7 @@ function sApp() {
       } else {
         menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
         menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
-        if (tipoU === 'propietario') {
+        if (tipoU === 'vendedor_externo') {
           menuH += '<button class="mi" data-s="mis-pub" onclick="go(\'mis-pub\')"><span class="mic">\u{1F3E0}</span>Mis publicaciones</button>';
           menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar</button>';
         }

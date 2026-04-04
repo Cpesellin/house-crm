@@ -69,7 +69,7 @@ const userStore = {
    * @param {string} [data.usuario]   - Username para login con credenciales
    * @param {string} [data.telefono_contacto] - WhatsApp
    * @param {boolean} [data.es_gestor_arriendos] - Flag de gestor
-   * @param {string} [data.tipo_usuario] - 'interno' | 'cliente' | 'propietario' | 'pendiente'
+   * @param {string} [data.tipo_usuario] - 'interno' | 'cliente' | 'vendedor_externo' | 'pendiente'
    * @param {string} [data.token]     - Token interno (no JWT real)
    */
   set(data) {
@@ -161,7 +161,7 @@ const userStore = {
 
   isExterno() {
     const t = _user?.tipo_usuario;
-    return t === 'cliente' || t === 'propietario' || t === 'pendiente';
+    return t === 'cliente' || t === 'vendedor_externo' || t === 'pendiente';
   },
 
   isCliente() {
@@ -169,7 +169,7 @@ const userStore = {
   },
 
   isPropietario() {
-    return _user?.tipo_usuario === 'propietario';
+    return _user?.tipo_usuario === 'vendedor_externo';
   },
 
   isPendiente() {

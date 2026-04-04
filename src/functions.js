@@ -1490,12 +1490,13 @@ window.showOnboardingEmail = function() {
       <button class="onb-opt" onclick="completeEmailReg('cliente')">
         <div class="onb-icon">🔍</div>
         <div class="onb-title">Busco un inmueble</div>
-        <div class="onb-sub">Quiero arrendar o comprar</div>
+        <div class="onb-sub">Quiero arrendar o comprar una propiedad en Pereira</div>
       </button>
-      <button class="onb-opt" onclick="completeEmailReg('propietario')">
-        <div class="onb-icon">🏠</div>
-        <div class="onb-title">Tengo un inmueble</div>
-        <div class="onb-sub">Quiero publicar para arrendar o vender</div>
+      <button class="onb-opt" onclick="completeEmailReg('vendedor_externo')">
+        <div class="onb-icon">🏢</div>
+        <div class="onb-title">Quiero publicar inmuebles</div>
+        <div class="onb-sub">Soy propietario o inmobiliaria y quiero llegar a más clientes</div>
+        <div style="font-size:10px;color:#065f46;margin-top:4px;font-weight:600">✓ 3 publicaciones gratis</div>
       </button>
       <div style="margin-top:14px;font-size:10px;color:var(--g400)">Gratis. Sin spam. Cancela cuando quieras.</div>
     </div>
@@ -1510,7 +1511,7 @@ window.completeEmailReg = async function(tipo) {
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
 
   try {
-    const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
+    const tipoU = tipo === 'vendedor_externo' ? 'pendiente' : 'cliente';
 
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email: reg.email, nombre: reg.nombre, foto: reg.foto || null,
@@ -1521,9 +1522,9 @@ window.completeEmailReg = async function(tipo) {
     if (error) throw error;
 
     // If propietario request
-    if (tipo === 'propietario') {
-      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'propietario', estado: 'pendiente' });
-      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de propietario', reg.nombre + ' (' + reg.email + ') quiere publicar su inmueble', null, 'admin', null);
+    if (tipo === 'vendedor_externo') {
+      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'vendedor_externo', estado: 'pendiente' });
+      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de asesor externo', reg.nombre + ' (' + reg.email + ') quiere publicar inmuebles', null, 'admin', null);
     } else {
       await window.noti('registro_externo', 'info', '👤 Nuevo cliente registrado', reg.nombre + ' (' + reg.email + ') se registró como cliente', null, 'admin', null);
     }
@@ -1564,12 +1565,13 @@ window.showOnboarding = function(googlePayload) {
       <button class="onb-opt" onclick="selectProfile('cliente','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
         <div class="onb-icon">🔍</div>
         <div class="onb-title">Busco un inmueble</div>
-        <div class="onb-sub">Quiero arrendar o comprar</div>
+        <div class="onb-sub">Quiero arrendar o comprar una propiedad en Pereira</div>
       </button>
-      <button class="onb-opt" onclick="selectProfile('propietario','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
-        <div class="onb-icon">🏠</div>
-        <div class="onb-title">Tengo un inmueble</div>
-        <div class="onb-sub">Quiero publicar para arrendar o vender</div>
+      <button class="onb-opt" onclick="selectProfile('vendedor_externo','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
+        <div class="onb-icon">🏢</div>
+        <div class="onb-title">Quiero publicar inmuebles</div>
+        <div class="onb-sub">Soy propietario o inmobiliaria y quiero llegar a más clientes</div>
+        <div style="font-size:10px;color:#065f46;margin-top:4px;font-weight:600">✓ 3 publicaciones gratis</div>
       </button>
       <div style="margin-top:14px;font-size:10px;color:var(--g400)">Gratis. Sin spam. Cancela cuando quieras.</div>
     </div>
@@ -1585,7 +1587,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     const { data: existingUser } = await SB().from('usuarios').select('*').eq('email', email).single();
     if (existingUser) {
       // Reactivate existing user
-      const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
+      const tipoU = tipo === 'vendedor_externo' ? 'pendiente' : 'cliente';
       await SB().from('usuarios').update({ activo: true, tipo_usuario: tipoU, foto: foto || existingUser.foto }).eq('id', existingUser.id);
       existingUser.activo = true; existingUser.tipo_usuario = tipoU;
       const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: false, tipo_usuario: tipoU, token: 'google:' + email };
@@ -1595,7 +1597,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
       return;
     }
-    const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
+    const tipoU = tipo === 'vendedor_externo' ? 'pendiente' : 'cliente';
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
       rol: 'cliente', tipo_usuario: tipoU, activo: true,
@@ -1604,9 +1606,9 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     if (error) throw error;
 
     // If propietario request, create registro_solicitudes + alert admin
-    if (tipo === 'propietario') {
-      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'propietario', estado: 'pendiente' });
-      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de propietario', nombre + ' (' + email + ') quiere publicar su inmueble', null, 'admin', null);
+    if (tipo === 'vendedor_externo') {
+      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'vendedor_externo', estado: 'pendiente' });
+      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de asesor externo', nombre + ' (' + email + ') quiere publicar inmuebles', null, 'admin', null);
     } else {
       await window.noti('registro_externo', 'info', '👤 Nuevo cliente registrado', nombre + ' (' + email + ') se registró como cliente', null, 'admin', null);
     }
@@ -1648,14 +1650,14 @@ window.toggleFavorito = async function(inmId) {
   } catch(e) { console.error('[toggleFavorito]', e); }
 };
 
-// --- Request upgrade to propietario ---
+// --- Request upgrade to asesor externo ---
 window.requestUpgrade = async function() {
   const u = U(); if (!u) return;
-  const desc = prompt('Describe brevemente tu inmueble (ej: "Tengo un apto de 3 hab en Pinares que quiero arrendar")');
+  const desc = prompt('Cuéntanos sobre ti (ej: "Soy propietario con 2 aptos en Pinares" o "Soy inmobiliaria XYZ")');
   if (!desc) return;
   try {
-    await SB().from('registro_solicitudes').insert({ usuario_id: u.id, tipo_solicitado: 'propietario', estado: 'pendiente', descripcion: desc });
-    await window.noti('registro_externo', 'info', '🏠 Solicitud upgrade a propietario', u.nombre + ' (' + u.email + ') quiere publicar: "' + desc + '"', null, 'admin', null);
+    await SB().from('registro_solicitudes').insert({ usuario_id: u.id, tipo_solicitado: 'vendedor_externo', estado: 'pendiente', descripcion: desc });
+    await window.noti('registro_externo', 'info', '🏠 Solicitud upgrade a asesor externo', u.nombre + ' (' + u.email + ') quiere publicar: "' + desc + '"', null, 'admin', null);
     window.toast('📨 Solicitud enviada. Te notificaremos cuando sea aprobada.');
   } catch(e) { console.error('[requestUpgrade]', e); window.toast('Error: ' + e.message, 'terr'); }
 };
@@ -1692,13 +1694,35 @@ window.ownerSaveStep = function(step) {
   return true;
 };
 
+window.showPaywall = function(usados, limite) {
+  const u = U();
+  const waMsg = encodeURIComponent('Hola, quiero activar el plan profesional para publicar más inmuebles. Mi cuenta: ' + (u?.email||'') + ' (' + (u?.nombre||'') + ')');
+  const html = `<div class="cfdlg" id="paywallDlg" style="display:flex">
+    <div class="cfbox" style="text-align:left;max-width:380px">
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:800;margin-bottom:6px">🏠 Plan Gratuito: ${usados}/${limite} inmuebles</div>
+        <div style="height:6px;background:var(--g200);border-radius:3px;overflow:hidden"><div style="height:100%;width:100%;background:var(--gold);border-radius:3px"></div></div>
+      </div>
+      <div style="font-size:13px;color:var(--sub);margin-bottom:16px;text-align:center">Has alcanzado el límite gratuito. Activa tu plan mensual para publicar más.</div>
+      <div style="background:var(--b50);border:1.5px solid var(--b200);border-radius:10px;padding:16px;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:800;color:var(--b700);margin-bottom:8px">📦 Plan Profesional</div>
+        <div style="font-size:12px;color:var(--sub);line-height:1.6">✓ Publicaciones ilimitadas<br>✓ Tus inmuebles destacados<br>✓ Estadísticas de contacto<br>✓ Soporte prioritario</div>
+      </div>
+      <button style="width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#25d366;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="window.open('https://wa.me/573105922763?text=${waMsg}','_blank')">📲 Contactar para activar</button>
+      <button style="width:100%;padding:10px;border:none;border-radius:8px;font-size:12px;font-weight:600;background:none;color:var(--sub);font-family:inherit;cursor:pointer;margin-top:8px" onclick="document.getElementById('paywallDlg').remove()">← Volver a mis publicaciones</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
 window.ownerPublish = async function() {
   const u = U(); if (!u) return;
   const d = window._ownerData;
   try {
     // Check max 5
     const { data: existing } = await SB().from('inmuebles').select('id').eq('captador_id', u.id).eq('origen', 'externo').eq('eliminado', false);
-    if (existing && existing.length >= 5) { window.toast('Máximo 5 publicaciones permitidas', 'twarn'); return; }
+    const LIMITE_GRATIS = 3;
+    if (existing && existing.length >= LIMITE_GRATIS) { window.showPaywall(existing.length, LIMITE_GRATIS); return; }
 
     // Generate next HOUSE code
     const code = typeof window.nextHouseCode === 'function' ? await window.nextHouseCode() : null;
@@ -1735,7 +1759,7 @@ window.ownerPublish = async function() {
 // --- Admin Approval ---
 window.aprobarRegistro = async function(userId, tipo) {
   try {
-    await SB().from('usuarios').update({ tipo_usuario: tipo || 'propietario' }).eq('id', userId);
+    await SB().from('usuarios').update({ tipo_usuario: tipo || 'vendedor_externo' }).eq('id', userId);
     await SB().from('registro_solicitudes').update({ estado: 'aprobado' }).eq('usuario_id', userId).eq('estado', 'pendiente');
     const { data: usr } = await SB().from('usuarios').select('nombre,email').eq('id', userId).single();
     await window.noti('registro_aprobado', 'verde', '✅ Tu solicitud fue aprobada', 'Ya puedes publicar tus inmuebles en House.', usr?.email, null, null);

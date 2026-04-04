@@ -28,10 +28,10 @@ const ROUTES = {
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
   // External user routes
   'portafolio': { section: 'sec-portafolio', label: 'Explorar',        icon: '\u{1F50D}', auth: false },
-  'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','propietario'] },
-  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','propietario'] },
-  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['propietario'] },
-  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['propietario'] },
+  'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
+  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
+  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo'] },
+  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['vendedor_externo'] },
   'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
 };
 
@@ -74,7 +74,7 @@ function getCurrentRoute() {
   const user = window.userStore?.get();
   const tipo = user?.tipo_usuario || 'interno';
   if (tipo === 'pendiente') return 'espera';
-  if (tipo === 'cliente' || tipo === 'propietario') return 'portafolio';
+  if (tipo === 'cliente' || tipo === 'vendedor_externo') return 'portafolio';
   return 'inv';
 }
 
@@ -100,7 +100,7 @@ function navigateTo(route) {
   let routeCfg = ROUTES[route];
   const user = window.userStore?.get();
   const tipoU = user?.tipo_usuario || 'interno';
-  const isExterno = tipoU === 'cliente' || tipoU === 'propietario' || tipoU === 'pendiente';
+  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'pendiente';
   const defaultRoute = isExterno ? (tipoU === 'pendiente' ? 'espera' : 'portafolio') : 'inv';
 
   // --- Auth guard ---
