@@ -108,6 +108,8 @@ function renderShell(container) {
     <button class="mi" data-s="dash" onclick="go('dash')"><span class="mic">\u{1F4CA}</span>Dashboard</button>
     <button class="mi" data-s="agenda" onclick="go('agenda')" id="magenda" style="display:none"><span class="mic">\u{1F4C5}</span>Agenda<span class="mib" id="magb" style="display:none">0</span></button>
     <button class="mi" data-s="conc" onclick="go('conc')"><span class="mic">\u{1F504}</span>Portales M\u00B2/FR<span class="mib" id="mconcb" style="display:none">0</span></button>
+    <button class="mi" data-s="referir" onclick="go('referir')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>
+    <button class="mi" data-s="mis-referidos" onclick="go('mis-referidos')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>
     <button class="mi" data-s="users" onclick="go('users')" id="musrs" style="display:none"><span class="mic">\u{1F465}</span>Usuarios</button>
     <button class="mi" data-s="perfil" onclick="go('perfil')"><span class="mic">\u2699\uFE0F</span>Mi Perfil</button>
     <button class="mi" data-s="papelera" onclick="go('papelera')" id="mpap" style="display:none"><span class="mic">\u{1F5D1}\uFE0F</span>Papelera</button>
@@ -184,6 +186,8 @@ function renderShell(container) {
 <div class="sec" id="sec-publicar"><div class="fsec" id="publicarc"></div></div>
 <div class="sec" id="sec-espera"><div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center" id="esperac"></div></div>
 <div class="sec" id="sec-mensajes"><div style="max-width:600px;margin:0 auto;padding:10px 14px 60px" id="mensajesc"></div></div>
+<div class="sec" id="sec-referir"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F91D}</div><div><div class="cht">Referir Inmueble</div><div class="chsb">Gana hasta 20% del canon</div></div></div></div><div class="cdb" id="sec-referir-content"></div></div></div></div>
+<div class="sec" id="sec-misref"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="sec-misref-content"></div></div>
 <div class="sec" id="sec-mis-inm"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinmc"></div></div>
 
 <!-- MODAL -->
@@ -330,6 +334,8 @@ function sApp() {
         }
         menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
         menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
+        menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
+        menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
         if (tipoU === 'cliente') {
           menuH += '<button class="mi" onclick="requestUpgrade()" style="color:#065f46"><span class="mic">\u{1F3E0}</span>Publicar inmuebles gratis</button>';
         }

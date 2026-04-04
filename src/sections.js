@@ -1195,4 +1195,169 @@ window.rUsers = async function() {
   el.innerHTML = h;
 };
 
+// ══════════════════════════════════════════════════════════════════
+// REFERRAL PROGRAM — Form Wizard + Pipeline View
+// ══════════════════════════════════════════════════════════════════
+
+window.renderReferralForm = function() {
+  const el = document.getElementById('sec-referir-content'); if (!el) return;
+  const step = window._refStep || 1;
+  const d = window._refData || {};
+  let h = '';
+
+  // Progress indicator
+  h += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-bottom:20px">';
+  h += '<div style="display:flex;align-items:center;gap:4px"><div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;' + (step >= 1 ? 'background:var(--b600);color:#fff' : 'background:var(--g200);color:var(--sub)') + '">1</div><span style="font-size:11px;font-weight:600;color:' + (step >= 1 ? 'var(--b600)' : 'var(--sub)') + '">Propietario</span></div>';
+  h += '<div style="width:40px;height:2px;background:' + (step >= 2 ? 'var(--b600)' : 'var(--g200)') + '"></div>';
+  h += '<div style="display:flex;align-items:center;gap:4px"><div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;' + (step >= 2 ? 'background:var(--b600);color:#fff' : 'background:var(--g200);color:var(--sub)') + '">2</div><span style="font-size:11px;font-weight:600;color:' + (step >= 2 ? 'var(--b600)' : 'var(--sub)') + '">Inmueble</span></div>';
+  h += '</div>';
+
+  if (step === 1) {
+    h += '<div style="text-align:center;margin-bottom:20px"><div style="font-size:40px;margin-bottom:8px">🤝</div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">¿Quién es el propietario?</div></div>';
+    h += '<div class="ff"><label class="ffl">Nombre del propietario <span class="ffr">*</span></label><input class="ffi" id="ref_prop_nom" placeholder="Ana María López" value="' + (d.propNombre || '').replace(/"/g, '&quot;') + '"></div>';
+    h += '<div class="ff"><label class="ffl">Teléfono <span class="ffr">*</span></label><input class="ffi" id="ref_prop_tel" type="tel" placeholder="3001234567" value="' + (d.propTelefono || '') + '"></div>';
+    h += '<div class="ff"><label class="ffl">Email (opcional)</label><input class="ffi" id="ref_prop_email" type="email" placeholder="correo@mail.com" value="' + (d.propEmail || '') + '"></div>';
+    h += '<div class="ff"><label class="ffl">¿Cómo lo encontraste? <span class="ffr">*</span></label><select class="esel" id="ref_como" style="width:100%;font-size:13px;padding:10px"><option value="">— Selecciona —</option>';
+    [['aviso_ventana','🪟 Vi aviso en ventana/balcón'],['aviso_poste','📋 Vi aviso en poste/muro'],['conocido','👤 Conocido, amigo o familiar'],['conjunto','🏢 Soy celador/admin de conjunto'],['redes','📱 Redes sociales'],['otro','💬 Otro']].forEach(o => { h += '<option value="' + o[0] + '"' + (d.comoEncontro === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
+    h += '</select></div>';
+    h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin:16px 0;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:4px">💡 ¿Sabías?</div><div style="font-size:12px;color:#065f46">Un apartamento de $2.500.000/mes te genera <strong>$500.000</strong> de comisión.</div></div>';
+    h += '<button class="bt bp" style="width:100%;padding:14px;font-size:14px" onclick="refNext()">Continuar → Datos del inmueble</button>';
+  } else {
+    h += '<div style="text-align:center;margin-bottom:20px"><div style="font-size:40px;margin-bottom:8px">🏠</div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">¿Cómo es el inmueble?</div><div style="font-size:12px;color:var(--sub);margin-top:6px">No necesitas ser preciso. Nuestro equipo verificará.</div></div>';
+    // Type chips
+    h += '<div class="ff"><label class="ffl">Tipo</label><div style="display:flex;flex-wrap:wrap;gap:6px">';
+    [['Apartamento','🏢'],['Casa','🏡'],['Local','🏪'],['Oficina','💼'],['Bodega','🏭'],['Finca','🌾']].forEach(tp => {
+      const sel = d.tipo === tp[0];
+      h += '<div onclick="window._refData.tipo=\'' + tp[0] + '\';renderReferralForm()" style="padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ' + (sel ? 'var(--b600)' : 'var(--brd)') + ';background:' + (sel ? 'var(--b600)' : 'transparent') + ';color:' + (sel ? '#fff' : 'var(--tx)') + '">' + tp[1] + ' ' + tp[0] + '</div>';
+    });
+    h += '</div></div>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="ff"><label class="ffl">Ciudad</label><input class="ffi" id="ref_ciudad" placeholder="Pereira" value="' + (d.ciudad || '').replace(/"/g, '&quot;') + '"></div><div class="ff"><label class="ffl">Barrio</label><input class="ffi" id="ref_barrio" placeholder="Pinares" value="' + (d.barrio || '').replace(/"/g, '&quot;') + '"></div></div>';
+    h += '<div class="ff"><label class="ffl">Dirección aproximada</label><input class="ffi" id="ref_dir" placeholder="Cerca al centro comercial..." value="' + (d.direccion || '').replace(/"/g, '&quot;') + '"></div>';
+    h += '<div class="ff"><label class="ffl">Canon aproximado (mensual)</label><input class="ffi" id="ref_canon" type="number" inputmode="numeric" placeholder="2500000" value="' + (d.canon || '') + '" oninput="refUpdateCalc()"></div>';
+    h += '<div id="refCalcBox"></div>';
+    h += '<div class="ff"><label class="ffl">Notas</label><textarea class="ffi" id="ref_notas" style="min-height:60px;resize:vertical" placeholder="Ej: El propietario quiere arrendar rápido...">' + (d.notas || '') + '</textarea></div>';
+    h += '<div class="ff"><label class="ffl">📸 Foto del aviso (opcional)</label><div id="refFotoUp"></div>';
+    if (d.fotoUrl) h += '<div style="margin-top:6px"><img src="' + d.fotoUrl + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px"></div>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:16px"><button class="bt bs2" style="flex:1;padding:14px" onclick="refPrev()">← Atrás</button><button class="bt bp" style="flex:2;padding:14px;font-size:14px" onclick="refSubmit()">🤝 Enviar referido</button></div>';
+  }
+  el.innerHTML = h;
+  if (step === 2) {
+    if (typeof window.initFotoUpload === 'function') window.initFotoUpload('refFotoUp', r => { window._refData.fotoUrl = r.url; }, 0);
+    window.refUpdateCalc();
+  }
+};
+
+// --- Pipeline: Mis referidos ---
+window.renderMisReferidos = async function() {
+  const el = document.getElementById('sec-misref-content'); if (!el) return;
+  const u = U(); if (!u) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">Cargando referidos...</div>';
+
+  const isAdmin = u.rol === 'admin' || u.rol === 'oficina';
+  let q = SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,foto,usuario,email,telefono_contacto),inmueble:inmuebles!inmueble_id(id,tipo,ciudad,barrio,precio_arriendo,estado,codigo_house)').order('created_at', { ascending: false });
+  if (!isAdmin) q = q.eq('referidor_id', u.id);
+  if (window._refFiltro && window._refFiltro !== 'todos') q = q.eq('estado', window._refFiltro);
+  const { data: refs, error } = await q;
+  if (error) { el.innerHTML = '<div class="emp"><span class="emp-i">❌</span><h3>Error</h3><p>' + error.message + '</p></div>'; return; }
+  const all = refs || [];
+
+  // Stats
+  const activos = all.filter(r => !['rechazado'].includes(r.estado));
+  const bonos = all.filter(r => r.bono_pagado).reduce((s, r) => s + (r.bono_monto || 0), 0);
+  const comPagadas = all.filter(r => r.comision_pagada).reduce((s, r) => s + (r.comision_monto || 0), 0);
+  const comPend = all.filter(r => r.estado === 'arrendado' && !r.comision_pagada).reduce((s, r) => s + (r.comision_monto || 0), 0);
+  const totalGanado = bonos + comPagadas;
+
+  let h = '';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">' + (isAdmin ? '🤝 Todos los referidos' : '💰 Mis referidos') + '</div></div><button class="bt bp" style="font-size:12px;padding:8px 16px" onclick="go(\'referir\')">+ Referir</button></div>';
+
+  // KPIs
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px">';
+  h += '<div class="dc"><div class="dn2" style="color:var(--b700)">' + activos.length + '</div><div class="dl">Activos</div></div>';
+  h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + all.filter(r => r.estado === 'arrendado').length + '</div><div class="dl">Arrendados</div></div>';
+  h += '<div class="dc" style="border-color:var(--gold)"><div class="dn2" style="color:var(--gold)">' + fm(bonos) + '</div><div class="dl">Bonos</div></div>';
+  h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + fm(totalGanado) + '</div><div class="dl">Total ganado</div></div>';
+  if (isAdmin && comPend > 0) h += '<div class="dc" style="border-color:var(--red)"><div class="dn2" style="color:var(--red)">' + fm(comPend) + '</div><div class="dl">Por pagar</div></div>';
+  h += '</div>';
+
+  // Filters
+  window._refFiltro = window._refFiltro || 'todos';
+  h += '<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
+  [['todos','Todos',all.length],['registrado','Registrados',all.filter(r=>r.estado==='registrado').length],['verificando','Verificando',all.filter(r=>r.estado==='verificando').length],['contrato_firmado','Contrato',all.filter(r=>r.estado==='contrato_firmado').length],['publicado','Publicados',all.filter(r=>r.estado==='publicado').length],['arrendado','Arrendados',all.filter(r=>r.estado==='arrendado').length]].forEach(f => {
+    const act = window._refFiltro === f[0];
+    h += '<div onclick="window._refFiltro=\'' + f[0] + '\';renderMisReferidos()" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:' + (act ? 'var(--b600)' : 'var(--g100)') + ';color:' + (act ? '#fff' : 'var(--sub)') + '">' + f[1] + (f[2] > 0 ? ' (' + f[2] + ')' : '') + '</div>';
+  });
+  h += '</div>';
+
+  const EC = { registrado: { c: 'var(--sub)', l: 'Registrado', i: '📝', s: 1 }, verificando: { c: 'var(--gold)', l: 'Verificando', i: '🔍', s: 2 }, contrato_firmado: { c: 'var(--b600)', l: 'Contrato firmado', i: '📄', s: 3 }, publicado: { c: 'var(--b700)', l: 'Publicado', i: '📢', s: 4 }, arrendado: { c: 'var(--green)', l: '¡Arrendado!', i: '🎉', s: 5 }, rechazado: { c: 'var(--red)', l: 'Rechazado', i: '❌', s: 0 } };
+
+  // Cards
+  all.forEach(r => {
+    const cfg = EC[r.estado] || EC.registrado;
+    const canon = r.inmueble?.precio_arriendo || r.canon_real || r.canon_aproximado || 0;
+    const comNeta = Math.max(0, Math.round(canon * (r.comision_porcentaje || 0.20)) - (r.bono_monto || 50000));
+    const dias = Math.floor((Date.now() - new Date(r.created_at).getTime()) / 86400000);
+
+    h += '<div style="background:var(--cd);border:1px solid var(--brd);border-left:4px solid ' + cfg.c + ';border-radius:0 12px 12px 0;margin-bottom:10px;overflow:hidden">';
+    // Header
+    h += '<div style="padding:14px 14px 8px;display:flex;align-items:flex-start;gap:10px"><div style="font-size:24px">' + (emo(r.tipo_inmueble) || '🏠') + '</div><div style="flex:1;min-width:0">';
+    h += '<div style="font-size:14px;font-weight:700">' + (r.tipo_inmueble || 'Inmueble') + ' · ' + (r.barrio || r.ciudad || '?') + '</div>';
+    h += '<div style="font-size:11px;color:var(--sub)">Canon: ' + (canon > 0 ? fm(canon) + '/mes' : 'Por definir') + ' · Propietario: ' + r.propietario_nombre + '</div>';
+    if (isAdmin && r.referidor) h += '<div style="font-size:10px;color:var(--b600);font-weight:700;margin-top:3px">Referido por: ' + r.referidor.nombre + ' · hace ' + dias + 'd</div>';
+    if (!isAdmin) h += '<div style="font-size:10px;color:var(--sub);margin-top:2px">Hace ' + dias + ' días</div>';
+    h += '</div><span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;background:' + cfg.c + '15;color:' + cfg.c + ';border:1px solid ' + cfg.c + '30">' + cfg.i + ' ' + cfg.l + '</span></div>';
+
+    // Progress bar
+    if (r.estado !== 'rechazado') {
+      h += '<div style="padding:4px 14px 6px;display:flex;gap:3px">';
+      [1,2,3,4,5].forEach(s => { h += '<div style="height:4px;flex:1;border-radius:2px;background:' + (s <= cfg.s ? cfg.c : 'var(--g200)') + '"></div>'; });
+      h += '</div>';
+    }
+    if (r.estado === 'rechazado' && r.motivo_rechazo) h += '<div style="padding:6px 14px;font-size:11px;color:var(--red);background:var(--redbg);margin:0 10px 8px;border-radius:6px">❌ ' + r.motivo_rechazo + '</div>';
+
+    // Comisiones
+    h += '<div style="padding:4px 14px 10px;display:flex;gap:14px;font-size:11px;flex-wrap:wrap">';
+    if (r.bono_pagado) h += '<span style="color:var(--green);font-weight:600">✅ Bono: ' + fm(r.bono_monto) + '</span>';
+    else if (r.estado !== 'rechazado') h += '<span style="color:var(--sub)">⏳ Bono: ' + fm(r.bono_monto || 50000) + ' pendiente</span>';
+    if (r.estado === 'arrendado') h += '<span style="color:' + (r.comision_pagada ? 'var(--green)' : 'var(--gold)') + ';font-weight:600">' + (r.comision_pagada ? '✅' : '⏳') + ' Comisión: ' + fm(comNeta) + (r.comision_pagada ? ' pagada' : ' pendiente') + '</span>';
+    else if (cfg.s >= 3 && r.estado !== 'rechazado' && canon > 0) h += '<span style="color:var(--sub)">💰 Potencial: ' + fm(comNeta) + '</span>';
+    h += '</div>';
+
+    // Referidor action: send proposal
+    if (!isAdmin && ['registrado','verificando','contrato_firmado','publicado'].includes(r.estado)) {
+      h += '<div style="padding:6px 14px 12px;border-top:1px solid var(--g100)"><button class="bt bs2" style="width:100%;font-size:11px;padding:8px" onclick="compartirPropuestaPropietario({propietario_nombre:\'' + (r.propietario_nombre || '').replace(/'/g, "\\'") + '\',propietario_telefono:\'' + (r.propietario_telefono || '') + '\'})">📋 Enviar propuesta al propietario</button></div>';
+    }
+
+    // Admin actions
+    if (isAdmin) {
+      // Notes
+      h += '<div style="padding:6px 14px;border-top:1px solid var(--g100)"><details><summary style="font-size:11px;font-weight:600;color:var(--sub);cursor:pointer">📝 Notas internas' + (r.notas_admin ? ' ✓' : '') + '</summary><textarea class="ffi" id="nota_' + r.id + '" style="margin-top:6px;min-height:50px;font-size:11px">' + (r.notas_admin || '') + '</textarea><button class="bt bs2" style="margin-top:4px;font-size:10px;padding:4px 10px" onclick="guardarNotasAdmin(\'' + r.id + '\',document.getElementById(\'nota_' + r.id + '\').value)">Guardar</button></details></div>';
+
+      if (r.estado === 'registrado') {
+        h += '<div style="padding:8px 14px 12px;border-top:1px solid var(--g100);display:flex;gap:6px"><button style="flex:1;padding:10px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:var(--gold);color:#fff;font-family:inherit;cursor:pointer" onclick="iniciarVerificacion(\'' + r.id + '\').then(()=>renderMisReferidos())">🔍 Verificar</button><button style="padding:10px 14px;border:1.5px solid var(--rb);border-radius:8px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);font-family:inherit;cursor:pointer" onclick="rechazarConMotivo(\'' + r.id + '\').then(()=>renderMisReferidos())">❌</button></div>';
+      }
+      if (r.estado === 'verificando') {
+        h += '<div style="padding:8px 14px 12px;border-top:1px solid var(--g100);display:flex;gap:6px"><button style="flex:1;padding:10px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="aprobarReferido(\'' + r.id + '\').then(()=>renderMisReferidos())">✅ Aprobar + Bono $50K</button><button style="padding:10px 14px;border:1.5px solid var(--rb);border-radius:8px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);font-family:inherit;cursor:pointer" onclick="rechazarConMotivo(\'' + r.id + '\').then(()=>renderMisReferidos())">❌</button></div>';
+      }
+      if (r.estado === 'contrato_firmado' && !r.inmueble_id) {
+        h += '<div style="padding:8px 14px 12px;border-top:1px solid var(--g100)"><div style="font-size:11px;color:var(--sub);margin-bottom:6px">Vincular con inmueble:</div><div style="display:flex;gap:6px"><input class="ffi" id="vinc_' + r.id + '" placeholder="HOUSE-XXX o UUID" style="flex:1;font-size:11px"><button class="bt bp" style="font-size:11px;padding:8px 14px" onclick="vincularPorCodigo(\'' + r.id + '\')">Vincular</button></div></div>';
+      }
+      if (r.estado === 'arrendado' && !r.comision_pagada) {
+        h += '<div style="padding:8px 14px 12px;border-top:1px solid var(--g100)"><button style="width:100%;padding:10px;border:none;border-radius:8px;font-size:12px;font-weight:700;background:var(--b600);color:#fff;font-family:inherit;cursor:pointer" onclick="marcarComisionPagada(\'' + r.id + '\').then(()=>renderMisReferidos())">💰 Marcar comisión pagada (' + fm(comNeta) + ')</button></div>';
+      }
+      // WhatsApp links
+      h += '<div style="padding:4px 14px 12px;display:flex;gap:6px"><a href="https://wa.me/57' + (r.propietario_telefono || '').replace(/^57/, '') + '" target="_blank" style="flex:1;padding:6px;border:1px solid var(--brd);border-radius:6px;font-size:10px;text-align:center;text-decoration:none;color:var(--tx)">📞 Propietario</a>';
+      if (r.referidor?.telefono_contacto) h += '<a href="https://wa.me/57' + (r.referidor.telefono_contacto || '').replace(/^57/, '') + '" target="_blank" style="flex:1;padding:6px;border:1px solid var(--brd);border-radius:6px;font-size:10px;text-align:center;text-decoration:none;color:var(--tx)">📞 Referidor</a>';
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+
+  if (!all.length) {
+    h += '<div class="emp"><span class="emp-i">🤝</span><h3>Aún no tienes referidos</h3><p style="font-size:12px;color:var(--sub)">¿Conoces un inmueble en arriendo? Refierelo y gana hasta 20% del canon.</p><button class="bt bp" style="margin-top:10px" onclick="go(\'referir\')">🤝 Referir mi primer inmueble</button></div>';
+  }
+  el.innerHTML = h;
+};
+
 console.log('[sections] All route renderers registered');

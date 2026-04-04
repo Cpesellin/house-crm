@@ -282,6 +282,16 @@ export async function load() {
       const msgB = document.getElementById('msgBadge');
       if (msgB) { if (count > 0) { msgB.textContent = count; msgB.style.display = 'inline-flex'; } else msgB.style.display = 'none'; }
     } catch(e) {}
+    // Load referidos badge count
+    try {
+      const isAdm = U.rol === 'admin' || U.rol === 'oficina';
+      let refQ = getSupabaseClient().from('referidos').select('id', { count: 'exact', head: true });
+      if (isAdm) refQ = refQ.in('estado', ['registrado', 'verificando']);
+      else refQ = refQ.eq('referidor_id', U.id).not('estado', 'eq', 'rechazado');
+      const { count: refCount } = await refQ;
+      const refB = document.getElementById('mrefb');
+      if (refB) { if (refCount > 0) { refB.textContent = refCount; refB.style.display = 'inline-flex'; } else refB.style.display = 'none'; }
+    } catch(e) {}
     sSt('ok', window.D.length + ' inmuebles');
     render(window.D);
     uSt();
@@ -361,7 +371,18 @@ export async function load() {
     uB('habdg', nl);
     uB('malb', nl);
 
-    // 6. Update UI
+    // 6. Referidos badge
+    try {
+      const isAdmI = U.rol === 'admin' || U.rol === 'oficina';
+      let refQI = SB.from('referidos').select('id', { count: 'exact', head: true });
+      if (isAdmI) refQI = refQI.in('estado', ['registrado', 'verificando']);
+      else refQI = refQI.eq('referidor_id', U.id).not('estado', 'eq', 'rechazado');
+      const { count: refCI } = await refQI;
+      const refBI = document.getElementById('mrefb');
+      if (refBI) { if (refCI > 0) { refBI.textContent = refCI; refBI.style.display = 'inline-flex'; } else refBI.style.display = 'none'; }
+    } catch(e) {}
+
+    // 7. Update UI
     uSt();
     sSt('ok', '✅ ' + D.length + ' propiedades');
     render(D);

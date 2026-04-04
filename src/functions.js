@@ -463,6 +463,10 @@ window.quickMove = async function(id,estado) {
   else if(estado==='Aún Disponible'){await window.noti('cambio_estado','verde','✅ '+capNom+' confirmó: '+desc+' disponible',capNom+' verificó que '+desc+' está disponible.',null,'all',id);}
   else if(FINAL_STATES.includes(estado)){const ico=estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔';await window.noti('cambio_estado','verde',ico+' Cierre: '+desc+' → '+estado,u.nombre+' cerró '+desc+'.',null,'all',id);}
   else{await window.noti('cambio_estado','info','🔄 '+desc+' → '+estado,u.nombre+' movió '+desc+' a '+estado,null,'all',id);}
+  // Auto-register comision if Arrendado and has referido
+  if (estado === 'Arrendado' && typeof window.registrarComisionArrendado === 'function') {
+    try { await window.registrarComisionArrendado(id); } catch(e) { console.error('[quickMove] comision referido:', e); }
+  }
   window.toast('✅ Movido a '+estado);window.load();
 };
 
@@ -1962,6 +1966,145 @@ window.eliminarMiInmueble = async function(id) {
   await window.noti('cambio_estado','info','🗑️ Asesor externo eliminó: '+desc,u.nombre+' eliminó su '+desc,null,'admin',id);
   window.toast('🗑️ Inmueble eliminado · 1 espacio liberado');
   window.renderMisInmueblesExt();
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 23. REFERRAL PROGRAM — Referir arriendos y ganar comisiones
+// ══════════════════════════════════════════════════════════════════
+
+const BONO_BASE = 50000;
+const COMISION_PCT = 0.20;
+
+// --- Crear referido ---
+window.crearReferido = async function(d) {
+  if (!d.propNombre?.trim()) { window.toast('Nombre del propietario obligatorio', 'twarn'); return null; }
+  if (!d.propTelefono?.trim()) { window.toast('Teléfono del propietario obligatorio', 'twarn'); return null; }
+  if (!d.comoEncontro) { window.toast('Selecciona cómo lo encontraste', 'twarn'); return null; }
+  const tel = d.propTelefono.replace(/\D/g, '');
+  if (tel.length < 7) { window.toast('Teléfono inválido', 'twarn'); return null; }
+  // Check duplicate
+  const { data: dup } = await SB().from('referidos').select('id,referidor:usuarios!referidor_id(nombre)').eq('propietario_telefono', tel).not('estado', 'eq', 'rechazado').limit(1);
+  if (dup?.length) { window.toast('Este propietario ya fue referido por ' + (dup[0].referidor?.nombre || 'otro'), 'twarn'); return null; }
+  const u = U();
+  const { data, error } = await SB().from('referidos').insert({
+    referidor_id: u.id, propietario_nombre: d.propNombre.trim(), propietario_telefono: tel,
+    propietario_email: d.propEmail?.trim() || null, tipo_inmueble: d.tipo || null,
+    ciudad: d.ciudad?.trim() || 'Pereira', barrio: d.barrio?.trim() || null,
+    direccion_aprox: d.direccion?.trim() || null, canon_aproximado: d.canon ? parseFloat(d.canon) : null,
+    foto_aviso_url: d.fotoUrl || null, como_encontro: d.comoEncontro, notas: d.notas?.trim() || null,
+    estado: 'registrado', bono_monto: BONO_BASE, comision_porcentaje: COMISION_PCT
+  }).select().single();
+  if (error) { window.toast('Error: ' + error.message, 'terr'); return null; }
+  await window.noti('referido_nuevo', 'amarillo', '🤝 Nuevo referido de ' + u.nombre,
+    u.nombre + ' refirió ' + (d.tipo || 'inmueble') + ' en ' + (d.barrio || d.ciudad || '?') + '. Propietario: ' + d.propNombre + ' (' + tel + ')' + (d.canon ? '. Canon aprox: ' + fm(d.canon) : ''),
+    null, 'admin', null);
+  window.toast('🤝 Referido registrado exitosamente'); return data;
+};
+
+// --- Admin actions ---
+window.iniciarVerificacion = async function(id) {
+  await SB().from('referidos').update({ estado: 'verificando' }).eq('id', id);
+  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(usuario,email),tipo_inmueble,barrio').eq('id', id).single();
+  if (r?.referidor) await window.noti('referido_verificando', 'amarillo', '🔍 Tu referido está siendo verificado', 'Estamos contactando al propietario del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || ''), r.referidor.usuario || r.referidor.email, null, null);
+  window.toast('🔍 En verificación');
+};
+
+window.aprobarReferido = async function(id) {
+  const u = U();
+  await SB().from('referidos').update({ estado: 'contrato_firmado', bono_pagado: true, bono_fecha_pago: new Date().toISOString(), verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
+  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(nombre,usuario,email),tipo_inmueble,barrio,ciudad').eq('id', id).single();
+  if (r?.referidor) await window.noti('referido_aprobado', 'verde', '🎉 ¡Tu referido fue aprobado!', '¡Felicidades ' + r.referidor.nombre + '! Bono de ' + fm(BONO_BASE) + ' confirmado. Te avisaremos cuando se arriende.', r.referidor.usuario || r.referidor.email, null, null);
+  window.toast('✅ Aprobado · Bono ' + fm(BONO_BASE));
+};
+
+window.rechazarConMotivo = async function(id) {
+  const motivo = prompt('¿Por qué se rechaza?'); if (!motivo?.trim()) return;
+  const u = U();
+  await SB().from('referidos').update({ estado: 'rechazado', motivo_rechazo: motivo.trim(), verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
+  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(usuario,email),tipo_inmueble,barrio').eq('id', id).single();
+  if (r?.referidor) await window.noti('referido_rechazado', 'rojo', '❌ Referido no aprobado', 'Tu referido del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || '') + ' no fue aprobado. Motivo: ' + motivo, r.referidor.usuario || r.referidor.email, null, null);
+  window.toast('❌ Rechazado');
+};
+
+window.vincularPorCodigo = async function(refId) {
+  const input = document.getElementById('vinc_' + refId); if (!input) return;
+  const cod = input.value.trim(); if (!cod) { window.toast('Ingresa código', 'twarn'); return; }
+  let q = SB().from('inmuebles').select('id');
+  if (cod.startsWith('HOUSE-')) q = q.eq('codigo_house', cod); else q = q.eq('id', cod);
+  const { data } = await q.single();
+  if (!data) { window.toast('Inmueble no encontrado', 'terr'); return; }
+  await SB().from('referidos').update({ inmueble_id: data.id, estado: 'publicado', publicado_at: new Date().toISOString() }).eq('id', refId);
+  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(nombre,usuario,email),tipo_inmueble,barrio,ciudad').eq('id', refId).single();
+  if (r?.referidor) await window.noti('referido_publicado', 'info', '📢 ¡Tu referido está publicado!', 'El ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || r.ciudad || '') + ' ya está en portales. Te avisaremos cuando se arriende.', r.referidor.usuario || r.referidor.email, null, data.id);
+  window.toast('📋 Vinculado y publicado'); window.renderMisReferidos();
+};
+
+window.marcarComisionPagada = async function(id) {
+  const ok = await window.cfShow('💰', '¿Marcar comisión como pagada?', 'Confirma que ya transferiste al referidor.'); if (!ok) return;
+  await SB().from('referidos').update({ comision_pagada: true, comision_fecha_pago: new Date().toISOString() }).eq('id', id);
+  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(nombre,usuario,email),comision_monto').eq('id', id).single();
+  if (r?.referidor) await window.noti('comision_pagada', 'verde', '✅ ¡Comisión pagada!', 'Tu comisión de ' + fm(r.comision_monto || 0) + ' fue pagada. ¡Gracias por referir!', r.referidor.usuario || r.referidor.email, null, null);
+  window.toast('💰 Comisión pagada');
+};
+
+window.guardarNotasAdmin = async function(id, notas) {
+  await SB().from('referidos').update({ notas_admin: notas }).eq('id', id); window.toast('📝 Nota guardada');
+};
+
+// --- Auto-comision when Arrendado ---
+window.registrarComisionArrendado = async function(inmuebleId) {
+  const { data: ref } = await SB().from('referidos').select('*,referidor:usuarios!referidor_id(nombre,usuario,email)').eq('inmueble_id', inmuebleId).in('estado', ['contrato_firmado', 'publicado']).single();
+  if (!ref) return;
+  const { data: inm } = await SB().from('inmuebles').select('precio_arriendo').eq('id', inmuebleId).single();
+  const canon = inm?.precio_arriendo || ref.canon_real || ref.canon_aproximado || 0;
+  const comNeta = Math.max(0, Math.round(canon * ref.comision_porcentaje) - ref.bono_monto);
+  await SB().from('referidos').update({ estado: 'arrendado', comision_monto: comNeta, canon_real: canon, arrendado_at: new Date().toISOString() }).eq('id', ref.id);
+  const refEmail = ref.referidor?.usuario || ref.referidor?.email || '';
+  await window.noti('comision_lista', 'verde', '💰 ¡Comisión lista! ' + fm(comNeta), '¡Felicidades ' + (ref.referidor?.nombre || '') + '! Canon: ' + fm(canon) + '/mes. Comisión: ' + fm(comNeta), refEmail, null, inmuebleId);
+  await window.noti('comision_pendiente', 'amarillo', '💰 Comisión pendiente: ' + fm(comNeta), 'Referido de ' + (ref.referidor?.nombre || '?') + ' fue arrendado. Pagar ' + fm(comNeta), null, 'admin', inmuebleId);
+};
+
+// --- WhatsApp propuesta al propietario ---
+window.compartirPropuestaPropietario = function(ref) {
+  const tel = ref?.propietario_telefono || ''; const nombre = ref?.propietario_nombre || '';
+  const msg = '¡Hola ' + nombre + '! 👋\n\nTe contacto de parte de *Inmobiliaria House*.\n\n¿Qué hacemos por ti?\n\n✅ *Pago garantizado* cada 10 del mes\n✅ *Estudio completo* al inquilino\n✅ *Contrato legal* con seguro\n✅ *Publicación* en 3 portales\n✅ *Administración total*\n✅ *Solo 10%* del canon\n✅ *Sin costo inicial*\n\n📞 310 592 2763\n🏢 Inmobiliaria House · Pereira';
+  window.open('https://wa.me/57' + tel.replace(/^57/, '') + '?text=' + encodeURIComponent(msg), '_blank');
+};
+
+// --- Referral Form Wizard ---
+window._refData = {}; window._refStep = 1;
+window.refNext = function() {
+  const n = document.getElementById('ref_prop_nom')?.value?.trim();
+  const t = document.getElementById('ref_prop_tel')?.value?.trim();
+  const c = document.getElementById('ref_como')?.value;
+  if (!n) { window.toast('Nombre obligatorio', 'twarn'); return; }
+  if (!t) { window.toast('Teléfono obligatorio', 'twarn'); return; }
+  if (!c) { window.toast('Selecciona cómo lo encontraste', 'twarn'); return; }
+  window._refData.propNombre = n; window._refData.propTelefono = t;
+  window._refData.propEmail = document.getElementById('ref_prop_email')?.value?.trim() || '';
+  window._refData.comoEncontro = c; window._refStep = 2; window.renderReferralForm();
+};
+window.refPrev = function() { window._refStep = 1; window.renderReferralForm(); };
+window.refSubmit = async function() {
+  window._refData.ciudad = document.getElementById('ref_ciudad')?.value?.trim() || 'Pereira';
+  window._refData.barrio = document.getElementById('ref_barrio')?.value?.trim() || '';
+  window._refData.direccion = document.getElementById('ref_dir')?.value?.trim() || '';
+  window._refData.canon = parseFloat(document.getElementById('ref_canon')?.value) || null;
+  window._refData.notas = document.getElementById('ref_notas')?.value?.trim() || '';
+  const result = await window.crearReferido(window._refData);
+  if (result) { window._refData = {}; window._refStep = 1; window.go('mis-referidos'); }
+};
+window.refUpdateCalc = function() {
+  const box = document.getElementById('refCalcBox'); const input = document.getElementById('ref_canon');
+  if (!box || !input) return; const canon = parseFloat(input.value) || 0;
+  if (canon <= 0) { box.innerHTML = ''; return; }
+  const total = Math.round(canon * 0.20); const neto = Math.max(0, total - 50000);
+  box.innerHTML = '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin:8px 0;text-align:center"><div style="font-size:11px;color:#065f46;font-weight:600;margin-bottom:6px">💰 Si se arrienda, ganas:</div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:700;color:#065f46">' + fm(total) + '</div><div style="font-size:11px;color:#065f46;margin-top:4px">' + fm(50000) + ' bono + ' + fm(neto) + ' al arrendar</div></div>';
+};
+
+// --- Referral Banner for portal ---
+window.renderReferralBanner = function() {
+  return '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:16px;padding:24px;margin:20px 14px;text-align:center;color:#fff"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:6px">Gana dinero refiriendo inmuebles</div><div style="font-size:13px;opacity:.9;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un inmueble en arriendo? Refierelo y gana hasta el <strong>20%</strong> del primer canon.</div><div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;margin-bottom:16px">Un apto de $2.5M = $500.000 para ti</div><button onclick="go(\'referir\')" style="padding:14px 32px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤝 Quiero referir un inmueble</button></div>';
 };
 
 console.log('[functions] ✅ All window functions registered');

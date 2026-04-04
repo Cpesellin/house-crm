@@ -35,6 +35,8 @@ const ROUTES = {
   'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
   'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo','propietario'] },
   'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
+  'referir':    { section: 'sec-referir',   label: 'Referir',         icon: '\u{1F91D}', auth: true },
+  'mis-referidos': { section: 'sec-misref', label: 'Mis Referidos',   icon: '\u{1F4B0}', auth: true },
 };
 
 // Map of route keys to the global render functions they should invoke
@@ -59,6 +61,8 @@ const ROUTE_RENDERERS = {
   'espera':     'rEspera',
   'mensajes':   'renderMensajes',
   'mis-inm':    'renderMisInmueblesExt',
+  'referir':    'renderReferralForm',
+  'mis-referidos': 'renderMisReferidos',
 };
 
 // ---------------------------------------------------------------------------
