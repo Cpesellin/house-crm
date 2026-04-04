@@ -1979,15 +1979,15 @@ window.renderHowItWorks = function(startOpen) {
     { icon: '🤝', color: '#3b82f6', title: 'Paso 2 · Habla con el propietario', desc: 'Cuéntale los beneficios: pago garantizado, estudio al inquilino, contrato legal, publicación en 3 portales. Tienes material de apoyo para compartir por WhatsApp.' },
     { icon: '📝', color: '#8b5cf6', title: 'Paso 3 · Registra el referido aquí', desc: 'Llena el formulario con los datos del propietario y del inmueble. ¡Toma menos de 2 minutos!' },
     { icon: '✅', color: '#10b981', title: 'Paso 4 · Nosotros hacemos el resto', desc: 'Nuestro equipo contacta al propietario, visita el inmueble, firma contrato y lo publica en Metrocuadrado, Fincaraíz y Marketplace.' },
-    { icon: '💰', color: '#059669', title: 'Paso 5 · ¡Ganas dinero!', desc: 'Recibes $50.000 de bono al verificar. Y cuando se arriende, ganas hasta el 20% del primer canon. Un apto de $2.5M = $500.000 para ti.' }
+    { icon: '💰', color: '#059669', title: 'Paso 5 · ¡Ganas dinero!', desc: 'Recibes $50.000 de bono cuando la inmobiliaria aprueba el inmueble. Y cuando se firme contrato con el inquilino, ganas el resto de la comisión del 10% del primer canon. Un apto de $2.5M = $250.000 para ti.' }
   ];
   let timeline = steps.map((s, i) => '<div style="position:relative;padding-bottom:' + (i < 4 ? '24px' : '0') + '">' + (i < 4 ? '<div style="position:absolute;left:-20px;top:28px;bottom:0;width:2px;background:var(--g200)"></div>' : '') + '<div style="position:absolute;left:-28px;top:2px;width:20px;height:20px;border-radius:50%;background:' + s.color + ';display:flex;align-items:center;justify-content:center;font-size:10px">' + s.icon + '</div><div style="font-size:13px;font-weight:700;color:' + s.color + ';margin-bottom:3px">' + s.title + '</div><div style="font-size:12px;color:var(--sub);line-height:1.5">' + s.desc + '</div></div>').join('');
-  return '<details' + open + ' style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📖</span> ¿Cómo funciona el programa de referidos?</summary><div style="padding:0 16px 20px"><div style="position:relative;padding-left:32px;margin-top:8px">' + timeline + '</div><div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-top:20px;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:8px">💡 Ejemplo real</div><div style="font-size:12px;color:#065f46;line-height:1.6">Don Carlos, celador de un conjunto, refirió <strong>3 apartamentos</strong> en un mes. Canon promedio: $1.800.000. <strong>Ganó $1.080.000</strong> sin salir de su trabajo.</div></div></div></details>';
+  return '<details' + open + ' style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📖</span> ¿Cómo funciona el programa de referidos?</summary><div style="padding:0 16px 20px"><div style="position:relative;padding-left:32px;margin-top:8px">' + timeline + '</div><div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-top:20px;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:8px">💡 Ejemplo real</div><div style="font-size:12px;color:#065f46;line-height:1.6">Don Carlos, celador de un conjunto, refirió <strong>3 apartamentos</strong> en un mes. Canon promedio: $1.800.000. <strong>Ganó $540.000</strong> sin salir de su trabajo.</div></div></div></details>';
 };
 
 window.renderReferralPolicies = function() {
   return '<details style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📋</span> Políticas y condiciones</summary><div style="padding:0 16px 20px;font-size:12px;color:var(--sub);line-height:1.7">' +
-    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-top:12px;margin-bottom:6px">💰 Sobre la comisión</div><div style="padding-left:12px;border-left:2px solid var(--b600);margin-bottom:14px">• Hasta el <strong>20% del primer canon</strong> mensual.<br>• Dos partes: <strong>$50.000 de bono</strong> al verificar + <strong>el resto</strong> al arrendar.<br>• Se calcula sobre el canon final pactado.</div>' +
+    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-top:12px;margin-bottom:6px">💰 Sobre la comisión</div><div style="padding-left:12px;border-left:2px solid var(--b600);margin-bottom:14px">• Hasta el <strong>10% del primer canon</strong> mensual.<br>• Dos partes: <strong>$50.000 de bono</strong> al ser aprobado por la inmobiliaria + <strong>el resto</strong> al firmar contrato con inquilino.<br>• Se calcula sobre el canon final pactado.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">✅ Requisitos</div><div style="padding-left:12px;border-left:2px solid var(--green);margin-bottom:14px">• Propietario dispuesto a firmar contrato de administración.<br>• Inmueble en condiciones habitables.<br>• Sin contrato vigente con otra inmobiliaria.<br>• Datos reales y verificables.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">⏰ Tiempos</div><div style="padding-left:12px;border-left:2px solid var(--gold);margin-bottom:14px">• Verificación: máximo <strong>5 días hábiles</strong>.<br>• Bono: se confirma al verificar.<br>• Comisión final: dentro de <strong>15 días</strong> después del arriendo.<br>• Pago: transferencia o efectivo.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">📌 General</div><div style="padding-left:12px;border-left:2px solid var(--sub);margin-bottom:14px">• Cualquier persona mayor de edad puede participar.<br>• No hay límite de referidos.<br>• Si uno es rechazado, puedes referir otro diferente.</div>' +
@@ -2011,7 +2011,7 @@ window.renderReferralStrategies = function() {
   ];
   let sh = strats.map(s => '<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="width:24px;height:24px;border-radius:50%;background:' + s.c + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">' + s.n + '</div><div style="font-size:13px;font-weight:700">' + s.t + '</div></div><div style="padding-left:32px;font-size:12px;color:var(--sub);line-height:1.5"><div style="background:var(--cd2);border-radius:8px;padding:10px;font-style:italic;margin-bottom:6px">' + s.q + '</div><div style="font-size:11px"><strong>Tip:</strong> ' + s.tip + '</div></div></div>').join('');
   let oh = objs.map(o => '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:2px">' + o[0] + '</div><div style="font-size:11px;color:var(--sub);padding-left:12px;border-left:2px solid var(--green);line-height:1.5">' + o[1] + '</div></div>').join('');
-  return '<details style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">🎯</span> Guía: estrategias para cerrar más referidos</summary><div style="padding:0 16px 20px"><div style="margin-top:12px">' + sh + '</div><div style="margin-top:12px;margin-bottom:12px"><div style="font-size:13px;font-weight:700;margin-bottom:8px">💬 Objeciones comunes</div>' + oh + '</div><div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;padding:16px;text-align:center"><div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px">🏆 Meta del mes</div><div style="font-size:12px;color:#78350f">3 referidos cerrados = entre <strong>$500K y $1.5M</strong> de ingreso extra.</div></div></div></details>';
+  return '<details style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">🎯</span> Guía: estrategias para cerrar más referidos</summary><div style="padding:0 16px 20px"><div style="margin-top:12px">' + sh + '</div><div style="margin-top:12px;margin-bottom:12px"><div style="font-size:13px;font-weight:700;margin-bottom:8px">💬 Objeciones comunes</div>' + oh + '</div><div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;padding:16px;text-align:center"><div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px">🏆 Meta del mes</div><div style="font-size:12px;color:#78350f">3 referidos cerrados = entre <strong>$200K y $750K</strong> de ingreso extra.</div></div></div></details>';
 };
 
 window.renderCommissionDashboard = function(stats, refs) {
@@ -2071,7 +2071,7 @@ window.renderReferralInbox = async function(containerId) {
 // ══════════════════════════════════════════════════════════════════
 
 const BONO_BASE = 50000;
-const COMISION_PCT = 0.20;
+const COMISION_PCT = 0.10;
 
 // --- Crear referido ---
 window.crearReferido = async function(d) {
@@ -2165,7 +2165,22 @@ window.registrarComisionArrendado = async function(inmuebleId) {
 // --- WhatsApp propuesta al propietario ---
 window.compartirPropuestaPropietario = function(ref) {
   const tel = ref?.propietario_telefono || ''; const nombre = ref?.propietario_nombre || '';
-  const msg = '¡Hola ' + nombre + '! 👋\n\nTe contacto de parte de *Inmobiliaria House*.\n\n¿Qué hacemos por ti?\n\n✅ *Pago garantizado* cada 10 del mes\n✅ *Estudio completo* al inquilino\n✅ *Contrato legal* con seguro\n✅ *Publicación* en 3 portales\n✅ *Administración total*\n✅ *Solo 10%* del canon\n✅ *Sin costo inicial*\n\n📞 310 592 2763\n🏢 Inmobiliaria House · Pereira';
+  const msg = '¡Hola ' + nombre + '! 👋\n\n' +
+    'Te contacto de parte de *Inmobiliaria House*, especialistas en administración de inmuebles en arriendo en Pereira y el Eje Cafetero.\n\n' +
+    '¿Te gustaría arrendar tu inmueble *sin preocuparte por nada*? Nosotros nos encargamos de todo:\n\n' +
+    '✅ *Pago garantizado* cada 10 del mes, sin excusas\n' +
+    '✅ *Estudio completo al inquilino*: DataCrédito, referencias laborales, antecedentes\n' +
+    '✅ *Contrato legal blindado* con seguro de arrendamiento y póliza de daños\n' +
+    '✅ *Publicación profesional* en Metrocuadrado, Fincaraíz y Facebook Marketplace\n' +
+    '✅ *Administración integral*: cobros, mantenimiento, reclamos, todo\n' +
+    '✅ *Solo el 10%* del canon. Tú recibes el *90% sin mover un dedo*\n' +
+    '✅ *Sin costo inicial*. No pagas nada hasta que esté arrendado\n' +
+    '✅ *Si hay problemas* con el inquilino, nosotros lo manejamos: cobro jurídico, desalojo, todo\n\n' +
+    '🏢 Visítanos: *Cl. 14 #14-09, Pereira*\n' +
+    '📞 Llámanos: *310 592 2763*\n' +
+    '🌐 Conoce más: https://inmobiliariahouse.com.co\n\n' +
+    '💡 *Miles de propietarios en Pereira ya confían en nosotros.* ¿Quieres que te visitemos sin compromiso para conocer tu inmueble?\n\n' +
+    '_Inmobiliaria House · Asesores Inmobiliarios · Pereira, Colombia_';
   window.open('https://wa.me/57' + tel.replace(/^57/, '') + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
@@ -2196,13 +2211,13 @@ window.refUpdateCalc = function() {
   const box = document.getElementById('refCalcBox'); const input = document.getElementById('ref_canon');
   if (!box || !input) return; const canon = parseFloat(input.value) || 0;
   if (canon <= 0) { box.innerHTML = ''; return; }
-  const total = Math.round(canon * 0.20); const neto = Math.max(0, total - 50000);
-  box.innerHTML = '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin:8px 0;text-align:center"><div style="font-size:11px;color:#065f46;font-weight:600;margin-bottom:6px">💰 Si se arrienda, ganas:</div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:700;color:#065f46">' + fm(total) + '</div><div style="font-size:11px;color:#065f46;margin-top:4px">' + fm(50000) + ' bono + ' + fm(neto) + ' al arrendar</div></div>';
+  const total = Math.round(canon * 0.10); const neto = Math.max(0, total - 50000);
+  box.innerHTML = '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin:8px 0;text-align:center"><div style="font-size:11px;color:#065f46;font-weight:600;margin-bottom:6px">💰 Si se arrienda, ganas:</div><div style="font-family:Fraunces,serif;font-size:28px;font-weight:700;color:#065f46">' + fm(total) + '</div><div style="font-size:11px;color:#065f46;margin-top:4px">' + fm(50000) + ' al aprobar + ' + fm(neto) + ' al firmar contrato con inquilino</div></div>';
 };
 
 // --- Referral Banner for portal ---
 window.renderReferralBanner = function() {
-  return '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:16px;padding:24px;margin:20px 14px;text-align:center;color:#fff"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:6px">Gana dinero refiriendo inmuebles</div><div style="font-size:13px;opacity:.9;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un inmueble en arriendo? Refierelo y gana hasta el <strong>20%</strong> del primer canon.</div><div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;margin-bottom:16px">Un apto de $2.5M = $500.000 para ti</div><button onclick="go(\'referir\')" style="padding:14px 32px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤝 Quiero referir un inmueble</button></div>';
+  return '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:16px;padding:24px;margin:20px 14px;text-align:center;color:#fff"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:6px">Gana dinero refiriendo inmuebles</div><div style="font-size:13px;opacity:.9;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un inmueble en arriendo? Refierelo y gana hasta el <strong>10%</strong> del primer canon.</div><div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;margin-bottom:16px">Un apto de $2.5M = $250.000 para ti</div><button onclick="go(\'referir\')" style="padding:14px 32px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤝 Quiero referir un inmueble</button></div>';
 };
 
 console.log('[functions] ✅ All window functions registered');

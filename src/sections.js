@@ -1236,12 +1236,12 @@ function _renderRefWizard() {
   if (step === 1) {
     h += '<div style="text-align:center;margin-bottom:20px"><div style="font-size:40px;margin-bottom:8px">🤝</div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">¿Quién es el propietario?</div></div>';
     h += '<div class="ff"><label class="ffl">Nombre del propietario <span class="ffr">*</span></label><input class="ffi" id="ref_prop_nom" placeholder="Ana María López" value="' + (d.propNombre || '').replace(/"/g, '&quot;') + '"></div>';
-    h += '<div class="ff"><label class="ffl">Teléfono <span class="ffr">*</span></label><input class="ffi" id="ref_prop_tel" type="tel" placeholder="3001234567" value="' + (d.propTelefono || '') + '"></div>';
+    h += '<div class="ff"><label class="ffl">Teléfono del propietario <span class="ffr">*</span></label><div style="display:flex;gap:6px;align-items:center"><span style="font-size:13px;font-weight:700;color:var(--sub);padding:8px 10px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:8px 0 0 8px;white-space:nowrap">+57</span><input class="ffi" id="ref_prop_tel" type="tel" placeholder="300 123 4567" style="border-radius:0 8px 8px 0;flex:1" value="' + (d.propTelefono || '') + '"></div></div>';
     h += '<div class="ff"><label class="ffl">Email (opcional)</label><input class="ffi" id="ref_prop_email" type="email" placeholder="correo@mail.com" value="' + (d.propEmail || '') + '"></div>';
     h += '<div class="ff"><label class="ffl">¿Cómo lo encontraste? <span class="ffr">*</span></label><select class="esel" id="ref_como" style="width:100%;font-size:13px;padding:10px"><option value="">— Selecciona —</option>';
-    [['aviso_ventana','🪟 Vi aviso en ventana/balcón'],['aviso_poste','📋 Vi aviso en poste/muro'],['conocido','👤 Conocido, amigo o familiar'],['conjunto','🏢 Soy celador/admin de conjunto'],['redes','📱 Redes sociales'],['otro','💬 Otro']].forEach(o => { h += '<option value="' + o[0] + '"' + (d.comoEncontro === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
+    [['aviso_ventana','🪟 Vi aviso en ventana/balcón'],['aviso_poste','📋 Vi aviso en poste/muro'],['conocido','👤 Conocido, amigo o familiar'],['administrador','🏢 Soy administrador de conjunto/edificio'],['celador','🛡️ Soy celador/vigilante de conjunto'],['redes','📱 Redes sociales'],['otro','💬 Otro']].forEach(o => { h += '<option value="' + o[0] + '"' + (d.comoEncontro === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
     h += '</select></div>';
-    h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin:16px 0;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:4px">💡 ¿Sabías?</div><div style="font-size:12px;color:#065f46">Un apartamento de $2.500.000/mes te genera <strong>$500.000</strong> de comisión.</div></div>';
+    h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin:16px 0;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:4px">💡 ¿Sabías?</div><div style="font-size:12px;color:#065f46">Un apartamento de $2.500.000/mes te genera <strong>$250.000</strong> de comisión.</div></div>';
     h += '<button class="bt bp" style="width:100%;padding:14px;font-size:14px" onclick="refNext()">Continuar → Datos del inmueble</button>';
   } else {
     h += '<div style="text-align:center;margin-bottom:20px"><div style="font-size:40px;margin-bottom:8px">🏠</div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">¿Cómo es el inmueble?</div><div style="font-size:12px;color:var(--sub);margin-top:6px">No necesitas ser preciso. Nuestro equipo verificará.</div></div>';
@@ -1321,7 +1321,7 @@ window.renderMisReferidos = async function() {
   all.forEach(r => {
     const cfg = EC[r.estado] || EC.registrado;
     const canon = r.inmueble?.precio_arriendo || r.canon_real || r.canon_aproximado || 0;
-    const comNeta = Math.max(0, Math.round(canon * (r.comision_porcentaje || 0.20)) - (r.bono_monto || 50000));
+    const comNeta = Math.max(0, Math.round(canon * (r.comision_porcentaje || 0.10)) - (r.bono_monto || 50000));
     const dias = Math.floor((Date.now() - new Date(r.created_at).getTime()) / 86400000);
 
     h += '<div style="background:var(--cd);border:1px solid var(--brd);border-left:4px solid ' + cfg.c + ';border-radius:0 12px 12px 0;margin-bottom:10px;overflow:hidden">';
@@ -1380,7 +1380,7 @@ window.renderMisReferidos = async function() {
   });
 
   if (!all.length) {
-    h += '<div class="emp"><span class="emp-i">🤝</span><h3>Aún no tienes referidos</h3><p style="font-size:12px;color:var(--sub)">¿Conoces un inmueble en arriendo? Refierelo y gana hasta 20% del canon.</p><button class="bt bp" style="margin-top:10px" onclick="go(\'referir\')">🤝 Referir mi primer inmueble</button></div>';
+    h += '<div class="emp"><span class="emp-i">🤝</span><h3>Aún no tienes referidos</h3><p style="font-size:12px;color:var(--sub)">¿Conoces un inmueble en arriendo? Refierelo y gana hasta 10% del canon.</p><button class="bt bp" style="margin-top:10px" onclick="go(\'referir\')">🤝 Referir mi primer inmueble</button></div>';
   }
 
   // Desplegables informativos al final
