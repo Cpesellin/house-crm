@@ -290,6 +290,9 @@ function sApp() {
 
   document.getElementById('lov').style.display = 'none';
   document.getElementById('mhdr').style.display = 'block';
+  // Clear visitor portal to prevent duplicate headers
+  const _pc = document.getElementById('portafolioc');
+  if (_pc) _pc.innerHTML = '';
 
   if (U.foto) {
     document.getElementById('ufoto').src = U.foto;
@@ -375,6 +378,9 @@ export async function initApp(container) {
       console.log('[App] Auth event:', event);
       if (event === AUTH_EVENTS.LOGIN_SUCCESS || event === AUTH_EVENTS.SESSION_RESTORED) {
         sApp();
+        // Clear visitor portal content to prevent duplicate headers
+        const portafolioc = document.getElementById('portafolioc');
+        if (portafolioc) portafolioc.innerHTML = '';
         if (typeof window.load === 'function') window.load();
       }
       if (event === AUTH_EVENTS.LOGIN_ERROR) {

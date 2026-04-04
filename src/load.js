@@ -256,9 +256,9 @@ export async function load() {
     try {
       await getSupabaseClient().from('usuarios').update({ tipo_usuario: 'vendedor_externo' }).eq('id', U.id);
       window.userStore.update({ tipo_usuario: 'vendedor_externo' });
-      U.tipo_usuario = 'vendedor_externo';
-      // Refresh menu
-      if (typeof window.sApp === 'function') window.sApp();
+      // Force full reload to rebuild menu and route correctly
+      location.reload();
+      return;
     } catch(e) { console.error('[load] auto-upgrade failed:', e); }
   }
 
