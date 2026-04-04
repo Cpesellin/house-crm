@@ -674,17 +674,18 @@ window.rPortafolio = async function() {
   const tipoU = u?.tipo_usuario || null;
   const isVisitor = !u;
   const isExterno = tipoU === 'cliente' || tipoU === 'propietario';
+  const loginUrl = window.location.origin + '/';
 
   // Load data
   let data = window.PUB;
   if (!data || !data.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+    el.innerHTML = '<div style="text-align:center;padding:60px;background:#fff"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
     data = await window.loadPublic(isVisitor ? 10 : null);
   }
 
   // Load favorites for logged-in users
   let favIds = new Set();
-  if (u && (isExterno)) {
+  if (u && isExterno) {
     try {
       const { data: favs } = await SB().from('favoritos').select('inmueble_id').eq('usuario_id', u.id);
       if (favs) favs.forEach(f => favIds.add(f.inmueble_id));
@@ -703,22 +704,34 @@ window.rPortafolio = async function() {
 
   let h = '';
 
-  // Header
-  h += `<div class="pub-hdr-ext">
-    <img src="/img/logo.png" class="pub-logo" onerror="this.style.display='none'">
-    <span class="pub-brand">House</span>
-    <input class="pub-search" placeholder="🔍 Buscar zona, tipo..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()">
-    <div style="flex:1"></div>`;
+  // ── HEADER (white, clean) ──
+  h += `<div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.04)">`;
+  h += `<img src="/img/logo.png" style="height:28px" onerror="this.style.display='none'">`;
+  h += `<span style="font-family:Fraunces,serif;font-size:15px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>`;
+  h += `<div style="flex:1"></div>`;
   if (u && isExterno) {
     h += `<button onclick="go('favoritos')" style="background:none;border:none;font-size:18px;cursor:pointer" title="Favoritos">❤️</button>`;
-    h += `<button onclick="omenu()" style="background:none;border:none;font-size:18px;cursor:pointer;margin-left:6px">☰</button>`;
-  } else if (!u) {
-    h += `<a href="#/" onclick="location.reload()" style="padding:6px 14px;background:var(--b600);color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Ingresar</a>`;
+    h += `<button onclick="omenu()" style="background:none;border:none;font-size:20px;cursor:pointer;margin-left:4px;color:#1e293b">☰</button>`;
+  } else if (isVisitor) {
+    h += `<a href="${loginUrl}" style="padding:8px 16px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">Ingresar</a>`;
+    h += `<a href="${loginUrl}" style="padding:8px 16px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin-left:6px;white-space:nowrap">Registrarse gratis</a>`;
   }
   h += `</div>`;
 
-  // Filters
-  h += `<div class="pub-filters">`;
+  // ── HERO BANNER (visitor only) ──
+  if (isVisitor) {
+    h += `<div style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:28px 20px;text-align:center;color:#fff">`;
+    h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;line-height:1.2;margin-bottom:6px">Encuentra tu hogar ideal en Pereira</div>`;
+    h += `<div style="font-size:13px;opacity:.85;margin-bottom:16px">Arriendos, ventas y más en el Eje Cafetero</div>`;
+    h += `<div style="max-width:400px;margin:0 auto"><input class="pub-search" placeholder="🔍 Buscar zona, tipo de inmueble..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()" style="background:#fff;color:#1e293b;border:none;padding:12px 16px;border-radius:10px;width:100%;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>`;
+    h += `</div>`;
+  } else {
+    // Logged-in search bar
+    h += `<div style="padding:10px 14px;background:#fff"><input class="pub-search" placeholder="🔍 Buscar zona, tipo..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px"></div>`;
+  }
+
+  // ── FILTERS ──
+  h += `<div style="padding:8px 14px;background:#fff;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap">`;
   h += `<button class="pub-chip${f.neg==='arriendo'?' act':''}" data-g="neg" onclick="pubFilter('neg','arriendo',this)">🔑 Arriendo</button>`;
   h += `<button class="pub-chip${f.neg==='venta'?' act':''}" data-g="neg" onclick="pubFilter('neg','venta',this)">💰 Venta</button>`;
   h += `<button class="pub-chip${f.tipo==='apartamento'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','apartamento',this)">🏢 Apto</button>`;
@@ -727,11 +740,11 @@ window.rPortafolio = async function() {
   h += `<button class="pub-chip${f.tipo==='local'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','local',this)">🏪 Local</button>`;
   h += `</div>`;
 
-  // Results count
-  h += `<div style="padding:4px 14px;font-size:12px;color:var(--sub);font-weight:700">${filtered.length} inmueble${filtered.length!==1?'s':''}</div>`;
+  // ── RESULTS COUNT ──
+  h += `<div style="padding:6px 14px;font-size:12px;color:#64748b;font-weight:700;background:#fff">${filtered.length} inmueble${filtered.length!==1?'s':''} disponible${filtered.length!==1?'s':''}</div>`;
 
-  // Grid
-  h += `<div class="pub-grid">`;
+  // ── GRID ──
+  h += `<div style="padding:8px 14px;background:#f8fafc;min-height:60vh"><div class="pub-grid">`;
   filtered.forEach(p => {
     const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
     const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
@@ -746,35 +759,58 @@ window.rPortafolio = async function() {
     if (p.banos) specs.push('🚿 '+p.banos);
     if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
 
-    h += `<div class="pub-card">`;
+    // Card click: visitors get gate, logged-in go to detail
+    const cardClick = isVisitor ? `onclick="event.preventDefault();document.getElementById('pub-gate')&&document.getElementById('pub-gate').scrollIntoView({behavior:'smooth'})"` : '';
+
+    h += `<div class="pub-card" style="background:#fff" ${cardClick}>`;
     if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
-    else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:var(--g100)">${emo(p.tipo)}</div>`;
+    else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:#f1f5f9">${emo(p.tipo)}</div>`;
     if (u && isExterno) h += `<button class="pub-fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${isFav?'❤️':'🤍'}</button>`;
     if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏠 Propietario</span>`;
     h += `<div class="pub-card-body">`;
     h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
     h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
     h += `<div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
-    if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}<span style="font-size:12px;font-weight:500;color:var(--sub)">/mes</span></div>`;
+    if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}<span style="font-size:12px;font-weight:500;color:#94a3b8">/mes</span></div>`;
     if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
     if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
     h += `</div>`;
-    h += `<div class="pub-card-actions">`;
-    h += `<a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado en este inmueble: '+previewUrl)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a>`;
-    h += `<a class="pub-card-det" href="${previewUrl}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a>`;
-    h += `</div></div>`;
+    // Actions: visitors see gate text instead of buttons
+    if (isVisitor) {
+      h += `<div style="padding:10px 14px 12px;text-align:center"><div style="font-size:11px;color:#2563eb;font-weight:700;cursor:pointer" onclick="event.stopPropagation();document.getElementById('pub-gate').scrollIntoView({behavior:'smooth'})">🔒 Regístrate gratis para ver más</div></div>`;
+    } else {
+      h += `<div class="pub-card-actions">`;
+      h += `<a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado en este inmueble: '+previewUrl)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a>`;
+      h += `<a class="pub-card-det" href="${previewUrl}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a>`;
+      h += `</div>`;
+    }
+    h += `</div>`;
   });
-  h += `</div>`;
+  h += `</div></div>`;
 
-  // Visitor limit wall
-  if (isVisitor && data.length >= 10) {
-    h += `<div class="pub-limit-wall">
-      <div style="font-size:24px;margin-bottom:8px">🔒</div>
-      <div style="font-size:16px;font-weight:800;color:var(--tx);margin-bottom:4px">¿Quieres ver más?</div>
-      <div style="font-size:13px;color:var(--sub);margin-bottom:14px">Regístrate gratis para explorar todo el inventario</div>
-      <a href="#/" onclick="location.reload()" style="display:inline-block;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">Registrarse gratis</a>
-    </div>`;
+  // ── REGISTRATION GATE (visitor) ──
+  if (isVisitor) {
+    h += `<div id="pub-gate" style="background:#fff;padding:32px 20px;text-align:center;border-top:1px solid #e2e8f0">`;
+    h += `<div style="font-size:32px;margin-bottom:10px">🔓</div>`;
+    h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:#1e293b;margin-bottom:6px">Regístrate gratis para ver todo</div>`;
+    h += `<div style="font-size:14px;color:#64748b;max-width:360px;margin:0 auto 20px;line-height:1.5">Accede al inventario completo, guarda favoritos y recibe alertas de nuevos inmuebles.</div>`;
+    h += `<a href="${loginUrl}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">Registrarse gratis</a>`;
+    h += `<div style="margin-top:10px"><a href="${loginUrl}" style="font-size:13px;color:#64748b;text-decoration:underline">Ya tengo cuenta → Ingresar</a></div>`;
+    h += `</div>`;
+
+    // ── OWNER CTA (visitor) ──
+    h += `<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);padding:28px 20px;text-align:center;border-top:1px solid #bbf7d0">`;
+    h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
+    h += `<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#065f46;margin-bottom:6px">¿Tienes un inmueble?</div>`;
+    h += `<div style="font-size:14px;color:#064e3b;max-width:340px;margin:0 auto 16px;line-height:1.5">Suscríbete y publica gratis. Te conectamos con cientos de compradores e inversionistas en el Eje Cafetero.</div>`;
+    h += `<a href="${loginUrl}" style="display:inline-block;padding:12px 28px;background:#065f46;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(6,95,70,.25)">Publicar mi inmueble gratis</a>`;
+    h += `</div>`;
   }
+
+  // ── FOOTER ──
+  h += `<div style="background:#fff;padding:20px;text-align:center;border-top:1px solid #e2e8f0">`;
+  h += `<div style="font-size:11px;color:#94a3b8">© ${new Date().getFullYear()} House · Asesores Inmobiliarios · Pereira, Colombia</div>`;
+  h += `</div>`;
 
   el.innerHTML = h;
 };
