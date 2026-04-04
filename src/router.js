@@ -28,12 +28,12 @@ const ROUTES = {
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
-  'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
-  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
-  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo'] },
-  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['vendedor_externo'] },
-  'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['cliente','vendedor_externo'] },
-  'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo'] },
+  'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
+  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
+  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo','propietario'] },
+  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['vendedor_externo','propietario'] },
+  'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
+  'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo','propietario'] },
   'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
 };
 
@@ -78,7 +78,7 @@ function getCurrentRoute() {
   const user = window.userStore?.get();
   const tipo = user?.tipo_usuario || 'interno';
   if (tipo === 'pendiente') return 'espera';
-  if (tipo === 'cliente' || tipo === 'vendedor_externo') return 'portafolio';
+  if (tipo === 'cliente' || tipo === 'vendedor_externo' || tipo === 'propietario') return 'portafolio';
   return 'inv';
 }
 
@@ -104,7 +104,7 @@ function navigateTo(route) {
   let routeCfg = ROUTES[route];
   const user = window.userStore?.get();
   const tipoU = user?.tipo_usuario || 'interno';
-  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'pendiente';
+  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'propietario' || tipoU === 'pendiente';
   const defaultRoute = isExterno ? (tipoU === 'pendiente' ? 'espera' : 'portafolio') : 'inv';
 
   // --- Auth guard ---
@@ -185,7 +185,7 @@ function navigateTo(route) {
   // --- Call the route's render function (window global) ---
   let rendererName = ROUTE_RENDERERS[route];
   // For logged-in external users on portafolio, use rInv (CRM inventory renderer)
-  if (route === 'portafolio' && user && (user.tipo_usuario === 'cliente' || user.tipo_usuario === 'vendedor_externo')) {
+  if (route === 'portafolio' && user && (user.tipo_usuario === 'cliente' || user.tipo_usuario === 'vendedor_externo' || user.tipo_usuario === 'propietario')) {
     rendererName = 'rInv';
   }
   if (rendererName && typeof window[rendererName] === 'function') {

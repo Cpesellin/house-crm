@@ -1844,7 +1844,7 @@ window.abrirChat = async function(receptorId, inmuebleId) {
 
 function _renderChatModal(receptor,inmueble,msgs,convId) {
   const u=U();const rNom=receptor?.nombre||'?';const rFoto=receptor?.foto;const rIni=rNom[0].toUpperCase();
-  const rTipo=receptor?.tipo_usuario==='vendedor_externo'?'Asesor externo':'Cliente';
+  const rTipo=(receptor?.tipo_usuario==='vendedor_externo'||receptor?.tipo_usuario==='propietario')?'Asesor externo':'Cliente';
   // Inmueble header
   let inmH='';
   if(inmueble){const ft=inmueble.fotos?.length?[...inmueble.fotos].sort((a,b)=>a.orden-b.orden)[0].url_thumb:'';

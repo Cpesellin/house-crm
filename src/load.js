@@ -105,7 +105,7 @@ function render(ls) {
   const U = window.userStore?.get();
   const SOL = window.SOL || [];
   const _tipoU = U?.tipo_usuario || 'interno';
-  const _isExt = _tipoU === 'cliente' || _tipoU === 'vendedor_externo';
+  const _isExt = _tipoU === 'cliente' || _tipoU === 'vendedor_externo' || _tipoU === 'propietario';
 
   if (!ls || !ls.length) {
     el.innerHTML = '<div class="emp"><span class="emp-i">🔍</span><h3>Sin resultados</h3></div>';
@@ -252,12 +252,12 @@ export async function load() {
 
   // External users: load public data into window.D so CRM UI works
   const tipoU = U.tipo_usuario || 'interno';
-  if (tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'pendiente') {
+  if (tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'propietario' || tipoU === 'pendiente') {
     const pubData = await loadPublic();
     // Feed public data into the same window.D used by CRM render/filters
     window.D = pubData || [];
     window.D.forEach(p => { p._dias = diasDesde(p.fecha_estado || p.created_at); });
-    window.MIS = tipoU === 'vendedor_externo' ? window.D.filter(p => p.captador_id === U.id) : [];
+    window.MIS = (tipoU === 'vendedor_externo' || tipoU === 'propietario') ? window.D.filter(p => p.captador_id === U.id) : [];
     window.SOL = []; window.USERS = []; window.ALS = []; window.ALU = [];
     // Load favorites
     try {

@@ -161,7 +161,7 @@ const userStore = {
 
   isExterno() {
     const t = _user?.tipo_usuario;
-    return t === 'cliente' || t === 'vendedor_externo' || t === 'pendiente';
+    return t === 'cliente' || t === 'vendedor_externo' || t === 'propietario' || t === 'pendiente';
   },
 
   isCliente() {
@@ -169,7 +169,7 @@ const userStore = {
   },
 
   isPropietario() {
-    return _user?.tipo_usuario === 'vendedor_externo';
+    return _user?.tipo_usuario === 'vendedor_externo' || _user?.tipo_usuario === 'propietario';
   },
 
   isPendiente() {
