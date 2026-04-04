@@ -426,9 +426,12 @@ window.eliminarInm = async function(id) {
 };
 
 window.restaurarInm = async function(id) {
-  await SB().from('inmuebles').update({eliminado:false,eliminado_por:null,fecha_eliminacion:null}).eq('id',id);
-  await SB().from('historial').insert({inmueble_id:id,usuario_id:U().id,accion:'restauracion'});
-  window.toast('✅ Restaurado');window.rPapelera();window.load();
+  try {
+    const{error}=await SB().from('inmuebles').update({eliminado:false,eliminado_por:null,fecha_eliminacion:null}).eq('id',id);
+    if(error){console.error('[restaurar]',error);window.toast('Error: '+error.message,'terr');return;}
+    await SB().from('historial').insert({inmueble_id:id,usuario_id:U().id,accion:'restauracion'});
+    window.toast('✅ Restaurado');window.rPapelera();window.load();
+  }catch(e){console.error('[restaurar]',e);window.toast('Error: '+e.message,'terr');}
 };
 
 window.reasignarCap = async function(id) {
@@ -644,9 +647,11 @@ window.guardarEvt = async function() {
   const horaFin=document.getElementById('agHoraFin').value||null;
   if(!fecha||!hora){window.toast('Fecha y hora obligatorias','twarn');return;}
   const u=U();
-  const{error}=await SB().from('agenda').insert({usuario_id:u.id,inmueble_id:inmId,fecha,hora_inicio:hora,hora_fin:horaFin,tipo_evento:tipo,es_personal:isPers,titulo:document.getElementById('agTitulo').value||null,cliente_nombre:isPers?null:(document.getElementById('agCliente').value||null),cliente_telefono:isPers?null:(document.getElementById('agCliTel').value||null),estado:'pendiente'});
-  if(!error){document.getElementById('agModal').remove();window.toast('📅 Agendado');window.rAgenda();}
-  else window.toast('Error','terr');
+  try {
+    const{error}=await SB().from('agenda').insert({usuario_id:u.id,inmueble_id:inmId||null,fecha,hora_inicio:hora,hora_fin:horaFin,tipo_evento:tipo,es_personal:isPers,titulo:document.getElementById('agTitulo').value||null,cliente_nombre:isPers?null:(document.getElementById('agCliente').value||null),cliente_telefono:isPers?null:(document.getElementById('agCliTel').value||null),estado:'pendiente'});
+    if(error){console.error('[guardarEvt]',error);window.toast('Error: '+error.message,'terr');return;}
+    document.getElementById('agModal').remove();window.toast('📅 Agendado');window.rAgenda();
+  }catch(e){console.error('[guardarEvt]',e);window.toast('Error: '+e.message,'terr');}
 };
 
 window.cancelarEvt = async function(id) {
@@ -664,7 +669,11 @@ window.newUsr = function() {
 };
 
 window.tUsr = async function(id,cur) {
-  await SB().from('usuarios').update({activo:!cur}).eq('id',id);window.toast(!cur?'Activado':'Bloqueado');window.rUsers();
+  try {
+    const{error}=await SB().from('usuarios').update({activo:!cur}).eq('id',id);
+    if(error){console.error('[tUsr]',error);window.toast('Error: '+error.message,'terr');return;}
+    window.toast(!cur?'✅ Activado':'🔒 Bloqueado');window.rUsers();
+  }catch(e){console.error('[tUsr]',e);window.toast('Error: '+e.message,'terr');}
 };
 
 window.savePerfil = async function() {
