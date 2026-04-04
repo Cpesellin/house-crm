@@ -1978,8 +1978,8 @@ window.renderHowItWorks = function(startOpen) {
     { icon: '👀', color: '#f59e0b', title: 'Paso 1 · Encuentra un inmueble', desc: 'Camina por tu barrio, tu conjunto, o pregunta a conocidos. ¿Ves un aviso de "Se Arrienda"? ¡Ese es tu negocio!' },
     { icon: '🤝', color: '#3b82f6', title: 'Paso 2 · Habla con el propietario', desc: 'Cuéntale los beneficios: pago garantizado, estudio al inquilino, contrato legal, publicación en 3 portales. Tienes material de apoyo para compartir por WhatsApp.' },
     { icon: '📝', color: '#8b5cf6', title: 'Paso 3 · Registra el referido aquí', desc: 'Llena el formulario con los datos del propietario y del inmueble. ¡Toma menos de 2 minutos!' },
-    { icon: '✅', color: '#10b981', title: 'Paso 4 · Nosotros hacemos el resto', desc: 'Nuestro equipo contacta al propietario, visita el inmueble, firma contrato y lo publica en Metrocuadrado, Fincaraíz y Marketplace.' },
-    { icon: '💰', color: '#059669', title: 'Paso 5 · ¡Ganas dinero!', desc: 'Recibes $50.000 de bono cuando la inmobiliaria aprueba el inmueble. Y cuando se firme contrato con el inquilino, ganas el resto de la comisión del 10% del primer canon. Un apto de $2.5M = $250.000 para ti.' }
+    { icon: '📄', color: '#10b981', title: 'Paso 4 · Contrato con propietario = $50.000 para ti', desc: 'Si el propietario acepta nuestros servicios y firma contrato de administración con la inmobiliaria, recibes tu bono de $50.000. ¡Así de simple!' },
+    { icon: '💰', color: '#059669', title: 'Paso 5 · Inmueble arrendado = el resto de tu comisión', desc: 'Cuando consigamos inquilino y se firme contrato de arriendo, ganas el resto de la comisión (10% del canon - bono). Un apto de $2.5M = $250.000 para ti.' }
   ];
   let timeline = steps.map((s, i) => '<div style="position:relative;padding-bottom:' + (i < 4 ? '24px' : '0') + '">' + (i < 4 ? '<div style="position:absolute;left:-20px;top:28px;bottom:0;width:2px;background:var(--g200)"></div>' : '') + '<div style="position:absolute;left:-28px;top:2px;width:20px;height:20px;border-radius:50%;background:' + s.color + ';display:flex;align-items:center;justify-content:center;font-size:10px">' + s.icon + '</div><div style="font-size:13px;font-weight:700;color:' + s.color + ';margin-bottom:3px">' + s.title + '</div><div style="font-size:12px;color:var(--sub);line-height:1.5">' + s.desc + '</div></div>').join('');
   return '<details' + open + ' style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📖</span> ¿Cómo funciona el programa de referidos?</summary><div style="padding:0 16px 20px"><div style="position:relative;padding-left:32px;margin-top:8px">' + timeline + '</div><div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-top:20px;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:8px">💡 Ejemplo real</div><div style="font-size:12px;color:#065f46;line-height:1.6">Don Carlos, celador de un conjunto, refirió <strong>3 apartamentos</strong> en un mes. Canon promedio: $1.800.000. <strong>Ganó $540.000</strong> sin salir de su trabajo.</div></div></div></details>';
@@ -1987,7 +1987,7 @@ window.renderHowItWorks = function(startOpen) {
 
 window.renderReferralPolicies = function() {
   return '<details style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📋</span> Políticas y condiciones</summary><div style="padding:0 16px 20px;font-size:12px;color:var(--sub);line-height:1.7">' +
-    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-top:12px;margin-bottom:6px">💰 Sobre la comisión</div><div style="padding-left:12px;border-left:2px solid var(--b600);margin-bottom:14px">• Hasta el <strong>10% del primer canon</strong> mensual.<br>• Dos partes: <strong>$50.000 de bono</strong> al ser aprobado por la inmobiliaria + <strong>el resto</strong> al firmar contrato con inquilino.<br>• Se calcula sobre el canon final pactado.</div>' +
+    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-top:12px;margin-bottom:6px">💰 Sobre la comisión</div><div style="padding-left:12px;border-left:2px solid var(--b600);margin-bottom:14px">• Hasta el <strong>10% del primer canon</strong> mensual.<br>• Dos partes: <strong>$50.000 de bono</strong> cuando el propietario firma contrato con la inmobiliaria + <strong>el resto</strong> cuando se arriende el inmueble (contrato con inquilino).<br>• Se calcula sobre el canon final pactado.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">✅ Requisitos</div><div style="padding-left:12px;border-left:2px solid var(--green);margin-bottom:14px">• Propietario dispuesto a firmar contrato de administración.<br>• Inmueble en condiciones habitables.<br>• Sin contrato vigente con otra inmobiliaria.<br>• Datos reales y verificables.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">⏰ Tiempos</div><div style="padding-left:12px;border-left:2px solid var(--gold);margin-bottom:14px">• Verificación: máximo <strong>5 días hábiles</strong>.<br>• Bono: se confirma al verificar.<br>• Comisión final: dentro de <strong>15 días</strong> después del arriendo.<br>• Pago: transferencia o efectivo.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">📌 General</div><div style="padding-left:12px;border-left:2px solid var(--sub);margin-bottom:14px">• Cualquier persona mayor de edad puede participar.<br>• No hay límite de referidos.<br>• Si uno es rechazado, puedes referir otro diferente.</div>' +
@@ -2027,10 +2027,11 @@ window.renderCommissionDashboard = function(stats, refs) {
   if (enProc > 0) h += '<div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px 16px;font-size:11px">🔄 ' + enProc + ' en proceso' + (potencial > 0 ? ' · Potencial: <strong>' + fm(potencial) + '</strong>' : '') + '</div>';
   h += '</div></div>';
   h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">';
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--b600)">' + stats.total + '</div><div style="font-size:9px;color:var(--sub)">Total</div></div>';
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--gold)">' + enProc + '</div><div style="font-size:9px;color:var(--sub)">En proceso</div></div>';
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--green)">' + stats.arrendados + '</div><div style="font-size:9px;color:var(--sub)">Arrendados</div></div>';
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--red)">' + stats.rechazados + '</div><div style="font-size:9px;color:var(--sub)">Rechazados</div></div>';
+  const _f = (e) => "window._refFiltro='" + e + "';renderMisReferidos()";
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('todos') + '"><div style="font-size:18px;font-weight:700;color:var(--b600)">' + stats.total + '</div><div style="font-size:9px;color:var(--sub)">Total</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('registrado') + '"><div style="font-size:18px;font-weight:700;color:var(--gold)">' + enProc + '</div><div style="font-size:9px;color:var(--sub)">En proceso</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('arrendado') + '"><div style="font-size:18px;font-weight:700;color:var(--green)">' + stats.arrendados + '</div><div style="font-size:9px;color:var(--sub)">Arrendados</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('rechazado') + '"><div style="font-size:18px;font-weight:700;color:var(--red)">' + stats.rechazados + '</div><div style="font-size:9px;color:var(--sub)">Rechazados</div></div>';
   h += '</div>';
   return h;
 };
@@ -2115,13 +2116,44 @@ window.aprobarReferido = async function(id) {
   window.toast('✅ Aprobado · Bono ' + fm(BONO_BASE));
 };
 
-window.rechazarConMotivo = async function(id) {
-  const motivo = prompt('¿Por qué se rechaza?'); if (!motivo?.trim()) return;
+window.rechazarConMotivo = function(id) {
+  const motivos = [
+    'Propietario no está interesado en inmobiliaria',
+    'Propietario ya tiene contrato con otra inmobiliaria',
+    'Inmueble ya está arrendado',
+    'Inmueble no cumple condiciones para arriendo',
+    'Datos falsos o teléfono inexistente',
+    'Inmueble ya está en el inventario de House',
+    'Propietario tiene impedimentos legales',
+    'No se pudo contactar al propietario',
+    'Otro motivo'
+  ];
+  const html = '<div class="cfdlg" id="rechazoDlg" style="display:flex"><div class="cfbox" style="text-align:left;max-width:400px">' +
+    '<div style="font-size:16px;font-weight:800;text-align:center;margin-bottom:12px">❌ Rechazar referido</div>' +
+    '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Motivo del rechazo</label>' +
+    '<select id="rechazoMotivo" class="esel" style="width:100%;font-size:12px;padding:8px"><option value="">— Selecciona el motivo —</option>' +
+    motivos.map(m => '<option value="' + m + '">' + m + '</option>').join('') + '</select></div>' +
+    '<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Nota adicional (opcional)</label>' +
+    '<textarea id="rechazoNota" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;font-family:inherit;min-height:40px;resize:none;color:var(--tx);background:var(--cd)" placeholder="Detalle adicional..."></textarea></div>' +
+    '<div style="display:flex;gap:8px"><button style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:1.5px solid var(--brd);background:var(--cd);color:var(--tx);font-family:inherit;cursor:pointer" onclick="document.getElementById(\'rechazoDlg\').remove()">Cancelar</button>' +
+    '<button style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:none;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="_ejecutarRechazo(\'' + id + '\')">❌ Rechazar</button></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  return new Promise(r => { window._rechazoResolve = r; });
+};
+
+window._ejecutarRechazo = async function(id) {
+  const motivo = document.getElementById('rechazoMotivo')?.value;
+  if (!motivo) { window.toast('Selecciona un motivo', 'twarn'); return; }
+  const nota = document.getElementById('rechazoNota')?.value?.trim();
+  const motivoFinal = motivo + (nota ? ' — ' + nota : '');
+  document.getElementById('rechazoDlg')?.remove();
   const u = U();
-  await SB().from('referidos').update({ estado: 'rechazado', motivo_rechazo: motivo.trim(), verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
+  await SB().from('referidos').update({ estado: 'rechazado', motivo_rechazo: motivoFinal, verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
   const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(usuario,email),tipo_inmueble,barrio').eq('id', id).single();
-  if (r?.referidor) await window.noti('referido_rechazado', 'rojo', '❌ Referido no aprobado', 'Tu referido del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || '') + ' no fue aprobado. Motivo: ' + motivo, r.referidor.usuario || r.referidor.email, null, null);
+  if (r?.referidor) await window.noti('referido_rechazado', 'rojo', '❌ Referido no aprobado', 'Tu referido del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || '') + ' no fue aprobado. Motivo: ' + motivoFinal, r.referidor.usuario || r.referidor.email, null, null);
   window.toast('❌ Rechazado');
+  if (window._rechazoResolve) { window._rechazoResolve(); window._rechazoResolve = null; }
+  if (typeof window.renderMisReferidos === 'function') window.renderMisReferidos();
 };
 
 window.vincularPorCodigo = async function(refId) {

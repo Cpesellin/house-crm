@@ -1297,25 +1297,27 @@ window.renderMisReferidos = async function() {
   if (!isAdmin && typeof window.renderCommissionDashboard === 'function') {
     h += window.renderCommissionDashboard({ total: all.length, activos: activos.length, arrendados: all.filter(r => r.estado === 'arrendado').length, rechazados: all.filter(r => r.estado === 'rechazado').length, bonosCobrados: bonos, comisionesCobradas: comPagadas, comisionesPendientes: comPend, totalGanado: totalGanado }, all);
   } else {
+    const _rc = (estado) => "window._refFiltro='" + estado + "';renderMisReferidos()";
     h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px">';
-    h += '<div class="dc"><div class="dn2" style="color:var(--b700)">' + activos.length + '</div><div class="dl">Activos</div></div>';
-    h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + all.filter(r => r.estado === 'arrendado').length + '</div><div class="dl">Arrendados</div></div>';
-    h += '<div class="dc" style="border-color:var(--gold)"><div class="dn2" style="color:var(--gold)">' + fm(bonos) + '</div><div class="dl">Bonos</div></div>';
-    h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + fm(totalGanado) + '</div><div class="dl">Total ganado</div></div>';
-    if (comPend > 0) h += '<div class="dc" style="border-color:var(--red)"><div class="dn2" style="color:var(--red)">' + fm(comPend) + '</div><div class="dl">Por pagar</div></div>';
+    h += '<div class="dc" style="cursor:pointer" onclick="' + _rc('todos') + '"><div class="dn2" style="color:var(--b700)">' + all.length + '</div><div class="dl">Total</div></div>';
+    h += '<div class="dc" style="cursor:pointer;border-color:var(--gold)" onclick="' + _rc('registrado') + '"><div class="dn2" style="color:var(--gold)">' + all.filter(r => r.estado === 'registrado').length + '</div><div class="dl">En proceso</div></div>';
+    h += '<div class="dc" style="cursor:pointer;border-color:var(--b600)" onclick="' + _rc('contrato_firmado') + '"><div class="dn2" style="color:var(--b600)">' + all.filter(r => r.estado === 'contrato_firmado').length + '</div><div class="dl">Contrato</div></div>';
+    h += '<div class="dc" style="cursor:pointer;border-color:var(--green)" onclick="' + _rc('arrendado') + '"><div class="dn2" style="color:var(--green)">' + all.filter(r => r.estado === 'arrendado').length + '</div><div class="dl">Arrendados</div></div>';
+    h += '<div class="dc" style="cursor:pointer;border-color:var(--red)" onclick="' + _rc('rechazado') + '"><div class="dn2" style="color:var(--red)">' + all.filter(r => r.estado === 'rechazado').length + '</div><div class="dl">Rechazados</div></div>';
+    if (comPend > 0) h += '<div class="dc" style="border-color:var(--gold)"><div class="dn2" style="color:var(--gold)">' + fm(comPend) + '</div><div class="dl">Por pagar</div></div>';
     h += '</div>';
   }
 
   // Filters
   window._refFiltro = window._refFiltro || 'todos';
   h += '<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
-  [['todos','Todos',all.length],['registrado','Registrados',all.filter(r=>r.estado==='registrado').length],['verificando','Verificando',all.filter(r=>r.estado==='verificando').length],['contrato_firmado','Contrato',all.filter(r=>r.estado==='contrato_firmado').length],['publicado','Publicados',all.filter(r=>r.estado==='publicado').length],['arrendado','Arrendados',all.filter(r=>r.estado==='arrendado').length]].forEach(f => {
+  [['todos','Todos',all.length],['registrado','En proceso',all.filter(r=>r.estado==='registrado').length],['verificando','Verificando',all.filter(r=>r.estado==='verificando').length],['contrato_firmado','Contrato prop.',all.filter(r=>r.estado==='contrato_firmado').length],['publicado','Publicados',all.filter(r=>r.estado==='publicado').length],['arrendado','Arrendados',all.filter(r=>r.estado==='arrendado').length],['rechazado','Rechazados',all.filter(r=>r.estado==='rechazado').length]].forEach(f => {
     const act = window._refFiltro === f[0];
     h += '<div onclick="window._refFiltro=\'' + f[0] + '\';renderMisReferidos()" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:' + (act ? 'var(--b600)' : 'var(--g100)') + ';color:' + (act ? '#fff' : 'var(--sub)') + '">' + f[1] + (f[2] > 0 ? ' (' + f[2] + ')' : '') + '</div>';
   });
   h += '</div>';
 
-  const EC = { registrado: { c: 'var(--sub)', l: 'Registrado', i: '📝', s: 1 }, verificando: { c: 'var(--gold)', l: 'Verificando', i: '🔍', s: 2 }, contrato_firmado: { c: 'var(--b600)', l: 'Contrato firmado', i: '📄', s: 3 }, publicado: { c: 'var(--b700)', l: 'Publicado', i: '📢', s: 4 }, arrendado: { c: 'var(--green)', l: '¡Arrendado!', i: '🎉', s: 5 }, rechazado: { c: 'var(--red)', l: 'Rechazado', i: '❌', s: 0 } };
+  const EC = { registrado: { c: 'var(--sub)', l: 'En proceso', i: '📝', s: 1 }, verificando: { c: 'var(--gold)', l: 'Verificando', i: '🔍', s: 2 }, contrato_firmado: { c: 'var(--b600)', l: 'Contrato propietario', i: '📄', s: 3 }, publicado: { c: 'var(--b700)', l: 'Publicado', i: '📢', s: 4 }, arrendado: { c: 'var(--green)', l: '¡Arrendado!', i: '🎉', s: 5 }, rechazado: { c: 'var(--red)', l: 'Rechazado', i: '❌', s: 0 } };
 
   // Cards
   all.forEach(r => {
