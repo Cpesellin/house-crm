@@ -1470,7 +1470,7 @@ window.renderPropietariosLanding = function() {
   h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);padding:24px 16px;border-top:1px solid #bbf7d0">';
   h += '<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;text-align:center;color:#065f46;margin-bottom:12px">¿Por qué confiar en nosotros?</div>';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
-  [['📅','12+ años','de experiencia'],['🏠','500+','inmuebles administrados'],['👥','Equipo','profesional dedicado'],['📍','Pereira','presencia local']].forEach(t => {
+  [['📅','14+ años','de experiencia'],['🏠','500+','inmuebles administrados'],['👥','Equipo','profesional dedicado'],['📍','Pereira','presencia local']].forEach(t => {
     h += '<div style="text-align:center;padding:14px;background:#fff;border-radius:12px;border:1px solid #bbf7d0"><div style="font-size:20px;margin-bottom:4px">' + t[0] + '</div><div style="font-size:16px;font-weight:800;color:#065f46">' + t[1] + '</div><div style="font-size:10px;color:#065f46">' + t[2] + '</div></div>';
   });
   h += '</div></div>';
@@ -1488,8 +1488,11 @@ window.renderPropietariosLanding = function() {
   h += '</div>';
 
   // Footer
-  h += '<div style="padding:16px;text-align:center;background:var(--cd2);border-top:1px solid var(--brd)">';
-  h += '<div style="font-size:11px;color:var(--sub)">© ' + new Date().getFullYear() + ' Inmobiliaria House · Asesores Inmobiliarios · Pereira, Colombia</div>';
+  h += '<div style="padding:20px 16px;text-align:center;background:var(--cd2);border-top:1px solid var(--brd)">';
+  h += '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Inmobiliaria House</div>';
+  h += '<div style="font-size:12px;color:var(--sub);margin-bottom:2px">📍 Cl. 14 #14-09, Pereira, Risaralda</div>';
+  h += '<div style="font-size:12px;color:var(--sub);margin-bottom:8px">📞 310 592 2763</div>';
+  h += '<div style="font-size:10px;color:var(--g400)">© ' + new Date().getFullYear() + ' Inmobiliaria House · Asesores Inmobiliarios · Pereira, Colombia</div>';
   h += '</div>';
 
   el.innerHTML = h;

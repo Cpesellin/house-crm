@@ -2166,19 +2166,19 @@ window.registrarComisionArrendado = async function(inmuebleId) {
 window.compartirPropuestaPropietario = function(ref) {
   const tel = ref?.propietario_telefono || ''; const nombre = ref?.propietario_nombre || '';
   const msg = '¡Hola ' + nombre + '! 👋\n\n' +
-    'Te contacto de parte de *Inmobiliaria House*.\n\n' +
-    '¿Quieres arrendar tu inmueble *sin preocuparte por nada*?\n\n' +
-    '✅ *Pago garantizado* cada 10 del mes\n' +
-    '✅ *Estudio completo* al inquilino\n' +
-    '✅ *Contrato notariado* con seguro y póliza\n' +
-    '✅ *Publicación* en 3 portales\n' +
-    '✅ *Administración total*\n' +
-    '✅ *Solo 10%* del canon\n' +
-    '✅ *Sin costo inicial*\n\n' +
-    '👉 Conoce todas nuestras garantías:\n' +
-    'https://inmobiliariahouse.com.co/#/propietarios\n\n' +
-    '📍 Cl. 14 #14-09, Pereira\n' +
-    '📞 310 592 2763';
+    'Te contacto de parte de *Inmobiliaria House*, especialistas en administración de inmuebles en arriendo en Pereira y el Eje Cafetero.\n\n' +
+    '¿Te gustaría arrendar tu inmueble *sin preocuparte por nada*? Nosotros nos encargamos de todo:\n\n' +
+    '✅ *Pago garantizado* cada 10 del mes, sin excusas\n' +
+    '✅ *Estudio completo al inquilino*: DataCrédito, referencias laborales, antecedentes\n' +
+    '✅ *Contrato legal blindado* con seguro de arrendamiento y póliza de daños\n' +
+    '✅ *Publicación profesional* en Metrocuadrado, Fincaraíz y Facebook Marketplace\n' +
+    '✅ *Administración integral*: cobros, mantenimiento, reclamos, todo\n' +
+    '✅ *Solo el 10%* del canon. Tú recibes el *90% sin mover un dedo*\n' +
+    '✅ *Sin costo inicial*. No pagas nada hasta que esté arrendado\n' +
+    '✅ *Si hay problemas* con el inquilino, nosotros lo manejamos: cobro jurídico, desalojo, todo\n\n' +
+    '🏢 Visítanos: *Cl. 14 #14-09, Pereira*\n' +
+    '📞 Llámanos: *310 592 2763*\n' +
+    '🌐 Conoce más: https://inmobiliariahouse.com.co/#/propietarios';
   window.open('https://wa.me/57' + tel.replace(/^57/, '') + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
