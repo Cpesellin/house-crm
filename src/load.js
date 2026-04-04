@@ -176,9 +176,19 @@ function render(ls) {
     const capTel2 = p.captador?.telefono_contacto || '573105922763';
     const capNom2 = p.captador?.nombre || 'House';
     const prevUrl2 = (p.codigo_house || '') ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(p.codigo_house) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
-    let actBtn = _isExt
-      ? `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`
-      : `<button class="vb" onclick="oM&&oM(${idx})">Ver detalle →</button>`;
+    const esInmExterno = p.origen === 'externo';
+    let actBtn;
+    if (_isExt) {
+      if (esInmExterno) {
+        // Inmueble de asesor externo → botón Contactar (chat)
+        actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1;background:var(--b600);color:#fff;border:none" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">💬 Contactar</button><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
+      } else {
+        // Inmueble del equipo interno → botón WhatsApp
+        actBtn = `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
+      }
+    } else {
+      actBtn = `<button class="vb" onclick="oM&&oM(${idx})">Ver detalle →</button>`;
+    }
 
     // Portales badge (hidden for external users)
     const ptbHtml = _isExt ? '' : `<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>`;
@@ -215,7 +225,7 @@ export async function loadPublic(limit) {
   const SB = getSupabaseClient();
   try {
     let q = SB.from('inmuebles')
-      .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,codigo_house,descripcion_cliente,estado,origen,captador:usuarios!captador_id(nombre,telefono_contacto),fotos(url,url_thumb,orden)')
+      .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,codigo_house,descripcion_cliente,estado,origen,captador_id,estado_revision,created_at,captador:usuarios!captador_id(id,nombre,telefono_contacto),fotos(url,url_thumb,orden)')
       .eq('eliminado', false)
       .eq('estado_revision', 'aprobado')
       .in('estado', ['Disponible', 'Aún Disponible'])
@@ -254,6 +264,12 @@ export async function load() {
       const { data: favs } = await getSupabaseClient().from('favoritos').select('inmueble_id').eq('usuario_id', U.id);
       window.FAVS = (favs || []).map(f => f.inmueble_id);
     } catch(e) { window.FAVS = []; }
+    // Load unread message count
+    try {
+      const { count } = await getSupabaseClient().from('mensajes').select('id', { count: 'exact', head: true }).eq('receptor_id', U.id).eq('leido', false);
+      const msgB = document.getElementById('msgBadge');
+      if (msgB) { if (count > 0) { msgB.textContent = count; msgB.style.display = 'inline-flex'; } else msgB.style.display = 'none'; }
+    } catch(e) {}
     sSt('ok', window.D.length + ' inmuebles');
     render(window.D);
     uSt();

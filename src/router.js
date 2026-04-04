@@ -32,6 +32,8 @@ const ROUTES = {
   'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo'] },
   'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo'] },
   'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['vendedor_externo'] },
+  'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['cliente','vendedor_externo'] },
+  'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo'] },
   'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
 };
 
@@ -55,6 +57,8 @@ const ROUTE_RENDERERS = {
   'mis-pub':    'rMisPub',
   'publicar':   'rPublicar',
   'espera':     'rEspera',
+  'mensajes':   'renderMensajes',
+  'mis-inm':    'renderMisInmueblesExt',
 };
 
 // ---------------------------------------------------------------------------

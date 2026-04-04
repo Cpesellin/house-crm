@@ -183,6 +183,8 @@ function renderShell(container) {
 <div class="sec" id="sec-mis-pub"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="mispubc"></div></div>
 <div class="sec" id="sec-publicar"><div class="fsec" id="publicarc"></div></div>
 <div class="sec" id="sec-espera"><div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center" id="esperac"></div></div>
+<div class="sec" id="sec-mensajes"><div style="max-width:600px;margin:0 auto;padding:10px 14px 60px" id="mensajesc"></div></div>
+<div class="sec" id="sec-mis-inm"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinmc"></div></div>
 
 <!-- MODAL -->
 <div class="mo" id="mdl" style="display:none" onclick="if(event.target===this)cm()"><div class="mb2"><div class="m-handle"></div><div class="mhd2"><div><div class="mtt" id="mtt"></div><div class="msb2" id="msb3"></div></div><button class="mcl3" onclick="cm()">\u2715</button></div><div class="mbd2" id="mbd"></div></div></div>
@@ -317,13 +319,14 @@ function sApp() {
         menuH = '<button class="mi act" data-s="espera" onclick="go(\'espera\')"><span class="mic">\u23F3</span>En espera</button>';
       } else {
         menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
-        menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
         if (tipoU === 'vendedor_externo') {
-          menuH += '<button class="mi" data-s="mis-pub" onclick="go(\'mis-pub\')"><span class="mic">\u{1F3E0}</span>Mis publicaciones</button>';
-          menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar</button>';
-        } else {
-          // Cliente: upgrade path to publish
-          menuH += '<button class="mi" data-s="cuenta" onclick="requestUpgrade()" style="color:#065f46"><span class="mic">\u{1F3E0}</span>Publicar inmuebles gratis</button>';
+          menuH += '<button class="mi" data-s="mis-inm" onclick="go(\'mis-inm\')"><span class="mic">\u{1F3E0}</span>Mis inmuebles<span class="mib" id="misinmBadge" style="display:none">0</span></button>';
+          menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar inmueble</button>';
+        }
+        menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
+        menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
+        if (tipoU === 'cliente') {
+          menuH += '<button class="mi" onclick="requestUpgrade()" style="color:#065f46"><span class="mic">\u{1F3E0}</span>Publicar inmuebles gratis</button>';
         }
         menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
       }

@@ -1820,4 +1820,147 @@ window.rechazarInmuebleExterno = async function(inmId) {
   } catch(e) { console.error('[rechazarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
 };
 
+// ══════════════════════════════════════════════════════════════════
+// 20. MESSAGING — Chat interno
+// ══════════════════════════════════════════════════════════════════
+
+function _escHtml(t){if(typeof t!=='string')return'';return t.replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','`':'&#x60;'}[c]));}
+function _hashConvId(a,b,inm){const s=[a,b].sort();const r=s[0]+':'+s[1]+':'+(inm||'general');let h=0;for(let i=0;i<r.length;i++){h=((h<<5)-h)+r.charCodeAt(i);h|=0;}const x=Math.abs(h).toString(16).padStart(8,'0');return x.slice(0,8)+'-'+x.slice(0,4)+'-4'+x.slice(4,7)+'-8'+x.slice(0,3)+'-'+x.padEnd(12,'0');}
+function _tiempoRel(f){const d=Date.now()-new Date(f).getTime();const m=Math.floor(d/60000);if(m<1)return'ahora';if(m<60)return m+' min';const h=Math.floor(m/60);if(h<24)return h+'h';const dd=Math.floor(h/24);if(dd===1)return'ayer';if(dd<7)return dd+'d';return new Date(f).toLocaleDateString('es-CO',{day:'2-digit',month:'short'});}
+
+window.abrirChat = async function(receptorId, inmuebleId) {
+  const u=U(); if(!u){window.toast('Inicia sesión para contactar','twarn');return;}
+  const convId=_hashConvId(u.id,receptorId,inmuebleId);
+  try {
+    const{data:msgs}=await SB().from('mensajes').select('*,emisor:usuarios!emisor_id(nombre,foto)').eq('conversacion_id',convId).order('created_at',{ascending:true});
+    const{data:receptor}=await SB().from('usuarios').select('id,nombre,foto,tipo_usuario').eq('id',receptorId).single();
+    let inmueble=null;
+    if(inmuebleId){const{data}=await SB().from('inmuebles').select('id,tipo,ciudad,precio_arriendo,precio_venta,direccion_publica,fotos(url_thumb,orden)').eq('id',inmuebleId).single();inmueble=data;}
+    // Mark as read
+    if(msgs&&msgs.length){const nr=msgs.filter(m=>m.receptor_id===u.id&&!m.leido).map(m=>m.id);if(nr.length)await SB().from('mensajes').update({leido:true}).in('id',nr);}
+    _renderChatModal(receptor,inmueble,msgs||[],convId);
+  }catch(e){console.error('[abrirChat]',e);window.toast('Error al abrir chat','terr');}
+};
+
+function _renderChatModal(receptor,inmueble,msgs,convId) {
+  const u=U();const rNom=receptor?.nombre||'?';const rFoto=receptor?.foto;const rIni=rNom[0].toUpperCase();
+  const rTipo=receptor?.tipo_usuario==='vendedor_externo'?'Asesor externo':'Cliente';
+  // Inmueble header
+  let inmH='';
+  if(inmueble){const ft=inmueble.fotos?.length?[...inmueble.fotos].sort((a,b)=>a.orden-b.orden)[0].url_thumb:'';
+    inmH=`<div style="padding:8px 10px;background:var(--cd2);border-bottom:1px solid var(--brd);display:flex;gap:8px;align-items:center">${ft?`<img src="${ft}" style="width:36px;height:36px;border-radius:6px;object-fit:cover">`:'<div style="width:36px;height:36px;border-radius:6px;background:var(--b50);display:flex;align-items:center;justify-content:center;font-size:16px">🏠</div>'}<div><div style="font-size:11px;font-weight:700">${inmueble.tipo} en ${inmueble.ciudad}</div><div style="font-size:9px;color:var(--sub)">${inmueble.precio_arriendo>0?fm(inmueble.precio_arriendo)+'/mes':fm(inmueble.precio_venta||0)}</div></div></div>`;}
+  // Messages
+  const msgsH=msgs.length?msgs.map(m=>{const esMio=m.emisor_id===u.id;const hr=new Date(m.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});return`<div style="display:flex;justify-content:${esMio?'flex-end':'flex-start'};margin-bottom:10px"><div style="max-width:75%;padding:10px 14px;border-radius:${esMio?'12px 12px 4px 12px':'12px 12px 12px 4px'};background:${esMio?'var(--b600)':'var(--cd2)'};color:${esMio?'#fff':'var(--tx)'}"><div style="font-size:12px;line-height:1.5">${_escHtml(m.texto)}</div><div style="font-size:9px;${esMio?'opacity:.7':'color:var(--g400)'};text-align:right;margin-top:4px">${hr}${esMio?(m.leido?' ✓✓':' ✓'):''}</div></div></div>`;}).join(''):`<div style="text-align:center;padding:30px;color:var(--sub)"><div style="font-size:28px;margin-bottom:8px;opacity:.4">💬</div><div style="font-size:12px">Envía el primer mensaje</div></div>`;
+
+  const html=`<div class="mo" id="chatModal" onclick="if(event.target===this)this.remove()" style="display:flex"><div class="mb2" style="max-width:440px;height:85vh;max-height:600px;display:flex;flex-direction:column"><div class="mhd2" style="padding:10px 14px;flex-shrink:0"><div style="display:flex;align-items:center;gap:10px;flex:1">${rFoto?`<img src="${rFoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">`:`<div style="width:32px;height:32px;border-radius:50%;background:var(--b50);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--b700)">${rIni}</div>`}<div><div style="font-size:14px;font-weight:700">${_escHtml(rNom)}</div><div style="font-size:10px;color:var(--sub)">${rTipo}</div></div></div><button class="mcl3" onclick="document.getElementById('chatModal').remove()">✕</button></div>${inmH}<div id="chatMsgs" style="flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch">${msgsH}</div><div style="padding:10px 12px;border-top:1px solid var(--brd);display:flex;gap:8px;align-items:flex-end;flex-shrink:0"><textarea id="chatInput" placeholder="Escribe un mensaje..." style="flex:1;padding:10px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-family:inherit;color:var(--tx);background:var(--cd);resize:none;min-height:40px;max-height:80px" onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMsg('${convId}','${receptor.id}','${inmueble?.id||''}')}"></textarea><button onclick="enviarMsg('${convId}','${receptor.id}','${inmueble?.id||''}')" style="width:40px;height:40px;border-radius:50%;background:var(--b600);color:#fff;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button></div></div></div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+  const c=document.getElementById('chatMsgs');if(c)c.scrollTop=c.scrollHeight;
+}
+
+window.enviarMsg = async function(convId,receptorId,inmuebleId) {
+  const input=document.getElementById('chatInput');const texto=(input?.value||'').trim();if(!texto)return;
+  input.value='';
+  const u=U();
+  try {
+    const{error}=await SB().from('mensajes').insert({conversacion_id:convId,emisor_id:u.id,receptor_id:receptorId,inmueble_id:inmuebleId||null,texto});
+    if(error){window.toast('Error al enviar','terr');return;}
+    const c=document.getElementById('chatMsgs');const hr=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    const ph=c?.querySelector('[style*="text-align:center"]');if(ph)ph.remove();
+    if(c){c.insertAdjacentHTML('beforeend',`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><div style="max-width:75%;padding:10px 14px;border-radius:12px 12px 4px 12px;background:var(--b600);color:#fff"><div style="font-size:12px;line-height:1.5">${_escHtml(texto)}</div><div style="font-size:9px;opacity:.7;text-align:right;margin-top:4px">${hr} ✓</div></div></div>`);c.scrollTop=c.scrollHeight;}
+    // Notification
+    const p=inmuebleId?findInm(inmuebleId):null;const asunto=p?p.tipo+' en '+p.ciudad:'mensaje directo';
+    await window.noti('mensaje','info','💬 '+u.nombre+' te escribió',u.nombre+': "'+(texto.length>60?texto.substring(0,60)+'...':texto)+'" — Re: '+asunto,receptorId,null,inmuebleId);
+  }catch(e){console.error('[enviarMsg]',e);window.toast('Error','terr');}
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 21. CONVERSATIONS LIST (renderMensajes)
+// ══════════════════════════════════════════════════════════════════
+
+window.renderMensajes = async function() {
+  const el=document.getElementById('mensajesc');if(!el)return;const u=U();if(!u)return;
+  el.innerHTML='<div class="ldr"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+  try {
+    const{data:allMsgs}=await SB().from('mensajes').select('*,emisor:usuarios!emisor_id(id,nombre,foto),receptor:usuarios!receptor_id(id,nombre,foto),inmueble:inmuebles!inmueble_id(id,tipo,ciudad,precio_arriendo,precio_venta)').or(`emisor_id.eq.${u.id},receptor_id.eq.${u.id}`).order('created_at',{ascending:false});
+    if(!allMsgs||!allMsgs.length){el.innerHTML='<div class="emp"><span class="emp-i">💬</span><h3>Sin mensajes</h3><p style="font-size:12px;color:var(--sub)">Cuando alguien te contacte por un inmueble, aparecerá aquí</p></div>';return;}
+    // Group by conversacion_id
+    const convMap={};allMsgs.forEach(m=>{if(!convMap[m.conversacion_id]||new Date(m.created_at)>new Date(convMap[m.conversacion_id].created_at))convMap[m.conversacion_id]=m;});
+    const convs=Object.values(convMap).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    const noLeidosMap={};allMsgs.forEach(m=>{if(m.receptor_id===u.id&&!m.leido)noLeidosMap[m.conversacion_id]=(noLeidosMap[m.conversacion_id]||0)+1;});
+
+    let h='<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;margin-bottom:14px">💬 Mensajes</div>';
+    convs.forEach(m=>{
+      const otro=m.emisor_id===u.id?m.receptor:m.emisor;const oNom=otro?.nombre||'?';const oIni=oNom[0].toUpperCase();const oFoto=otro?.foto;
+      const nl=noLeidosMap[m.conversacion_id]||0;const inm=m.inmueble;
+      const inmTxt=inm?(inm.tipo+' — '+(inm.precio_arriendo>0?fm(inm.precio_arriendo)+'/mes':fm(inm.precio_venta||0))):'';
+      const tRel=_tiempoRel(m.created_at);const esNL=nl>0;
+      const recId=m.emisor_id===u.id?m.receptor_id:m.emisor_id;
+      h+=`<div style="padding:10px 12px;display:flex;gap:10px;align-items:center;border-bottom:.5px solid var(--g100);cursor:pointer;${esNL?'background:var(--b50)':''}" onclick="abrirChat('${recId}','${m.inmueble_id||''}')">`;
+      h+=oFoto?`<img src="${oFoto}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0">`:`<div style="width:40px;height:40px;border-radius:50%;background:var(--cd2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--sub);flex-shrink:0">${oIni}</div>`;
+      h+=`<div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:${esNL?'700':'500'}">${_escHtml(oNom)}</div><div style="font-size:10px;color:var(--sub)">${tRel}</div></div><div style="font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${esNL?'font-weight:600;color:var(--tx)':''}">${m.emisor_id===u.id?'Tú: ':''}${_escHtml(m.texto)}</div>${inmTxt?`<div style="font-size:9px;color:var(--b600);font-weight:500;margin-top:2px">Re: ${inmTxt}</div>`:''}</div>`;
+      if(nl>0)h+=`<span style="background:var(--red);color:#fff;font-size:10px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0">${nl}</span>`;
+      h+=`</div>`;
+    });
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="color:var(--red)">Error: '+e.message+'</div>';}
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 22. MIS INMUEBLES — Asesor externo dashboard
+// ══════════════════════════════════════════════════════════════════
+
+window.renderMisInmueblesExt = async function() {
+  const el=document.getElementById('misinmc');if(!el)return;const u=U();if(!u)return;
+  const LIMITE=3;
+  el.innerHTML='<div class="ldr"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+  try {
+    const{data}=await SB().from('inmuebles').select('*,fotos(url,url_thumb,orden)').eq('captador_id',u.id).eq('origen','externo').eq('eliminado',false).order('created_at',{ascending:false});
+    const mis=data||[];const pct=Math.min(100,Math.round(mis.length/LIMITE*100));const rest=Math.max(0,LIMITE-mis.length);
+    window._misExtData=mis;
+
+    let h='<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:14px">🏠 Mis Inmuebles</div>';
+    // Progress bar
+    h+=`<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:12px;font-weight:700">📦 Plan gratuito: ${mis.length}/${LIMITE}</span>${rest>0?`<button style="padding:6px 14px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:var(--b600);color:#fff;font-family:inherit;cursor:pointer" onclick="go('publicar')">➕ Publicar nuevo</button>`:`<button style="padding:6px 14px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:var(--gold);color:#fff;font-family:inherit;cursor:pointer" onclick="showPaywall(${mis.length},${LIMITE})">📦 Ver Plan Pro</button>`}</div><div style="height:6px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct>=100?'var(--gold)':'var(--b500)'};border-radius:3px;transition:width .3s"></div></div></div>`;
+    // Filters
+    h+=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap"><select id="misExtTipo" class="esel" style="font-size:11px;padding:6px 10px" onchange="filtrarMisExt()"><option value="">Todos los tipos</option><option value="Apartamento">🏢 Apto</option><option value="Casa">🏡 Casa</option><option value="Finca">🌾 Finca</option><option value="Local">🏪 Local</option></select><select id="misExtOrden" class="esel" style="font-size:11px;padding:6px 10px" onchange="filtrarMisExt()"><option value="reciente">Más recientes</option><option value="precio_desc">Mayor precio</option><option value="precio_asc">Menor precio</option></select></div>`;
+
+    if(!mis.length){h+='<div class="emp"><span class="emp-i">🏠</span><h3>Sin publicaciones aún</h3><p style="font-size:12px;color:var(--sub)">Publica tu primer inmueble y llega a cientos de clientes</p><button class="bt bp" style="margin-top:10px" onclick="go(\'publicar\')">➕ Publicar mi primer inmueble</button></div>';el.innerHTML=h;return;}
+
+    h+='<div id="misExtGrid" class="pgr">';
+    mis.forEach(p=>{
+      const fotos=(p.fotos||[]).sort((a,b)=>a.orden-b.orden);const thumb=fotos.length>0?(fotos[0].url_thumb||fotos[0].url):'';
+      const pv=p.precio_venta||0,pa=p.precio_arriendo||0;const rev=p.estado_revision||'aprobado';
+      const revBadge=rev==='aprobado'?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--greenbg);color:#065f46;border:1px solid var(--gb)">Publicado</span>':rev==='en_revision'?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--goldbg);color:#92400e;border:1px solid var(--yb)">En revisión</span>':'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--redbg);color:var(--red);border:1px solid var(--rb)">Rechazado</span>';
+      h+=`<div class="pc" data-tipo="${p.tipo}" data-pv="${pv}" data-pa="${pa}">${thumb?`<img src="${thumb}" style="width:100%;height:140px;object-fit:cover;display:block" onerror="this.style.display='none'">`:`<div style="height:80px;background:var(--cd2);display:flex;align-items:center;justify-content:center;font-size:24px;border-bottom:1px solid var(--brd)">${emo(p.tipo)}</div>`}<div class="pcbd"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:14px;font-weight:800">${p.tipo||'Inmueble'}</span>${revBadge}</div><div style="font-size:11px;color:var(--sub)">📍 ${p.direccion_publica||p.ciudad||''}</div><div style="background:var(--cd2);border-radius:8px;padding:8px 10px;margin:6px 0;border:1px solid var(--brd)">${pv>0?`<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:var(--b700)">${fm(pv)}</div>`:''}${pa>0?`<div style="font-size:13px;font-weight:700;color:#065f46">${fm(pa)}/mes</div>`:''}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${p.habitaciones?`<span class="sp">🛏️${p.habitaciones}</span>`:''}${p.banos?`<span class="sp">🚿${p.banos}</span>`:''}${p.area_construida?`<span class="sp">📐${p.area_construida}m²</span>`:''}</div><div style="display:flex;gap:4px"><button class="bt bsm bp" style="flex:1" onclick="shareInm('${p.id}')">📤 Compartir</button><button class="bt bsm bd" onclick="eliminarMiInmueble('${p.id}')">🗑️</button></div></div></div>`;
+    });
+    h+='</div>';
+    // Empty slot
+    if(rest>0)h+=`<div style="border:2px dashed var(--brd);border-radius:12px;padding:20px;text-align:center;margin-top:8px"><div style="font-size:13px;color:var(--sub)">Espacio disponible: ${rest} restante${rest!==1?'s':''}</div><button onclick="go('publicar')" style="margin-top:8px;padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;background:var(--b50);color:var(--b700);cursor:pointer;font-family:inherit">➕ Publicar nuevo</button></div>`;
+    // Plan CTA
+    h+=`<div style="margin-top:20px;padding:16px;border-top:1px solid var(--brd);text-align:center"><div style="font-size:13px;color:var(--sub);margin-bottom:8px">¿Necesitas más espacio?</div><button onclick="showPaywall(${mis.length},${LIMITE})" style="padding:8px 16px;border:1.5px solid var(--b300);border-radius:8px;font-size:12px;font-weight:700;background:var(--cd);color:var(--b700);cursor:pointer;font-family:inherit">📦 Ver Plan Profesional →</button></div>`;
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="color:var(--red)">Error: '+e.message+'</div>';}
+};
+
+window.filtrarMisExt = function() {
+  const tipo=document.getElementById('misExtTipo')?.value||'';
+  const grid=document.getElementById('misExtGrid');if(!grid)return;
+  grid.querySelectorAll('.pc').forEach(card=>{
+    const ct=card.dataset.tipo||'';
+    card.style.display=(!tipo||ct.toLowerCase().includes(tipo.toLowerCase()))?'':'none';
+  });
+};
+
+window.eliminarMiInmueble = async function(id) {
+  const u=U();const mis=window._misExtData||[];const p=mis.find(x=>x.id===id);if(!p)return;
+  if(p.captador_id!==u.id){window.toast('Solo puedes eliminar tus propios inmuebles','terr');return;}
+  const desc=(p.tipo||'Inmueble')+' en '+(p.ciudad||'?');
+  const ok=await window.cfShow('🗑️','¿Eliminar '+desc+'?','Se retirará de la plataforma. Recuperas 1 espacio de publicación.');
+  if(!ok)return;
+  await SB().from('inmuebles').update({eliminado:true,fecha_eliminacion:new Date().toISOString()}).eq('id',id);
+  await window.noti('cambio_estado','info','🗑️ Asesor externo eliminó: '+desc,u.nombre+' eliminó su '+desc,null,'admin',id);
+  window.toast('🗑️ Inmueble eliminado · 1 espacio liberado');
+  window.renderMisInmueblesExt();
+};
+
 console.log('[functions] ✅ All window functions registered');
