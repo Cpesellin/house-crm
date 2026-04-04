@@ -554,7 +554,7 @@ window.rConc = async function () {
     const isDone=c.estado==='completado';
     const badgeLabels={precio:'💲 PRECIO',fotos:'📷 FOTOS',descripcion:'📝 DESCRIPCIÓN',solo_m2:'❌ SOLO M²',solo_fr:'❌ SOLO FR',retirar:'🗑️ RETIRAR',otro:'📌 OTRO'};
 
-    h+=`<div class="conc-card${isDone?' done':'"}">`;
+    h+=`<div class="conc-card${isDone?' done':''}">`;
     // F24: Expand/collapse
     h+=`<div class="conc-hdr" onclick="concToggle('${c.id}')"><span class="conc-badge ${c.tipo_diferencia}">${badgeLabels[c.tipo_diferencia]||c.tipo_diferencia}</span><div class="conc-info"><div class="conc-tipo">${c.tipo_inmueble||''} · ${c.ciudad||''}</div><div class="conc-det">${c.detalle||''}</div></div>`;
     // F26: Checkbox completado
