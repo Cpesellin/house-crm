@@ -163,7 +163,12 @@ async function _handleGoogleCredential(response) {
       .single();
 
     if (!usr) {
-      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, 'Acceso denegado. Tu email no está registrado.');
+      // New external user — show onboarding modal instead of rejecting
+      if (typeof window.showOnboarding === 'function') {
+        window.showOnboarding({ email, nombre: payload.name || '', foto: payload.picture || '' });
+      } else {
+        _emitAuth(AUTH_EVENTS.LOGIN_ERROR, 'Acceso denegado. Tu email no está registrado.');
+      }
       return;
     }
 
@@ -177,6 +182,7 @@ async function _handleGoogleCredential(response) {
       usuario: usr.usuario || '',
       telefono_contacto: usr.telefono_contacto || '',
       es_gestor_arriendos: usr.es_gestor_arriendos || false,
+      tipo_usuario: usr.tipo_usuario || 'interno',
       token: 'google:' + email,
     };
 
@@ -244,6 +250,7 @@ export async function loginWithCredentials(username, password) {
       usuario: user.usuario,
       telefono_contacto: user.telefono_contacto || '',
       es_gestor_arriendos: user.es_gestor_arriendos || false,
+      tipo_usuario: user.tipo_usuario || 'interno',
       token: 'cred:' + user.usuario + ':' + h,
     };
 

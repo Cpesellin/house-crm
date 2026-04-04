@@ -671,4 +671,394 @@ window.rConc = async function () {
   filtered.forEach(c=>{const body=document.getElementById('conc-'+c.id);if(body&&body.classList.contains('open'))ldConcNotas(c.id);});
 };
 
+// ══════════════════════════════════════════════════════════════════
+// EXTERNAL USERS — Portal, Favoritos, Cuenta, MisPub, Publicar, Espera
+// ══════════════════════════════════════════════════════════════════
+
+// --- Public filters state ---
+window._pubFilters = { neg: '', tipo: '', ciudad: '', q: '' };
+
+window.pubFilter = function(group, value, el) {
+  if (window._pubFilters[group] === value) { window._pubFilters[group] = ''; el.classList.remove('act'); }
+  else {
+    window._pubFilters[group] = value;
+    document.querySelectorAll(`.pub-chip[data-g="${group}"]`).forEach(c => c.classList.remove('act'));
+    el.classList.add('act');
+  }
+  window.rPortafolio();
+};
+
+window.rPortafolio = async function() {
+  const el = document.getElementById('portafolioc'); if (!el) return;
+  const u = U();
+  const tipoU = u?.tipo_usuario || null;
+  const isVisitor = !u;
+  const isExterno = tipoU === 'cliente' || tipoU === 'propietario';
+
+  // Load data
+  let data = window.PUB;
+  if (!data || !data.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+    data = await window.loadPublic(isVisitor ? 10 : null);
+  }
+
+  // Load favorites for logged-in users
+  let favIds = new Set();
+  if (u && (isExterno)) {
+    try {
+      const { data: favs } = await SB().from('favoritos').select('inmueble_id').eq('usuario_id', u.id);
+      if (favs) favs.forEach(f => favIds.add(f.inmueble_id));
+    } catch(e) {}
+  }
+
+  // Apply filters
+  const f = window._pubFilters;
+  let filtered = data.filter(p => {
+    if (f.neg) { const n = (p.negociacion||'').toLowerCase(); if (f.neg === 'arriendo' && !n.includes('arriendo')) return false; if (f.neg === 'venta' && !n.includes('venta')) return false; }
+    if (f.tipo && !(p.tipo||'').toLowerCase().includes(f.tipo)) return false;
+    if (f.ciudad && !(p.ciudad||'').toLowerCase().includes(f.ciudad)) return false;
+    if (f.q) { const q = f.q.toLowerCase(); if (!(p.tipo||'').toLowerCase().includes(q) && !(p.ciudad||'').toLowerCase().includes(q) && !(p.barrio||'').toLowerCase().includes(q) && !(p.direccion_publica||'').toLowerCase().includes(q)) return false; }
+    return true;
+  });
+
+  let h = '';
+
+  // Header
+  h += `<div class="pub-hdr-ext">
+    <img src="/img/logo.png" class="pub-logo" onerror="this.style.display='none'">
+    <span class="pub-brand">House</span>
+    <input class="pub-search" placeholder="🔍 Buscar zona, tipo..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()">
+    <div style="flex:1"></div>`;
+  if (u && isExterno) {
+    h += `<button onclick="go('favoritos')" style="background:none;border:none;font-size:18px;cursor:pointer" title="Favoritos">❤️</button>`;
+    h += `<button onclick="omenu()" style="background:none;border:none;font-size:18px;cursor:pointer;margin-left:6px">☰</button>`;
+  } else if (!u) {
+    h += `<a href="#/" onclick="location.reload()" style="padding:6px 14px;background:var(--b600);color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Ingresar</a>`;
+  }
+  h += `</div>`;
+
+  // Filters
+  h += `<div class="pub-filters">`;
+  h += `<button class="pub-chip${f.neg==='arriendo'?' act':''}" data-g="neg" onclick="pubFilter('neg','arriendo',this)">🔑 Arriendo</button>`;
+  h += `<button class="pub-chip${f.neg==='venta'?' act':''}" data-g="neg" onclick="pubFilter('neg','venta',this)">💰 Venta</button>`;
+  h += `<button class="pub-chip${f.tipo==='apartamento'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','apartamento',this)">🏢 Apto</button>`;
+  h += `<button class="pub-chip${f.tipo==='casa'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','casa',this)">🏡 Casa</button>`;
+  h += `<button class="pub-chip${f.tipo==='finca'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','finca',this)">🌾 Finca</button>`;
+  h += `<button class="pub-chip${f.tipo==='local'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','local',this)">🏪 Local</button>`;
+  h += `</div>`;
+
+  // Results count
+  h += `<div style="padding:4px 14px;font-size:12px;color:var(--sub);font-weight:700">${filtered.length} inmueble${filtered.length!==1?'s':''}</div>`;
+
+  // Grid
+  h += `<div class="pub-grid">`;
+  filtered.forEach(p => {
+    const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+    const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+    const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
+    const capTel = p.captador?.telefono_contacto || '573105922763';
+    const capNom = p.captador?.nombre || 'House';
+    const cod = p.codigo_house || '';
+    const previewUrl = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
+    const isFav = favIds.has(p.id);
+    const specs = [];
+    if (p.habitaciones) specs.push('🛏️ '+p.habitaciones);
+    if (p.banos) specs.push('🚿 '+p.banos);
+    if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
+
+    h += `<div class="pub-card">`;
+    if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
+    else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:var(--g100)">${emo(p.tipo)}</div>`;
+    if (u && isExterno) h += `<button class="pub-fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${isFav?'❤️':'🤍'}</button>`;
+    if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏠 Propietario</span>`;
+    h += `<div class="pub-card-body">`;
+    h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
+    h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
+    h += `<div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
+    if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}<span style="font-size:12px;font-weight:500;color:var(--sub)">/mes</span></div>`;
+    if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
+    if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
+    h += `</div>`;
+    h += `<div class="pub-card-actions">`;
+    h += `<a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado en este inmueble: '+previewUrl)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a>`;
+    h += `<a class="pub-card-det" href="${previewUrl}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a>`;
+    h += `</div></div>`;
+  });
+  h += `</div>`;
+
+  // Visitor limit wall
+  if (isVisitor && data.length >= 10) {
+    h += `<div class="pub-limit-wall">
+      <div style="font-size:24px;margin-bottom:8px">🔒</div>
+      <div style="font-size:16px;font-weight:800;color:var(--tx);margin-bottom:4px">¿Quieres ver más?</div>
+      <div style="font-size:13px;color:var(--sub);margin-bottom:14px">Regístrate gratis para explorar todo el inventario</div>
+      <a href="#/" onclick="location.reload()" style="display:inline-block;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">Registrarse gratis</a>
+    </div>`;
+  }
+
+  el.innerHTML = h;
+};
+
+// --- Favoritos ---
+window.rFavoritos = async function() {
+  const el = document.getElementById('favoritosc'); if (!el) return;
+  const u = U(); if (!u) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+
+  try {
+    const { data: favs } = await SB().from('favoritos').select('inmueble_id,inmueble:inmuebles(id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,codigo_house,captador:usuarios!captador_id(nombre,telefono_contacto),fotos(url,url_thumb,orden))').eq('usuario_id', u.id);
+    if (!favs || !favs.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">💔</div><h3 style="font-size:16px;font-weight:800">Aún no tienes favoritos</h3><p style="font-size:13px;color:var(--sub);margin-top:6px">Explora inmuebles y guarda los que te gusten</p><a href="#/portafolio" style="display:inline-block;margin-top:14px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">🔍 Explorar</a></div>';
+      return;
+    }
+    let h = '<div style="padding:14px"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:14px">❤️ Mis Favoritos</div></div>';
+    h += '<div class="pub-grid">';
+    favs.forEach(fav => {
+      const p = fav.inmueble; if (!p) return;
+      const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+      const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
+      const capTel = p.captador?.telefono_contacto || '573105922763';
+      const capNom = p.captador?.nombre || 'House';
+      const cod = p.codigo_house || '';
+      const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
+      h += `<div class="pub-card">`;
+      if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
+      h += `<button class="pub-fav-btn active" onclick="event.stopPropagation();toggleFavorito('${p.id}')">❤️</button>`;
+      h += `<div class="pub-card-body"><div class="pub-card-tipo">${p.tipo||''} · ${p.negociacion||''}</div><div class="pub-card-title">${p.direccion_publica||p.barrio||''}</div><div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
+      if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}/mes</div>`;
+      if (pv > 0) h += `<div class="pub-card-price" style="font-size:14px">${fm(pv)}</div>`;
+      h += `</div><div class="pub-card-actions"><a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado: '+url)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="pub-card-det" href="${url}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a></div></div>`;
+    });
+    h += '</div>';
+    el.innerHTML = h;
+  } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>'; }
+};
+
+// --- Mi Cuenta (externo) ---
+window.rCuenta = function() {
+  const el = document.getElementById('cuentac'); if (!el) return;
+  const u = U(); if (!u) return;
+  let h = '<div class="card"><div class="cdh"><div class="chl"><div class="chi">⚙️</div><div><div class="cht">Mi Cuenta</div></div></div></div><div class="cdb">';
+  h += `<div style="text-align:center;margin-bottom:16px">`;
+  if (u.foto) h += `<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
+  else h += `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0]}</div>`;
+  h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div>`;
+  h += `<div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${u.tipo_usuario==='propietario'?'Propietario':'Cliente'}</div></div>`;
+  h += `<div style="padding:0 16px 16px"><div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Nombre</label><input id="ext_nombre" value="${(u.nombre||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
+  h += `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Email</label><input value="${u.email}" disabled style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--sub);background:var(--cd2);font-family:inherit"></div>`;
+  h += `<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Teléfono</label><input id="ext_tel" value="${(u.telefono_contacto||'').replace(/"/g,'&quot;')}" placeholder="573001234567" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
+  h += `<button onclick="saveExtCuenta()" style="width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">💾 Guardar</button>`;
+  h += `</div>`;
+
+  // Upgrade banner for clients
+  if (u.tipo_usuario === 'cliente') {
+    h += `<div style="margin:0 16px 16px;padding:18px;border-radius:12px;background:linear-gradient(135deg,#f0fdf4,#f0fdf8);border:1.5px solid #bbf7d0;text-align:center">
+      <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">🏠 ¿Tienes un inmueble?</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:10px">Publícalo gratis y llega a miles de clientes en Pereira</div>
+      <button onclick="requestUpgrade()" style="padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Quiero publicar mi inmueble →</button>
+    </div>`;
+  }
+
+  h += `<div style="padding:16px;text-align:center"><button onclick="logout()" style="padding:10px 20px;border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">Cerrar sesión</button></div>`;
+  h += '</div></div>';
+  el.innerHTML = h;
+};
+
+window.saveExtCuenta = async function() {
+  const u = U(); if (!u) return;
+  const nombre = document.getElementById('ext_nombre')?.value || u.nombre;
+  const tel = document.getElementById('ext_tel')?.value || '';
+  try {
+    await SB().from('usuarios').update({ nombre, telefono_contacto: tel }).eq('id', u.id);
+    window.userStore.update({ nombre, telefono_contacto: tel });
+    window.toast('💾 Guardado');
+  } catch(e) { window.toast('Error: ' + e.message, 'terr'); }
+};
+
+// --- Mis Publicaciones (propietario) ---
+window.rMisPub = async function() {
+  const el = document.getElementById('mispubc'); if (!el) return;
+  const u = U(); if (!u) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+  try {
+    const { data } = await SB().from('inmuebles').select('*,fotos(url,url_thumb,orden)').eq('captador_id', u.id).eq('origen', 'externo').eq('eliminado', false).order('created_at', { ascending: false });
+    const items = data || [];
+    let h = '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:6px">🏠 Mis Publicaciones</div>';
+    h += `<div style="font-size:12px;color:var(--sub);margin-bottom:16px">${items.length}/5 publicaciones</div>`;
+    if (items.length < 5) h += `<button onclick="go('publicar')" style="margin-bottom:16px;padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">+ Publicar nuevo inmueble</button>`;
+    if (!items.length) {
+      h += '<div style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:8px">📭</div><p style="color:var(--sub)">Aún no has publicado inmuebles</p></div>';
+    }
+    items.forEach(p => {
+      const rev = p.estado_revision || 'en_revision';
+      const revColor = rev === 'aprobado' ? '#065f46' : rev === 'rechazado' ? 'var(--red)' : '#92400e';
+      const revBg = rev === 'aprobado' ? 'var(--greenbg)' : rev === 'rechazado' ? 'var(--redbg)' : 'var(--goldbg)';
+      const revLabel = rev === 'aprobado' ? '✅ Publicado' : rev === 'rechazado' ? '❌ Rechazado' : '⏳ En revisión';
+      const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+      h += `<div style="display:flex;gap:12px;padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;margin-bottom:8px">`;
+      if (thumb) h += `<img src="${thumb}" style="width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0">`;
+      h += `<div style="flex:1"><div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo||''}</div><div style="font-size:12px;color:var(--sub)">📍 ${p.ciudad||''} · ${p.barrio||''}</div>`;
+      if (p.precio_arriendo > 0) h += `<div style="font-size:13px;font-weight:700;color:var(--b700)">${fm(p.precio_arriendo)}/mes</div>`;
+      if (p.precio_venta > 0) h += `<div style="font-size:13px;font-weight:700">${fm(p.precio_venta)}</div>`;
+      h += `<span style="display:inline-block;margin-top:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${revBg};color:${revColor}">${revLabel}</span>`;
+      h += `</div></div>`;
+    });
+    el.innerHTML = h;
+  } catch(e) { el.innerHTML = '<div style="color:var(--red)">Error: ' + e.message + '</div>'; }
+};
+
+// --- Wizard Publicar (propietario) ---
+window.rPublicar = function() {
+  const el = document.getElementById('publicarc'); if (!el) return;
+  const step = window._ownerStep || 1;
+  const d = window._ownerData || {};
+  const tipos = ['Apartamento','Casa','Finca','Local','Lote','Oficina','Bodega','Penthouse'];
+  const ciudades = ['Pereira','Dosquebradas','Santa Rosa de Cabal','Cerritos','Cartago'];
+
+  let h = '<div class="card"><div class="cdh"><div class="chl"><div class="chi">🏠</div><div><div class="cht">Publicar Inmueble</div><div class="chsb">Paso ' + step + '/3</div></div></div></div><div class="cdb">';
+
+  // Steps indicator
+  h += '<div class="wiz-steps">';
+  for (let i = 1; i <= 3; i++) h += `<div class="wiz-step${i<step?' done':''}${i===step?' act':''}"></div>`;
+  h += '</div>';
+
+  if (step === 1) {
+    h += '<div class="wiz-field"><div class="wiz-label">TIPO DE INMUEBLE</div><div class="wiz-grid">';
+    tipos.forEach(t => { h += `<button class="wiz-type-btn${d.tipo===t?' act':''}" onclick="document.querySelectorAll(\'.wiz-type-btn\').forEach(b=>b.classList.remove(\'act\'));this.classList.add(\'act\');document.getElementById(\'ow_tipo\').value=\'${t}\'"><span class="wiz-emoji">${emo(t)}</span><span class="wiz-tname">${t}</span></button>`; });
+    h += `</div><input type="hidden" id="ow_tipo" value="${d.tipo||''}"></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">¿VENTA, ARRIENDO O AMBOS?</div><select id="ow_neg" class="wiz-input"><option value="">— Selecciona —</option><option value="Venta"${d.negociacion==='Venta'?' selected':''}>💰 Venta</option><option value="Arriendo"${d.negociacion==='Arriendo'?' selected':''}>🔑 Arriendo</option><option value="Venta y Arriendo"${d.negociacion==='Venta y Arriendo'?' selected':''}>💰🔑 Ambos</option></select></div>`;
+    h += `<div class="wiz-field" style="display:flex;gap:8px"><div style="flex:1"><div class="wiz-label">PRECIO VENTA</div><input id="ow_pv" type="number" class="wiz-input" placeholder="0" value="${d.precio_venta||''}"></div><div style="flex:1"><div class="wiz-label">PRECIO ARRIENDO</div><input id="ow_pa" type="number" class="wiz-input" placeholder="0" value="${d.precio_arriendo||''}"></div></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">CIUDAD</div><select id="ow_ciudad" class="wiz-input"><option value="">— Selecciona —</option>${ciudades.map(c=>`<option${d.ciudad===c?' selected':''}>${c}</option>`).join('')}</select></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">DIRECCIÓN COMPLETA</div><input id="ow_dir" class="wiz-input" placeholder="Cra 10 #15-30" value="${(d.direccion||'').replace(/"/g,'&quot;')}"></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">BARRIO</div><input id="ow_barrio" class="wiz-input" placeholder="Pinares, Álamos..." value="${(d.barrio||'').replace(/"/g,'&quot;')}"></div>`;
+    h += `<div style="display:flex;gap:8px;margin-top:16px"><button onclick="if(ownerSaveStep(1))ownerWizardNext()" style="flex:1;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">Continuar →</button></div>`;
+
+  } else if (step === 2) {
+    h += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">`;
+    h += `<div class="wiz-field"><div class="wiz-label">HABITACIONES</div><input id="ow_hab" type="number" class="wiz-input" value="${d.habitaciones||''}"></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">BAÑOS</div><input id="ow_ban" type="number" class="wiz-input" value="${d.banos||''}"></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">PARQUEADEROS</div><input id="ow_parq" type="number" class="wiz-input" value="${d.parqueaderos||''}"></div>`;
+    h += `</div>`;
+    h += `<div style="display:flex;gap:8px;margin-bottom:12px"><div class="wiz-field" style="flex:1"><div class="wiz-label">ÁREA (m²)</div><input id="ow_area" type="number" class="wiz-input" value="${d.area_construida||''}"></div><div class="wiz-field" style="flex:1"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">—</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">DESCRIPCIÓN (lo que verá el público)</div><textarea id="ow_desc" class="wiz-input" style="min-height:80px;resize:vertical" placeholder="Describe tu inmueble...">${d.descripcion_cliente||''}</textarea></div>`;
+    h += `<div style="display:flex;gap:8px;margin-top:16px"><button onclick="ownerWizardPrev()" style="flex:1;padding:14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">← Atrás</button><button onclick="if(ownerSaveStep(2))ownerWizardNext()" style="flex:1;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">Continuar →</button></div>`;
+
+  } else if (step === 3) {
+    h += `<div style="font-size:14px;font-weight:800;margin-bottom:12px">📋 Resumen</div>`;
+    h += `<div style="padding:14px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:10px;margin-bottom:12px">`;
+    h += `<div style="font-size:16px;font-weight:800">${emo(d.tipo)} ${d.tipo||'?'}</div>`;
+    h += `<div style="font-size:12px;color:var(--sub);margin-top:2px">📍 ${d.barrio||''}, ${d.ciudad||''}</div>`;
+    h += `<div style="font-size:12px;color:var(--sub)">${d.negociacion||''}</div>`;
+    if (d.precio_venta) h += `<div style="margin-top:6px;font-weight:700">💰 Venta: ${fm(d.precio_venta)}</div>`;
+    if (d.precio_arriendo) h += `<div style="font-weight:700">🔑 Arriendo: ${fm(d.precio_arriendo)}/mes</div>`;
+    const sp = [];
+    if (d.habitaciones) sp.push('🛏️ '+d.habitaciones+' hab');
+    if (d.banos) sp.push('🚿 '+d.banos+' baños');
+    if (d.area_construida) sp.push('📐 '+d.area_construida+'m²');
+    if (d.estrato) sp.push('E'+d.estrato);
+    if (sp.length) h += `<div style="margin-top:6px;font-size:12px;color:var(--sub)">${sp.join(' · ')}</div>`;
+    if (d.descripcion_cliente) h += `<div style="margin-top:8px;font-size:12px;color:var(--tx);line-height:1.5">"${d.descripcion_cliente}"</div>`;
+    h += `</div>`;
+    h += `<div style="font-size:11px;color:var(--sub);margin-bottom:14px;text-align:center">Tu inmueble será revisado por nuestro equipo antes de ser publicado.</div>`;
+    h += `<div style="display:flex;gap:8px"><button onclick="ownerWizardPrev()" style="flex:1;padding:14px;border:1.5px solid var(--brd);border-radius:10px;font-size:14px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">← Atrás</button><button onclick="ownerPublish()" style="flex:1;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">🏠 Enviar para revisión</button></div>`;
+  }
+
+  h += '</div></div>';
+  el.innerHTML = h;
+};
+
+// --- Espera (pendiente approval) ---
+window.rEspera = function() {
+  const el = document.getElementById('esperac'); if (!el) return;
+  el.innerHTML = `<div style="font-size:48px;margin-bottom:16px">⏳</div>
+    <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:8px">Tu solicitud está en revisión</div>
+    <div style="font-size:14px;color:var(--sub);line-height:1.6;margin-bottom:20px">Nuestro equipo revisará tu solicitud y te notificaremos cuando esté aprobada. Esto normalmente toma menos de 24 horas.</div>
+    <div style="padding:16px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:12px;margin-bottom:20px">
+      <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:4px">Mientras tanto puedes:</div>
+      <div style="font-size:13px;color:var(--tx);margin-top:6px">📱 Llamarnos: <a href="tel:+573105922763" style="color:var(--b600);font-weight:700">310 592 2763</a></div>
+      <div style="font-size:13px;color:var(--tx);margin-top:4px">💬 WhatsApp: <a href="https://wa.me/573105922763" target="_blank" style="color:#25d366;font-weight:700">Enviar mensaje</a></div>
+    </div>
+    <button onclick="logout()" style="padding:10px 20px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cerrar sesión</button>`;
+};
+
+// --- Modify rUsers: add Solicitudes tab ---
+const _origRUsers = window.rUsers;
+window._usersTab = 'equipo';
+
+window.rUsers = async function() {
+  const el = document.getElementById('usrl'); if (!el) return;
+  const u = U(); if (!u || u.rol !== 'admin') return;
+
+  // Count pending
+  const { data: pendingRegs } = await SB().from('registro_solicitudes').select('id').eq('estado', 'pendiente');
+  const { data: pendingInm } = await SB().from('inmuebles').select('id').eq('estado_revision', 'en_revision').eq('origen', 'externo');
+  const pendCount = ((pendingRegs||[]).length) + ((pendingInm||[]).length);
+
+  // Tabs
+  let h = `<div style="display:flex;gap:6px;margin-bottom:14px">`;
+  h += `<button onclick="window._usersTab='equipo';rUsers()" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid ${window._usersTab==='equipo'?'var(--b600)':'var(--brd)'};background:${window._usersTab==='equipo'?'var(--b600)':'var(--cd)'};color:${window._usersTab==='equipo'?'#fff':'var(--tx)'};cursor:pointer;font-family:inherit">👥 Equipo</button>`;
+  h += `<button onclick="window._usersTab='solicitudes';rUsers()" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid ${window._usersTab==='solicitudes'?'var(--b600)':'var(--brd)'};background:${window._usersTab==='solicitudes'?'var(--b600)':'var(--cd)'};color:${window._usersTab==='solicitudes'?'#fff':'var(--tx)'};cursor:pointer;font-family:inherit">📨 Solicitudes${pendCount>0?' ('+pendCount+')':''}</button>`;
+  h += `</div>`;
+
+  if (window._usersTab === 'equipo') {
+    // Original users list
+    const { data } = await SB().from('usuarios').select('*').order('nombre');
+    if (!data) { el.innerHTML = h + '<div class="emp"><span class="emp-i">❌</span></div>'; return; }
+    h += data.map(u2 => {
+      const act=u2.activo, rol=u2.rol||'asesor';
+      const isGestor = u2.es_gestor_arriendos === true;
+      const displayRol = isGestor ? 'Gestor Arriendos' : rol;
+      const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='cliente'?'background:var(--b50);color:var(--b500)':u2.tipo_usuario==='propietario'?'background:#065f4615;color:#065f46':'background:var(--b50);color:var(--b700)';
+      const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
+      const externoBadge = u2.tipo_usuario==='cliente'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">Cliente</span>':u2.tipo_usuario==='propietario'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">Propietario</span>':'';
+      const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
+      return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}${externoBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}</div>`;
+    }).join('');
+  } else {
+    // Solicitudes tab
+    // Pending registrations
+    const { data: regs } = await SB().from('registro_solicitudes').select('*,usuario:usuarios(id,nombre,email,foto,telefono_contacto)').eq('estado', 'pendiente').order('created_at', { ascending: false });
+    if (regs && regs.length) {
+      h += `<div style="font-size:12px;font-weight:800;color:var(--sub);margin-bottom:8px">👤 SOLICITUDES DE REGISTRO</div>`;
+      regs.forEach(r => {
+        const usr = r.usuario;
+        h += `<div style="padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid var(--gold);border-radius:10px;margin-bottom:8px">`;
+        h += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`;
+        if (usr?.foto) h += `<img src="${usr.foto}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`;
+        h += `<div style="flex:1"><div style="font-size:14px;font-weight:800">${usr?.nombre||'?'}</div><div style="font-size:11px;color:var(--sub)">${usr?.email||''}</div></div></div>`;
+        h += `<div style="font-size:12px;color:var(--sub);margin-bottom:4px">🏠 Quiere: <b>${r.tipo_solicitado}</b></div>`;
+        if (r.descripcion) h += `<div style="font-size:12px;color:var(--tx);margin-bottom:8px;padding:8px;background:var(--cd2);border-radius:6px">"${r.descripcion}"</div>`;
+        h += `<div style="display:flex;gap:6px"><button onclick="aprobarRegistro('${usr?.id}','${r.tipo_solicitado}')" style="padding:6px 14px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">✅ Aprobar</button><button onclick="rechazarRegistro('${usr?.id}')" style="padding:6px 14px;border:1.5px solid var(--red);border-radius:6px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">❌ Rechazar</button></div>`;
+        h += `</div>`;
+      });
+    }
+
+    // Pending inmuebles
+    const { data: inmExt } = await SB().from('inmuebles').select('*,captador:usuarios!captador_id(nombre,email,foto)').eq('estado_revision', 'en_revision').eq('origen', 'externo').order('created_at', { ascending: false });
+    if (inmExt && inmExt.length) {
+      h += `<div style="font-size:12px;font-weight:800;color:var(--sub);margin-top:14px;margin-bottom:8px">🏠 INMUEBLES EN REVISIÓN</div>`;
+      inmExt.forEach(p => {
+        h += `<div style="padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid var(--gold);border-radius:10px;margin-bottom:8px">`;
+        h += `<div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo||''} — ${p.ciudad||''}</div>`;
+        h += `<div style="font-size:12px;color:var(--sub)">📍 ${p.barrio||''} · ${p.direccion||''}</div>`;
+        if (p.precio_arriendo > 0) h += `<div style="font-size:13px;font-weight:700;color:var(--b700)">🔑 ${fm(p.precio_arriendo)}/mes</div>`;
+        if (p.precio_venta > 0) h += `<div style="font-size:13px;font-weight:700">💰 ${fm(p.precio_venta)}</div>`;
+        h += `<div style="font-size:11px;color:var(--sub);margin-top:4px">👤 Subido por: ${p.captador?.nombre||'?'}</div>`;
+        h += `<div style="display:flex;gap:6px;margin-top:8px">`;
+        h += `<button onclick="aprobarInmuebleExterno('${p.id}')" style="padding:6px 14px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">✅ Aprobar y publicar</button>`;
+        h += `<button onclick="rechazarInmuebleExterno('${p.id}')" style="padding:6px 14px;border:1.5px solid var(--red);border-radius:6px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">❌ Rechazar</button>`;
+        h += `</div></div>`;
+      });
+    }
+
+    if ((!regs||!regs.length) && (!inmExt||!inmExt.length)) {
+      h += '<div style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:8px">✅</div><p style="color:var(--sub)">No hay solicitudes pendientes</p></div>';
+    }
+  }
+
+  el.innerHTML = h;
+};
+
 console.log('[sections] All route renderers registered');

@@ -39,6 +39,9 @@ function renderShell(container) {
     <div class="ldiv"></div>
     <div class="lfooter">Ingresa con Google o con tus credenciales</div>
     <div id="lerr" style="display:none"></div>
+    <div style="margin-top:16px;text-align:center">
+      <a href="#/portafolio" onclick="document.getElementById('lov').style.display='none';document.getElementById('mhdr').style.display='block'" style="color:#94a3b8;font-size:12px;text-decoration:underline;cursor:pointer">\u{1F50D} Explorar inmuebles sin cuenta</a>
+    </div>
   </div>
 </div>
 
@@ -148,6 +151,14 @@ function renderShell(container) {
 <div class="sec" id="sec-perfil"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u2699\uFE0F</div><div><div class="cht">Mi Perfil</div></div></div></div><div class="cdb" id="perfilc"></div></div></div></div>
 <div class="sec" id="sec-papelera"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F5D1}\uFE0F</div><div><div class="cht">Papelera</div><div class="chsb">Inmuebles eliminados</div></div></div></div><div class="cdb" id="papc"></div></div></div>
 
+<!-- EXTERNAL USER SECTIONS -->
+<div class="sec" id="sec-portafolio"><div style="max-width:1300px;margin:0 auto;padding:0 0 60px" id="portafolioc"></div></div>
+<div class="sec" id="sec-favoritos"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="favoritosc"></div></div>
+<div class="sec" id="sec-cuenta"><div class="fsec" id="cuentac"></div></div>
+<div class="sec" id="sec-mis-pub"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="mispubc"></div></div>
+<div class="sec" id="sec-publicar"><div class="fsec" id="publicarc"></div></div>
+<div class="sec" id="sec-espera"><div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center" id="esperac"></div></div>
+
 <!-- MODAL -->
 <div class="mo" id="mdl" style="display:none" onclick="if(event.target===this)cm()"><div class="mb2"><div class="m-handle"></div><div class="mhd2"><div><div class="mtt" id="mtt"></div><div class="msb2" id="msb3"></div></div><button class="mcl3" onclick="cm()">\u2715</button></div><div class="mbd2" id="mbd"></div></div></div>
 
@@ -247,25 +258,55 @@ function sApp() {
   const U = window.userStore?.get();
   if (!U) return;
 
+  const tipoU = U.tipo_usuario || 'interno';
+  const isExterno = tipoU === 'cliente' || tipoU === 'propietario' || tipoU === 'pendiente';
+
   document.getElementById('lov').style.display = 'none';
   document.getElementById('mhdr').style.display = 'block';
-  document.getElementById('stbar').style.display = 'block';
-  document.getElementById('uname').textContent = U.nombre;
 
   if (U.foto) {
     document.getElementById('ufoto').src = U.foto;
     document.getElementById('mufoto').src = U.foto;
   }
 
-  document.getElementById('muname').textContent = U.nombre;
-  document.getElementById('murole').textContent = U.rol;
-  document.getElementById('mport').style.display = 'flex';
+  if (isExterno) {
+    // External user: hide internal menu, show external menu
+    document.getElementById('stbar').style.display = 'none';
+    document.getElementById('uname').textContent = U.nombre;
+    document.getElementById('muname').textContent = U.nombre;
+    document.getElementById('murole').textContent = tipoU === 'propietario' ? 'Propietario' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';
 
-  if (U.rol === 'admin' || U.rol === 'oficina' || U.es_gestor_arriendos)
-    document.getElementById('magenda').style.display = 'flex';
-  if (U.rol === 'admin') {
-    document.getElementById('musrs').style.display = 'flex';
-    document.getElementById('mpap').style.display = 'flex';
+    // Replace sidebar menu with external options
+    const menuDiv = document.querySelector('#mpnl > div:nth-child(2)');
+    if (menuDiv) {
+      let menuH = '';
+      if (tipoU === 'pendiente') {
+        menuH = '<button class="mi act" data-s="espera" onclick="go(\'espera\')"><span class="mic">\u23F3</span>En espera</button>';
+      } else {
+        menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
+        menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
+        if (tipoU === 'propietario') {
+          menuH += '<button class="mi" data-s="mis-pub" onclick="go(\'mis-pub\')"><span class="mic">\u{1F3E0}</span>Mis publicaciones</button>';
+          menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar</button>';
+        }
+        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
+      }
+      menuDiv.innerHTML = menuH;
+    }
+  } else {
+    // Internal user: show full CRM menu
+    document.getElementById('stbar').style.display = 'block';
+    document.getElementById('uname').textContent = U.nombre;
+    document.getElementById('muname').textContent = U.nombre;
+    document.getElementById('murole').textContent = U.rol;
+    document.getElementById('mport').style.display = 'flex';
+
+    if (U.rol === 'admin' || U.rol === 'oficina' || U.es_gestor_arriendos)
+      document.getElementById('magenda').style.display = 'flex';
+    if (U.rol === 'admin') {
+      document.getElementById('musrs').style.display = 'flex';
+      document.getElementById('mpap').style.display = 'flex';
+    }
   }
 
   iTh();

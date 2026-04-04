@@ -193,10 +193,43 @@ function doSearch() {
 
 // ─── Main load function ──────────────────────────────────────────
 
+/**
+ * Load public inventory for visitors and external users.
+ * Limited fields, no internal data.
+ */
+export async function loadPublic(limit) {
+  const SB = getSupabaseClient();
+  try {
+    let q = SB.from('inmuebles')
+      .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,codigo_house,descripcion_cliente,estado,origen,captador:usuarios!captador_id(nombre,telefono_contacto),fotos(url,url_thumb,orden)')
+      .eq('eliminado', false)
+      .eq('estado_revision', 'aprobado')
+      .in('estado', ['Disponible', 'Aún Disponible'])
+      .order('created_at', { ascending: false });
+    if (limit) q = q.limit(limit);
+    const { data } = await q;
+    window.PUB = data || [];
+    return window.PUB;
+  } catch(e) {
+    console.error('[loadPublic]', e);
+    window.PUB = [];
+    return [];
+  }
+}
+window.loadPublic = loadPublic;
+window.PUB = [];
+
 export async function load() {
   const U = window.userStore?.get();
   if (!U) {
     console.warn('[load] No user session, skipping data load');
+    return;
+  }
+
+  // External users use loadPublic instead
+  const tipoU = U.tipo_usuario || 'interno';
+  if (tipoU === 'cliente' || tipoU === 'propietario' || tipoU === 'pendiente') {
+    await loadPublic();
     return;
   }
 

@@ -6,19 +6,33 @@
 // ---------------------------------------------------------------------------
 // Route definitions
 // ---------------------------------------------------------------------------
+// Internal CRM routes
+const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','agenda','conc','users','perfil','papelera'];
+// External user routes
+const ROUTES_CLIENTE = ['portafolio','favoritos','cuenta'];
+const ROUTES_PROPIETARIO = ['portafolio','favoritos','cuenta','mis-pub','publicar'];
+const ROUTES_PENDIENTE = ['espera'];
+
 const ROUTES = {
-  'inv':      { section: 'sec-inv',      label: 'Inventario',     icon: '\u{1F3E0}', auth: true },
-  'mis':      { section: 'sec-mis',      label: 'Mis Inmuebles',  icon: '\u{1F500}', auth: true },
-  'reg':      { section: 'sec-reg',      label: 'Registrar',      icon: '\u2795',    auth: true },
-  'alertas':  { section: 'sec-alertas',  label: 'Alertas',        icon: '\u{1F514}', auth: true },
-  'portales': { section: 'sec-portales', label: 'Portales',       icon: '\u{1F310}', auth: true },
-  'dash':     { section: 'sec-dash',     label: 'Dashboard',      icon: '\u{1F4CA}', auth: true },
-  'agenda':   { section: 'sec-agenda',   label: 'Agenda',         icon: '\u{1F4C5}', auth: true, roles: ['admin', 'oficina', 'gestor'] },
-  'conc':     { section: 'sec-conc',     label: 'Portales M\u00B2/FR', icon: '\u{1F504}', auth: true },
-  'users':    { section: 'sec-users',    label: 'Usuarios',       icon: '\u{1F465}', auth: true, roles: ['admin'] },
-  'perfil':   { section: 'sec-perfil',   label: 'Mi Perfil',      icon: '\u2699\uFE0F', auth: true },
-  'papelera': { section: 'sec-papelera', label: 'Papelera',       icon: '\u{1F5D1}\uFE0F', auth: true, roles: ['admin'] },
+  'inv':      { section: 'sec-inv',      label: 'Inventario',     icon: '\u{1F3E0}', auth: true, internal: true },
+  'mis':      { section: 'sec-mis',      label: 'Mis Inmuebles',  icon: '\u{1F500}', auth: true, internal: true },
+  'reg':      { section: 'sec-reg',      label: 'Registrar',      icon: '\u2795',    auth: true, internal: true },
+  'alertas':  { section: 'sec-alertas',  label: 'Alertas',        icon: '\u{1F514}', auth: true, internal: true },
+  'portales': { section: 'sec-portales', label: 'Portales',       icon: '\u{1F310}', auth: true, internal: true },
+  'dash':     { section: 'sec-dash',     label: 'Dashboard',      icon: '\u{1F4CA}', auth: true, internal: true },
+  'agenda':   { section: 'sec-agenda',   label: 'Agenda',         icon: '\u{1F4C5}', auth: true, internal: true, roles: ['admin', 'oficina', 'gestor'] },
+  'conc':     { section: 'sec-conc',     label: 'Portales M\u00B2/FR', icon: '\u{1F504}', auth: true, internal: true },
+  'users':    { section: 'sec-users',    label: 'Usuarios',       icon: '\u{1F465}', auth: true, internal: true, roles: ['admin'] },
+  'perfil':   { section: 'sec-perfil',   label: 'Mi Perfil',      icon: '\u2699\uFE0F', auth: true, internal: true },
+  'papelera': { section: 'sec-papelera', label: 'Papelera',       icon: '\u{1F5D1}\uFE0F', auth: true, internal: true, roles: ['admin'] },
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
+  // External user routes
+  'portafolio': { section: 'sec-portafolio', label: 'Explorar',        icon: '\u{1F50D}', auth: false },
+  'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','propietario'] },
+  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','propietario'] },
+  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['propietario'] },
+  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['propietario'] },
+  'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
 };
 
 // Map of route keys to the global render functions they should invoke
@@ -34,6 +48,13 @@ const ROUTE_RENDERERS = {
   'users':    'rUsers',
   'perfil':   'rPerfil',
   'papelera': 'rPapelera',
+  // External
+  'portafolio': 'rPortafolio',
+  'favoritos':  'rFavoritos',
+  'cuenta':     'rCuenta',
+  'mis-pub':    'rMisPub',
+  'publicar':   'rPublicar',
+  'espera':     'rEspera',
 };
 
 // ---------------------------------------------------------------------------
@@ -47,8 +68,14 @@ const ROUTE_RENDERERS = {
  */
 function getCurrentRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
-  const key = hash.split('/')[0] || 'inv';
-  return ROUTES[key] ? key : 'inv';
+  const key = hash.split('/')[0] || '';
+  if (ROUTES[key]) return key;
+  // Default based on user type
+  const user = window.userStore?.get();
+  const tipo = user?.tipo_usuario || 'interno';
+  if (tipo === 'pendiente') return 'espera';
+  if (tipo === 'cliente' || tipo === 'propietario') return 'portafolio';
+  return 'inv';
 }
 
 // ---------------------------------------------------------------------------
@@ -70,24 +97,45 @@ function navigateTo(route) {
     route = 'inv';
   }
 
-  const routeCfg = ROUTES[route];
+  let routeCfg = ROUTES[route];
+  const user = window.userStore?.get();
+  const tipoU = user?.tipo_usuario || 'interno';
+  const isExterno = tipoU === 'cliente' || tipoU === 'propietario' || tipoU === 'pendiente';
+  const defaultRoute = isExterno ? (tipoU === 'pendiente' ? 'espera' : 'portafolio') : 'inv';
 
   // --- Auth guard ---
-  if (routeCfg.auth && !window.userStore?.get()) {
-    // Not authenticated -> fall back to inv (the login overlay will handle it)
-    route = 'inv';
+  if (routeCfg.auth && !user) {
+    route = 'portafolio'; // unauthenticated → public portal
+    routeCfg = ROUTES[route];
   }
 
-  // --- Role guard ---
-  if (routeCfg.roles && routeCfg.roles.length) {
-    const user = window.userStore?.get();
-    if (user) {
-      // es_gestor_arriendos flag grants 'gestor' virtual role
-      const userRoles = [user.rol];
-      if (user.es_gestor_arriendos) userRoles.push('gestor');
-      if (!routeCfg.roles.some(r => userRoles.includes(r))) {
-        route = 'inv';
-      }
+  // --- Tipo usuario guard (external users can't access internal routes) ---
+  if (user && isExterno && routeCfg.internal) {
+    route = defaultRoute;
+    routeCfg = ROUTES[route];
+  }
+
+  // --- Tipo guard for external routes ---
+  if (routeCfg.tipos && routeCfg.tipos.length && user) {
+    if (!routeCfg.tipos.includes(tipoU)) {
+      route = defaultRoute;
+      routeCfg = ROUTES[route];
+    }
+  }
+
+  // --- Internal users can't access external-only routes (except portafolio) ---
+  if (user && !isExterno && routeCfg.tipos && !routeCfg.tipos.includes('interno') && route !== 'portafolio') {
+    route = 'inv';
+    routeCfg = ROUTES[route];
+  }
+
+  // --- Role guard (for internal users) ---
+  if (routeCfg.roles && routeCfg.roles.length && user) {
+    const userRoles = [user.rol];
+    if (user.es_gestor_arriendos) userRoles.push('gestor');
+    if (!routeCfg.roles.some(r => userRoles.includes(r))) {
+      route = defaultRoute;
+      routeCfg = ROUTES[route];
     }
   }
 

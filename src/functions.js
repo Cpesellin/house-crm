@@ -1052,6 +1052,25 @@ window.showPublicView = async function(id) {
       <a href="tel:+${capTel}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
     </div>`;
 
+    // ── BANNERS CTA ──
+    // Count public properties for subtitle
+    h += `<div style="padding:0 16px 20px">`;
+    // Banner principal
+    h += `<div style="margin-top:20px;padding:24px 20px;border-radius:14px;background:linear-gradient(135deg,#eff6ff,#f0f1ff);border:1.5px solid #bfdbfe;text-align:center">
+      <div style="font-size:32px;margin-bottom:6px">🏠</div>
+      <div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#1e293b;margin-bottom:4px">Encuentra tu inmueble ideal</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:14px">Explora propiedades en Pereira y el Eje Cafetero</div>
+      <a href="#/portafolio" onclick="document.getElementById('lov')&&(document.getElementById('lov').style.display='none');document.getElementById('mhdr')&&(document.getElementById('mhdr').style.display='block')" style="display:inline-block;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;background:#2563eb;color:#fff;text-decoration:none;margin-bottom:6px">🔍 Explorar inmuebles</a>
+      <div style="font-size:10px;color:#94a3b8;margin-top:8px">Gratis. Sin spam. Cancela cuando quieras.</div>
+    </div>`;
+    // Banner secundario
+    h += `<div style="margin-top:12px;padding:18px 20px;border-radius:14px;background:linear-gradient(135deg,#f0fdf4,#f0fdf8);border:1.5px solid #bbf7d0;text-align:center">
+      <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">¿También tienes un inmueble?</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:10px">Llega a miles de clientes en Pereira</div>
+      <a href="#/portafolio" onclick="document.getElementById('lov')&&(document.getElementById('lov').style.display='none');document.getElementById('mhdr')&&(document.getElementById('mhdr').style.display='block')" style="display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;text-decoration:none">🏠 Publicar mi inmueble gratis</a>
+    </div>`;
+    h += `</div>`;
+
     h += `</div>`; // close max-width container
 
     app.innerHTML = h;
@@ -1357,6 +1376,213 @@ window.completarEvt = async function(id) {
     window.toast('✅ Tarea completada');
     window.rAgenda();
   } catch(e) { console.error('[completarEvt]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 18. EXTERNAL USERS — Onboarding, Favoritos, Owner Wizard, Approval
+// ══════════════════════════════════════════════════════════════════
+
+// --- Onboarding modal (called from auth.js when new Google user) ---
+window.showOnboarding = function(googlePayload) {
+  const { email, nombre, foto } = googlePayload;
+  const html = `<div class="onb-modal" id="onbModal">
+    <div class="onb-box">
+      <div style="font-size:40px;margin-bottom:8px">🏠</div>
+      <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">Bienvenido a House</div>
+      <div style="font-size:13px;color:var(--sub);margin-bottom:20px">¿Cómo vas a usar la plataforma?</div>
+      <button class="onb-opt" onclick="selectProfile('cliente','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
+        <div class="onb-icon">🔍</div>
+        <div class="onb-title">Busco un inmueble</div>
+        <div class="onb-sub">Quiero arrendar o comprar</div>
+      </button>
+      <button class="onb-opt" onclick="selectProfile('propietario','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
+        <div class="onb-icon">🏠</div>
+        <div class="onb-title">Tengo un inmueble</div>
+        <div class="onb-sub">Quiero publicar para arrendar o vender</div>
+      </button>
+      <div style="margin-top:14px;font-size:10px;color:var(--g400)">Gratis. Sin spam. Cancela cuando quieras.</div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.selectProfile = async function(tipo, email, nombre, foto) {
+  const modal = document.getElementById('onbModal');
+  if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
+  try {
+    const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
+    const { data: newUser, error } = await SB().from('usuarios').insert({
+      email, nombre: nombre || email.split('@')[0], foto: foto || null,
+      rol: 'cliente', tipo_usuario: tipoU, activo: true,
+      usuario: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'')
+    }).select().single();
+    if (error) throw error;
+
+    // If propietario request, create registro_solicitudes + alert admin
+    if (tipo === 'propietario') {
+      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'propietario', estado: 'pendiente' });
+      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de propietario', nombre + ' (' + email + ') quiere publicar su inmueble', null, 'admin', null);
+    } else {
+      await window.noti('registro_externo', 'info', '👤 Nuevo cliente registrado', nombre + ' (' + email + ') se registró como cliente', null, 'admin', null);
+    }
+
+    // Log in the new user
+    const userData = {
+      id: newUser.id, email: newUser.email, nombre: newUser.nombre,
+      rol: newUser.rol, foto: newUser.foto || '', usuario: newUser.usuario || '',
+      telefono_contacto: '', es_gestor_arriendos: false,
+      tipo_usuario: newUser.tipo_usuario, token: 'google:' + email
+    };
+    window.userStore.set(userData);
+    if (modal) modal.remove();
+    location.hash = tipoU === 'pendiente' ? '#/espera' : '#/portafolio';
+    location.reload();
+  } catch(e) {
+    console.error('[selectProfile]', e);
+    if (modal) modal.remove();
+    window.toast('Error al crear cuenta: ' + e.message, 'terr');
+  }
+};
+
+// --- Favoritos ---
+window.toggleFavorito = async function(inmId) {
+  const u = U(); if (!u) { window.toast('Inicia sesión para guardar favoritos', 'twarn'); return; }
+  try {
+    // Check if already favorited
+    const { data: existing } = await SB().from('favoritos').select('id').eq('usuario_id', u.id).eq('inmueble_id', inmId).single();
+    if (existing) {
+      await SB().from('favoritos').delete().eq('id', existing.id);
+      window.toast('💔 Eliminado de favoritos');
+    } else {
+      await SB().from('favoritos').insert({ usuario_id: u.id, inmueble_id: inmId });
+      window.toast('❤️ Guardado en favoritos');
+    }
+    // Refresh UI if on favoritos or portafolio page
+    if (typeof window.rFavoritos === 'function' && location.hash === '#/favoritos') window.rFavoritos();
+    if (typeof window.rPortafolio === 'function' && location.hash === '#/portafolio') window.rPortafolio();
+  } catch(e) { console.error('[toggleFavorito]', e); }
+};
+
+// --- Request upgrade to propietario ---
+window.requestUpgrade = async function() {
+  const u = U(); if (!u) return;
+  const desc = prompt('Describe brevemente tu inmueble (ej: "Tengo un apto de 3 hab en Pinares que quiero arrendar")');
+  if (!desc) return;
+  try {
+    await SB().from('registro_solicitudes').insert({ usuario_id: u.id, tipo_solicitado: 'propietario', estado: 'pendiente', descripcion: desc });
+    await window.noti('registro_externo', 'info', '🏠 Solicitud upgrade a propietario', u.nombre + ' (' + u.email + ') quiere publicar: "' + desc + '"', null, 'admin', null);
+    window.toast('📨 Solicitud enviada. Te notificaremos cuando sea aprobada.');
+  } catch(e) { console.error('[requestUpgrade]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+// --- Owner Wizard State ---
+window._ownerStep = 1;
+window._ownerData = {};
+
+window.ownerWizardInit = function() { window._ownerStep = 1; window._ownerData = {}; if (typeof window.rPublicar === 'function') window.rPublicar(); };
+window.ownerWizardNext = function() { if (window._ownerStep < 3) { window._ownerStep++; window.rPublicar(); } };
+window.ownerWizardPrev = function() { if (window._ownerStep > 1) { window._ownerStep--; window.rPublicar(); } };
+
+window.ownerSaveStep = function(step) {
+  const d = window._ownerData;
+  if (step === 1) {
+    d.tipo = document.getElementById('ow_tipo')?.value || '';
+    d.negociacion = document.getElementById('ow_neg')?.value || '';
+    d.precio_venta = parseFloat(document.getElementById('ow_pv')?.value) || 0;
+    d.precio_arriendo = parseFloat(document.getElementById('ow_pa')?.value) || 0;
+    d.ciudad = document.getElementById('ow_ciudad')?.value || '';
+    d.direccion = document.getElementById('ow_dir')?.value || '';
+    d.barrio = document.getElementById('ow_barrio')?.value || '';
+    if (!d.tipo || !d.negociacion || !d.ciudad) { window.toast('Completa tipo, negociación y ciudad', 'twarn'); return false; }
+    if (d.negociacion.includes('Venta') && !d.precio_venta) { window.toast('Indica el precio de venta', 'twarn'); return false; }
+    if (d.negociacion.includes('Arriendo') && !d.precio_arriendo) { window.toast('Indica el precio de arriendo', 'twarn'); return false; }
+  } else if (step === 2) {
+    d.habitaciones = parseInt(document.getElementById('ow_hab')?.value) || 0;
+    d.banos = parseInt(document.getElementById('ow_ban')?.value) || 0;
+    d.area_construida = parseFloat(document.getElementById('ow_area')?.value) || 0;
+    d.estrato = parseInt(document.getElementById('ow_est')?.value) || 0;
+    d.parqueaderos = parseInt(document.getElementById('ow_parq')?.value) || 0;
+    d.descripcion_cliente = document.getElementById('ow_desc')?.value || '';
+  }
+  return true;
+};
+
+window.ownerPublish = async function() {
+  const u = U(); if (!u) return;
+  const d = window._ownerData;
+  try {
+    // Check max 5
+    const { data: existing } = await SB().from('inmuebles').select('id').eq('captador_id', u.id).eq('origen', 'externo').eq('eliminado', false);
+    if (existing && existing.length >= 5) { window.toast('Máximo 5 publicaciones permitidas', 'twarn'); return; }
+
+    // Generate next HOUSE code
+    const code = typeof window.nextHouseCode === 'function' ? await window.nextHouseCode() : null;
+
+    const { error } = await SB().from('inmuebles').insert({
+      tipo: d.tipo, negociacion: d.negociacion, ciudad: d.ciudad,
+      direccion: d.direccion, barrio: d.barrio, direccion_publica: d.barrio + ', ' + d.ciudad,
+      precio_venta: d.precio_venta || 0, precio_arriendo: d.precio_arriendo || 0,
+      habitaciones: d.habitaciones || 0, banos: d.banos || 0,
+      area_construida: d.area_construida || 0, estrato: d.estrato || 0,
+      parqueaderos: d.parqueaderos || 0, descripcion_cliente: d.descripcion_cliente || '',
+      captador_id: u.id, origen: 'externo', estado_revision: 'en_revision',
+      estado: 'Disponible', codigo_house: code, eliminado: false
+    });
+    if (error) throw error;
+
+    await window.noti('inmueble_externo', 'amarillo', '🏠 Nuevo inmueble externo: ' + d.tipo + ' en ' + d.ciudad, u.nombre + ' publicó ' + d.tipo + ' en ' + d.barrio + ', ' + d.ciudad, null, 'admin', null);
+    window.toast('🏠 Tu inmueble fue enviado para revisión');
+    window._ownerStep = 1; window._ownerData = {};
+    window.go('mis-pub');
+  } catch(e) { console.error('[ownerPublish]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+// --- Admin Approval ---
+window.aprobarRegistro = async function(userId, tipo) {
+  try {
+    await SB().from('usuarios').update({ tipo_usuario: tipo || 'propietario' }).eq('id', userId);
+    await SB().from('registro_solicitudes').update({ estado: 'aprobado' }).eq('usuario_id', userId).eq('estado', 'pendiente');
+    const { data: usr } = await SB().from('usuarios').select('nombre,email').eq('id', userId).single();
+    await window.noti('registro_aprobado', 'verde', '✅ Tu solicitud fue aprobada', 'Ya puedes publicar tus inmuebles en House.', usr?.email, null, null);
+    window.toast('✅ Registro aprobado');
+    if (typeof window.rUsers === 'function') window.rUsers();
+  } catch(e) { console.error('[aprobarRegistro]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+window.rechazarRegistro = async function(userId) {
+  const motivo = prompt('Motivo del rechazo:');
+  if (!motivo) return;
+  try {
+    await SB().from('registro_solicitudes').update({ estado: 'rechazado', motivo_rechazo: motivo }).eq('usuario_id', userId).eq('estado', 'pendiente');
+    const { data: usr } = await SB().from('usuarios').select('nombre,email').eq('id', userId).single();
+    await window.noti('registro_rechazado', 'rojo', '❌ Solicitud rechazada', 'Motivo: ' + motivo, usr?.email, null, null);
+    window.toast('❌ Registro rechazado');
+    if (typeof window.rUsers === 'function') window.rUsers();
+  } catch(e) { console.error('[rechazarRegistro]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+window.aprobarInmuebleExterno = async function(inmId) {
+  try {
+    await SB().from('inmuebles').update({ estado_revision: 'aprobado' }).eq('id', inmId);
+    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
+    const capEmail = inm?.captador?.email || '';
+    await window.noti('inmueble_aprobado', 'verde', '✅ Tu inmueble fue aprobado', 'Tu ' + (inm?.tipo||'inmueble') + ' en ' + (inm?.ciudad||'') + ' ya está publicado.', capEmail, null, inmId);
+    await window.noti('inmueble_aprobado', 'verde', '✅ Inmueble externo aprobado', (inm?.captador?.nombre||'Propietario') + ': ' + (inm?.tipo||'') + ' en ' + (inm?.ciudad||''), null, 'admin', inmId);
+    window.toast('✅ Inmueble aprobado y publicado');
+    if (typeof window.rUsers === 'function') window.rUsers();
+  } catch(e) { console.error('[aprobarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+window.rechazarInmuebleExterno = async function(inmId) {
+  const motivo = prompt('Motivo del rechazo:');
+  if (!motivo) return;
+  try {
+    await SB().from('inmuebles').update({ estado_revision: 'rechazado' }).eq('id', inmId);
+    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
+    await window.noti('inmueble_rechazado', 'rojo', '❌ Tu inmueble fue rechazado', 'Tu ' + (inm?.tipo||'') + ' en ' + (inm?.ciudad||'') + '. Motivo: ' + motivo, inm?.captador?.email, null, inmId);
+    window.toast('❌ Inmueble rechazado');
+    if (typeof window.rUsers === 'function') window.rUsers();
+  } catch(e) { console.error('[rechazarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
 };
 
 console.log('[functions] ✅ All window functions registered');
