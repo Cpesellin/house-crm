@@ -1396,4 +1396,120 @@ window.renderMisReferidos = async function() {
   el.innerHTML = h;
 };
 
+// ══════════════════════════════════════════════════════════════════
+// LANDING PAGE: /propietarios — Beneficios para propietarios
+// ══════════════════════════════════════════════════════════════════
+
+window.renderPropietariosLanding = function() {
+  const el = document.getElementById('propietariosc'); if (!el) return;
+  const waTel = '573105922763';
+  const waMsg = encodeURIComponent('Hola, soy propietario y quiero conocer más sobre el servicio de administración de arriendo.');
+
+  let h = '';
+
+  // Header
+  h += '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:32px 20px;text-align:center;color:#fff;border-radius:0 0 20px 20px">';
+  h += '<img src="/img/logo.png" style="height:48px;margin-bottom:12px" onerror="this.style.display=\'none\'">';
+  h += '<div style="font-family:Fraunces,serif;font-size:26px;font-weight:800;line-height:1.2;margin-bottom:8px">Arrienda tu inmueble<br>sin preocupaciones</div>';
+  h += '<div style="font-size:14px;opacity:.9;margin-bottom:16px">Nosotros nos encargamos de todo. Tú solo recibes tu plata cada mes.</div>';
+  h += '<div style="font-size:12px;opacity:.7">📍 Cl. 14 #14-09, Pereira · Risaralda</div>';
+  h += '</div>';
+
+  // Main benefits
+  h += '<div style="padding:24px 16px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;text-align:center;margin-bottom:20px;color:var(--tx)">¿Qué hacemos por usted?</div>';
+
+  const benefits = [
+    { icon: '💰', title: 'Pago garantizado cada 10 del mes', desc: 'La inmobiliaria cobra al inquilino y le transfiere a usted. Sin falta. Si el inquilino se atrasa, nosotros gestionamos el cobro jurídico.', color: '#065f46' },
+    { icon: '🔍', title: 'Estudio completo al inquilino', desc: 'Verificamos en DataCrédito (centrales de riesgo), confirmamos empleo e ingresos, pedimos referencias personales y familiares, y revisamos antecedentes judiciales. No entra cualquier persona.', color: '#2563eb' },
+    { icon: '📄', title: 'Contrato notariado y blindado', desc: 'Elaboramos contrato de arrendamiento con cláusulas de protección: seguro de arrendamiento, póliza de daños, procedimiento claro de desalojo, e inventario fotográfico detallado al momento de la entrega.', color: '#7c3aed' },
+    { icon: '🏠', title: 'Administración integral', desc: 'Nos encargamos de TODO: publicación profesional con fotografías, visitas guiadas, estudio del candidato, contrato, cobros mensuales, gestión de mantenimiento y reclamos del inquilino. Usted no hace nada.', color: '#0891b2' },
+    { icon: '📢', title: 'Exposición masiva en 3 portales', desc: 'Su inmueble se publica simultáneamente en Metrocuadrado, Fincaraíz y Facebook Marketplace con fotografía profesional, descripción completa y contacto directo. Miles de personas buscando arriendo lo verán.', color: '#ea580c' },
+    { icon: '💵', title: 'Comisión justa: solo 10% del canon', desc: 'Cobramos el 10% del canon mensual. Usted recibe el 90% todos los meses sin mover un dedo. No hay comisiones ocultas, ni cobros de mantenimiento, ni gastos administrativos adicionales.', color: '#059669' },
+    { icon: '🆓', title: 'Sin costo inicial', desc: 'Usted no paga absolutamente nada para empezar. Ni por publicación, ni por estudio, ni por contrato. La comisión solo se aplica cuando el inmueble YA está arrendado y generando ingresos.', color: '#d97706' },
+    { icon: '🛡️', title: 'Tranquilidad total', desc: 'Si hay problemas con el inquilino — no paga, daña el inmueble, quiere irse antes de tiempo, subarrienda sin permiso — nosotros lo manejamos. Notificación, cobro, proceso jurídico si es necesario. Usted no tiene que lidiar con nada.', color: '#dc2626' }
+  ];
+
+  benefits.forEach(b => {
+    h += '<div style="display:flex;gap:14px;margin-bottom:20px;align-items:flex-start">';
+    h += '<div style="width:44px;height:44px;border-radius:12px;background:' + b.color + '15;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">' + b.icon + '</div>';
+    h += '<div><div style="font-size:15px;font-weight:800;color:var(--tx);margin-bottom:4px">' + b.title + '</div>';
+    h += '<div style="font-size:13px;color:var(--sub);line-height:1.6">' + b.desc + '</div></div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // How it works
+  h += '<div style="background:var(--cd2);padding:24px 16px;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;text-align:center;margin-bottom:20px;color:var(--tx)">¿Cómo funciona?</div>';
+  const steps = [
+    { n: '1', t: 'Usted nos contacta', d: 'Nos llama, nos escribe por WhatsApp, o viene a nuestra oficina. Le explicamos todo sin compromiso.' },
+    { n: '2', t: 'Visitamos su inmueble', d: 'Nuestro equipo visita el inmueble, toma fotografías profesionales y evalúa las condiciones.' },
+    { n: '3', t: 'Firmamos contrato de administración', d: 'Un contrato claro y transparente. Usted nos entrega las llaves y nosotros nos hacemos cargo de todo.' },
+    { n: '4', t: 'Publicamos y buscamos inquilino', d: 'Publicación en 3 portales + red de asesores buscando activamente. Promedio de arriendo: menos de 30 días.' },
+    { n: '5', t: 'Usted recibe su plata cada mes', d: 'Cada 10 del mes, transferimos el 90% del canon a su cuenta. Sin excusas, sin demoras.' }
+  ];
+  steps.forEach(s => {
+    h += '<div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start">';
+    h += '<div style="width:32px;height:32px;border-radius:50%;background:var(--b600);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">' + s.n + '</div>';
+    h += '<div><div style="font-size:14px;font-weight:700;color:var(--tx)">' + s.t + '</div>';
+    h += '<div style="font-size:12px;color:var(--sub);line-height:1.5;margin-top:2px">' + s.d + '</div></div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Calculator
+  h += '<div style="padding:24px 16px;text-align:center">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:6px;color:var(--tx)">¿Cuánto recibe usted?</div>';
+  h += '<div style="font-size:13px;color:var(--sub);margin-bottom:16px">Ingrese el canon mensual de su inmueble</div>';
+  h += '<input id="propCalcInput" type="number" inputmode="numeric" placeholder="Ej: 2500000" style="width:100%;max-width:300px;padding:14px;border:2px solid var(--b300);border-radius:12px;font-size:18px;font-weight:700;text-align:center;font-family:inherit;color:var(--tx);background:var(--cd)" oninput="propCalcUpdate()">';
+  h += '<div id="propCalcResult" style="margin-top:16px"></div>';
+  h += '</div>';
+
+  // Trust
+  h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);padding:24px 16px;border-top:1px solid #bbf7d0">';
+  h += '<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;text-align:center;color:#065f46;margin-bottom:12px">¿Por qué confiar en nosotros?</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  [['📅','12+ años','de experiencia'],['🏠','500+','inmuebles administrados'],['👥','Equipo','profesional dedicado'],['📍','Pereira','presencia local']].forEach(t => {
+    h += '<div style="text-align:center;padding:14px;background:#fff;border-radius:12px;border:1px solid #bbf7d0"><div style="font-size:20px;margin-bottom:4px">' + t[0] + '</div><div style="font-size:16px;font-weight:800;color:#065f46">' + t[1] + '</div><div style="font-size:10px;color:#065f46">' + t[2] + '</div></div>';
+  });
+  h += '</div></div>';
+
+  // CTA
+  h += '<div style="padding:28px 16px;text-align:center;background:var(--cd)">';
+  h += '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx);margin-bottom:8px">¿Listo para arrendar sin estrés?</div>';
+  h += '<div style="font-size:13px;color:var(--sub);margin-bottom:20px">Contáctenos hoy. Sin compromiso.</div>';
+  h += '<a href="https://wa.me/' + waTel + '?text=' + waMsg + '" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:16px 32px;background:#25d366;color:#fff;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,211,102,.3)">💬 Contactar por WhatsApp</a>';
+  h += '<div style="margin-top:12px"><a href="tel:+573105922763" style="font-size:14px;color:var(--b600);font-weight:700;text-decoration:none">📞 Llamar: 310 592 2763</a></div>';
+  h += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--brd)">';
+  h += '<div style="font-size:12px;color:var(--sub);margin-bottom:4px">📍 Visítenos</div>';
+  h += '<div style="font-size:14px;font-weight:700;color:var(--tx)">Cl. 14 #14-09, Pereira, Risaralda</div>';
+  h += '</div>';
+  h += '</div>';
+
+  // Footer
+  h += '<div style="padding:16px;text-align:center;background:var(--cd2);border-top:1px solid var(--brd)">';
+  h += '<div style="font-size:11px;color:var(--sub)">© ' + new Date().getFullYear() + ' Inmobiliaria House · Asesores Inmobiliarios · Pereira, Colombia</div>';
+  h += '</div>';
+
+  el.innerHTML = h;
+};
+
+// Calculator for propietarios landing
+window.propCalcUpdate = function() {
+  const input = document.getElementById('propCalcInput');
+  const box = document.getElementById('propCalcResult');
+  if (!input || !box) return;
+  const canon = parseFloat(input.value) || 0;
+  if (canon <= 0) { box.innerHTML = ''; return; }
+  const comision = Math.round(canon * 0.10);
+  const ustedRecibe = canon - comision;
+  box.innerHTML = '<div style="background:var(--cd);border:2px solid var(--b300);border-radius:16px;padding:20px;max-width:320px;margin:0 auto">' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:var(--sub)">Canon mensual</span><span style="font-size:14px;font-weight:700">' + fm(canon) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:var(--sub)">Comisión House (10%)</span><span style="font-size:14px;font-weight:700;color:var(--red)">-' + fm(comision) + '</span></div>' +
+    '<div style="border-top:2px solid var(--brd);padding-top:8px;display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:800;color:var(--tx)">Usted recibe</span><span style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:#065f46">' + fm(ustedRecibe) + '</span></div>' +
+    '<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px">Cada mes, sin falta, el día 10</div>' +
+    '</div>';
+};
+
 console.log('[sections] All route renderers registered');
