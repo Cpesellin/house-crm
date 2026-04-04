@@ -127,10 +127,10 @@ function navigateTo(route) {
     }
   }
 
-  // --- Internal users can't access external-only routes (except portafolio) ---
-  if (user && !isExterno && routeCfg.tipos && !routeCfg.tipos.includes('interno') && route !== 'portafolio') {
-    route = 'inv';
-    routeCfg = ROUTES[route];
+  // --- Internal users can't access external-only routes ---
+  if (user && !isExterno) {
+    if (route === 'portafolio') { route = 'inv'; routeCfg = ROUTES[route]; }
+    else if (routeCfg.tipos && !routeCfg.tipos.includes('interno')) { route = 'inv'; routeCfg = ROUTES[route]; }
   }
 
   // --- Role guard (for internal users) ---

@@ -671,9 +671,10 @@ window.pubFilter = function(group, value, el) {
 window.rPortafolio = async function() {
   const el = document.getElementById('portafolioc'); if (!el) return;
   const u = U();
-  const tipoU = u?.tipo_usuario || null;
-  const isVisitor = !u;
-  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'propietario';
+  // If user is logged in, portafolio is handled by sec-inv + rInv via router
+  // Don't render the visitor portal header/content
+  if (u) { el.innerHTML = ''; return; }
+  const isVisitor = true;
   const loginUrl = window.location.origin + '/';
   const regUrl = window.location.origin + '/?reg=1';
 
