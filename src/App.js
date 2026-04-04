@@ -313,6 +313,9 @@ function sApp() {
         if (tipoU === 'vendedor_externo') {
           menuH += '<button class="mi" data-s="mis-pub" onclick="go(\'mis-pub\')"><span class="mic">\u{1F3E0}</span>Mis publicaciones</button>';
           menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar</button>';
+        } else {
+          // Cliente: upgrade path to publish
+          menuH += '<button class="mi" data-s="cuenta" onclick="requestUpgrade()" style="color:#065f46"><span class="mic">\u{1F3E0}</span>Publicar inmuebles gratis</button>';
         }
         menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
       }

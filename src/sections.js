@@ -696,13 +696,8 @@ window.rPortafolio = async function() {
   // Apply filters
   const f = window._pubFilters;
   let filtered = data;
-  // Toggle filters (mutually exclusive)
-  if (window._pubFavFilter && favIds.size > 0) {
-    filtered = filtered.filter(p => favIds.has(p.id));
-  }
-  if (window._pubMyFilter && u) {
-    filtered = filtered.filter(p => p.captador_id === u.id || (p.captador && p.captador.id === u.id));
-  }
+  if (window._pubFavFilter && favIds.size > 0) filtered = filtered.filter(p => favIds.has(p.id));
+  if (window._pubMyFilter && u) filtered = filtered.filter(p => p.captador_id === u.id || (p.captador && p.captador.id === u.id));
   filtered = filtered.filter(p => {
     if (f.neg) { const n = (p.negociacion||'').toLowerCase(); if (f.neg === 'arriendo' && !n.includes('arriendo')) return false; if (f.neg === 'venta' && !n.includes('venta')) return false; }
     if (f.tipo && !(p.tipo||'').toLowerCase().includes(f.tipo)) return false;
@@ -713,33 +708,106 @@ window.rPortafolio = async function() {
 
   let h = '';
 
-  // ── HEADER (white, clean) ──
+  // ════════════════════════════════════════════════
+  // LOGGED-IN EXTERNAL USERS: CRM-style layout (no own header)
+  // ════════════════════════════════════════════════
+  if (u && isExterno) {
+    h += `<div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px">`;
+
+    // Search bar (same style as CRM)
+    h += `<div class="sr"><input class="sin" placeholder="🔍 Buscar zona, tipo, barrio..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()"></div>`;
+
+    // Filter chips (same as CRM but with Favoritos toggle)
+    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">`;
+    h += `<div class="ch${f.neg==='arriendo'?' on':''}" onclick="pubFilter('neg','arriendo',this)">🔑 Arriendo</div>`;
+    h += `<div class="ch${f.neg==='venta'?' on':''}" onclick="pubFilter('neg','venta',this)">💰 Venta</div>`;
+    h += `<div class="ch${f.tipo==='apartamento'?' on':''}" onclick="pubFilter('tipo','apartamento',this)">🏢 Apto</div>`;
+    h += `<div class="ch${f.tipo==='casa'?' on':''}" onclick="pubFilter('tipo','casa',this)">🏡 Casa</div>`;
+    h += `<div class="ch${f.tipo==='finca'?' on':''}" onclick="pubFilter('tipo','finca',this)">🌾 Finca</div>`;
+    h += `<div class="ch${f.tipo==='local'?' on':''}" onclick="pubFilter('tipo','local',this)">🏪 Local</div>`;
+    h += `<div class="ch${f.tipo==='lote'?' on':''}" onclick="pubFilter('tipo','lote',this)">🌳 Lote</div>`;
+    h += `<div class="ch${f.tipo==='oficina'?' on':''}" onclick="pubFilter('tipo','oficina',this)">💼 Oficina</div>`;
+    h += `</div>`;
+
+    // City chips
+    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`;
+    h += `<div class="ch${f.ciudad==='pereira'?' on':''}" onclick="pubFilter('ciudad','pereira',this)">📍 Pereira</div>`;
+    h += `<div class="ch${f.ciudad==='dosquebradas'?' on':''}" onclick="pubFilter('ciudad','dosquebradas',this)">📍 Dosq.</div>`;
+    h += `<div class="ch${f.ciudad==='santa rosa'?' on':''}" onclick="pubFilter('ciudad','santa rosa',this)">📍 Sta Rosa</div>`;
+    h += `<div class="ch${f.ciudad==='cerritos'?' on':''}" onclick="pubFilter('ciudad','cerritos',this)">📍 Cerritos</div>`;
+    h += `</div>`;
+
+    // Favoritos toggle (pink, like Mis inmuebles in CRM)
+    h += `<div style="display:flex;gap:6px;margin-bottom:10px">`;
+    h += `<button onclick="window._pubFavFilter=!window._pubFavFilter;if(window._pubFavFilter)window._pubMyFilter=false;rPortafolio()" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:2px solid ${window._pubFavFilter?'#e11d73':'var(--brd)'};background:${window._pubFavFilter?'#e11d73':'var(--cd)'};color:${window._pubFavFilter?'#fff':'var(--tx)'}">♥ Mis favoritos</button>`;
+    if (tipoU === 'vendedor_externo') {
+      h += `<button onclick="window._pubMyFilter=!window._pubMyFilter;if(window._pubMyFilter)window._pubFavFilter=false;rPortafolio()" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:2px solid ${window._pubMyFilter?'#e11d73':'var(--brd)'};background:${window._pubMyFilter?'#e11d73':'var(--cd)'};color:${window._pubMyFilter?'#fff':'var(--tx)'}">🏠 Mis inmuebles</button>`;
+    }
+    h += `</div>`;
+
+    // Results count
+    h += `<div style="font-size:12px;color:var(--sub);font-weight:700;margin-bottom:8px">${filtered.length} inmueble${filtered.length!==1?'s':''} disponible${filtered.length!==1?'s':''}</div>`;
+
+    // Cards grid (same card style as CRM)
+    h += `<div id="pub-res" class="pub-grid">`;
+    filtered.forEach(p => {
+      const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+      const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
+      const capTel = p.captador?.telefono_contacto || '573105922763';
+      const capNom = p.captador?.nombre || 'House';
+      const cod = p.codigo_house || '';
+      const previewUrl = cod ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
+      const isFav = favIds.has(p.id);
+      const specs = [];
+      if (p.habitaciones) specs.push('🛏️ '+p.habitaciones);
+      if (p.banos) specs.push('🚿 '+p.banos);
+      if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
+      if (p.estrato) specs.push('E'+p.estrato);
+
+      h += `<div class="pub-card" style="background:var(--cd)">`;
+      if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
+      else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:var(--g100)">${emo(p.tipo)}</div>`;
+      h += `<button class="pub-fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${isFav?'❤️':'🤍'}</button>`;
+      if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏢 Asesor externo</span>`;
+      h += `<div class="pub-card-body">`;
+      h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
+      h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
+      h += `<div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
+      if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}<span style="font-size:12px;font-weight:500;color:var(--sub)">/mes</span></div>`;
+      if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
+      if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
+      h += `</div>`;
+      h += `<div class="pub-card-actions"><a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado en este inmueble: '+previewUrl)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="pub-card-det" href="${previewUrl}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a></div>`;
+      h += `</div>`;
+    });
+    h += `</div></div>`;
+
+    el.innerHTML = h;
+    return;
+  }
+
+  // ════════════════════════════════════════════════
+  // VISITOR (not logged in): standalone portal with own header
+  // ════════════════════════════════════════════════
+
+  // Header
   h += `<div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.04)">`;
   h += `<img src="/img/logo.png" style="height:28px" onerror="this.style.display='none'">`;
   h += `<span style="font-family:Fraunces,serif;font-size:15px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>`;
   h += `<div style="flex:1"></div>`;
-  if (u && isExterno) {
-    h += `<button onclick="go('favoritos')" style="background:none;border:none;font-size:18px;cursor:pointer" title="Favoritos">❤️</button>`;
-    h += `<button onclick="omenu()" style="background:none;border:none;font-size:20px;cursor:pointer;margin-left:4px;color:#1e293b">☰</button>`;
-  } else if (isVisitor) {
-    h += `<a href="${loginUrl}" style="padding:8px 16px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">Ingresar</a>`;
-    h += `<a href="${regUrl}" style="padding:8px 16px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin-left:6px;white-space:nowrap">Registrarse gratis</a>`;
-  }
+  h += `<a href="${loginUrl}" style="padding:8px 16px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">Ingresar</a>`;
+  h += `<a href="${regUrl}" style="padding:8px 16px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin-left:6px;white-space:nowrap">Registrarse gratis</a>`;
   h += `</div>`;
 
-  // ── HERO BANNER (visitor only) ──
-  if (isVisitor) {
-    h += `<div style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:28px 20px;text-align:center;color:#fff">`;
-    h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;line-height:1.2;margin-bottom:6px">Encuentra tu hogar ideal en Pereira</div>`;
-    h += `<div style="font-size:13px;opacity:.85;margin-bottom:16px">Arriendos, ventas y más en el Eje Cafetero</div>`;
-    h += `<div style="max-width:400px;margin:0 auto"><input class="pub-search" placeholder="🔍 Buscar zona, tipo de inmueble..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()" style="background:#fff;color:#1e293b;border:none;padding:12px 16px;border-radius:10px;width:100%;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>`;
-    h += `</div>`;
-  } else {
-    // Logged-in search bar
-    h += `<div style="padding:10px 14px;background:#fff"><input class="pub-search" placeholder="🔍 Buscar zona, tipo..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px"></div>`;
-  }
+  // Hero banner
+  h += `<div style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:28px 20px;text-align:center;color:#fff">`;
+  h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;line-height:1.2;margin-bottom:6px">Encuentra tu hogar ideal en Pereira</div>`;
+  h += `<div style="font-size:13px;opacity:.85;margin-bottom:16px">Arriendos, ventas y más en el Eje Cafetero</div>`;
+  h += `<div style="max-width:400px;margin:0 auto"><input class="pub-search" placeholder="🔍 Buscar zona, tipo de inmueble..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()" style="background:#fff;color:#1e293b;border:none;padding:12px 16px;border-radius:10px;width:100%;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>`;
+  h += `</div>`;
 
-  // ── FILTERS ──
+  // Filters
   h += `<div style="padding:8px 14px;background:#fff;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap">`;
   h += `<button class="pub-chip${f.neg==='arriendo'?' act':''}" data-g="neg" onclick="pubFilter('neg','arriendo',this)">🔑 Arriendo</button>`;
   h += `<button class="pub-chip${f.neg==='venta'?' act':''}" data-g="neg" onclick="pubFilter('neg','venta',this)">💰 Venta</button>`;
@@ -747,43 +815,24 @@ window.rPortafolio = async function() {
   h += `<button class="pub-chip${f.tipo==='casa'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','casa',this)">🏡 Casa</button>`;
   h += `<button class="pub-chip${f.tipo==='finca'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','finca',this)">🌾 Finca</button>`;
   h += `<button class="pub-chip${f.tipo==='local'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','local',this)">🏪 Local</button>`;
-  // Toggle Mis favoritos + Mis inmuebles (logged-in external users)
-  if (u && isExterno) {
-    h += `<div style="flex-shrink:0;width:1px;background:var(--brd);margin:4px 2px"></div>`;
-    h += `<button class="pub-chip${window._pubFavFilter?' act':''}" style="${window._pubFavFilter?'background:#e11d73;color:#fff;border-color:#e11d73':''}" onclick="window._pubFavFilter=!window._pubFavFilter;if(window._pubFavFilter)window._pubMyFilter=false;rPortafolio()">♥ Mis favoritos</button>`;
-    if (tipoU === 'vendedor_externo') {
-      h += `<button class="pub-chip${window._pubMyFilter?' act':''}" style="${window._pubMyFilter?'background:#e11d73;color:#fff;border-color:#e11d73':''}" onclick="window._pubMyFilter=!window._pubMyFilter;if(window._pubMyFilter)window._pubFavFilter=false;rPortafolio()">🏠 Mis inmuebles</button>`;
-    }
-  }
   h += `</div>`;
 
-  // ── RESULTS COUNT ──
-  h += `<div style="padding:6px 14px;font-size:12px;color:#64748b;font-weight:700;background:#fff">${filtered.length} inmueble${filtered.length!==1?'s':''} disponible${filtered.length!==1?'s':''}</div>`;
+  h += `<div style="padding:6px 14px;font-size:12px;color:#64748b;font-weight:700;background:#fff">${filtered.length} inmueble${filtered.length!==1?'s':''}</div>`;
 
-  // ── GRID ──
+  // Grid
   h += `<div style="padding:8px 14px;background:#f8fafc;min-height:60vh"><div class="pub-grid">`;
   filtered.forEach(p => {
     const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
     const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
-    const capTel = p.captador?.telefono_contacto || '573105922763';
-    const capNom = p.captador?.nombre || 'House';
-    const cod = p.codigo_house || '';
-    const previewUrl = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
-    const isFav = favIds.has(p.id);
     const specs = [];
     if (p.habitaciones) specs.push('🛏️ '+p.habitaciones);
     if (p.banos) specs.push('🚿 '+p.banos);
     if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
 
-    // Card click: visitors get gate, logged-in go to detail
-    const cardClick = isVisitor ? `onclick="event.preventDefault();document.getElementById('pub-gate')&&document.getElementById('pub-gate').scrollIntoView({behavior:'smooth'})"` : '';
-
-    h += `<div class="pub-card" style="background:#fff" ${cardClick}>`;
+    h += `<div class="pub-card" style="background:#fff" onclick="event.preventDefault();document.getElementById('pub-gate')&&document.getElementById('pub-gate').scrollIntoView({behavior:'smooth'})">`;
     if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
     else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:#f1f5f9">${emo(p.tipo)}</div>`;
-    if (u && isExterno) h += `<button class="pub-fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${isFav?'❤️':'🤍'}</button>`;
-    if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏢 Asesor externo</span>`;
     h += `<div class="pub-card-body">`;
     h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
     h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
@@ -792,42 +841,29 @@ window.rPortafolio = async function() {
     if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
     if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
     h += `</div>`;
-    // Actions: visitors see gate text instead of buttons
-    if (isVisitor) {
-      h += `<div style="padding:10px 14px 12px;text-align:center"><div style="font-size:11px;color:#2563eb;font-weight:700;cursor:pointer" onclick="event.stopPropagation();document.getElementById('pub-gate').scrollIntoView({behavior:'smooth'})">🔒 Regístrate gratis para ver más</div></div>`;
-    } else {
-      h += `<div class="pub-card-actions">`;
-      h += `<a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado en este inmueble: '+previewUrl)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a>`;
-      h += `<a class="pub-card-det" href="${previewUrl}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a>`;
-      h += `</div>`;
-    }
+    h += `<div style="padding:10px 14px 12px;text-align:center"><div style="font-size:11px;color:#2563eb;font-weight:700">🔒 Regístrate gratis para ver más</div></div>`;
     h += `</div>`;
   });
   h += `</div></div>`;
 
-  // ── REGISTRATION GATE (visitor) ──
-  if (isVisitor) {
-    h += `<div id="pub-gate" style="background:#fff;padding:32px 20px;text-align:center;border-top:1px solid #e2e8f0">`;
-    h += `<div style="font-size:32px;margin-bottom:10px">🔓</div>`;
-    h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:#1e293b;margin-bottom:6px">Regístrate gratis para ver todo</div>`;
-    h += `<div style="font-size:14px;color:#64748b;max-width:360px;margin:0 auto 20px;line-height:1.5">Accede al inventario completo, guarda favoritos y recibe alertas de nuevos inmuebles.</div>`;
-    h += `<a href="${regUrl}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">Registrarse gratis</a>`;
-    h += `<div style="margin-top:10px"><a href="${loginUrl}" style="font-size:13px;color:#64748b;text-decoration:underline">Ya tengo cuenta → Ingresar</a></div>`;
-    h += `</div>`;
-
-    // ── OWNER CTA (visitor) ──
-    h += `<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);padding:28px 20px;text-align:center;border-top:1px solid #bbf7d0">`;
-    h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
-    h += `<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#065f46;margin-bottom:6px">¿Tienes un inmueble?</div>`;
-    h += `<div style="font-size:14px;color:#064e3b;max-width:340px;margin:0 auto 16px;line-height:1.5">Suscríbete y publica gratis. Te conectamos con cientos de compradores e inversionistas en el Eje Cafetero.</div>`;
-    h += `<a href="${regUrl}" style="display:inline-block;padding:12px 28px;background:#065f46;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(6,95,70,.25)">Publicar mi inmueble gratis</a>`;
-    h += `</div>`;
-  }
-
-  // ── FOOTER ──
-  h += `<div style="background:#fff;padding:20px;text-align:center;border-top:1px solid #e2e8f0">`;
-  h += `<div style="font-size:11px;color:#94a3b8">© ${new Date().getFullYear()} House · Asesores Inmobiliarios · Pereira, Colombia</div>`;
+  // Registration gate
+  h += `<div id="pub-gate" style="background:#fff;padding:32px 20px;text-align:center;border-top:1px solid #e2e8f0">`;
+  h += `<div style="font-size:32px;margin-bottom:10px">🔓</div>`;
+  h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:#1e293b;margin-bottom:6px">Regístrate gratis para ver todo</div>`;
+  h += `<div style="font-size:14px;color:#64748b;max-width:360px;margin:0 auto 20px;line-height:1.5">Accede al inventario completo, guarda favoritos y recibe alertas de nuevos inmuebles.</div>`;
+  h += `<a href="${regUrl}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">Registrarse gratis</a>`;
+  h += `<div style="margin-top:10px"><a href="${loginUrl}" style="font-size:13px;color:#64748b;text-decoration:underline">Ya tengo cuenta → Ingresar</a></div>`;
   h += `</div>`;
+
+  // Owner CTA
+  h += `<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);padding:28px 20px;text-align:center;border-top:1px solid #bbf7d0">`;
+  h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
+  h += `<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#065f46;margin-bottom:6px">¿Tienes un inmueble?</div>`;
+  h += `<div style="font-size:14px;color:#064e3b;max-width:340px;margin:0 auto 16px;line-height:1.5">Suscríbete y publica gratis. Te conectamos con cientos de compradores e inversionistas.</div>`;
+  h += `<a href="${regUrl}" style="display:inline-block;padding:12px 28px;background:#065f46;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">Publicar mi inmueble gratis</a>`;
+  h += `</div>`;
+
+  h += `<div style="background:#fff;padding:20px;text-align:center;border-top:1px solid #e2e8f0"><div style="font-size:11px;color:#94a3b8">© ${new Date().getFullYear()} House · Asesores Inmobiliarios · Pereira, Colombia</div></div>`;
 
   el.innerHTML = h;
 };
