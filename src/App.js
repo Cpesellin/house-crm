@@ -317,6 +317,8 @@ function sApp() {
       let menuH = '';
       if (tipoU === 'pendiente') {
         menuH = '<button class="mi act" data-s="espera" onclick="go(\'espera\')"><span class="mic">\u23F3</span>En espera</button>';
+        menuH += '<button class="mi" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
+        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
       } else {
         menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
         if (tipoU === 'vendedor_externo' || tipoU === 'propietario') {

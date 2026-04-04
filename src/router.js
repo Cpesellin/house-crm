@@ -29,7 +29,7 @@ const ROUTES = {
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
-  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
+  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario','pendiente'] },
   'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo','propietario'] },
   'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['vendedor_externo','propietario'] },
   'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
