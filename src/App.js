@@ -378,17 +378,21 @@ export async function initApp(container) {
       console.log('[App] Auth event:', event);
       if (event === AUTH_EVENTS.LOGIN_SUCCESS || event === AUTH_EVENTS.SESSION_RESTORED) {
         sApp();
-        // Clear visitor portal content to prevent duplicate headers
+        // Clear visitor portal content
         const portafolioc = document.getElementById('portafolioc');
         if (portafolioc) portafolioc.innerHTML = '';
-        // Show loading state in res while data loads
+        // Show loading spinner
         const resEl = document.getElementById('res');
         if (resEl) resEl.innerHTML = '<div class="ldr"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
-        // Navigate to correct route first, THEN load data
+        // Navigate to correct default route and show the section
         const u2 = window.userStore?.get();
         const t2 = u2?.tipo_usuario || 'interno';
         const isExt2 = t2 === 'cliente' || t2 === 'vendedor_externo' || t2 === 'propietario';
-        if (isExt2) window.go('portafolio');
+        // Use go() to activate the right section immediately
+        const currentHash = location.hash.replace(/^#\/?/, '');
+        if (typeof window.go === 'function') {
+          window.go(currentHash || (isExt2 ? 'portafolio' : 'inv'));
+        }
         if (typeof window.load === 'function') window.load();
       }
       if (event === AUTH_EVENTS.LOGIN_ERROR) {
