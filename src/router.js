@@ -81,8 +81,13 @@ function navigateTo(route) {
   // --- Role guard ---
   if (routeCfg.roles && routeCfg.roles.length) {
     const user = window.userStore?.get();
-    if (user && !routeCfg.roles.includes(user.rol)) {
-      route = 'inv';
+    if (user) {
+      // es_gestor_arriendos flag grants 'gestor' virtual role
+      const userRoles = [user.rol];
+      if (user.es_gestor_arriendos) userRoles.push('gestor');
+      if (!routeCfg.roles.some(r => userRoles.includes(r))) {
+        route = 'inv';
+      }
     }
   }
 

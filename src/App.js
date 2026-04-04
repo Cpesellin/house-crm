@@ -261,7 +261,7 @@ function sApp() {
   document.getElementById('murole').textContent = U.rol;
   document.getElementById('mport').style.display = 'flex';
 
-  if (U.rol === 'admin' || U.es_gestor_arriendos)
+  if (U.rol === 'admin' || U.rol === 'oficina' || U.es_gestor_arriendos)
     document.getElementById('magenda').style.display = 'flex';
   if (U.rol === 'admin') {
     document.getElementById('musrs').style.display = 'flex';

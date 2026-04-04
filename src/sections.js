@@ -393,11 +393,13 @@ window.rUsers = async function () {
 
   el.innerHTML = data.map(u2 => {
     const act=u2.activo, rol=u2.rol||'asesor';
-    // F16: Badge de rol con color
-    const rolColor=rol==='admin'?'background:rgba(139,92,246,.1);color:var(--purple)':rol==='oficina'?'background:var(--goldbg);color:#92400e':'background:var(--b50);color:var(--b700)';
-    const gestorBadge = u2.es_gestor_arriendos ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
+    // F16: Badge de rol con color — gestor de arriendos overrides asesor label
+    const isGestor = u2.es_gestor_arriendos === true;
+    const displayRol = isGestor ? 'Gestor Arriendos' : rol;
+    const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : 'background:var(--b50);color:var(--b700)';
+    const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
     const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
-    return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${rol}</span>${toggleBtn}</div>`;
+    return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}</div>`;
   }).join('');
 };
 
@@ -413,7 +415,8 @@ window.rPerfil = function () {
   let h=`<div style="text-align:center;margin-bottom:16px">`;
   if(u.foto)h+=`<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
   else h+=`<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0].toUpperCase()}</div>`;
-  h+=`<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div><div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${u.rol}</div></div>`;
+  const profileRol = u.es_gestor_arriendos ? 'Gestor Arriendos' : u.rol;
+  h+=`<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div><div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${profileRol}</div></div>`;
 
   // F17: Editable fields
   h+=`<div class="msc"><div class="msct">✏️ Editar</div><div class="mgr">`;
@@ -457,11 +460,13 @@ window.rAgenda = async function () {
   el.innerHTML='<div class="ldr"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
 
   const isAdmin=u.rol==='admin'||u.rol==='oficina';
+  const isGestor=u.es_gestor_arriendos===true;
+  const canSeeAll=isAdmin||isGestor;
   const startW=new Date(window._agDate);startW.setDate(startW.getDate()-startW.getDay());
   const endW=new Date(startW);endW.setDate(endW.getDate()+7);
 
   let q=SB().from('agenda').select('*,inmueble:inmuebles(id,tipo,ciudad,direccion,captador:usuarios!captador_id(nombre))').gte('fecha',startW.toISOString().split('T')[0]).lte('fecha',endW.toISOString().split('T')[0]).order('hora_inicio');
-  if(!isAdmin)q=q.eq('usuario_id',u.id);
+  if(!canSeeAll)q=q.eq('usuario_id',u.id);
   const{data}=await q; const evts=data||[];
 
   const dias2=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -469,7 +474,7 @@ window.rAgenda = async function () {
   const hoy=new Date().toISOString().split('T')[0];
   const selDay=window._agDate.toISOString().split('T')[0];
 
-  let h=`<div class="card"><div class="cdh"><div class="chl"><div class="chi">📅</div><div><div class="cht">Agenda${isAdmin?' — Gestión':''}</div></div></div></div><div class="cdb">`;
+  let h=`<div class="card"><div class="cdh"><div class="chl"><div class="chi">📅</div><div><div class="cht">Agenda${canSeeAll?' — Gestión':''}</div></div></div></div><div class="cdb">`;
 
   // F10: Nav ◀ ▶
   h+=`<div class="ag-nav"><button onclick="agNavDay(-1)">◀</button><div class="ag-date">${dias2[window._agDate.getDay()]} ${window._agDate.getDate()} de ${meses[window._agDate.getMonth()]}</div><button onclick="agNavDay(1)">▶</button></div>`;
