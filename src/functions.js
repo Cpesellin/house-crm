@@ -1775,7 +1775,8 @@ window.ownerPublish = async function() {
 // --- Admin Approval ---
 window.aprobarRegistro = async function(userId, tipo) {
   try {
-    await SB().from('usuarios').update({ tipo_usuario: tipo || 'vendedor_externo' }).eq('id', userId);
+    // Always set to vendedor_externo regardless of old tipo_solicitado value
+    await SB().from('usuarios').update({ tipo_usuario: 'vendedor_externo' }).eq('id', userId);
     await SB().from('registro_solicitudes').update({ estado: 'aprobado' }).eq('usuario_id', userId).eq('estado', 'pendiente');
     const { data: usr } = await SB().from('usuarios').select('nombre,email').eq('id', userId).single();
     await window.noti('registro_aprobado', 'verde', '✅ Tu solicitud fue aprobada', 'Ya puedes publicar tus inmuebles en House.', usr?.email, null, null);
