@@ -40,6 +40,24 @@ function renderShell(container) {
     <div class="lfooter">Ingresa con Google o con tus credenciales</div>
     <div id="lerr" style="display:none"></div>
     <div style="margin-top:16px;text-align:center">
+      <button onclick="toggleRegForm()" id="lreg_toggle" style="background:none;border:none;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:inherit">\u{1F4DD} Crear cuenta gratis</button>
+    </div>
+    <!-- REGISTRO EXTERNO (hidden by default) -->
+    <div id="lreg_form" style="display:none;margin-top:16px">
+      <div style="font-size:14px;font-weight:800;text-align:center;color:#fff;margin-bottom:12px">\u{1F3E0} Crear cuenta</div>
+      <div class="lfrm">
+        <input id="reg_nombre" type="text" placeholder="Tu nombre completo" autocomplete="name" style="margin-bottom:8px">
+        <input id="reg_email" type="email" placeholder="Email" autocomplete="email" style="margin-bottom:8px">
+        <input id="reg_pwd" type="password" placeholder="Crea una contrase\u00F1a" autocomplete="new-password" style="margin-bottom:8px">
+        <input id="reg_tel" type="tel" placeholder="Tel\u00E9fono WhatsApp (opcional)" autocomplete="tel" style="margin-bottom:10px">
+        <button type="button" onclick="registerExternal()" id="reg_btn" style="background:#2563eb;color:#fff;font-weight:700">Crear mi cuenta</button>
+      </div>
+      <div id="reg_err" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="toggleRegForm()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">\u2190 Volver al inicio de sesi\u00F3n</button>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:center">
       <a href="#/portafolio" onclick="document.getElementById('lov').style.display='none'" style="color:#94a3b8;font-size:12px;text-decoration:underline;cursor:pointer">\u{1F50D} Explorar inmuebles sin cuenta</a>
     </div>
   </div>
@@ -361,6 +379,14 @@ export async function initApp(container) {
         document.getElementById('lov').style.display = 'none';
         // Don't show main header — rPortafolio renders its own
       }
+    }
+
+    // Auto-open registration form if ?reg=1
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('reg') === '1' && typeof window.toggleRegForm === 'function') {
+      setTimeout(() => window.toggleRegForm(), 300);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
     }
 
     // Bind credential login button

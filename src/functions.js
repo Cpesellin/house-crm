@@ -1067,7 +1067,7 @@ window.showPublicView = async function(id) {
     h += `<div style="margin-top:12px;padding:18px 20px;border-radius:14px;background:linear-gradient(135deg,#f0fdf4,#f0fdf8);border:1.5px solid #bbf7d0;text-align:center">
       <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">¿También tienes un inmueble?</div>
       <div style="font-size:12px;color:#64748b;margin-bottom:10px">Llega a miles de clientes en Pereira</div>
-      <a href="${baseUrl}/#/portafolio" style="display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;text-decoration:none">🏠 Publicar mi inmueble gratis</a>
+      <a href="${baseUrl}/?reg=1" style="display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;text-decoration:none">🏠 Publicar mi inmueble gratis</a>
     </div>`;
     h += `</div>`;
 
@@ -1379,7 +1379,178 @@ window.completarEvt = async function(id) {
 };
 
 // ══════════════════════════════════════════════════════════════════
-// 18. EXTERNAL USERS — Onboarding, Favoritos, Owner Wizard, Approval
+// ══════════════════════════════════════════════════════════════════
+// 18. EXTERNAL REGISTRATION — Email/password
+// ══════════════════════════════════════════════════════════════════
+
+window.toggleRegForm = function() {
+  const loginForm = document.querySelector('#lov .lfrm');
+  const googleBtn = document.getElementById('g_id_signin');
+  const orDiv = document.querySelector('#lov .lor');
+  const footer = document.querySelector('#lov .lfooter');
+  const regForm = document.getElementById('lreg_form');
+  const regToggle = document.getElementById('lreg_toggle');
+  const errEl = document.getElementById('lerr');
+
+  if (regForm.style.display === 'none') {
+    // Show register, hide login
+    if (loginForm) loginForm.style.display = 'none';
+    if (googleBtn) googleBtn.style.display = 'none';
+    if (orDiv) orDiv.style.display = 'none';
+    if (footer) footer.style.display = 'none';
+    if (regToggle) regToggle.style.display = 'none';
+    if (errEl) errEl.style.display = 'none';
+    regForm.style.display = 'block';
+  } else {
+    // Show login, hide register
+    if (loginForm) loginForm.style.display = '';
+    if (googleBtn) googleBtn.style.display = '';
+    if (orDiv) orDiv.style.display = '';
+    if (footer) footer.style.display = '';
+    if (regToggle) regToggle.style.display = '';
+    regForm.style.display = 'none';
+    document.getElementById('reg_err').style.display = 'none';
+  }
+};
+
+window.registerExternal = async function() {
+  const nombre = (document.getElementById('reg_nombre')?.value || '').trim();
+  const email = (document.getElementById('reg_email')?.value || '').trim();
+  const pwd = (document.getElementById('reg_pwd')?.value || '').trim();
+  const tel = (document.getElementById('reg_tel')?.value || '').trim();
+  const errEl = document.getElementById('reg_err');
+  const btn = document.getElementById('reg_btn');
+
+  if (!nombre || !email || !pwd) {
+    errEl.textContent = 'Nombre, email y contraseña son obligatorios';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (pwd.length < 4) {
+    errEl.textContent = 'La contraseña debe tener al menos 4 caracteres';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!email.includes('@')) {
+    errEl.textContent = 'Ingresa un email válido';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Creando cuenta...';
+  errEl.style.display = 'none';
+
+  try {
+    // Check if email already exists
+    const { data: existing } = await SB().from('usuarios').select('id,activo,tipo_usuario').eq('email', email).single();
+    if (existing) {
+      if (existing.activo) {
+        errEl.textContent = 'Este email ya está registrado. Intenta iniciar sesión.';
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+        return;
+      }
+      // Reactivate inactive user
+      const h2 = await window.hashPwd(pwd);
+      await SB().from('usuarios').update({ activo: true, nombre, password_hash: h2, telefono_contacto: tel || null }).eq('id', existing.id);
+      // Show onboarding
+      window.showOnboarding({ email, nombre, foto: '' });
+      btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+      return;
+    }
+
+    // Hash password
+    const h2 = await window.hashPwd(pwd);
+    const usuario = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Show onboarding modal to choose profile type
+    // Store registration data temporarily
+    window._pendingReg = { nombre, email, pwd_hash: h2, usuario, tel, foto: '' };
+
+    // Show onboarding (this will handle the INSERT based on profile choice)
+    window.showOnboardingEmail();
+
+    btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+
+  } catch(e) {
+    console.error('[registerExternal]', e);
+    errEl.textContent = 'Error: ' + (e.message || 'No se pudo crear la cuenta');
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+  }
+};
+
+// Onboarding for email registration (uses _pendingReg data)
+window.showOnboardingEmail = function() {
+  const html = `<div class="onb-modal" id="onbModal">
+    <div class="onb-box">
+      <div style="font-size:40px;margin-bottom:8px">🏠</div>
+      <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">Bienvenido a House</div>
+      <div style="font-size:13px;color:var(--sub);margin-bottom:20px">¿Cómo vas a usar la plataforma?</div>
+      <button class="onb-opt" onclick="completeEmailReg('cliente')">
+        <div class="onb-icon">🔍</div>
+        <div class="onb-title">Busco un inmueble</div>
+        <div class="onb-sub">Quiero arrendar o comprar</div>
+      </button>
+      <button class="onb-opt" onclick="completeEmailReg('propietario')">
+        <div class="onb-icon">🏠</div>
+        <div class="onb-title">Tengo un inmueble</div>
+        <div class="onb-sub">Quiero publicar para arrendar o vender</div>
+      </button>
+      <div style="margin-top:14px;font-size:10px;color:var(--g400)">Gratis. Sin spam. Cancela cuando quieras.</div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.completeEmailReg = async function(tipo) {
+  const reg = window._pendingReg;
+  if (!reg) return;
+  const modal = document.getElementById('onbModal');
+  if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
+
+  try {
+    const tipoU = tipo === 'propietario' ? 'pendiente' : 'cliente';
+
+    const { data: newUser, error } = await SB().from('usuarios').insert({
+      email: reg.email, nombre: reg.nombre, foto: reg.foto || null,
+      rol: 'cliente', tipo_usuario: tipoU, activo: true,
+      usuario: reg.usuario, password_hash: reg.pwd_hash,
+      telefono_contacto: reg.tel || null
+    }).select().single();
+    if (error) throw error;
+
+    // If propietario request
+    if (tipo === 'propietario') {
+      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'propietario', estado: 'pendiente' });
+      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de propietario', reg.nombre + ' (' + reg.email + ') quiere publicar su inmueble', null, 'admin', null);
+    } else {
+      await window.noti('registro_externo', 'info', '👤 Nuevo cliente registrado', reg.nombre + ' (' + reg.email + ') se registró como cliente', null, 'admin', null);
+    }
+
+    // Log in
+    const userData = {
+      id: newUser.id, email: newUser.email, nombre: newUser.nombre,
+      rol: newUser.rol, foto: newUser.foto || '', usuario: newUser.usuario || '',
+      telefono_contacto: newUser.telefono_contacto || '', es_gestor_arriendos: false,
+      tipo_usuario: newUser.tipo_usuario, token: 'cred:' + newUser.usuario + ':' + reg.pwd_hash
+    };
+    window.userStore.set(userData);
+    window._pendingReg = null;
+    if (modal) modal.remove();
+    if (typeof window.sApp === 'function') window.sApp();
+    window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+
+  } catch(e) {
+    console.error('[completeEmailReg]', e);
+    if (modal) modal.remove();
+    window.toast('Error al crear cuenta: ' + e.message, 'terr');
+    window._pendingReg = null;
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 19. EXTERNAL USERS — Onboarding, Favoritos, Owner Wizard, Approval
 // ══════════════════════════════════════════════════════════════════
 
 // --- Onboarding modal (called from auth.js when new Google user) ---

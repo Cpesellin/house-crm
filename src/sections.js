@@ -675,6 +675,7 @@ window.rPortafolio = async function() {
   const isVisitor = !u;
   const isExterno = tipoU === 'cliente' || tipoU === 'propietario';
   const loginUrl = window.location.origin + '/';
+  const regUrl = window.location.origin + '/?reg=1';
 
   // Load data
   let data = window.PUB;
@@ -714,7 +715,7 @@ window.rPortafolio = async function() {
     h += `<button onclick="omenu()" style="background:none;border:none;font-size:20px;cursor:pointer;margin-left:4px;color:#1e293b">☰</button>`;
   } else if (isVisitor) {
     h += `<a href="${loginUrl}" style="padding:8px 16px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">Ingresar</a>`;
-    h += `<a href="${loginUrl}" style="padding:8px 16px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin-left:6px;white-space:nowrap">Registrarse gratis</a>`;
+    h += `<a href="${regUrl}" style="padding:8px 16px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin-left:6px;white-space:nowrap">Registrarse gratis</a>`;
   }
   h += `</div>`;
 
@@ -794,7 +795,7 @@ window.rPortafolio = async function() {
     h += `<div style="font-size:32px;margin-bottom:10px">🔓</div>`;
     h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:#1e293b;margin-bottom:6px">Regístrate gratis para ver todo</div>`;
     h += `<div style="font-size:14px;color:#64748b;max-width:360px;margin:0 auto 20px;line-height:1.5">Accede al inventario completo, guarda favoritos y recibe alertas de nuevos inmuebles.</div>`;
-    h += `<a href="${loginUrl}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">Registrarse gratis</a>`;
+    h += `<a href="${regUrl}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">Registrarse gratis</a>`;
     h += `<div style="margin-top:10px"><a href="${loginUrl}" style="font-size:13px;color:#64748b;text-decoration:underline">Ya tengo cuenta → Ingresar</a></div>`;
     h += `</div>`;
 
@@ -803,7 +804,7 @@ window.rPortafolio = async function() {
     h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
     h += `<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#065f46;margin-bottom:6px">¿Tienes un inmueble?</div>`;
     h += `<div style="font-size:14px;color:#064e3b;max-width:340px;margin:0 auto 16px;line-height:1.5">Suscríbete y publica gratis. Te conectamos con cientos de compradores e inversionistas en el Eje Cafetero.</div>`;
-    h += `<a href="${loginUrl}" style="display:inline-block;padding:12px 28px;background:#065f46;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(6,95,70,.25)">Publicar mi inmueble gratis</a>`;
+    h += `<a href="${regUrl}" style="display:inline-block;padding:12px 28px;background:#065f46;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(6,95,70,.25)">Publicar mi inmueble gratis</a>`;
     h += `</div>`;
   }
 
