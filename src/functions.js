@@ -2182,6 +2182,47 @@ window.compartirPropuestaPropietario = function(ref) {
   window.open('https://wa.me/57' + tel.replace(/^57/, '') + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
+// --- Helper: generate proposal text (plain, no WhatsApp bold) ---
+function _getPropuestaTexto(nombre) {
+  return '¡Hola ' + nombre + '! 👋\n\n' +
+    'Te contacto de parte de Inmobiliaria House, especialistas en administración de inmuebles en arriendo en Pereira y el Eje Cafetero.\n\n' +
+    '¿Te gustaría arrendar tu inmueble sin preocuparte por nada? Nosotros nos encargamos de todo:\n\n' +
+    '✅ Pago garantizado cada 10 del mes, sin excusas\n' +
+    '✅ Estudio completo al inquilino: DataCrédito, referencias laborales, antecedentes\n' +
+    '✅ Contrato legal blindado con seguro de arrendamiento y póliza de daños\n' +
+    '✅ Publicación profesional en Metrocuadrado, Fincaraíz y Facebook Marketplace\n' +
+    '✅ Administración integral: cobros, mantenimiento, reclamos, todo\n' +
+    '✅ Solo el 10% del canon. Tú recibes el 90% sin mover un dedo\n' +
+    '✅ Sin costo inicial. No pagas nada hasta que esté arrendado\n' +
+    '✅ Si hay problemas con el inquilino, nosotros lo manejamos: cobro jurídico, desalojo, todo\n\n' +
+    '🏢 Visítanos: Cl. 14 #14-09, Pereira\n' +
+    '📞 Llámanos: 310 592 2763\n' +
+    '🌐 Conoce más: https://inmobiliariahouse.com.co/#/propietarios';
+}
+
+window.copiarPropuesta = function(nombre) {
+  const texto = _getPropuestaTexto(nombre);
+  navigator.clipboard.writeText(texto).then(() => {
+    window.toast('📋 Texto copiado al portapapeles');
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = texto; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    window.toast('📋 Texto copiado');
+  });
+};
+
+window.actualizarTelReferido = async function(refId, nuevoTel) {
+  const tel = (nuevoTel || '').replace(/\D/g, '');
+  if (tel.length < 7) { window.toast('Teléfono inválido', 'twarn'); return; }
+  try {
+    await SB().from('referidos').update({ propietario_telefono: tel }).eq('id', refId);
+    window.toast('📞 Teléfono actualizado');
+  } catch(e) { window.toast('Error: ' + e.message, 'terr'); }
+};
+
 // --- Referral Form Wizard ---
 window._refData = {}; window._refStep = 1;
 window.refNext = function() {

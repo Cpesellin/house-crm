@@ -1351,7 +1351,10 @@ window.renderMisReferidos = async function() {
 
     // Referidor action: send proposal
     if (!isAdmin && ['registrado','verificando','contrato_firmado','publicado'].includes(r.estado)) {
-      h += '<div style="padding:6px 14px 12px;border-top:1px solid var(--g100)"><button class="bt bs2" style="width:100%;font-size:11px;padding:8px" onclick="compartirPropuestaPropietario({propietario_nombre:\'' + (r.propietario_nombre || '').replace(/'/g, "\\'") + '\',propietario_telefono:\'' + (r.propietario_telefono || '') + '\'})">📋 Enviar propuesta al propietario</button></div>';
+      h += '<div style="padding:6px 14px 12px;border-top:1px solid var(--g100)">';
+      h += '<div style="display:flex;gap:4px;align-items:center;margin-bottom:6px"><span style="font-size:10px;color:var(--sub);white-space:nowrap">📞 Tel:</span><input id="refTel_' + r.id + '" value="' + (r.propietario_telefono || '') + '" style="flex:1;padding:5px 8px;border:1.5px solid var(--brd);border-radius:6px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="actualizarTelReferido(\'' + r.id + '\',this.value)"><button style="padding:5px 8px;border:1.5px solid var(--brd);border-radius:6px;font-size:10px;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit" onclick="actualizarTelReferido(\'' + r.id + '\',document.getElementById(\'refTel_' + r.id + '\').value)">💾</button></div>';
+      h += '<div style="display:flex;gap:4px"><button class="bt bs2" style="flex:1;font-size:10px;padding:7px" onclick="compartirPropuestaPropietario({propietario_nombre:\'' + (r.propietario_nombre || '').replace(/'/g, "\\'") + '\',propietario_telefono:document.getElementById(\'refTel_' + r.id + '\').value})">💬 WhatsApp</button><button class="bt bs2" style="flex:1;font-size:10px;padding:7px" onclick="copiarPropuesta(\'' + (r.propietario_nombre || '').replace(/'/g, "\\'") + '\')">📋 Copiar texto</button></div>';
+      h += '</div>';
     }
 
     // Admin actions
