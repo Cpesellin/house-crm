@@ -185,18 +185,66 @@ window.rPipe = function () {
     h += '</div></div>';
   }
 
-  // P6: Arriendos column (gestor)
+  // P6: Arriendos column (gestor) — Tarjeta rica
   if (u.es_gestor_arriendos) {
     h += `<div class="pcol" style="border-color:#065f46;border-width:2px"><div class="pch" style="background:rgba(6,95,70,.08)"><span class="pct" style="color:#065f46">🔑 Arriendos del inventario</span><span class="pcc" style="background:#065f46">${arrDisp.length}</span></div><div class="pcb">`;
     if (!arrDisp.length) h += `<div style="text-align:center;padding:16px;font-size:12px;color:var(--sub)">✅ Sin arriendos pendientes</div>`;
     arrDisp.forEach(p => {
       const idx = allD.indexOf(p);
       const dias2 = p._dias || 0;
-      h += `<div class="pkc" style="border-color:#065f46;border-width:2px" onclick="oM&&oM(${idx >= 0 ? idx : 0})"><div class="pktp">🔑 ${p.tipo || 'Inmueble'}</div><div class="pkci">📍 ${p.ciudad || ''}</div>`;
-      if (p.precio_arriendo > 0) h += `<div class="pkpr">${fm(p.precio_arriendo)}/mes</div>`;
+      const cod = p.codigo_house || '';
+      const pa = p.precio_arriendo || 0;
+      const hab = p.habitaciones || '';
+      const ban = p.banos || '';
+      const area = p.area_construida || '';
+      const est = p.estrato || '';
+      const propTel = p.propietario_telefono || '';
+      const propNom = p.propietario_nombre || '';
+      const capNom = p.captador ? p.captador.nombre : '?';
+      const ubPub = p.direccion_publica || p.barrio || p.ciudad || '';
+      const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
+      const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+      const specs = [];
+      if (hab && hab != 0) specs.push('🛏️ '+hab);
+      if (ban && ban != 0) specs.push('🚿 '+ban);
+      if (area) specs.push('📐 '+area+'m²');
+      if (est) specs.push('E'+est);
+
+      h += `<div class="pkc" style="border-color:#065f46;border-width:2px;position:relative;padding:0;overflow:hidden">`;
+      // Checkbox seleccion masiva
+      h += `<input type="checkbox" class="arr-check" onclick="event.stopPropagation();toggleArrSelect('${p.id}',this)" style="position:absolute;top:8px;left:8px;width:18px;height:18px;cursor:pointer;z-index:2;accent-color:#065f46">`;
+      // Zona superior: foto + info
+      h += `<div style="display:flex;gap:0" onclick="oM&&oM(${idx >= 0 ? idx : 0})">`;
+      if (thumb) h += `<div style="width:90px;min-height:90px;flex-shrink:0;background:url('${thumb}') center/cover no-repeat;border-radius:0"></div>`;
+      h += `<div style="flex:1;padding:12px 12px 8px ${thumb?'10px':'12px'}">`;
+      // Codigo + badge antiguedad
+      h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">`;
+      if (cod) h += `<span style="font-family:monospace;font-size:9px;font-weight:800;color:var(--b700);background:var(--b50);padding:1px 6px;border-radius:4px;border:1px solid var(--b200)">${cod}</span>`;
+      h += `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630">Arriendo</span>`;
       h += timerBadge(dias2, 15);
-      h += `<div class="pkbt"><span class="pkas">👤 ${p.captador ? p.captador.nombre : '?'}</span></div>`;
-      h += `<div style="display:flex;gap:4px;margin-top:6px" onclick="event.stopPropagation()"><button style="flex:1;padding:6px;border:none;border-radius:5px;font-size:10px;font-weight:700;background:var(--b600);color:#fff;font-family:inherit;cursor:pointer" onclick="abrirAgendarEvt('${p.id}')">📅 Agendar</button><select class="esel" style="flex:1;font-size:10px;padding:6px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover</option><option value="Arrendado">🔑 Arrendado</option><option value="Retirado">⛔ Retirado</option></select></div></div>`;
+      h += `</div>`;
+      // Tipo + ubicacion
+      h += `<div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div>`;
+      h += `<div style="font-size:11px;color:var(--sub);margin-top:1px">📍 ${ubPub}</div>`;
+      // Precio
+      if (pa > 0) h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:700;color:#065f46;margin-top:4px">${fm(pa)}<span style="font-size:11px;font-weight:500;color:var(--sub)">/mes</span></div>`;
+      h += `</div></div>`;
+      // Specs + propietario
+      h += `<div style="padding:0 12px 8px" onclick="oM&&oM(${idx >= 0 ? idx : 0})">`;
+      if (specs.length) h += `<div style="display:flex;gap:8px;font-size:11px;color:var(--sub);font-weight:600;margin-bottom:4px">${specs.join(' · ')}</div>`;
+      h += `<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sub)"><span>👤 Captador: <b>${capNom}</b></span>`;
+      if (propTel) h += `<span>· 📞 Dueño: <b>${propNom||'—'}</b></span>`;
+      h += `</div></div>`;
+      // Acciones
+      h += `<div style="padding:6px 10px 10px;display:flex;flex-wrap:wrap;gap:4px" onclick="event.stopPropagation()">`;
+      // Primarias
+      h += `<button style="flex:1;min-width:100px;padding:8px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:var(--b600);color:#fff;font-family:inherit;cursor:pointer" onclick="abrirAgendarEvt('${p.id}',null,null,'visita')">📅 Agendar visita</button>`;
+      h += `<button style="flex:1;min-width:80px;padding:8px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:#065f46;color:#fff;font-family:inherit;cursor:pointer" onclick="quickMove('${p.id}','Arrendado')">🔑 Arrendado</button>`;
+      // Secundarias
+      h += `<button style="padding:8px 10px;border:1.5px solid var(--brd);border-radius:6px;font-size:10px;font-weight:700;background:var(--cd);color:var(--tx);font-family:inherit;cursor:pointer" onclick="shareInm('${p.id}')">📤</button>`;
+      if (propTel) h += `<a href="tel:+${propTel}" style="padding:8px 10px;border:1.5px solid var(--brd);border-radius:6px;font-size:10px;font-weight:700;background:var(--cd);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center" onclick="event.stopPropagation()">📞</a>`;
+      h += `<button style="padding:8px 10px;border:1.5px solid var(--red);border-radius:6px;font-size:10px;font-weight:700;background:var(--redbg);color:var(--red);font-family:inherit;cursor:pointer" onclick="gestorEliminar('${p.id}')">🗑️</button>`;
+      h += `</div></div>`;
     });
     h += '</div></div>';
   }
@@ -257,7 +305,7 @@ window.rAl = function () {
 // F1-F9: rDash — Dashboard COMPLETO
 // ══════════════════════════════════════════════════════════════════
 
-window.rDash = function () {
+window.rDash = async function () {
   const el = document.getElementById('dsc'); if (!el) return;
   const u = U(); const allD = window.D || [];
   const isAdmin = u?.rol==='admin'||u?.rol==='oficina';
@@ -314,6 +362,28 @@ window.rDash = function () {
       const sc=score>=80?'var(--green)':score>=50?'var(--gold)':'var(--red)';
       h+=`<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:14px;font-weight:800">👤 ${ase}</span><span style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:${sc}">${score}%</span></div><div style="display:flex;gap:4px;flex-wrap:wrap;font-size:10px;font-weight:700"><span style="padding:3px 8px;border-radius:6px;background:var(--cd2);border:1px solid var(--brd)">📦 ${a.total}</span>${a.verif>0?`<span style="padding:3px 8px;border-radius:6px;background:var(--redbg);color:var(--red)">🔍 ${a.verif}</span>`:''}${a.cerrados>0?`<span style="padding:3px 8px;border-radius:6px;background:var(--greenbg);color:#065f46">✅ ${a.cerrados}</span>`:''}<span style="padding:3px 8px;border-radius:6px;background:${a.sinObs>0?'var(--goldbg)':'var(--greenbg)'}">📝 ${a.total-a.sinObs}/${a.total}</span><span style="padding:3px 8px;border-radius:6px;background:var(--cd2)">📷 ${a.total-a.sinFotos}/${a.total}</span></div></div>`;});
     h+=`</div>`;
+
+    // Widget: Agenda Gestor próximos 3 días
+    const _agHoy=new Date();const _ag3d=new Date();_ag3d.setDate(_ag3d.getDate()+3);
+    const gestorIds=(window.USERS||[]).filter(x=>x.es_gestor_arriendos).map(x=>x.id);
+    if(gestorIds.length){
+      const{data:agGestor}=await SB().from('agenda').select('*,inmueble:inmuebles(tipo,ciudad,codigo_house),usuario:usuarios!usuario_id(nombre)').gte('fecha',_agHoy.toISOString().split('T')[0]).lte('fecha',_ag3d.toISOString().split('T')[0]).in('usuario_id',gestorIds).eq('estado','pendiente').order('fecha').order('hora_inicio');
+      if(agGestor&&agGestor.length>0){
+        h+=`<div style="margin:16px 0;background:linear-gradient(135deg,#065f4615,#065f4608);border:2px solid #065f4630;border-radius:12px;padding:14px">`;
+        h+=`<div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:10px">📅 Agenda Gestor — Próximos 3 días</div>`;
+        agGestor.forEach(ae=>{const inm=ae.inmueble;const esAsig=ae.creado_por&&ae.creado_por!==ae.usuario_id;const brdC=esAsig?'#f59e0b':'#065f46';
+          h+=`<div style="display:flex;gap:10px;align-items:center;padding:10px;background:var(--cd);border-left:3px solid ${brdC};border-radius:8px;margin-bottom:6px">`;
+          h+=`<div style="text-align:center;min-width:44px"><div style="font-size:11px;font-weight:800;color:var(--sub)">${(ae.fecha||'').slice(5,10)}</div><div style="font-size:10px;color:var(--sub)">${(ae.hora_inicio||'').slice(0,5)}</div></div>`;
+          h+=`<div style="flex:1"><div style="font-size:12px;font-weight:700">${ae.tipo_evento||''} ${inm?'— '+inm.tipo+' '+inm.ciudad:''}</div>`;
+          if(inm&&inm.codigo_house)h+=`<span style="font-family:monospace;font-size:9px;color:var(--b700)">${inm.codigo_house}</span> `;
+          if(ae.usuario&&ae.usuario.nombre)h+=`<span style="font-size:9px;color:#065f46;font-weight:600">👤 ${ae.usuario.nombre}</span>`;
+          if(ae.cliente_nombre)h+=`<div style="font-size:10px;color:var(--sub)">🤝 ${ae.cliente_nombre}</div>`;
+          if(esAsig)h+=`<div style="font-size:9px;color:#92400e;font-weight:600">Asignado por admin</div>`;
+          h+=`</div></div>`;
+        });
+        h+=`</div>`;
+      }
+    }
 
     h+=`</div></div>`;el.innerHTML=h;
 
@@ -465,9 +535,10 @@ window.rAgenda = async function () {
   const startW=new Date(window._agDate);startW.setDate(startW.getDate()-startW.getDay());
   const endW=new Date(startW);endW.setDate(endW.getDate()+7);
 
-  let q=SB().from('agenda').select('*,inmueble:inmuebles(id,tipo,ciudad,direccion,captador:usuarios!captador_id(nombre))').gte('fecha',startW.toISOString().split('T')[0]).lte('fecha',endW.toISOString().split('T')[0]).order('hora_inicio');
+  let q=SB().from('agenda').select('*,inmueble:inmuebles(id,tipo,ciudad,direccion,codigo_house,captador:usuarios!captador_id(nombre)),creador:usuarios!creado_por(nombre)').gte('fecha',startW.toISOString().split('T')[0]).lte('fecha',endW.toISOString().split('T')[0]).order('hora_inicio');
   if(!canSeeAll)q=q.eq('usuario_id',u.id);
   const{data}=await q; const evts=data||[];
+  const USERS2=window.USERS||[];
 
   const dias2=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -495,11 +566,31 @@ window.rAgenda = async function () {
         slots[hr].forEach(e=>{
           const isPers=e.es_personal;const inm=e.inmueble;
           const tipoLabels={visita:'🔑 Visita',entrega:'🔑 Entrega',firma:'📝 Firma',personal:'🔒 Personal',otro:'📌 Otro'};
-          if(isPers&&isAdmin){h+=`<div class="ag-evt personal"><div class="ag-evt-tipo" style="color:var(--sub)">🔒 OCUPADO</div><div class="ag-evt-titulo">${e.hora_inicio||''}</div></div>`;}
+          const esAsignado=e.creado_por&&e.creado_por!==e.usuario_id;
+          const creadorNom=e.creador?e.creador.nombre:'';
+          const esMioCreado=e.creado_por===u.id;
+          const isDone=e.estado==='completado';
+          const canDelete=esMioCreado||isAdmin;
+          // Determine event class
+          const evtClass=isDone?'completado':isPers?'personal':esAsignado?'asignado':'inmueble';
+          if(isPers&&isAdmin&&e.usuario_id!==u.id){h+=`<div class="ag-evt personal"><div class="ag-evt-tipo" style="color:var(--sub)">🔒 OCUPADO</div><div class="ag-evt-titulo">${e.hora_inicio||''}</div></div>`;}
           else{
-            h+=`<div class="ag-evt ${isPers?'personal':'inmueble'}"><div class="ag-evt-tipo">${tipoLabels[e.tipo_evento]||e.tipo_evento}</div><div class="ag-evt-titulo">${e.hora_inicio||''}${e.hora_fin?' — '+e.hora_fin:''} · ${isPers?(e.titulo||'Personal'):(inm?inm.tipo+' en '+inm.ciudad:e.titulo||'Evento')}</div>`;
-            if(!isPers&&e.cliente_nombre)h+=`<div class="ag-evt-sub">👤 ${e.cliente_nombre}</div>`;
-            h+=`<span class="ag-evt-del" onclick="event.stopPropagation();cancelarEvt('${e.id}')">✕</span></div>`;
+            h+=`<div class="ag-evt ${evtClass}" style="position:relative">`;
+            // Badge asignado
+            if(esAsignado&&!isAdmin)h+=`<div style="position:absolute;top:-6px;right:10px;font-size:9px;font-weight:600;background:var(--goldbg);color:#92400e;padding:2px 8px;border-radius:4px;border:1px solid rgba(245,158,11,.3)">Asignado por ${creadorNom}</div>`;
+            if(esAsignado&&isAdmin){const targetUser=USERS2.find(x=>x.id===e.usuario_id);h+=`<div style="position:absolute;top:-6px;right:10px;font-size:9px;font-weight:600;background:var(--g100);color:var(--sub);padding:2px 8px;border-radius:4px">Asignado a ${targetUser?targetUser.nombre:'gestor'}</div>`;}
+            if(isDone)h+=`<div style="position:absolute;top:-6px;right:10px;font-size:9px;font-weight:600;background:var(--greenbg);color:#065f46;padding:2px 8px;border-radius:4px;border:1px solid var(--gb)">✅ Completado</div>`;
+            h+=`<div class="ag-evt-tipo">${tipoLabels[e.tipo_evento]||e.tipo_evento}</div>`;
+            h+=`<div class="ag-evt-titulo">${e.hora_inicio||''}${e.hora_fin?' — '+e.hora_fin:''} · ${isPers?(e.titulo||'Personal'):(inm?inm.tipo+' en '+inm.ciudad:e.titulo||'Evento')}</div>`;
+            if(inm&&inm.codigo_house)h+=`<span style="font-family:monospace;font-size:9px;color:var(--b700)">${inm.codigo_house}</span>`;
+            if(!isPers&&e.cliente_nombre)h+=`<div class="ag-evt-sub">👤 ${e.cliente_nombre}${e.cliente_telefono?' · 📞 '+e.cliente_telefono:''}</div>`;
+            if(e.nota_admin)h+=`<div style="font-size:10px;color:#92400e;margin-top:4px;font-weight:500">📝 "${e.nota_admin}"</div>`;
+            // Action button: delete or complete
+            if(!isDone){
+              if(canDelete)h+=`<span class="ag-evt-del" onclick="event.stopPropagation();cancelarEvt('${e.id}')" title="Eliminar">✕</span>`;
+              else h+=`<span class="ag-evt-del" onclick="event.stopPropagation();completarEvt('${e.id}')" style="color:var(--green)" title="Completar">✓</span>`;
+            }
+            h+=`</div>`;
           }
         });
       } else {
@@ -517,7 +608,7 @@ window.rAgenda = async function () {
       const ds=dt.toISOString().split('T')[0];const isToday=ds===hoy;
       const dayEvts=evts.filter(e=>e.fecha===ds);
       h+=`<div class="ag-week-day${isToday?' today':''}" onclick="window._agDate=new Date('${ds}T12:00');agSetView('day')"><div class="ag-wd-name">${dias2[d]}</div><div class="ag-wd-num">${dt.getDate()}</div>`;
-      dayEvts.slice(0,3).forEach(e=>{const isPers=e.es_personal;if(isPers&&isAdmin){h+=`<div class="ag-wd-evt pers">🔒 Ocupado</div>`;}else{const inm=e.inmueble;h+=`<div class="ag-wd-evt inm">${(e.hora_inicio||'').slice(0,5)} ${isPers?'🔒':(inm?inm.tipo:'📌')}</div>`;}});
+      dayEvts.slice(0,3).forEach(e=>{const isPers=e.es_personal;const esAsig=e.creado_por&&e.creado_por!==e.usuario_id;if(isPers&&isAdmin&&e.usuario_id!==u.id){h+=`<div class="ag-wd-evt pers">🔒 Ocupado</div>`;}else{const inm=e.inmueble;const bdr=esAsig?'border-left:3px solid #f59e0b;padding-left:4px':'';h+=`<div class="ag-wd-evt inm" style="${bdr}">${(e.hora_inicio||'').slice(0,5)} ${isPers?'🔒':(inm?inm.tipo:'📌')}${e.estado==='completado'?' ✅':''}</div>`;}});
       if(dayEvts.length>3)h+=`<div style="font-size:8px;color:var(--sub);font-weight:700">+${dayEvts.length-3} más</div>`;
       if(!dayEvts.length)h+=`<div style="font-size:9px;color:var(--g400);margin-top:6px">Sin eventos</div>`;
       h+=`</div>`;

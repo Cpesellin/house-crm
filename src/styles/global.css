@@ -253,6 +253,8 @@ header{position:sticky;top:0;z-index:100;background:var(--hdr);backdrop-filter:b
 .ag-evt{flex:1;border-radius:10px;padding:10px 14px;cursor:pointer;position:relative}
 .ag-evt.inmueble{background:linear-gradient(135deg,#065f4610,#065f4605);border:1.5px solid #065f4630}
 .ag-evt.personal{background:var(--cd2);border:1.5px solid var(--brd)}
+.ag-evt.asignado{background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(245,158,11,.03));border:1.5px solid rgba(245,158,11,.3);position:relative}
+.ag-evt.completado{opacity:.55;border-style:dashed}
 .ag-evt.libre{background:var(--cd);border:1.5px dashed var(--g100);display:flex;align-items:center;justify-content:center;color:var(--g400);font-size:11px;cursor:pointer}
 .ag-evt.libre:hover{border-color:var(--b300);color:var(--b500)}
 .ag-evt-tipo{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}

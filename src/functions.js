@@ -624,39 +624,63 @@ window.fNx = async function(){
 // 11. AGENDA
 // ══════════════════════════════════════════════════════════════════
 
-window.abrirAgendarEvt = function(inmId,fecha,hora) {
-  const p=inmId?findInm(inmId):null;const hoy=fecha||new Date().toISOString().split('T')[0];const horaD=hora||'09:00';
-  const inmSel=p?`<div style="background:#065f4610;border:1.5px solid #065f4630;border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-size:13px;font-weight:700">${emo(p.tipo)} ${p.tipo} en ${p.ciudad}</div></div>`:'';
-  const inmOpts=D().filter(q=>(q.negociacion||'').toLowerCase().includes('arriendo')&&!q.eliminado&&(q.estado==='Disponible'||q.estado==='Aún Disponible')).map(q=>`<option value="${q.id}" ${q.id===inmId?'selected':''}>${q.tipo} — ${q.ciudad}</option>`).join('');
+window.abrirAgendarEvt = function(inmId,fecha,hora,tipoEvento) {
+  const u=U();const p=inmId?findInm(inmId):null;const hoy=fecha||new Date().toISOString().split('T')[0];const horaD=hora||'09:00';
+  const tipoD=tipoEvento||'visita';
+  const inmSel=p?`<div style="background:#065f4610;border:1.5px solid #065f4630;border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-size:13px;font-weight:700">${emo(p.tipo)} ${p.tipo} en ${p.ciudad}${p.codigo_house?' · <span style="font-family:monospace;font-size:10px;color:var(--b700)">'+p.codigo_house+'</span>':''}</div></div>`:'';
+  const inmOpts=D().filter(q=>(q.negociacion||'').toLowerCase().includes('arriendo')&&!q.eliminado&&(q.estado==='Disponible'||q.estado==='Aún Disponible')).map(q=>`<option value="${q.id}" ${q.id===inmId?'selected':''}>${q.tipo} — ${q.ciudad}${q.codigo_house?' ('+q.codigo_house+')':''}</option>`).join('');
+  const isAdmin=u.rol==='admin'||u.rol==='oficina';
+  const gestores=(window.USERS||[]).filter(g=>g.es_gestor_arriendos&&g.id!==u.id&&g.activo);
+  const asignarHTML=isAdmin&&gestores.length?`<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">ASIGNAR A</label><select id="agAsignar" class="esel" style="width:100%;font-size:12px;padding:8px" onchange="document.getElementById('agNotaAdminWrap').style.display=this.value?'block':'none'"><option value="">Para mí</option>${gestores.map(g=>'<option value="'+g.id+'">🔑 '+g.nombre+' (gestor)</option>').join('')}</select></div><div id="agNotaAdminWrap" style="margin-bottom:10px;display:none"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">NOTA PARA EL GESTOR</label><textarea id="agNotaAdmin" placeholder="Instrucciones..." style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;font-family:inherit;min-height:40px;resize:none;color:var(--tx);background:var(--cd)"></textarea></div>`:'';
+  const tipoOpts=['visita','entrega','firma','otro','personal'].map(t=>{const lbl={visita:'🔑 Visita',entrega:'🔑 Entrega llaves',firma:'📝 Firma',otro:'📌 Otro',personal:'🔒 Personal'};return`<option value="${t}" ${t===tipoD?'selected':''}>${lbl[t]}</option>`;}).join('');
+  const inmWrapDisplay=inmId?'none':'block';
   const html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px" id="agModal" onclick="if(event.target===this)this.remove()"><div style="background:var(--cd);border-radius:14px;padding:24px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
   <div style="font-size:18px;font-weight:800;margin-bottom:16px">📅 Nuevo Evento</div>${inmSel}
-  <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">TIPO</label><select id="agTipo" class="esel" style="width:100%;font-size:12px;padding:8px" onchange="document.getElementById('agInmWrap').style.display=this.value==='personal'?'none':'block';document.getElementById('agCliWrap').style.display=this.value==='personal'?'none':'block'"><option value="visita">🔑 Visita</option><option value="entrega">🔑 Entrega llaves</option><option value="firma">📝 Firma</option><option value="otro">📌 Otro</option><option value="personal">🔒 Personal</option></select></div>
-  <div id="agInmWrap" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">INMUEBLE</label><select id="agInm" class="esel" style="width:100%;font-size:12px;padding:8px"><option value="">— Seleccionar —</option>${inmOpts}</select></div>
+  ${asignarHTML}
+  <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">TIPO</label><select id="agTipo" class="esel" style="width:100%;font-size:12px;padding:8px" onchange="var v=this.value;document.getElementById('agInmWrap').style.display=v==='personal'?'none':'block';document.getElementById('agCliWrap').style.display=v==='personal'?'none':'block'">${tipoOpts}</select></div>
+  <div id="agInmWrap" style="margin-bottom:10px;display:${inmWrapDisplay}"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">INMUEBLE</label><select id="agInm" class="esel" style="width:100%;font-size:12px;padding:8px"><option value="">— Seleccionar —</option>${inmOpts}</select></div>
+  ${inmId?`<input type="hidden" id="agInmFixed" value="${inmId}">`:''}
   <div style="display:flex;gap:8px;margin-bottom:10px"><div style="flex:1"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">FECHA</label><input id="agFecha" type="date" value="${hoy}" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--cd)"></div><div style="flex:1"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">HORA</label><input id="agHora" type="time" value="${horaD}" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--cd)"></div><div style="flex:1"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">FIN</label><input id="agHoraFin" type="time" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--cd)"></div></div>
   <div id="agCliWrap"><div style="display:flex;gap:8px;margin-bottom:10px"><div style="flex:1"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">CLIENTE</label><input id="agCliente" placeholder="Nombre" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--cd)"></div><div style="flex:1"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">TEL</label><input id="agCliTel" type="tel" placeholder="300..." style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--cd)"></div></div></div>
   <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">NOTA</label><input id="agTitulo" placeholder="Nota..." style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;color:var(--tx);background:var(--cd)"></div>
-  <div style="display:flex;gap:8px"><button style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer" onclick="document.getElementById('agModal').remove()">Cancelar</button><button style="flex:1;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer" onclick="guardarEvt()">💾 Guardar</button></div>
+  <div style="display:flex;gap:8px"><button style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit" onclick="document.getElementById('agModal').remove()">Cancelar</button><button style="flex:1;padding:12px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit" onclick="guardarEvt()">💾 Guardar</button></div>
   </div></div>`;
   document.body.insertAdjacentHTML('beforeend',html);
 };
 
 window.guardarEvt = async function() {
   const tipo=document.getElementById('agTipo').value;const isPers=tipo==='personal';
-  const inmId=isPers?null:(document.getElementById('agInm').value||null);
+  const fixedInm=document.getElementById('agInmFixed');
+  const inmId=isPers?null:(fixedInm?fixedInm.value:(document.getElementById('agInm').value||null));
   const fecha=document.getElementById('agFecha').value;const hora=document.getElementById('agHora').value;
   const horaFin=document.getElementById('agHoraFin').value||null;
   if(!fecha||!hora){window.toast('Fecha y hora obligatorias','twarn');return;}
   const u=U();
+  const asignarEl=document.getElementById('agAsignar');
+  const asignadoA=asignarEl?asignarEl.value:'';
+  const notaAdminEl=document.getElementById('agNotaAdmin');
+  const notaAdmin=notaAdminEl?notaAdminEl.value:'';
+  const targetUserId=asignadoA||u.id;
   try {
-    const{error}=await SB().from('agenda').insert({usuario_id:u.id,inmueble_id:inmId||null,fecha,hora_inicio:hora,hora_fin:horaFin,tipo_evento:tipo,es_personal:isPers,titulo:document.getElementById('agTitulo').value||null,cliente_nombre:isPers?null:(document.getElementById('agCliente').value||null),cliente_telefono:isPers?null:(document.getElementById('agCliTel').value||null),estado:'pendiente'});
+    const{error}=await SB().from('agenda').insert({usuario_id:targetUserId,creado_por:u.id,inmueble_id:inmId||null,fecha,hora_inicio:hora,hora_fin:horaFin,tipo_evento:tipo,es_personal:isPers,titulo:document.getElementById('agTitulo').value||null,cliente_nombre:isPers?null:(document.getElementById('agCliente').value||null),cliente_telefono:isPers?null:(document.getElementById('agCliTel').value||null),nota_admin:notaAdmin||null,estado:'pendiente'});
     if(error){console.error('[guardarEvt]',error);window.toast('Error: '+error.message,'terr');return;}
-    document.getElementById('agModal').remove();window.toast('📅 Agendado');window.rAgenda();
+    // Alertas bidireccionales
+    if(asignadoA&&asignadoA!==u.id){
+      const gestorUser=(window.USERS||[]).find(x=>x.id===asignadoA);
+      const gestorEmail=gestorUser?(gestorUser.usuario||gestorUser.email):'';
+      const p=inmId?findInm(inmId):null;const desc=p?descInm(p):(document.getElementById('agTitulo').value||'evento');
+      await window.noti('agenda_gestor','amarillo','📅 '+u.nombre+' te asignó: '+tipo+' '+desc,u.nombre+' agendó '+tipo+' para ti: '+desc+' — '+fecha+' '+hora+(notaAdmin?'. Nota: "'+notaAdmin+'"':''),gestorEmail,null,inmId);
+    } else if(u.es_gestor_arriendos){
+      const p=inmId?findInm(inmId):null;const desc=p?descInm(p):(document.getElementById('agTitulo').value||'evento');
+      await window.noti('agenda_gestor','info','📅 '+u.nombre+' agendó: '+tipo+' '+desc,u.nombre+' (gestor) agendó '+tipo+': '+desc+' — '+fecha+' '+hora,null,'admin',inmId);
+    }
+    document.getElementById('agModal').remove();window.toast('📅 Agendado');if(typeof window.rAgenda==='function')window.rAgenda();
   }catch(e){console.error('[guardarEvt]',e);window.toast('Error: '+e.message,'terr');}
 };
 
 window.cancelarEvt = async function(id) {
   const ok=await window.cfShow('🗑️','¿Cancelar evento?','Se eliminará.');if(!ok)return;
-  await SB().from('agenda').delete().eq('id',id);window.toast('✅ Cancelado');window.rAgenda();
+  try{await SB().from('agenda').delete().eq('id',id);window.toast('✅ Cancelado');window.rAgenda();}catch(e){console.error('[cancelarEvt]',e);window.toast('Error','terr');}
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -1213,5 +1237,126 @@ window.iSl = function() {
     }
   }
 })();
+
+// ══════════════════════════════════════════════════════════════════
+// 15. GESTOR ARRIENDOS — Eliminar con motivo
+// ══════════════════════════════════════════════════════════════════
+
+window.gestorEliminar = function(id) {
+  const p = findInm(id);
+  if (!p) return;
+  const neg = (p.negociacion || '').toLowerCase();
+  if (!neg.includes('arriendo')) { window.toast('Solo puedes eliminar inmuebles de arriendo', 'twarn'); return; }
+  const desc = descInm(p);
+  const capNom = p.captador ? p.captador.nombre : '?';
+  const cod = p.codigo_house || '';
+  const motivos = ['Ya se arrendó por otro medio','Propietario retiró el inmueble','Información incorrecta','Duplicado','Otro'];
+  const html = `<div class="cfdlg" id="gestorDelDlg" style="display:flex">
+    <div class="cfbox" style="text-align:left;max-width:400px">
+      <div style="font-size:40px;text-align:center;margin-bottom:10px">🗑️</div>
+      <div style="font-size:16px;font-weight:800;text-align:center;margin-bottom:4px">¿Eliminar inmueble?</div>
+      <div style="font-size:12px;color:var(--sub);text-align:center;margin-bottom:12px">${desc}${cod ? ' · '+cod : ''}<br>Captador: ${capNom}</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:10px;font-weight:800;color:var(--sub);display:block;margin-bottom:4px">MOTIVO (obligatorio)</label>
+        <select id="gdMotivo" class="esel" style="width:100%;font-size:12px;padding:8px">
+          <option value="">— Selecciona el motivo —</option>
+          ${motivos.map(m => '<option value="'+m+'">'+m+'</option>').join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:10px;font-weight:800;color:var(--sub);display:block;margin-bottom:4px">NOTA ADICIONAL (opcional)</label>
+        <textarea id="gdNota" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:12px;font-family:inherit;min-height:40px;resize:none;color:var(--tx);background:var(--cd)" placeholder="Detalle adicional..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:1.5px solid var(--brd);background:var(--cd);color:var(--tx);font-family:inherit;cursor:pointer" onclick="document.getElementById('gestorDelDlg').remove()">Cancelar</button>
+        <button style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:none;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="confirmarGestorDel('${id}')">🗑️ Eliminar</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.confirmarGestorDel = async function(id) {
+  const motivo = document.getElementById('gdMotivo').value;
+  if (!motivo) { window.toast('Selecciona un motivo', 'twarn'); return; }
+  const nota = document.getElementById('gdNota').value || '';
+  const p = findInm(id);
+  const desc = descInm(p);
+  const capNom = p?.captador?.nombre || '?';
+  const capEmail = p?.captador?.usuario || p?.captador?.email || '';
+  const u = U();
+  try {
+    await SB().from('inmuebles').update({ eliminado: true, fecha_eliminacion: new Date().toISOString() }).eq('id', id);
+    await SB().from('historial').insert({ inmueble_id: id, usuario_id: u.id, accion: 'eliminacion_gestor', campo_modificado: 'eliminado', valor_anterior: 'false', valor_nuevo: motivo + (nota ? ' — ' + nota : '') });
+    await window.noti('cambio_estado', 'rojo', '🗑️ ' + u.nombre + ' eliminó: ' + desc, u.nombre + ' (gestor arriendos) eliminó ' + desc + ' de ' + capNom + '. Motivo: ' + motivo, capEmail, null, id);
+    await window.noti('cambio_estado', 'rojo', '🗑️ Eliminado por gestor: ' + desc, u.nombre + ' eliminó ' + desc + ' de ' + capNom + '. Motivo: ' + motivo, null, 'admin', id);
+    document.getElementById('gestorDelDlg').remove();
+    window.toast('🗑️ Inmueble eliminado');
+    window.load();
+  } catch(e) { console.error('[gestorDel]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 16. GESTOR — Selección masiva confirmación disponibilidad
+// ══════════════════════════════════════════════════════════════════
+
+window._selectedArriendos = new Set();
+
+window.toggleArrSelect = function(id, cb) {
+  if (cb.checked) window._selectedArriendos.add(id);
+  else window._selectedArriendos.delete(id);
+  _renderMasiveBar();
+};
+
+function _renderMasiveBar() {
+  let bar = document.getElementById('masiveBar');
+  if (window._selectedArriendos.size === 0) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'masiveBar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--cd);border-top:2px solid #065f46;padding:12px 16px;z-index:100;display:flex;align-items:center;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,.15)';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `<span style="font-size:13px;font-weight:700;color:#065f46">✅ ${window._selectedArriendos.size} seleccionado(s)</span><div style="flex:1"></div><button onclick="confirmarMasivo()" style="padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;font-family:inherit;cursor:pointer">✅ Confirmar disponibles</button><button onclick="cancelarSeleccion()" style="padding:10px 16px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;font-weight:700;background:var(--cd);color:var(--tx);font-family:inherit;cursor:pointer">✕ Cancelar</button>`;
+}
+
+window.confirmarMasivo = async function() {
+  const ids = Array.from(window._selectedArriendos);
+  if (!ids.length) return;
+  const ok = await window.cfShow('✅', '¿Confirmar ' + ids.length + ' inmuebles como disponibles?', 'Se actualiza la fecha de verificación de todos.');
+  if (!ok) return;
+  const now = new Date().toISOString();
+  const u = U();
+  try {
+    for (const id of ids) {
+      await SB().from('inmuebles').update({ estado: 'Aún Disponible', fecha_estado: now, updated_at: now }).eq('id', id);
+    }
+    await window.noti('cambio_estado', 'verde', '✅ ' + u.nombre + ' confirmó ' + ids.length + ' arriendos disponibles', u.nombre + ' verificó disponibilidad de ' + ids.length + ' inmuebles de arriendo.', null, 'admin', null);
+    window._selectedArriendos.clear();
+    const bar = document.getElementById('masiveBar');
+    if (bar) bar.remove();
+    window.toast('✅ ' + ids.length + ' inmuebles confirmados');
+    window.load();
+  } catch(e) { console.error('[confirmarMasivo]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
+
+window.cancelarSeleccion = function() {
+  window._selectedArriendos.clear();
+  const bar = document.getElementById('masiveBar');
+  if (bar) bar.remove();
+  document.querySelectorAll('.arr-check').forEach(c => c.checked = false);
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 17. AGENDA — Completar evento asignado
+// ══════════════════════════════════════════════════════════════════
+
+window.completarEvt = async function(id) {
+  try {
+    await SB().from('agenda').update({ estado: 'completado' }).eq('id', id);
+    window.toast('✅ Tarea completada');
+    window.rAgenda();
+  } catch(e) { console.error('[completarEvt]', e); window.toast('Error: ' + e.message, 'terr'); }
+};
 
 console.log('[functions] ✅ All window functions registered');
