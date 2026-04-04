@@ -250,9 +250,21 @@ export async function load() {
     return;
   }
 
-  // External users: load public data into window.D so CRM UI works
+  // Auto-upgrade pendiente to vendedor_externo (no approval needed)
   const tipoU = U.tipo_usuario || 'interno';
-  if (tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'propietario' || tipoU === 'pendiente') {
+  if (tipoU === 'pendiente') {
+    try {
+      await getSupabaseClient().from('usuarios').update({ tipo_usuario: 'vendedor_externo' }).eq('id', U.id);
+      window.userStore.update({ tipo_usuario: 'vendedor_externo' });
+      U.tipo_usuario = 'vendedor_externo';
+      // Refresh menu
+      if (typeof window.sApp === 'function') window.sApp();
+    } catch(e) { console.error('[load] auto-upgrade failed:', e); }
+  }
+
+  // External users: load public data into window.D so CRM UI works
+  const tipoU2 = U.tipo_usuario || 'interno';
+  if (tipoU2 === 'cliente' || tipoU2 === 'vendedor_externo' || tipoU2 === 'propietario' || tipoU2 === 'pendiente') {
     const pubData = await loadPublic();
     // Feed public data into the same window.D used by CRM render/filters
     window.D = pubData || [];

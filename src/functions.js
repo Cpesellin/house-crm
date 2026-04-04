@@ -1503,7 +1503,7 @@ window.completeEmailReg = async function(tipo) {
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
 
   try {
-    const tipoU = tipo === 'vendedor_externo' ? 'pendiente' : 'cliente';
+    const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
 
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email: reg.email, nombre: reg.nombre, foto: reg.foto || null,
@@ -1579,7 +1579,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     const { data: existingUser } = await SB().from('usuarios').select('*').eq('email', email).single();
     if (existingUser) {
       // Reactivate existing user
-      const tipoU = tipo === 'vendedor_externo' ? 'pendiente' : 'cliente';
+      const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
       await SB().from('usuarios').update({ activo: true, tipo_usuario: tipoU, foto: foto || existingUser.foto }).eq('id', existingUser.id);
       existingUser.activo = true; existingUser.tipo_usuario = tipoU;
       const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: false, tipo_usuario: tipoU, token: 'google:' + email };
@@ -1589,7 +1589,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
       return;
     }
-    const tipoU = tipo === 'vendedor_externo' ? 'pendiente' : 'cliente';
+    const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
       rol: 'cliente', tipo_usuario: tipoU, activo: true,
