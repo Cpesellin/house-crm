@@ -159,7 +159,7 @@ function renderShell(container) {
       <div class="fs"><div class="fl">Negociaci\u00F3n</div><div class="cps"><div class="ch" data-g="neg" data-v="venta" data-c="cg" onclick="tc(this)">\u{1F4B0} Venta</div><div class="ch" data-g="neg" data-v="arriendo" onclick="tc(this)">\u{1F511} Arriendo</div><div class="ch" data-g="neg" data-v="ambas" data-c="cy" onclick="tc(this)">\u{1F504} Ambas</div></div></div>
       <div class="fs"><div class="fl">Ciudad</div><div class="cps"><div class="ch" data-g="ciu" data-v="pereira" onclick="tc(this)">\u{1F4CD} Pereira</div><div class="ch" data-g="ciu" data-v="dosquebradas" onclick="tc(this)">\u{1F4CD} Dosq.</div><div class="ch" data-g="ciu" data-v="santa rosa" onclick="tc(this)">\u{1F4CD} Sta Rosa</div><div class="ch" data-g="ciu" data-v="cerritos" onclick="tc(this)">\u{1F4CD} Cerritos</div></div></div>
       <div class="fs ful"><div class="fl">Tipo</div><div class="cps"><div class="ch" data-g="tipo" data-v="apartamento" onclick="tc(this)">\u{1F3E2} Apto</div><div class="ch" data-g="tipo" data-v="casa" onclick="tc(this)">\u{1F3E1} Casa</div><div class="ch" data-g="tipo" data-v="finca" data-c="cg" onclick="tc(this)">\u{1F33E} Finca</div><div class="ch" data-g="tipo" data-v="local" data-c="cy" onclick="tc(this)">\u{1F3EA} Local</div><div class="ch" data-g="tipo" data-v="lote" data-c="cg" onclick="tc(this)">\u{1F333} Lote</div><div class="ch" data-g="tipo" data-v="oficina" onclick="tc(this)">\u{1F4BC} Oficina</div><div class="ch" data-g="tipo" data-v="bodega" onclick="tc(this)">\u{1F3ED} Bodega</div><div class="ch" data-g="tipo" data-v="penthouse" data-c="cy" onclick="tc(this)">\u{1F451} PH</div></div></div>
-      <div class="fs ful"><div class="fl">Estado de info</div><div class="cps"><div class="ch" data-g="fresco" data-v="si" data-c="cg" onclick="tc(this)">\u2705 Solo frescos (\u22647d)</div><div class="ch" data-g="fresco" data-v="atencion" data-c="cy" onclick="tc(this)">\u26A0\uFE0F Necesitan atenci\u00F3n</div></div></div>
+      <div class="fs ful" id="filterEstadoInfo"><div class="fl">Estado de info</div><div class="cps"><div class="ch" data-g="fresco" data-v="si" data-c="cg" onclick="tc(this)">\u2705 Solo frescos (\u22647d)</div><div class="ch" data-g="fresco" data-v="atencion" data-c="cy" onclick="tc(this)">\u26A0\uFE0F Necesitan atenci\u00F3n</div></div></div>
       <div class="slb"><div class="slt"><span class="sltt">\u{1F511} Arriendo/mes</span></div><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00CDN</label><input id="arMin" type="number" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div><span style="color:var(--sub);font-weight:700;font-size:14px">\u2014</span><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00C1X</label><input id="arMax" type="number" placeholder="10.000.000" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div></div></div>
       <div class="slb"><div class="slt"><span class="sltt">\u{1F4B0} Precio venta</span></div><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00CDN</label><input id="vnMin" type="number" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div><span style="color:var(--sub);font-weight:700;font-size:14px">\u2014</span><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00C1X</label><input id="vnMax" type="number" placeholder="3.000.000.000" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div></div></div>
     </div>
@@ -308,10 +308,21 @@ function sApp() {
     document.getElementById('stbar').style.display = 'none';
     // Replace "Mostrar mis inmuebles" with "Mis favoritos"
     const myTgl = document.getElementById('myToggle');
-    if (myTgl) { myTgl.textContent = '♥ Mis favoritos'; myTgl.setAttribute('onclick', 'toggleFavFilter()'); }
-    // Hide asesor filter and internal nav items not relevant
+    if (myTgl) {
+      if (tipoU === 'cliente') {
+        myTgl.textContent = '♥ Mis favoritos';
+        myTgl.setAttribute('onclick', 'toggleFavFilter()');
+      } else {
+        // vendedor_externo: keep original toggle but also add favoritos
+        myTgl.textContent = '♥ Mis favoritos';
+        myTgl.setAttribute('onclick', 'toggleFavFilter()');
+      }
+    }
+    // Hide internal-only filters
     const aseFilter = document.getElementById('asesorFilter');
     if (aseFilter) aseFilter.style.display = 'none';
+    const estadoInfo = document.getElementById('filterEstadoInfo');
+    if (estadoInfo) estadoInfo.style.display = 'none';
     // Hide internal sections from sidebar that shouldn't show
     ['mis','reg','alertas','portales','dash','conc'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
     document.getElementById('uname').textContent = U.nombre;
@@ -323,22 +334,27 @@ function sApp() {
     if (menuDiv) {
       let menuH = '';
       if (tipoU === 'pendiente') {
-        menuH = '<button class="mi act" data-s="espera" onclick="go(\'espera\')"><span class="mic">\u23F3</span>En espera</button>';
-        menuH += '<button class="mi" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
-        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
-      } else {
         menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
-        if (tipoU === 'vendedor_externo' || tipoU === 'propietario') {
-          menuH += '<button class="mi" data-s="mis-inm" onclick="go(\'mis-inm\')"><span class="mic">\u{1F3E0}</span>Mis inmuebles<span class="mib" id="misinmBadge" style="display:none">0</span></button>';
-          menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar inmueble</button>';
-        }
-        menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
+        menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
+        menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
+        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
+      } else if (tipoU === 'cliente') {
+        // CLIENTE: Explorar, Favoritos, Referir, Mis referidos, Publicar gratis, Mi cuenta
+        menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
         menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
         menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
         menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
-        if (tipoU === 'cliente') {
-          menuH += '<button class="mi" onclick="requestUpgrade()" style="color:#065f46"><span class="mic">\u{1F3E0}</span>Publicar inmuebles gratis</button>';
-        }
+        menuH += '<button class="mi" onclick="requestUpgrade()" style="color:#065f46"><span class="mic">\u{1F3E0}</span>Publicar inmuebles gratis</button>';
+        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
+      } else {
+        // VENDEDOR EXTERNO: Explorar, Mis inmuebles, Publicar, Favoritos, Mensajes, Referir, Mis referidos, Mi cuenta
+        menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
+        menuH += '<button class="mi" data-s="mis-inm" onclick="go(\'mis-inm\')"><span class="mic">\u{1F3E0}</span>Mis inmuebles<span class="mib" id="misinmBadge" style="display:none">0</span></button>';
+        menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar inmueble</button>';
+        menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
+        menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
+        menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
+        menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
         menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
       }
       menuDiv.innerHTML = menuH;

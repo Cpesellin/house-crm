@@ -135,7 +135,7 @@ function render(ls) {
     const ubiTxt = dirTxt ? (dirTxt + (ciu ? ' · ' + ciu : '')) : ('📍 ' + ciu);
 
     let ab = '';
-    if (dias !== null) {
+    if (dias !== null && !_isExt) {
       const cl = dias <= 7 ? 'agn' : dias <= 20 ? 'ago' : dias <= 40 ? 'agw' : 'agd';
       ab = `<span class="agb ${cl}">${dias === 0 ? 'Hoy' : dias + 'd'}</span>`;
     }
@@ -204,6 +204,16 @@ function render(ls) {
   });
 
   h += '</div>';
+
+  // Add referral banner for external users
+  if (_isExt && typeof window.renderReferralBanner === 'function') {
+    h += window.renderReferralBanner();
+  }
+  // Add upgrade banner for clients
+  if (_tipoU === 'cliente') {
+    h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-radius:16px;padding:20px;margin:20px 0;text-align:center;border:1.5px solid #bbf7d0"><div style="font-size:28px;margin-bottom:8px">🏠</div><div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;color:#065f46;margin-bottom:6px">¿Quieres publicar tu inmueble?</div><div style="font-size:13px;color:#064e3b;margin-bottom:12px">Conviértete en asesor externo y publica hasta 3 inmuebles gratis</div><button onclick="requestUpgrade()" style="padding:12px 24px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Publicar inmuebles gratis →</button></div>';
+  }
+
   el.innerHTML = h;
 }
 
