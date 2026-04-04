@@ -19,21 +19,7 @@ import { escapeHtml } from '../utils/sanitizer.js';
 
 // ─── Logo SVG (exact brand from original) ────────────────────────
 
-const LOGO_SVG = `<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="llg1" x1="0" y1="0" x2="64" y2="64">
-      <stop stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/>
-    </linearGradient>
-    <linearGradient id="llg2" x1="20" y1="16" x2="44" y2="50">
-      <stop stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#e0e7ff" stop-opacity=".8"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="url(#llg1)"/>
-  <path d="M32 12L50 26H14L32 12Z" fill="url(#llg2)"/>
-  <rect x="20" y="26" width="24" height="24" rx="2" fill="url(#llg2)"/>
-  <rect x="27" y="34" width="10" height="16" rx="2" fill="#3b82f6" opacity=".6"/>
-  <rect x="29" y="36" width="6" height="6" rx="1" fill="#fff" opacity=".4"/>
-</svg>`;
+const LOGO_SVG = `<img src="/img/logo.png" alt="House" style="width:64px;height:64px;object-fit:contain">`;
 
 
 // ─── State ───────────────────────────────────────────────────────

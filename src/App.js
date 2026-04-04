@@ -11,9 +11,9 @@ import { load } from './load.js';
 // Logo SVG (brand asset — used in header + login)
 // ---------------------------------------------------------------------------
 
-const LOGO_SVG_SM = `<svg width="32" height="32" viewBox="0 0 40 40" fill="none"><defs><linearGradient id="lg1" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#lg1)"/><path d="M20 8L31 17H9L20 8Z" fill="#fff" opacity=".95"/><rect x="12" y="17" width="16" height="15" rx="1.5" fill="#fff" opacity=".85"/><rect x="17" y="22" width="6" height="10" rx="1.5" fill="#6366f1" opacity=".5"/><rect x="18.5" y="23.5" width="3" height="3" rx=".5" fill="#fff" opacity=".5"/></svg>`;
+const LOGO_SVG_SM = `<img src="/img/logo.png" alt="House" style="width:32px;height:32px;object-fit:contain">`;
 
-const LOGO_SVG_LG = `<svg width="64" height="64" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="llg1" x1="0" y1="0" x2="64" y2="64"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient><linearGradient id="llg2" x1="20" y1="16" x2="44" y2="50"><stop stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#e0e7ff" stop-opacity=".8"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#llg1)"/><path d="M32 12L50 26H14L32 12Z" fill="url(#llg2)"/><rect x="20" y="26" width="24" height="24" rx="2" fill="url(#llg2)"/><rect x="27" y="34" width="10" height="16" rx="2" fill="#3b82f6" opacity=".6"/><rect x="29" y="36" width="6" height="6" rx="1" fill="#fff" opacity=".4"/></svg>`;
+const LOGO_SVG_LG = `<img src="/img/logo.png" alt="House" style="width:64px;height:64px;object-fit:contain">`;
 
 // ---------------------------------------------------------------------------
 // Shell renderer — uses EXACT original CSS classes
