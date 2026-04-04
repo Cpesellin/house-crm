@@ -27,7 +27,7 @@ function renderShell(container) {
   <div style="position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.12),transparent 70%);bottom:-80px;left:-80px"></div>
   <div class="lbox">
     <div style="display:flex;justify-content:center;margin-bottom:20px">${LOGO_SVG_LG}</div>
-    <div class="lbr">House CRM</div>
+    <div class="lbr">House</div>
     <div class="lsb">Gesti\u00F3n Inmobiliaria Inteligente</div>
     <div id="g_id_signin"></div>
     <div class="lor"><span>o ingresa con</span></div>
@@ -68,7 +68,7 @@ function renderShell(container) {
   <div class="nav">
     <div style="display:flex;align-items:center;gap:6px">
       <button class="ib" onclick="omenu()">\u2630</button>
-      <a class="lw" onclick="go('inv')">${LOGO_SVG_SM}<div><div class="lm">House CRM</div></div></a>
+      <a class="lw" onclick="go('inv')">${LOGO_SVG_SM}<div><div class="lm">House</div></div></a>
     </div>
     <div class="nr">
       <div class="bell-wrap">
@@ -89,7 +89,7 @@ function renderShell(container) {
 <div class="mov" id="mov" onclick="cmenu()"></div>
 <div class="mp" id="mpnl">
   <div class="mhd">
-    <span class="mbr" style="display:flex;align-items:center;gap:8px">${LOGO_SVG_SM} House CRM</span>
+    <span class="mbr" style="display:flex;align-items:center;gap:8px">${LOGO_SVG_SM} House</span>
     <button class="mcl" onclick="cmenu()">\u2715</button>
   </div>
   <div style="padding:6px 0">
@@ -383,8 +383,16 @@ export async function initApp(container) {
 
     // Auto-open registration form if ?reg=1
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('reg') === '1' && typeof window.toggleRegForm === 'function') {
-      setTimeout(() => window.toggleRegForm(), 300);
+    if (urlParams.get('reg') === '1') {
+      // Wait for functions.js to load and expose toggleRegForm
+      const tryToggle = () => {
+        if (typeof window.toggleRegForm === 'function') {
+          window.toggleRegForm();
+        } else {
+          setTimeout(tryToggle, 200);
+        }
+      };
+      setTimeout(tryToggle, 500);
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname + window.location.hash);
     }

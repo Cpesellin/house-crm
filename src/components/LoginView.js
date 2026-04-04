@@ -102,7 +102,7 @@ class LoginView {
   _template() {
     return `<div class="lbox">
       <div class="logo-login" style="display:flex;justify-content:center;margin-bottom:20px">${LOGO_SVG}</div>
-      <div class="lbr">House CRM</div>
+      <div class="lbr">House</div>
       <div class="lsb">Gestión Inmobiliaria Inteligente</div>
       <div id="g_id_signin"></div>
       <div class="lor"><span>o ingresa con</span></div>
