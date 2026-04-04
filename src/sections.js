@@ -385,7 +385,13 @@ window.rDash = async function () {
       }
     }
 
+    // Widget: Referidos inbox
+    h+=`<div id="dash-ref-inbox" style="margin-top:14px"></div>`;
+
     h+=`</div></div>`;el.innerHTML=h;
+
+    // Render referidos inbox widget after DOM is set
+    if (typeof window.renderReferralInbox === 'function') window.renderReferralInbox('dash-ref-inbox');
 
   } else {
     // ASESOR DASHBOARD (F7-F9)
@@ -1199,8 +1205,23 @@ window.rUsers = async function() {
 // REFERRAL PROGRAM — Form Wizard + Pipeline View
 // ══════════════════════════════════════════════════════════════════
 
+// Entry point: includes desplegables + wizard
 window.renderReferralForm = function() {
   const el = document.getElementById('sec-referir-content'); if (!el) return;
+  const hasRefs = (window._mrefCount || 0) > 0;
+  let h = '';
+  h += window.renderHowItWorks(!hasRefs);
+  h += window.renderReferralPolicies();
+  h += window.renderReferralStrategies();
+  h += '<div style="border-top:2px solid var(--brd);margin:8px 0 20px;position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--cd);padding:0 12px;font-size:12px;font-weight:700;color:var(--b600)">📝 Registrar referido</div></div>';
+  h += '<div id="sec-referir-wizard"></div>';
+  el.innerHTML = h;
+  _renderRefWizard();
+};
+
+// The actual wizard form
+function _renderRefWizard() {
+  const el = document.getElementById('sec-referir-wizard'); if (!el) return;
   const step = window._refStep || 1;
   const d = window._refData || {};
   let h = '';
@@ -1272,14 +1293,18 @@ window.renderMisReferidos = async function() {
   let h = '';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">' + (isAdmin ? '🤝 Todos los referidos' : '💰 Mis referidos') + '</div></div><button class="bt bp" style="font-size:12px;padding:8px 16px" onclick="go(\'referir\')">+ Referir</button></div>';
 
-  // KPIs
-  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px">';
-  h += '<div class="dc"><div class="dn2" style="color:var(--b700)">' + activos.length + '</div><div class="dl">Activos</div></div>';
-  h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + all.filter(r => r.estado === 'arrendado').length + '</div><div class="dl">Arrendados</div></div>';
-  h += '<div class="dc" style="border-color:var(--gold)"><div class="dn2" style="color:var(--gold)">' + fm(bonos) + '</div><div class="dl">Bonos</div></div>';
-  h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + fm(totalGanado) + '</div><div class="dl">Total ganado</div></div>';
-  if (isAdmin && comPend > 0) h += '<div class="dc" style="border-color:var(--red)"><div class="dn2" style="color:var(--red)">' + fm(comPend) + '</div><div class="dl">Por pagar</div></div>';
-  h += '</div>';
+  // KPIs — Commission dashboard for referrers, basic KPIs for admin
+  if (!isAdmin && typeof window.renderCommissionDashboard === 'function') {
+    h += window.renderCommissionDashboard({ total: all.length, activos: activos.length, arrendados: all.filter(r => r.estado === 'arrendado').length, rechazados: all.filter(r => r.estado === 'rechazado').length, bonosCobrados: bonos, comisionesCobradas: comPagadas, comisionesPendientes: comPend, totalGanado: totalGanado }, all);
+  } else {
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px">';
+    h += '<div class="dc"><div class="dn2" style="color:var(--b700)">' + activos.length + '</div><div class="dl">Activos</div></div>';
+    h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + all.filter(r => r.estado === 'arrendado').length + '</div><div class="dl">Arrendados</div></div>';
+    h += '<div class="dc" style="border-color:var(--gold)"><div class="dn2" style="color:var(--gold)">' + fm(bonos) + '</div><div class="dl">Bonos</div></div>';
+    h += '<div class="dc" style="border-color:var(--green)"><div class="dn2" style="color:var(--green)">' + fm(totalGanado) + '</div><div class="dl">Total ganado</div></div>';
+    if (comPend > 0) h += '<div class="dc" style="border-color:var(--red)"><div class="dn2" style="color:var(--red)">' + fm(comPend) + '</div><div class="dl">Por pagar</div></div>';
+    h += '</div>';
+  }
 
   // Filters
   window._refFiltro = window._refFiltro || 'todos';
@@ -1357,6 +1382,17 @@ window.renderMisReferidos = async function() {
   if (!all.length) {
     h += '<div class="emp"><span class="emp-i">🤝</span><h3>Aún no tienes referidos</h3><p style="font-size:12px;color:var(--sub)">¿Conoces un inmueble en arriendo? Refierelo y gana hasta 20% del canon.</p><button class="bt bp" style="margin-top:10px" onclick="go(\'referir\')">🤝 Referir mi primer inmueble</button></div>';
   }
+
+  // Desplegables informativos al final
+  h += '<div style="margin-top:20px">';
+  h += window.renderHowItWorks(false);
+  h += window.renderReferralPolicies();
+  h += window.renderReferralStrategies();
+  h += '</div>';
+
+  // Store ref count for renderReferralForm open state
+  window._mrefCount = all.length;
+
   el.innerHTML = h;
 };
 

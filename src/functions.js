@@ -1969,7 +1969,105 @@ window.eliminarMiInmueble = async function(id) {
 };
 
 // ══════════════════════════════════════════════════════════════════
-// 23. REFERRAL PROGRAM — Referir arriendos y ganar comisiones
+// 23. REFERRAL UX — Desplegables informativos + Dashboard ganancias + Inbox admin
+// ══════════════════════════════════════════════════════════════════
+
+window.renderHowItWorks = function(startOpen) {
+  const open = startOpen ? ' open' : '';
+  const steps = [
+    { icon: '👀', color: '#f59e0b', title: 'Paso 1 · Encuentra un inmueble', desc: 'Camina por tu barrio, tu conjunto, o pregunta a conocidos. ¿Ves un aviso de "Se Arrienda"? ¡Ese es tu negocio!' },
+    { icon: '🤝', color: '#3b82f6', title: 'Paso 2 · Habla con el propietario', desc: 'Cuéntale los beneficios: pago garantizado, estudio al inquilino, contrato legal, publicación en 3 portales. Tienes material de apoyo para compartir por WhatsApp.' },
+    { icon: '📝', color: '#8b5cf6', title: 'Paso 3 · Registra el referido aquí', desc: 'Llena el formulario con los datos del propietario y del inmueble. ¡Toma menos de 2 minutos!' },
+    { icon: '✅', color: '#10b981', title: 'Paso 4 · Nosotros hacemos el resto', desc: 'Nuestro equipo contacta al propietario, visita el inmueble, firma contrato y lo publica en Metrocuadrado, Fincaraíz y Marketplace.' },
+    { icon: '💰', color: '#059669', title: 'Paso 5 · ¡Ganas dinero!', desc: 'Recibes $50.000 de bono al verificar. Y cuando se arriende, ganas hasta el 20% del primer canon. Un apto de $2.5M = $500.000 para ti.' }
+  ];
+  let timeline = steps.map((s, i) => '<div style="position:relative;padding-bottom:' + (i < 4 ? '24px' : '0') + '">' + (i < 4 ? '<div style="position:absolute;left:-20px;top:28px;bottom:0;width:2px;background:var(--g200)"></div>' : '') + '<div style="position:absolute;left:-28px;top:2px;width:20px;height:20px;border-radius:50%;background:' + s.color + ';display:flex;align-items:center;justify-content:center;font-size:10px">' + s.icon + '</div><div style="font-size:13px;font-weight:700;color:' + s.color + ';margin-bottom:3px">' + s.title + '</div><div style="font-size:12px;color:var(--sub);line-height:1.5">' + s.desc + '</div></div>').join('');
+  return '<details' + open + ' style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📖</span> ¿Cómo funciona el programa de referidos?</summary><div style="padding:0 16px 20px"><div style="position:relative;padding-left:32px;margin-top:8px">' + timeline + '</div><div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-top:20px;text-align:center"><div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:8px">💡 Ejemplo real</div><div style="font-size:12px;color:#065f46;line-height:1.6">Don Carlos, celador de un conjunto, refirió <strong>3 apartamentos</strong> en un mes. Canon promedio: $1.800.000. <strong>Ganó $1.080.000</strong> sin salir de su trabajo.</div></div></div></details>';
+};
+
+window.renderReferralPolicies = function() {
+  return '<details style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">📋</span> Políticas y condiciones</summary><div style="padding:0 16px 20px;font-size:12px;color:var(--sub);line-height:1.7">' +
+    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-top:12px;margin-bottom:6px">💰 Sobre la comisión</div><div style="padding-left:12px;border-left:2px solid var(--b600);margin-bottom:14px">• Hasta el <strong>20% del primer canon</strong> mensual.<br>• Dos partes: <strong>$50.000 de bono</strong> al verificar + <strong>el resto</strong> al arrendar.<br>• Se calcula sobre el canon final pactado.</div>' +
+    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">✅ Requisitos</div><div style="padding-left:12px;border-left:2px solid var(--green);margin-bottom:14px">• Propietario dispuesto a firmar contrato de administración.<br>• Inmueble en condiciones habitables.<br>• Sin contrato vigente con otra inmobiliaria.<br>• Datos reales y verificables.</div>' +
+    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">⏰ Tiempos</div><div style="padding-left:12px;border-left:2px solid var(--gold);margin-bottom:14px">• Verificación: máximo <strong>5 días hábiles</strong>.<br>• Bono: se confirma al verificar.<br>• Comisión final: dentro de <strong>15 días</strong> después del arriendo.<br>• Pago: transferencia o efectivo.</div>' +
+    '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">📌 General</div><div style="padding-left:12px;border-left:2px solid var(--sub);margin-bottom:14px">• Cualquier persona mayor de edad puede participar.<br>• No hay límite de referidos.<br>• Si uno es rechazado, puedes referir otro diferente.</div>' +
+    '<div style="text-align:center;padding:12px;background:var(--cd2);border-radius:10px;margin-top:8px"><div style="font-size:11px;color:var(--sub)">¿Dudas?</div><a href="https://wa.me/573105922763?text=Hola,%20tengo%20una%20pregunta%20sobre%20referidos" target="_blank" style="display:inline-block;margin-top:6px;padding:8px 20px;background:#25d366;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">📞 WhatsApp</a></div></div></details>';
+};
+
+window.renderReferralStrategies = function() {
+  const strats = [
+    { n: 1, c: '#3b82f6', t: 'El enfoque del "Vecino que ayuda"', q: '"Vi que está arrendando. Yo trabajo con una inmobiliaria que consigue inquilino, le hace estudio, y le paga cada 10 sin falta. ¿Le cuento?"', tip: 'No vendas. Ayuda. Ofreces solución a un problema que ya tiene.' },
+    { n: 2, c: '#8b5cf6', t: 'El miedo al mal inquilino', q: '"La ventaja es que hacen estudio de crédito, verifican en DataCrédito, piden referencias... No entra cualquier persona. Y si hay problemas, ellos se encargan."', tip: 'El estudio de crédito y la póliza son los argumentos más fuertes.' },
+    { n: 3, c: '#10b981', t: 'El argumento del 10% vs. la "joda"', q: '"¿Cuánto tiempo lleva con el aviso? Cada mes vacío son $X que pierde. Por el 10% se olvida de todo: cobros, contratos, mantenimiento."', tip: 'Si lleva +1 mes vacío, enfatiza el costo de oportunidad.' },
+    { n: 4, c: '#f59e0b', t: 'Para celadores y administradores', q: '"Don/Doña [nombre], vi que desocuparon el apto del [piso]. Conozco una inmobiliaria seria que le ayuda a arrendar rápido."', tip: 'Ustedes saben cuándo se desocupan los aptos antes que nadie. Ese timing es oro.' },
+    { n: 5, c: '#ef4444', t: 'El WhatsApp de seguimiento', q: '"Hola [nombre], ¿pudo revisar la info de la inmobiliaria? Quedo atento por si tiene dudas."', tip: 'Usa el botón "Enviar propuesta" de esta app. Si no responde en 3 días, envía mensaje corto.' }
+  ];
+  const objs = [
+    ['"No quiero pagar comisión"', '"No paga nada inicial. Solo se cobra cuando YA está arrendado y generando plata."'],
+    ['"Ya tengo inquilino"', '"Perfecto, la inmobiliaria le hace estudio y contrato a su inquilino. Se protege legalmente."'],
+    ['"Las inmobiliarias son lentas"', '"Esta publica en 3 portales al tiempo. Promedio de arriendo: menos de 30 días."'],
+    ['"Prefiero manejarlo yo"', '"Si el inquilino queda mal, ¿tiene abogado para desalojo? ¿Póliza de daños? Todo eso está en el 10%."'],
+    ['"Déjeme pensarlo"', '"Sin presión. Le envío la info por WhatsApp. Y puede llamar directo a la inmobiliaria."']
+  ];
+  let sh = strats.map(s => '<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="width:24px;height:24px;border-radius:50%;background:' + s.c + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">' + s.n + '</div><div style="font-size:13px;font-weight:700">' + s.t + '</div></div><div style="padding-left:32px;font-size:12px;color:var(--sub);line-height:1.5"><div style="background:var(--cd2);border-radius:8px;padding:10px;font-style:italic;margin-bottom:6px">' + s.q + '</div><div style="font-size:11px"><strong>Tip:</strong> ' + s.tip + '</div></div></div>').join('');
+  let oh = objs.map(o => '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:2px">' + o[0] + '</div><div style="font-size:11px;color:var(--sub);padding-left:12px;border-left:2px solid var(--green);line-height:1.5">' + o[1] + '</div></div>').join('');
+  return '<details style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;margin-bottom:16px;overflow:hidden"><summary style="padding:16px;cursor:pointer;font-family:Fraunces,serif;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;user-select:none"><span style="font-size:20px">🎯</span> Guía: estrategias para cerrar más referidos</summary><div style="padding:0 16px 20px"><div style="margin-top:12px">' + sh + '</div><div style="margin-top:12px;margin-bottom:12px"><div style="font-size:13px;font-weight:700;margin-bottom:8px">💬 Objeciones comunes</div>' + oh + '</div><div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;padding:16px;text-align:center"><div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:4px">🏆 Meta del mes</div><div style="font-size:12px;color:#78350f">3 referidos cerrados = entre <strong>$500K y $1.5M</strong> de ingreso extra.</div></div></div></details>';
+};
+
+window.renderCommissionDashboard = function(stats, refs) {
+  const pendPago = (refs||[]).filter(r => r.bono_pagado && !r.comision_pagada && r.estado === 'arrendado').reduce((s, r) => s + (r.comision_monto || 0), 0);
+  const enProc = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).length;
+  const potencial = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).reduce((s, r) => s + Math.max(0, Math.round((r.canon_aproximado || 0) * 0.20)), 0);
+  let h = '<div style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border-radius:16px;padding:24px;margin-bottom:16px;color:#fff;text-align:center">';
+  h += '<div style="font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total ganado</div>';
+  h += '<div style="font-family:Fraunces,serif;font-size:36px;font-weight:700">' + fm(stats.totalGanado) + '</div>';
+  h += '<div style="display:flex;justify-content:center;gap:24px;margin-top:12px;font-size:12px;opacity:.9"><div><div style="font-size:18px;font-weight:700">' + fm(stats.bonosCobrados) + '</div><div style="font-size:10px;opacity:.7">Bonos</div></div><div style="width:1px;background:rgba(255,255,255,.3)"></div><div><div style="font-size:18px;font-weight:700">' + fm(stats.comisionesCobradas) + '</div><div style="font-size:10px;opacity:.7">Comisiones</div></div></div>';
+  h += '<div style="display:flex;justify-content:center;gap:16px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.2)">';
+  if (pendPago > 0) h += '<div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px 16px;font-size:11px"><span style="color:#fbbf24">⏳</span> Pendiente: <strong>' + fm(pendPago) + '</strong></div>';
+  if (enProc > 0) h += '<div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px 16px;font-size:11px">🔄 ' + enProc + ' en proceso' + (potencial > 0 ? ' · Potencial: <strong>' + fm(potencial) + '</strong>' : '') + '</div>';
+  h += '</div></div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--b600)">' + stats.total + '</div><div style="font-size:9px;color:var(--sub)">Total</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--gold)">' + enProc + '</div><div style="font-size:9px;color:var(--sub)">En proceso</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--green)">' + stats.arrendados + '</div><div style="font-size:9px;color:var(--sub)">Arrendados</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd)"><div style="font-size:18px;font-weight:700;color:var(--red)">' + stats.rechazados + '</div><div style="font-size:9px;color:var(--sub)">Rechazados</div></div>';
+  h += '</div>';
+  return h;
+};
+
+window.renderReferralInbox = async function(containerId) {
+  const el = document.getElementById(containerId); if (!el) return;
+  const { data: pend } = await SB().from('referidos').select('*,referidor:usuarios!referidor_id(nombre,foto,telefono_contacto)').in('estado', ['registrado', 'verificando']).order('created_at', { ascending: false }).limit(10);
+  if (!pend?.length) { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--sub);font-size:12px">✅ Sin referidos pendientes</div>'; return; }
+  let h = '<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">📥</span> Referidos recibidos <span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">' + pend.length + '</span></div>';
+  pend.forEach(r => {
+    const mins = Math.floor((Date.now() - new Date(r.created_at).getTime()) / 60000);
+    const tTxt = mins < 60 ? 'Hace ' + mins + ' min' : mins < 1440 ? 'Hace ' + Math.floor(mins / 60) + 'h' : 'Hace ' + Math.floor(mins / 1440) + ' días';
+    const esNuevo = r.estado === 'registrado';
+    h += '<div style="background:var(--cd);border:1.5px solid ' + (esNuevo ? 'var(--gold)' : 'var(--brd)') + ';border-radius:12px;padding:12px;margin-bottom:8px">';
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+    h += r.referidor?.foto ? '<img src="' + r.referidor.foto + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover">' : '<div style="width:32px;height:32px;border-radius:50%;background:var(--b600);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">' + (r.referidor?.nombre?.[0] || '?') + '</div>';
+    h += '<div style="flex:1"><div style="font-size:13px;font-weight:700">' + (r.referidor?.nombre || '?') + '</div><div style="font-size:10px;color:var(--sub)">' + tTxt + '</div></div>';
+    h += '<span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;background:' + (esNuevo ? '#fef3c7' : '#dbeafe') + ';color:' + (esNuevo ? '#92400e' : '#1e40af') + '">' + (esNuevo ? 'NUEVO' : 'VERIFICANDO') + '</span></div>';
+    h += '<div style="background:var(--cd2);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px">';
+    h += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--sub)">Propietario</span><span style="font-weight:700">' + r.propietario_nombre + '</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--sub)">Inmueble</span><span style="font-weight:700">' + (r.tipo_inmueble || '?') + ' · ' + (r.barrio || r.ciudad || '') + '</span></div>';
+    if (r.canon_aproximado) h += '<div style="display:flex;justify-content:space-between"><span style="color:var(--sub)">Canon</span><span style="font-weight:700;color:var(--green)">' + fm(r.canon_aproximado) + '/mes</span></div>';
+    if (r.foto_aviso_url) h += '<div style="margin-top:8px"><img src="' + r.foto_aviso_url + '" style="width:100%;max-height:100px;object-fit:cover;border-radius:6px"></div>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:6px">';
+    h += '<a href="https://wa.me/57' + (r.propietario_telefono || '').replace(/^57/, '') + '" target="_blank" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:#25d366;color:#fff;text-align:center;text-decoration:none">📞 Propietario</a>';
+    if (esNuevo) h += '<button style="flex:1;padding:8px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:var(--gold);color:#fff;font-family:inherit;cursor:pointer" onclick="iniciarVerificacion(\'' + r.id + '\').then(()=>renderReferralInbox(\'' + containerId + '\'))">🔍 Verificar</button>';
+    else h += '<button style="flex:1;padding:8px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="aprobarReferido(\'' + r.id + '\').then(()=>renderReferralInbox(\'' + containerId + '\'))">✅ Aprobar</button>';
+    h += '<button style="padding:8px 12px;border:1.5px solid var(--rb);border-radius:8px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);font-family:inherit;cursor:pointer" onclick="rechazarConMotivo(\'' + r.id + '\').then(()=>renderReferralInbox(\'' + containerId + '\'))">❌</button>';
+    h += '</div></div>';
+  });
+  h += '<div style="text-align:center;margin-top:8px"><a onclick="go(\'mis-referidos\')" style="font-size:12px;color:var(--b600);cursor:pointer;font-weight:600">Ver todos los referidos →</a></div>';
+  el.innerHTML = h;
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 24. REFERRAL PROGRAM — Referir arriendos y ganar comisiones
 // ══════════════════════════════════════════════════════════════════
 
 const BONO_BASE = 50000;
