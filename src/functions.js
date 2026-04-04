@@ -1053,21 +1053,21 @@ window.showPublicView = async function(id) {
     </div>`;
 
     // ── BANNERS CTA ──
-    // Count public properties for subtitle
+    const baseUrl = window.location.origin;
     h += `<div style="padding:0 16px 20px">`;
     // Banner principal
     h += `<div style="margin-top:20px;padding:24px 20px;border-radius:14px;background:linear-gradient(135deg,#eff6ff,#f0f1ff);border:1.5px solid #bfdbfe;text-align:center">
       <div style="font-size:32px;margin-bottom:6px">🏠</div>
       <div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#1e293b;margin-bottom:4px">Encuentra tu inmueble ideal</div>
       <div style="font-size:13px;color:#64748b;margin-bottom:14px">Explora propiedades en Pereira y el Eje Cafetero</div>
-      <a href="#/portafolio" onclick="document.getElementById('lov')&&(document.getElementById('lov').style.display='none');document.getElementById('mhdr')&&(document.getElementById('mhdr').style.display='block')" style="display:inline-block;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;background:#2563eb;color:#fff;text-decoration:none;margin-bottom:6px">🔍 Explorar inmuebles</a>
+      <a href="${baseUrl}/#/portafolio" style="display:inline-block;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;background:#2563eb;color:#fff;text-decoration:none;margin-bottom:6px">🔍 Explorar inmuebles</a>
       <div style="font-size:10px;color:#94a3b8;margin-top:8px">Gratis. Sin spam. Cancela cuando quieras.</div>
     </div>`;
     // Banner secundario
     h += `<div style="margin-top:12px;padding:18px 20px;border-radius:14px;background:linear-gradient(135deg,#f0fdf4,#f0fdf8);border:1.5px solid #bbf7d0;text-align:center">
       <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">¿También tienes un inmueble?</div>
       <div style="font-size:12px;color:#64748b;margin-bottom:10px">Llega a miles de clientes en Pereira</div>
-      <a href="#/portafolio" onclick="document.getElementById('lov')&&(document.getElementById('lov').style.display='none');document.getElementById('mhdr')&&(document.getElementById('mhdr').style.display='block')" style="display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;text-decoration:none">🏠 Publicar mi inmueble gratis</a>
+      <a href="${baseUrl}/#/portafolio" style="display:inline-block;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;text-decoration:none">🏠 Publicar mi inmueble gratis</a>
     </div>`;
     h += `</div>`;
 

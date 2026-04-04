@@ -40,7 +40,7 @@ function renderShell(container) {
     <div class="lfooter">Ingresa con Google o con tus credenciales</div>
     <div id="lerr" style="display:none"></div>
     <div style="margin-top:16px;text-align:center">
-      <a href="#/portafolio" onclick="document.getElementById('lov').style.display='none';document.getElementById('mhdr').style.display='block'" style="color:#94a3b8;font-size:12px;text-decoration:underline;cursor:pointer">\u{1F50D} Explorar inmuebles sin cuenta</a>
+      <a href="#/portafolio" onclick="document.getElementById('lov').style.display='none'" style="color:#94a3b8;font-size:12px;text-decoration:underline;cursor:pointer">\u{1F50D} Explorar inmuebles sin cuenta</a>
     </div>
   </div>
 </div>
@@ -356,8 +356,8 @@ export async function initApp(container) {
     } else {
       // Check if visitor wants to access public portal
       const hash = location.hash.replace(/^#\/?/, '');
-      if (hash === 'portafolio' || hash === '') {
-        // Hide login, show portafolio for visitors
+      if (hash === 'portafolio') {
+        // Hide login for visitors browsing the public portal
         document.getElementById('lov').style.display = 'none';
         // Don't show main header — rPortafolio renders its own
       }
