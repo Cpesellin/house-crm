@@ -2017,7 +2017,7 @@ window.renderReferralStrategies = function() {
 window.renderCommissionDashboard = function(stats, refs) {
   const pendPago = (refs||[]).filter(r => r.bono_pagado && !r.comision_pagada && r.estado === 'arrendado').reduce((s, r) => s + (r.comision_monto || 0), 0);
   const enProc = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).length;
-  const potencial = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).reduce((s, r) => s + Math.max(0, Math.round((r.canon_aproximado || 0) * 0.20)), 0);
+  const potencial = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).reduce((s, r) => s + Math.max(0, Math.round((r.canon_aproximado || 0) * 0.10)), 0);
   let h = '<div style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border-radius:16px;padding:24px;margin-bottom:16px;color:#fff;text-align:center">';
   h += '<div style="font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total ganado</div>';
   h += '<div style="font-family:Fraunces,serif;font-size:36px;font-weight:700">' + fm(stats.totalGanado) + '</div>';

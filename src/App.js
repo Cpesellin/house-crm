@@ -187,7 +187,7 @@ function renderShell(container) {
 <div class="sec" id="sec-espera"><div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center" id="esperac"></div></div>
 <div class="sec" id="sec-mensajes"><div style="max-width:600px;margin:0 auto;padding:10px 14px 60px" id="mensajesc"></div></div>
 <div class="sec" id="sec-propietarios"><div style="max-width:600px;margin:0 auto;padding:0 0 60px" id="propietariosc"></div></div>
-<div class="sec" id="sec-referir"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F91D}</div><div><div class="cht">Referir Inmueble</div><div class="chsb">Gana hasta 20% del canon</div></div></div></div><div class="cdb" id="sec-referir-content"></div></div></div></div>
+<div class="sec" id="sec-referir"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F91D}</div><div><div class="cht">Referir Inmueble</div><div class="chsb">Gana hasta 10% del canon</div></div></div></div><div class="cdb" id="sec-referir-content"></div></div></div></div>
 <div class="sec" id="sec-misref"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="sec-misref-content"></div></div>
 <div class="sec" id="sec-mis-inm"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinmc"></div></div>
 
