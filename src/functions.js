@@ -2311,7 +2311,7 @@ window.maskAccount = function(num, metodo) {
 window.maskName = function(n) { if (!n || n.length < 3) return '****'; const p = n.trim().split(' '); const l = p[p.length - 1]; return n[0] + '****' + l[l.length - 1]; };
 window.maskCedula = function(c) { const d = (c || '').replace(/\D/g, ''); return d.length >= 6 ? '****' + d.slice(-6) : '****'; };
 
-const PAY_VALIDATIONS = {
+window.PAY_VALIDATIONS = {
   nequi: { label: 'Número Nequi', ph: '3001234567', ml: 10, val: v => /^3\d{9}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 10 dígitos y empezar por 3', bank: false },
   bancolombia: { label: 'Cuenta Bancolombia', ph: '12345678901', ml: 11, val: v => /^\d{11}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 11 dígitos', bank: true },
   daviplata: { label: 'Número Daviplata', ph: '3001234567', ml: 10, val: v => /^3\d{9}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 10 dígitos y empezar por 3', bank: false },
