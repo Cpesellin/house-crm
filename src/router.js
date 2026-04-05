@@ -36,6 +36,8 @@ const ROUTES = {
   'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['vendedor_externo','propietario'] },
   'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
   'propietarios': { section: 'sec-propietarios', label: 'Propietarios', icon: '\u{1F3E0}', auth: false },
+  'metodo-pago':  { section: 'sec-metodo-pago', label: 'M\u00E9todo de pago', icon: '\u{1F4B3}', auth: true },
+  'admin-pagos':  { section: 'sec-admin-pagos', label: 'Pagos',          icon: '\u{1F4B0}', auth: true, roles: ['admin'] },
   'referir':    { section: 'sec-referir',   label: 'Referir',         icon: '\u{1F91D}', auth: true },
   'mis-referidos': { section: 'sec-misref', label: 'Mis Referidos',   icon: '\u{1F4B0}', auth: true },
 };
@@ -63,6 +65,8 @@ const ROUTE_RENDERERS = {
   'mensajes':   'renderMensajes',
   'mis-inm':    'renderMisInmueblesExt',
   'propietarios': 'renderPropietariosLanding',
+  'metodo-pago':  'renderPaymentSetup',
+  'admin-pagos':  'renderAdminPaymentPanel',
   'referir':    'renderReferralForm',
   'mis-referidos': 'renderMisReferidos',
 };

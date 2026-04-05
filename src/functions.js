@@ -2111,10 +2111,16 @@ window.iniciarVerificacion = async function(id) {
 
 window.aprobarReferido = async function(id) {
   const u = U();
-  await SB().from('referidos').update({ estado: 'contrato_firmado', bono_pagado: true, bono_fecha_pago: new Date().toISOString(), verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
-  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(nombre,usuario,email),tipo_inmueble,barrio,ciudad').eq('id', id).single();
-  if (r?.referidor) await window.noti('referido_aprobado', 'verde', '🎉 ¡Tu referido fue aprobado!', '¡Felicidades ' + r.referidor.nombre + '! Bono de ' + fm(BONO_BASE) + ' confirmado. Te avisaremos cuando se arriende.', r.referidor.usuario || r.referidor.email, null, null);
-  window.toast('✅ Aprobado · Bono ' + fm(BONO_BASE));
+  await SB().from('referidos').update({ estado: 'contrato_firmado', verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
+  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(id,nombre,usuario,email),tipo_inmueble,barrio,ciudad').eq('id', id).single();
+  const refEmail = r?.referidor?.usuario || r?.referidor?.email || '';
+  // Check if referrer has payment method
+  const metodo = await window.obtenerMetodoPago(r?.referidor?.id);
+  if (!metodo) {
+    await window.noti('configurar_pago', 'amarillo', '💳 Configura tu método de pago', '¡Tu referido fue aprobado! Para recibir tu bono de ' + fm(BONO_BASE) + ', configura dónde quieres recibir tus pagos en Mi cuenta → Método de pago.', refEmail, null, null);
+  }
+  await window.noti('referido_aprobado', 'verde', '🎉 ¡Tu referido fue aprobado!', '¡Felicidades ' + (r?.referidor?.nombre || '') + '! Contrato con propietario firmado. Tu bono de ' + fm(BONO_BASE) + ' está pendiente de pago.' + (!metodo ? ' Configura tu método de pago para recibirlo.' : ''), refEmail, null, null);
+  window.toast('✅ Aprobado · Bono ' + fm(BONO_BASE) + ' pendiente de pago');
 };
 
 window.rechazarConMotivo = function(id) {
@@ -2290,6 +2296,108 @@ window.refUpdateCalc = function() {
 // --- Referral Banner for portal ---
 window.renderReferralBanner = function() {
   return '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:16px;padding:24px;margin:20px 14px;text-align:center;color:#fff"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:6px">Gana dinero refiriendo inmuebles</div><div style="font-size:13px;opacity:.9;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un inmueble en arriendo? Refierelo y gana hasta el <strong>10%</strong> del primer canon.</div><div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;margin-bottom:16px">Un apto de $2.5M = $250.000 para ti</div><button onclick="go(\'referir\')" style="padding:14px 32px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤝 Quiero referir un inmueble</button></div>';
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 25. PAYMENT SYSTEM — Métodos de pago + Panel admin + Historial
+// ══════════════════════════════════════════════════════════════════
+
+// --- Masking functions ---
+window.maskAccount = function(num, metodo) {
+  const c = (num || '').replace(/\D/g, '');
+  if (['nequi','daviplata','bre'].includes(metodo)) return c.length >= 10 ? c.slice(0, 3) + ' *** ** ' + c.slice(-2) : '****';
+  return c.length >= 4 ? '****' + c.slice(-4) : '****';
+};
+window.maskName = function(n) { if (!n || n.length < 3) return '****'; const p = n.trim().split(' '); const l = p[p.length - 1]; return n[0] + '****' + l[l.length - 1]; };
+window.maskCedula = function(c) { const d = (c || '').replace(/\D/g, ''); return d.length >= 6 ? '****' + d.slice(-6) : '****'; };
+
+const PAY_VALIDATIONS = {
+  nequi: { label: 'Número Nequi', ph: '3001234567', ml: 10, val: v => /^3\d{9}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 10 dígitos y empezar por 3', bank: false },
+  bancolombia: { label: 'Cuenta Bancolombia', ph: '12345678901', ml: 11, val: v => /^\d{11}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 11 dígitos', bank: true },
+  daviplata: { label: 'Número Daviplata', ph: '3001234567', ml: 10, val: v => /^3\d{9}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 10 dígitos y empezar por 3', bank: false },
+  davivienda: { label: 'Cuenta Davivienda', ph: '123456789012', ml: 12, val: v => /^\d{10,12}$/.test(v.replace(/\D/g, '')), err: 'Debe tener entre 10 y 12 dígitos', bank: true },
+  bre: { label: 'Número Bre (Dale!)', ph: '3001234567', ml: 10, val: v => /^3\d{9}$/.test(v.replace(/\D/g, '')), err: 'Debe tener 10 dígitos y empezar por 3', bank: false }
+};
+
+// --- Save payment method ---
+window.guardarMetodoPago = async function() {
+  const metodo = document.getElementById('payMetodo')?.value; if (!metodo) { window.toast('Selecciona un método', 'twarn'); return; }
+  const cfg = PAY_VALIDATIONS[metodo]; if (!cfg) return;
+  const num = (document.getElementById('payNumero')?.value || '').replace(/\D/g, '');
+  if (!cfg.val(num)) { window.toast(cfg.err, 'twarn'); return; }
+  const titular = (document.getElementById('payTitular')?.value || '').trim();
+  if (titular.length < 5 || !/\s/.test(titular)) { window.toast('Ingresa nombre y apellido completo', 'twarn'); return; }
+  const cedula = (document.getElementById('payCedula')?.value || '').replace(/\D/g, '');
+  if (cedula.length < 6) { window.toast('Cédula inválida', 'twarn'); return; }
+  const tipoCuenta = cfg.bank ? (document.getElementById('payTipoCuenta')?.value || null) : null;
+
+  // Show confirmation modal
+  const masked = window.maskAccount(num, metodo);
+  const metodoLabels = { nequi: 'Nequi 📱', bancolombia: 'Bancolombia 🏦', daviplata: 'Daviplata 📱', davivienda: 'Davivienda 🏦', bre: 'Bre (Dale!) 📱' };
+  const html = '<div class="cfdlg" id="payConfirmDlg" style="display:flex"><div class="cfbox" style="text-align:left;max-width:380px">' +
+    '<div style="font-size:16px;font-weight:800;text-align:center;margin-bottom:14px">🔒 Confirma tus datos de pago</div>' +
+    '<div style="background:var(--cd2);border:1.5px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px">' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--sub)">Método</span><span style="font-weight:700">' + (metodoLabels[metodo] || metodo) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--sub)">Número</span><span style="font-weight:700">' + masked + '</span></div>' +
+    (tipoCuenta ? '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--sub)">Tipo</span><span style="font-weight:700">' + tipoCuenta + '</span></div>' : '') +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--sub)">Titular</span><span style="font-weight:700">' + titular + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between"><span style="color:var(--sub)">Cédula</span><span style="font-weight:700">' + window.maskCedula(cedula) + '</span></div></div>' +
+    '<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--sub);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="payConfirmCheck" style="margin-top:2px;accent-color:var(--b600)"><span>Confirmo que estos datos son correctos y que la cuenta me pertenece. Entiendo que si hay un error, el pago podría enviarse a otra persona.</span></label>' +
+    '<div style="display:flex;gap:8px"><button style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:1.5px solid var(--brd);background:var(--cd);color:var(--tx);font-family:inherit;cursor:pointer" onclick="document.getElementById(\'payConfirmDlg\').remove()">← Corregir</button>' +
+    '<button id="payConfirmBtn" disabled style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:700;border:none;background:var(--g300);color:#fff;font-family:inherit;cursor:not-allowed" onclick="_confirmarMetodoPago(\'' + metodo + '\',\'' + num + '\',\'' + titular.replace(/'/g, "\\'") + '\',\'' + cedula + '\',\'' + (tipoCuenta || '') + '\')">✅ Confirmar</button></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('payConfirmCheck').addEventListener('change', function() {
+    const btn = document.getElementById('payConfirmBtn');
+    btn.disabled = !this.checked; btn.style.background = this.checked ? 'var(--b600)' : 'var(--g300)'; btn.style.cursor = this.checked ? 'pointer' : 'not-allowed';
+  });
+};
+
+window._confirmarMetodoPago = async function(metodo, num, titular, cedula, tipoCuenta) {
+  document.getElementById('payConfirmDlg')?.remove();
+  const u = U();
+  try {
+    await SB().from('metodos_pago').update({ activo: false }).eq('usuario_id', u.id).eq('activo', true);
+    const { error } = await SB().from('metodos_pago').insert({ usuario_id: u.id, metodo, tipo_cuenta: tipoCuenta || null, numero_cuenta: num, titular_nombre: titular, titular_cedula: cedula, confirmado: true, confirmado_at: new Date().toISOString(), activo: true });
+    if (error) throw error;
+    window.toast('✅ Método de pago configurado');
+    if (typeof window.renderPaymentSetup === 'function') window.renderPaymentSetup();
+  } catch(e) { window.toast('Error: ' + e.message, 'terr'); }
+};
+
+// --- Get active payment method ---
+window.obtenerMetodoPago = async function(userId) {
+  const { data } = await SB().from('metodos_pago').select('*').eq('usuario_id', userId || U()?.id).eq('activo', true).single();
+  return data;
+};
+
+// --- Register payment (admin) ---
+window.registrarPagoReferido = async function(refId, tipoPago, monto) {
+  const { data: ref } = await SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,usuario,email)').eq('id', refId).single();
+  if (!ref) { window.toast('Referido no encontrado', 'terr'); return; }
+  const metodo = await window.obtenerMetodoPago(ref.referidor_id);
+  const u = U();
+  const { error } = await SB().from('pagos_referidos').insert({
+    referido_id: refId, referidor_id: ref.referidor_id, metodo_pago_id: metodo?.id || null,
+    tipo_pago: tipoPago, monto,
+    inmueble_tipo: ref.tipo_inmueble, inmueble_barrio: ref.barrio, inmueble_canon: ref.canon_real || ref.canon_aproximado,
+    metodo_snapshot: metodo?.metodo || 'sin_metodo', cuenta_snapshot: metodo ? window.maskAccount(metodo.numero_cuenta, metodo.metodo) : 'N/A', titular_snapshot: metodo?.titular_nombre || 'Sin configurar',
+    estado: 'pagado', pagado_por: u.id, pagado_at: new Date().toISOString()
+  });
+  if (error) { window.toast('Error: ' + error.message, 'terr'); return; }
+  if (tipoPago === 'bono') await SB().from('referidos').update({ bono_pagado: true, bono_fecha_pago: new Date().toISOString() }).eq('id', refId);
+  else await SB().from('referidos').update({ comision_pagada: true, comision_fecha_pago: new Date().toISOString() }).eq('id', refId);
+  const refEmail = ref.referidor?.usuario || ref.referidor?.email || '';
+  const ml = metodo ? metodo.metodo + ' ' + window.maskAccount(metodo.numero_cuenta, metodo.metodo) : '';
+  await window.noti('pago_realizado', 'verde', '💰 ¡Pago recibido! ' + fm(monto), 'Tu ' + (tipoPago === 'bono' ? 'bono' : 'comisión') + ' de ' + fm(monto) + ' fue enviado a tu ' + ml + '. ¡Gracias por referir!', refEmail, null, ref.inmueble_id);
+  window.toast('✅ Pago registrado: ' + fm(monto));
+  if (typeof window.renderAdminPaymentPanel === 'function') window.renderAdminPaymentPanel();
+};
+
+// --- Copy payment data (admin) ---
+window.copiarDatosPago = function(metodo, numero, titular, cedula, monto, concepto) {
+  const labels = { nequi: 'Nequi', bancolombia: 'Bancolombia', daviplata: 'Daviplata', davivienda: 'Davivienda', bre: 'Bre' };
+  const txt = (labels[metodo] || metodo) + ': ' + numero + '\nTitular: ' + titular + '\nCédula: ' + cedula + '\nMonto: ' + fm(monto) + '\nConcepto: ' + concepto;
+  navigator.clipboard.writeText(txt).then(() => window.toast('📋 Datos copiados')).catch(() => window.toast('📋 Copiado'));
 };
 
 console.log('[functions] ✅ All window functions registered');

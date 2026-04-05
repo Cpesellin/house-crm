@@ -937,6 +937,9 @@ window.rCuenta = function() {
     </div>`;
   }
 
+  // Payment method link
+  h += `<div style="margin:0 16px 16px;padding:14px;border-radius:12px;background:var(--b50);border:1.5px solid var(--b200);display:flex;align-items:center;gap:12px;cursor:pointer" onclick="go('metodo-pago')"><div style="font-size:24px">💳</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--b700)">Método de pago</div><div style="font-size:11px;color:var(--sub)">Configura dónde recibir tus pagos de referidos</div></div><span style="color:var(--sub)">→</span></div>`;
+
   h += `<div style="padding:16px;text-align:center"><button onclick="logout()" style="padding:10px 20px;border:1.5px solid var(--red);border-radius:8px;font-size:13px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">Cerrar sesión</button></div>`;
   h += '</div></div>';
   el.innerHTML = h;
@@ -1518,6 +1521,136 @@ window.propCalcUpdate = function() {
     '<div style="border-top:2px solid var(--brd);padding-top:8px;display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:800;color:var(--tx)">Usted recibe</span><span style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:#065f46">' + fm(ustedRecibe) + '</span></div>' +
     '<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px">Cada mes, sin falta, el día 10</div>' +
     '</div>';
+};
+
+// ══════════════════════════════════════════════════════════════════
+// PAYMENT SETUP — Configurar método de pago
+// ══════════════════════════════════════════════════════════════════
+
+window.renderPaymentSetup = async function() {
+  const el = document.getElementById('metodoPagoContent'); if (!el) return;
+  const u = U(); if (!u) return;
+  const metodo = await window.obtenerMetodoPago(u.id);
+  const labels = { nequi: 'Nequi 📱', bancolombia: 'Bancolombia 🏦', daviplata: 'Daviplata 📱', davivienda: 'Davivienda 🏦', bre: 'Bre (Dale!) 📱' };
+  let h = '';
+
+  if (metodo) {
+    h += '<div style="background:var(--greenbg);border:1.5px solid var(--gb);border-radius:12px;padding:16px;margin-bottom:16px"><div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:8px">✅ Método configurado</div>';
+    h += '<div style="font-size:13px;color:#065f46"><strong>' + (labels[metodo.metodo] || metodo.metodo) + '</strong></div>';
+    h += '<div style="font-size:12px;color:#065f46">' + window.maskAccount(metodo.numero_cuenta, metodo.metodo) + '</div>';
+    h += '<div style="font-size:12px;color:#065f46">Titular: ' + metodo.titular_nombre + '</div>';
+    h += '<button onclick="document.getElementById(\'payFormDiv\').style.display=\'block\'" style="margin-top:10px;padding:8px 16px;border:1.5px solid #065f46;border-radius:8px;font-size:12px;font-weight:700;background:transparent;color:#065f46;cursor:pointer;font-family:inherit">✏️ Cambiar método</button></div>';
+  }
+
+  h += '<div id="payFormDiv" style="' + (metodo ? 'display:none' : '') + '">';
+  h += '<div style="font-size:14px;font-weight:700;margin-bottom:12px">Selecciona tu método preferido:</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">';
+  [['nequi','Nequi','📱'],['bancolombia','Bancol.','🏦'],['daviplata','Daviplata','📱'],['davivienda','Davivi.','🏦'],['bre','Bre','📱']].forEach(m => {
+    h += '<button class="wiz-type-btn" onclick="window._payMetodo=\'' + m[0] + '\';_updatePayForm()" style="padding:12px 16px;min-width:80px"><span class="wiz-emoji">' + m[2] + '</span><span class="wiz-tname">' + m[1] + '</span></button>';
+  });
+  h += '</div>';
+  h += '<input type="hidden" id="payMetodo" value="">';
+  h += '<div id="payDynamicFields"></div>';
+  h += '<div class="ff"><label class="ffl">Nombre completo del titular (como aparece en el banco) <span class="ffr">*</span></label><input class="ffi" id="payTitular" placeholder="Ana María López Gómez" value="' + (u.nombre || '') + '"></div>';
+  h += '<div class="ff"><label class="ffl">Número de cédula del titular <span class="ffr">*</span></label><input class="ffi" id="payCedula" type="tel" placeholder="1.088.234.567"></div>';
+  h += '<div style="padding:10px;background:var(--goldbg);border:1px solid var(--yb);border-radius:8px;font-size:11px;color:#92400e;margin-bottom:14px">⚠️ Verifica que los datos sean correctos. Si hay un error, el pago podría enviarse a otra persona.</div>';
+  h += '<button class="bt bp" style="width:100%;padding:14px;font-size:14px" onclick="guardarMetodoPago()">💳 Guardar método de pago</button>';
+  h += '</div>';
+
+  el.innerHTML = h;
+};
+
+window._updatePayForm = function() {
+  const m = window._payMetodo; if (!m) return;
+  document.getElementById('payMetodo').value = m;
+  document.querySelectorAll('.wiz-type-btn').forEach(b => b.classList.remove('act'));
+  event.target.closest('.wiz-type-btn')?.classList.add('act');
+  const cfg = PAY_VALIDATIONS[m]; if (!cfg) return;
+  let h = '<div class="ff"><label class="ffl">' + cfg.label + ' <span class="ffr">*</span></label><input class="ffi" id="payNumero" type="tel" inputmode="numeric" maxlength="' + cfg.ml + '" placeholder="' + cfg.ph + '"></div>';
+  if (cfg.bank) h += '<div class="ff"><label class="ffl">Tipo de cuenta <span class="ffr">*</span></label><select class="esel" id="payTipoCuenta" style="width:100%;padding:10px;font-size:13px"><option value="">— Selecciona —</option><option value="Ahorros">Ahorros</option><option value="Corriente">Corriente</option></select></div>';
+  document.getElementById('payDynamicFields').innerHTML = h;
+};
+
+// ══════════════════════════════════════════════════════════════════
+// ADMIN PAYMENT PANEL — Pagos pendientes + historial
+// ══════════════════════════════════════════════════════════════════
+
+window.renderAdminPaymentPanel = async function() {
+  const el = document.getElementById('adminPagosContent'); if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">Cargando pagos...</div>';
+  const u = U(); if (!u) return;
+  const labels = { nequi: 'Nequi', bancolombia: 'Bancolombia', daviplata: 'Daviplata', davivienda: 'Davivienda', bre: 'Bre' };
+
+  // Load pending payments
+  const { data: pend } = await SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,telefono_contacto,usuario,email,foto)').or('and(estado.in.(contrato_firmado,publicado),bono_pagado.eq.false),and(estado.eq.arrendado,comision_pagada.eq.false)').order('updated_at', { ascending: false });
+
+  // Load payment history
+  const { data: historial } = await SB().from('pagos_referidos').select('*,referidor:usuarios!referidor_id(nombre)').eq('estado', 'pagado').order('pagado_at', { ascending: false }).limit(20);
+
+  let h = '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:16px">💳 Panel de Pagos</div>';
+
+  // Tabs
+  h += '<div style="display:flex;gap:6px;margin-bottom:16px">';
+  h += '<button id="payTabPend" onclick="document.getElementById(\'payPendDiv\').style.display=\'\';document.getElementById(\'payHistDiv\').style.display=\'none\';this.style.background=\'var(--b600)\';this.style.color=\'#fff\';document.getElementById(\'payTabHist\').style.background=\'var(--cd)\';document.getElementById(\'payTabHist\').style.color=\'var(--tx)\'" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid var(--b600);background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">⏳ Pendientes (' + ((pend || []).length) + ')</button>';
+  h += '<button id="payTabHist" onclick="document.getElementById(\'payHistDiv\').style.display=\'\';document.getElementById(\'payPendDiv\').style.display=\'none\';this.style.background=\'var(--b600)\';this.style.color=\'#fff\';document.getElementById(\'payTabPend\').style.background=\'var(--cd)\';document.getElementById(\'payTabPend\').style.color=\'var(--tx)\'" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid var(--brd);background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">📜 Historial (' + ((historial || []).length) + ')</button>';
+  h += '</div>';
+
+  // Pending payments
+  h += '<div id="payPendDiv">';
+  if (!pend || !pend.length) {
+    h += '<div class="emp"><span class="emp-i">✅</span><h3>Sin pagos pendientes</h3></div>';
+  } else {
+    for (const r of pend) {
+      const metodo = await window.obtenerMetodoPago(r.referidor_id);
+      const esBono = !r.bono_pagado && ['contrato_firmado', 'publicado'].includes(r.estado);
+      const esComision = r.estado === 'arrendado' && !r.comision_pagada;
+      const canon = r.canon_real || r.canon_aproximado || 0;
+      const monto = esBono ? (r.bono_monto || 50000) : Math.max(0, Math.round(canon * (r.comision_porcentaje || 0.10)) - (r.bono_monto || 50000));
+      const tipo = esBono ? 'bono' : 'comision';
+      const concepto = (esBono ? 'Bono' : 'Comisión') + ' referido - ' + (r.tipo_inmueble || '') + ' ' + (r.barrio || '');
+
+      h += '<div style="background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ' + (esBono ? 'var(--gold)' : 'var(--green)') + ';border-radius:0 12px 12px 0;padding:14px;margin-bottom:10px">';
+      h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:' + (esBono ? 'var(--goldbg)' : 'var(--greenbg)') + ';color:' + (esBono ? '#92400e' : '#065f46') + '">' + (esBono ? '🟡 BONO' : '🟢 COMISIÓN') + '</span><span style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--tx)">' + fm(monto) + '</span></div>';
+      h += '<div style="font-size:13px;font-weight:700">' + (r.referidor?.nombre || '?') + '</div>';
+      h += '<div style="font-size:12px;color:var(--sub)">' + (r.tipo_inmueble || '') + ' · ' + (r.barrio || r.ciudad || '') + (canon > 0 ? ' · Canon ' + fm(canon) + '/mes' : '') + '</div>';
+
+      if (metodo) {
+        h += '<div style="background:var(--cd2);border:1px solid var(--brd);border-radius:8px;padding:10px;margin:8px 0;font-size:12px">';
+        h += '<div style="font-weight:700;margin-bottom:4px">💳 Pagar a:</div>';
+        h += '<div>' + (labels[metodo.metodo] || metodo.metodo) + ' ' + window.maskAccount(metodo.numero_cuenta, metodo.metodo) + '</div>';
+        h += '<div>Titular: ' + metodo.titular_nombre + '</div>';
+        h += '<div>Cédula: ' + window.maskCedula(metodo.titular_cedula) + '</div>';
+        h += '</div>';
+        h += '<div style="display:flex;gap:6px"><button class="bt bs2" style="flex:1;font-size:11px;padding:8px" onclick="copiarDatosPago(\'' + metodo.metodo + '\',\'' + metodo.numero_cuenta + '\',\'' + metodo.titular_nombre.replace(/'/g, "\\'") + '\',\'' + metodo.titular_cedula + '\',' + monto + ',\'' + concepto.replace(/'/g, "\\'") + '\')">📋 Copiar datos</button>';
+        h += '<button class="bt bp" style="flex:1;font-size:11px;padding:8px" onclick="registrarPagoReferido(\'' + r.id + '\',\'' + tipo + '\',' + monto + ')">💰 Registrar pago</button></div>';
+      } else {
+        h += '<div style="background:var(--goldbg);border:1px solid var(--yb);border-radius:8px;padding:10px;margin:8px 0;font-size:12px;color:#92400e;font-weight:700">⚠️ SIN MÉTODO DE PAGO CONFIGURADO</div>';
+        h += '<a href="https://wa.me/57' + (r.referidor?.telefono_contacto || '').replace(/^57/, '') + '?text=' + encodeURIComponent('Hola ' + (r.referidor?.nombre || '') + ', tienes un pago pendiente de ' + fm(monto) + ' por tu referido. Configura tu método de pago en la app para poder transferirte.') + '" target="_blank" style="display:block;padding:8px;border:none;border-radius:8px;font-size:11px;font-weight:700;background:#25d366;color:#fff;text-align:center;text-decoration:none">📞 Contactar por WhatsApp</a>';
+      }
+      h += '</div>';
+    }
+  }
+  h += '</div>';
+
+  // Payment history
+  h += '<div id="payHistDiv" style="display:none">';
+  if (!historial || !historial.length) {
+    h += '<div class="emp"><span class="emp-i">📜</span><h3>Sin historial</h3></div>';
+  } else {
+    const totalPagado = historial.reduce((s, p) => s + (p.monto || 0), 0);
+    h += '<div style="font-size:13px;color:var(--sub);margin-bottom:12px">Total pagado: <strong style="color:var(--green)">' + fm(totalPagado) + '</strong></div>';
+    historial.forEach(p => {
+      h += '<div style="display:flex;gap:10px;padding:10px;background:var(--cd);border:1px solid var(--brd);border-radius:10px;margin-bottom:6px;align-items:center">';
+      h += '<div style="font-size:16px">' + (p.tipo_pago === 'bono' ? '🟡' : '🟢') + '</div>';
+      h += '<div style="flex:1"><div style="font-size:12px;font-weight:700">' + (p.tipo_pago === 'bono' ? 'Bono' : 'Comisión') + ' · ' + fm(p.monto) + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">' + (p.referidor?.nombre || '?') + ' · ' + (p.inmueble_tipo || '') + ' ' + (p.inmueble_barrio || '') + '</div>';
+      h += '<div style="font-size:10px;color:var(--sub)">' + (p.pagado_at ? new Date(p.pagado_at).toLocaleDateString('es-CO') : '') + ' → ' + p.metodo_snapshot + ' ' + p.cuenta_snapshot + '</div>';
+      h += '</div></div>';
+    });
+  }
+  h += '</div>';
+
+  el.innerHTML = h;
 };
 
 console.log('[sections] All route renderers registered');

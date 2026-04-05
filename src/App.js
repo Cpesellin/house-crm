@@ -110,6 +110,7 @@ function renderShell(container) {
     <button class="mi" data-s="conc" onclick="go('conc')"><span class="mic">\u{1F504}</span>Portales M\u00B2/FR<span class="mib" id="mconcb" style="display:none">0</span></button>
     <button class="mi" data-s="referir" onclick="go('referir')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>
     <button class="mi" data-s="mis-referidos" onclick="go('mis-referidos')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>
+    <button class="mi" data-s="admin-pagos" onclick="go('admin-pagos')" id="madminpagos" style="display:none"><span class="mic">\u{1F4B3}</span>Pagos referidos</button>
     <button class="mi" data-s="users" onclick="go('users')" id="musrs" style="display:none"><span class="mic">\u{1F465}</span>Usuarios</button>
     <button class="mi" data-s="perfil" onclick="go('perfil')"><span class="mic">\u2699\uFE0F</span>Mi Perfil</button>
     <button class="mi" data-s="papelera" onclick="go('papelera')" id="mpap" style="display:none"><span class="mic">\u{1F5D1}\uFE0F</span>Papelera</button>
@@ -186,6 +187,8 @@ function renderShell(container) {
 <div class="sec" id="sec-publicar"><div class="fsec" id="publicarc"></div></div>
 <div class="sec" id="sec-espera"><div style="max-width:500px;margin:0 auto;padding:40px 20px;text-align:center" id="esperac"></div></div>
 <div class="sec" id="sec-mensajes"><div style="max-width:600px;margin:0 auto;padding:10px 14px 60px" id="mensajesc"></div></div>
+<div class="sec" id="sec-metodo-pago"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F4B3}</div><div><div class="cht">M\u00E9todo de pago</div><div class="chsb">Configura d\u00F3nde recibir tus pagos</div></div></div></div><div class="cdb" id="metodoPagoContent"></div></div></div></div>
+<div class="sec" id="sec-admin-pagos"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="adminPagosContent"></div></div>
 <div class="sec" id="sec-propietarios"><div style="max-width:600px;margin:0 auto;padding:0 0 60px" id="propietariosc"></div></div>
 <div class="sec" id="sec-referir"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F91D}</div><div><div class="cht">Referir Inmueble</div><div class="chsb">Gana hasta 10% del canon</div></div></div></div><div class="cdb" id="sec-referir-content"></div></div></div></div>
 <div class="sec" id="sec-misref"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="sec-misref-content"></div></div>
@@ -372,6 +375,8 @@ function sApp() {
       document.getElementById('magenda').style.display = 'flex';
     if (U.rol === 'admin') {
       document.getElementById('musrs').style.display = 'flex';
+      const apEl = document.getElementById('madminpagos');
+      if (apEl) apEl.style.display = 'flex';
       document.getElementById('mpap').style.display = 'flex';
     }
   }
