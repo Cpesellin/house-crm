@@ -153,8 +153,6 @@ function renderShell(container) {
       </div>
     </div>
 
-    <!-- STICKY FILTERS -->
-    <div class="sticky-filters" id="stickyFilters">
     <!-- SEARCH -->
     <div style="padding:12px 16px 0;position:relative">
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:0 14px;border:1.5px solid #e8e4df">
@@ -165,6 +163,8 @@ function renderShell(container) {
       <div id="acDrop" class="ac-drop" style="display:none"></div>
     </div>
 
+    <!-- STICKY FILTERS -->
+    <div class="sticky-filters" id="stickyFilters">
     <!-- PILLS BAR -->
     <div class="pill-bar" id="pillBar">
       <button class="pill pill-off" id="pillNeg" onclick="togglePanel('neg')"><span style="font-size:15px">🏷️</span><span id="pillNegTxt">Negocio</span><svg class="pill-chev" id="chevNeg" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
@@ -176,14 +176,13 @@ function renderShell(container) {
       <button class="pill pill-off" id="favToggle" onclick="toggleFavFilter()" style="color:#b91c3a;border-color:#f5d0d7">♡ Favs</button>
     </div>
 
-    </div><!-- /sticky-filters -->
-
-    <!-- PANELS (outside scroll container) -->
+    <!-- PANELS (inside sticky so they follow pills) -->
     <div id="panelNeg" style="display:none"></div>
     <div id="panelCiudad" style="display:none"></div>
     <div id="panelTipo" style="display:none"></div>
     <div id="panelPrecio" style="display:none"></div>
     <div id="panelAsesor" style="display:none"></div>
+    </div><!-- /sticky-filters -->
 
     <!-- SELECTION BAR -->
     <div id="selBar" style="display:none" class="sel-bar">
