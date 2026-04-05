@@ -4,6 +4,7 @@
  */
 
 import './styles/global.css';
+import './config/cloudinary.js';
 import './load.js';
 import './sections.js';
 import './functions.js';
