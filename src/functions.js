@@ -2026,12 +2026,13 @@ window.renderCommissionDashboard = function(stats, refs) {
   if (pendPago > 0) h += '<div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px 16px;font-size:11px"><span style="color:#fbbf24">⏳</span> Pendiente: <strong>' + fm(pendPago) + '</strong></div>';
   if (enProc > 0) h += '<div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px 16px;font-size:11px">🔄 ' + enProc + ' en proceso' + (potencial > 0 ? ' · Potencial: <strong>' + fm(potencial) + '</strong>' : '') + '</div>';
   h += '</div></div>';
+  const contratoProp = (refs||[]).filter(r => r.estado === 'contrato_firmado').length;
   h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">';
   const _f = (e) => "window._refFiltro='" + e + "';renderMisReferidos()";
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('todos') + '"><div style="font-size:18px;font-weight:700;color:var(--b600)">' + stats.total + '</div><div style="font-size:9px;color:var(--sub)">Total</div></div>';
   h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('registrado') + '"><div style="font-size:18px;font-weight:700;color:var(--gold)">' + enProc + '</div><div style="font-size:9px;color:var(--sub)">En proceso</div></div>';
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('arrendado') + '"><div style="font-size:18px;font-weight:700;color:var(--green)">' + stats.arrendados + '</div><div style="font-size:9px;color:var(--sub)">Arrendados</div></div>';
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('rechazado') + '"><div style="font-size:18px;font-weight:700;color:var(--red)">' + stats.rechazados + '</div><div style="font-size:9px;color:var(--sub)">Rechazados</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--b600);cursor:pointer" onclick="' + _f('contrato_firmado') + '"><div style="font-size:18px;font-weight:700;color:var(--b600)">' + contratoProp + '</div><div style="font-size:9px;color:var(--sub)">Contrato prop.</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--green);cursor:pointer" onclick="' + _f('arrendado') + '"><div style="font-size:18px;font-weight:700;color:var(--green)">' + stats.arrendados + '</div><div style="font-size:9px;color:var(--sub)">Arrendados</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--red);cursor:pointer" onclick="' + _f('rechazado') + '"><div style="font-size:18px;font-weight:700;color:var(--red)">' + stats.rechazados + '</div><div style="font-size:9px;color:var(--sub)">Rechazados</div></div>';
   h += '</div>';
   return h;
 };
