@@ -1059,6 +1059,130 @@ window.doSearch = function() {
 window.autoSearch = function() { clearTimeout(window._searchTimer); window._searchTimer = setTimeout(() => window.doSearch(), 300); };
 window._searchTimer = null;
 
+// Autocomplete
+window._acIdx = -1;
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function hlMatch(text, q) {
+  if (!q) return escHtml(text);
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return escHtml(text);
+  return escHtml(text.slice(0, i)) + '<b>' + escHtml(text.slice(i, i + q.length)) + '</b>' + escHtml(text.slice(i + q.length));
+}
+function acBuild(q) {
+  const sections = [];
+  const ql = (q || '').trim().toLowerCase();
+
+  // Recent searches
+  let recent = [];
+  try { recent = JSON.parse(localStorage.getItem('hcrm_recent') || '[]'); } catch(e){}
+  if (ql) recent = recent.filter(r => r.toLowerCase().includes(ql));
+  if (recent.length) sections.push({ cat: '🕐 Recientes', items: recent.slice(0, 3).map(r => ({ label: r, val: r })) });
+
+  // Barrios from data
+  const allD = D();
+  if (allD.length && ql) {
+    const barrios = [...new Set(allD.map(p => p.barrio).filter(Boolean))];
+    const matched = barrios.filter(b => b.toLowerCase().includes(ql)).sort((a,b) => {
+      const ai = a.toLowerCase().indexOf(ql), bi = b.toLowerCase().indexOf(ql);
+      return ai - bi || a.localeCompare(b);
+    }).slice(0, 5);
+    if (matched.length) sections.push({ cat: '📍 Barrios', items: matched.map(b => ({ label: b, val: b })) });
+  }
+
+  // Tipos
+  const tipoMatch = TIPO_OPTS.filter(o => !ql || o.v.toLowerCase().includes(ql) || o.l.toLowerCase().includes(ql));
+  if (tipoMatch.length && tipoMatch.length < TIPO_OPTS.length) {
+    sections.push({ cat: '🏢 Tipos', items: tipoMatch.slice(0, 4).map(o => ({ label: o.v, val: o.v, icon: o.e })) });
+  }
+
+  // Ciudades
+  const ciuMatch = CIU_OPTS.filter(o => !ql || o.v.toLowerCase().includes(ql));
+  if (ciuMatch.length && ciuMatch.length < CIU_OPTS.length) {
+    sections.push({ cat: '🗺️ Ciudades', items: ciuMatch.map(o => ({ label: o.v, val: o.v, icon: o.e })) });
+  }
+
+  // If no query, show all recents
+  if (!ql && !sections.length && recent.length === 0) return '';
+
+  let idx = 0;
+  let html = '';
+  for (const sec of sections) {
+    html += `<div class="ac-cat">${sec.cat}</div>`;
+    for (const it of sec.items) {
+      const ico = it.icon ? `<span class="ac-ico-sm">${it.icon}</span>` : '';
+      html += `<div class="ac-item" data-idx="${idx}" data-val="${escHtml(it.val)}" onmousedown="pickAC(this)">${ico}<span>${hlMatch(it.label, ql)}</span></div>`;
+      idx++;
+    }
+  }
+  return html;
+}
+
+window.showAC = function() {
+  const drop = document.getElementById('acDrop');
+  if (!drop) return;
+  const q = document.getElementById('q')?.value || '';
+  const html = acBuild(q);
+  if (!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
+  drop.style.display = 'block';
+  window._acIdx = -1;
+};
+
+window.updateAC = function() {
+  const drop = document.getElementById('acDrop');
+  if (!drop) return;
+  const q = document.getElementById('q')?.value || '';
+  const html = acBuild(q);
+  if (!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
+  drop.style.display = 'block';
+  window._acIdx = -1;
+};
+
+window.hideAC = function() {
+  const drop = document.getElementById('acDrop');
+  if (drop) drop.style.display = 'none';
+  window._acIdx = -1;
+};
+
+window.pickAC = function(el) {
+  const val = el.dataset.val || el.textContent;
+  const inp = document.getElementById('q');
+  if (inp) inp.value = val;
+  hideAC();
+  doSearch();
+};
+
+window.acKey = function(e) {
+  const drop = document.getElementById('acDrop');
+  const visible = drop && drop.style.display !== 'none';
+  const items = visible ? drop.querySelectorAll('.ac-item') : [];
+
+  if (e.key === 'ArrowDown' && visible && items.length) {
+    e.preventDefault();
+    window._acIdx = (window._acIdx + 1) % items.length;
+    items.forEach((it, i) => it.classList.toggle('ac-hl', i === window._acIdx));
+    items[window._acIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp' && visible && items.length) {
+    e.preventDefault();
+    window._acIdx = window._acIdx <= 0 ? items.length - 1 : window._acIdx - 1;
+    items.forEach((it, i) => it.classList.toggle('ac-hl', i === window._acIdx));
+    items[window._acIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (visible && window._acIdx >= 0 && items[window._acIdx]) {
+      pickAC(items[window._acIdx]);
+    } else {
+      hideAC();
+      doSearch();
+    }
+  } else if (e.key === 'Escape') {
+    hideAC();
+  }
+};
+
+document.addEventListener('click', function(e) { if (!e.target.closest('#acDrop') && e.target.id !== 'q') hideAC(); });
+
 // Legacy compat
 window.collapseFilters = function() {};
 window.expandFilters = function() {};

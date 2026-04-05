@@ -154,12 +154,13 @@ function renderShell(container) {
     </div>
 
     <!-- SEARCH -->
-    <div style="padding:12px 16px 0">
+    <div style="padding:12px 16px 0;position:relative">
       <div style="display:flex;align-items:center;gap:10px;background:var(--acc-bg);border-radius:14px;padding:0 14px;border:1.5px solid var(--acc-search-brd);box-shadow:0 2px 8px rgba(0,0,0,.02)">
         <span style="font-size:16px;color:var(--acc-sub)">🔍</span>
-        <input id="q" placeholder="Busca por barrio, tipo o dirección..." oninput="autoSearch()" onkeypress="if(event.key==='Enter')doSearch()" style="flex:1;border:none;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:var(--acc-tx);background:transparent">
-        <button id="qClear" onclick="document.getElementById('q').value='';this.style.display='none';doSearch()" style="display:none;border:none;background:var(--acc-sel-bg);border-radius:8px;width:24px;height:24px;cursor:pointer;font-size:10px;color:var(--acc-sub2);font-weight:800">✕</button>
+        <input id="q" placeholder="Busca por barrio, tipo o dirección..." autocomplete="off" oninput="autoSearch();updateAC()" onfocus="showAC()" onkeydown="acKey(event)" style="flex:1;border:none;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:var(--acc-tx);background:transparent">
+        <button id="qClear" onclick="document.getElementById('q').value='';this.style.display='none';hideAC();doSearch()" style="display:none;border:none;background:var(--acc-sel-bg);border-radius:8px;width:24px;height:24px;cursor:pointer;font-size:10px;color:var(--acc-sub2);font-weight:800">✕</button>
       </div>
+      <div id="acDrop" class="ac-drop" style="display:none"></div>
     </div>
 
     <!-- TOGGLES -->
