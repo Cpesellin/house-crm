@@ -58,6 +58,13 @@ window.rInv = function () {
 // rPipe — Pipeline (Mis Inmuebles)
 // ══════════════════════════════════════════════════════════════════
 
+window._pipeTab = 'Disponible';
+
+window.setPipeTab = function(tabId) {
+  window._pipeTab = tabId;
+  window.rPipe();
+};
+
 window.rPipe = function () {
   const el = document.getElementById('pipeline');
   const nav = document.getElementById('mis-nav');
@@ -70,7 +77,6 @@ window.rPipe = function () {
   const MIS = allD.filter(p => p.captador_id === u.id);
   const SOL = window.SOL || [];
 
-  // P7: Search & sort from inputs
   const pipeQv = (document.getElementById('pipeQ')?.value || '').trim().toLowerCase();
   const pipeSortV = document.getElementById('pipeSort')?.value || 'dias';
 
@@ -86,120 +92,135 @@ window.rPipe = function () {
     return (b._dias||0) - (a._dias||0);
   };
 
-  // P5: My pending solicitudes
   const mySolsPend = SOL.filter(s => s.solicitante_id === u.id && s.estado === 'pendiente');
   const solsOnMyInm = SOL.filter(s => MIS.some(p => p.id === s.inmueble_id) && s.estado === 'pendiente');
 
-  // Column counts for nav
+  // Counts for ALL tabs (always calculated)
   const colCounts = {};
   PCOLS.forEach(col => {
     colCounts[col.id] = MIS.filter(p => p.estado === col.id || (col.id === 'Disponible' && (!p.estado || p.estado === 'Disponible' || p.estado === 'Verificar Disponibilidad'))).length;
   });
 
-  // P6: Arriendos for gestor
   const arrDisp = u.es_gestor_arriendos ? allD.filter(p => p.captador_id !== u.id && !p.eliminado && (p.negociacion||'').toLowerCase().includes('arriendo') && (p.estado === 'Disponible' || p.estado === 'Aún Disponible' || !p.estado || p.estado === 'Verificar Disponibilidad')) : [];
 
-  // NAV BADGES
+  const tab = window._pipeTab || 'Disponible';
+
+  // ── TAB BAR ──
   if (nav) {
-    let navH = PCOLS.map((col, i) =>
-      `<button class="pnav-btn ${col.c}" onclick="scrollToCol(${i})">${col.e} ${col.l} <span class="pnav-n">${colCounts[col.id]}</span></button>`
+    let navH = PCOLS.map(col =>
+      `<button class="pnav-btn ${col.c}${tab===col.id?' active':''}" onclick="setPipeTab('${col.id}')">${col.e} ${col.l} <span class="pnav-n">${colCounts[col.id]}</span></button>`
     ).join('');
-    if (mySolsPend.length) navH += `<button class="pnav-btn c-vd" onclick="scrollToCol(${PCOLS.length})">🔍 Mis consultas <span class="pnav-n" style="background:var(--gold)">${mySolsPend.length}</span></button>`;
-    if (solsOnMyInm.length) navH += `<button class="pnav-btn c-vd" onclick="scrollToCol(${PCOLS.length+1})">📩 Me consultan <span class="pnav-n" style="background:var(--red)">${solsOnMyInm.length}</span></button>`;
-    if (u.es_gestor_arriendos) navH += `<button class="pnav-btn" style="border-color:#065f46" onclick="scrollToCol(99)">🔑 Arriendos <span class="pnav-n" style="background:#065f46">${arrDisp.length}</span></button>`;
+    if (mySolsPend.length) navH += `<button class="pnav-btn c-vd${tab==='mis-consultas'?' active':''}" onclick="setPipeTab('mis-consultas')">🔍 Consultas <span class="pnav-n">${mySolsPend.length}</span></button>`;
+    if (solsOnMyInm.length) navH += `<button class="pnav-btn c-re${tab==='me-consultan'?' active':''}" onclick="setPipeTab('me-consultan')">📩 Me consultan <span class="pnav-n">${solsOnMyInm.length}</span></button>`;
+    if (u.es_gestor_arriendos) navH += `<button class="pnav-btn c-ar${tab==='arriendos'?' active':''}" onclick="setPipeTab('arriendos')">🔑 Arriendos <span class="pnav-n">${arrDisp.length}</span></button>`;
     nav.innerHTML = navH;
   }
 
-  // BUILD COLUMNS
+  // ── Helper: render a standard pipeline card with thumbnail ──
+  const renderCard = (p, colId) => {
+    const idx = allD.indexOf(p);
+    const dias = p._dias || 0, umb = UMBRAL[colId] || 15;
+    const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
+    const m2 = !!(p.url_metrocuadrado||'').trim(), fr = !!(p.url_fincaraiz||'').trim();
+    const hab = p.habitaciones||'', ban = p.banos||'', area = p.area_construida||'';
+    const sps = [hab&&hab!=0?'🛏️ '+hab:'', ban&&ban!=0?'🚿 '+ban:'', area?'📐 '+area+'m²':''].filter(Boolean);
+    const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
+    const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+    const otherCols = PCOLS.filter(c2 => c2.id !== colId);
+    const pSols = SOL.filter(s => s.inmueble_id === p.id && s.estado === 'pendiente');
+    const ubPub = p.direccion_publica || p.barrio || p.ciudad || '';
+
+    let c = `<div class="pkc" id="pkc-${p.id}">`;
+    // Solicitud badge
+    if (pSols.length > 0) c += `<div style="padding:6px 12px;background:var(--goldbg);border-bottom:1px solid rgba(245,158,11,.2);font-size:10px;font-weight:700;color:#92400e">📩 ${pSols.length} consulta${pSols.length>1?'s':''} pendiente${pSols.length>1?'s':''}</div>`;
+    // Main row: thumb + body
+    c += `<div class="pkc-row" onclick="oM&&oM(${idx})">`;
+    if (thumb) c += `<div class="pkc-thumb" style="background-image:url('${thumb}')"></div>`;
+    c += `<div class="pkc-body">`;
+    // Badges line: code + timer
+    c += `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px">`;
+    if (p.codigo_house) c += `<span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${p.codigo_house}');toast('📋 Copiado')" style="font-size:9px">${p.codigo_house}</span>`;
+    c += timerBadge(dias, umb);
+    c += `</div>`;
+    // Type + location
+    c += `<div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div>`;
+    c += `<div class="pkci">📍 ${ubPub}</div>`;
+    // Price
+    if (pv > 0 || pa > 0) c += `<div class="pkpr">${pv > 0 ? fm(pv) : ''}${pv > 0 && pa > 0 ? ' · ' : ''}${pa > 0 ? fm(pa) + '/mes' : ''}</div>`;
+    // Specs
+    if (sps.length) c += `<div class="pksp">${sps.map(s => '<span>' + s + '</span>').join('')}</div>`;
+    // Footer: asesor + portals
+    c += `<div class="pkbt"><span class="pkas">👤 ${p.captador ? p.captador.nombre : ''}</span><div class="pkpt">${m2 ? '<span class="pp ppok">M²</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR</span>' : '<span class="pp ppno">FR</span>'}</div></div>`;
+    c += `</div></div>`; // close pkc-body + pkc-row
+
+    // Solicitudes inline
+    if (pSols.length > 0) {
+      c += `<div style="padding:8px 12px;background:var(--redbg);border-top:1px solid var(--rb)">`;
+      pSols.forEach(s => {
+        c += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:11px"><span>🔍 <b>${s.solicitante ? s.solicitante.nombre : '?'}</b>${s.nota_solicitante ? ' — "' + s.nota_solicitante + '"' : ''}</span></div>`;
+        c += `<div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button style="flex:1;padding:6px;border:none;border-radius:5px;font-size:11px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','si')">✅ Disponible</button><button style="flex:1;padding:6px;border:none;border-radius:5px;font-size:11px;font-weight:700;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','no')">❌ No disponible</button></div>`;
+      });
+      c += `</div>`;
+    }
+
+    // Revalidate
+    if (colId === 'Aún Disponible') c += `<div style="padding:4px 12px 8px"><button class="pk-reval" onclick="event.stopPropagation();reVal('${p.id}')">🔄 Volver a validar</button></div>`;
+
+    // Actions: move-to
+    c += `<div class="pkc-actions" onclick="event.stopPropagation()"><select class="esel" style="flex:1;font-size:11px;padding:7px 10px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover a...</option>${otherCols.map(c2 => `<option value="${c2.id}">${c2.e} ${c2.l}</option>`).join('')}</select></div>`;
+
+    c += `</div>`; // close pkc
+    return c;
+  };
+
+  // ── RENDER ACTIVE TAB CONTENT ──
   let h = '';
 
-  PCOLS.forEach(col => {
-    const items = MIS.filter(p => (p.estado === col.id || (col.id === 'Disponible' && (!p.estado || p.estado === 'Disponible' || p.estado === 'Verificar Disponibilidad'))) && pipeFilter(p));
-    items.sort(pipeSortFn);
-    const otherCols = PCOLS.filter(c2 => c2.id !== col.id);
-
-    h += `<div class="pcol ${col.c}" data-estado="${col.id}"><div class="pch"><span class="pct">${col.e} ${col.l}</span><span class="pcc">${items.length}</span></div><div class="pcb">`;
-
-    items.forEach(p => {
-      const idx = allD.indexOf(p);
-      const dias = p._dias || 0, umb = UMBRAL[col.id] || 15;
-      const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
-      const m2 = !!(p.url_metrocuadrado||'').trim(), fr = !!(p.url_fincaraiz||'').trim();
-      const hab = p.habitaciones||'', ban = p.banos||'', area = p.area_construida||'';
-      const sps = [hab&&hab!=0?'🛏️ '+hab:'', ban&&ban!=0?'🚿 '+ban:'', area?'📐 '+area+'m²':''].filter(Boolean);
-
-      // P3: Solicitudes on this property
-      const pSols = SOL.filter(s => s.inmueble_id === p.id && s.estado === 'pendiente');
-
-      // P1: Draggable card
-      h += `<div class="pkc" id="pkc-${p.id}" draggable="true" ondragstart="dStart(event,'${p.id}')" onclick="oM&&oM(${idx})">`;
-
-      // P3: Solicitud badge
-      if (pSols.length > 0) h += `<span class="pk-new" style="background:var(--gold)">📩 ${pSols.length}</span>`;
-
-      h += `<div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}${p.codigo_house ? ` <span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${p.codigo_house}');toast('📋 Copiado')" style="font-size:9px;margin-left:4px">${p.codigo_house}</span>` : ''}</div>`;
-      h += `<div class="pkci">📍 ${p.ciudad || ''}</div>`;
-
-      if (pv > 0 || pa > 0) h += `<div class="pkpr">${pv > 0 ? fm(pv) : ''}${pv > 0 && pa > 0 ? ' · ' : ''}${pa > 0 ? fm(pa) + '/mes' : ''}</div>`;
-
-      if (sps.length) h += `<div class="pksp">${sps.map(s => '<span>' + s + '</span>').join('')}</div>`;
-
-      h += timerBadge(dias, umb);
-
-      // P3: Respond to solicitudes inline
-      if (pSols.length > 0) {
-        h += `<div style="margin-top:6px;padding:8px;background:var(--redbg);border:1px solid var(--rb);border-radius:6px">`;
-        pSols.forEach(s => {
-          h += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:10px"><span>🔍 <b>${s.solicitante ? s.solicitante.nombre : '?'}</b>${s.nota_solicitante ? ' — "' + s.nota_solicitante + '"' : ''}</span></div>`;
-          h += `<div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button style="flex:1;padding:5px;border:none;border-radius:4px;font-size:10px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','si')">✅ Disponible</button><button style="flex:1;padding:5px;border:none;border-radius:4px;font-size:10px;font-weight:700;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','no')">❌ No disponible</button></div>`;
-        });
+  if (tab === 'mis-consultas') {
+    if (!mySolsPend.length) { h = `<div class="emp"><span class="emp-i">🔍</span><h3>Sin consultas pendientes</h3><p style="font-size:12px;color:var(--sub)">Cuando consultes disponibilidad de un inmueble, aparecerá aquí</p></div>`; }
+    else {
+      mySolsPend.forEach(s => {
+        const p = allD.find(x => x.id === s.inmueble_id);
+        if (!p) return;
+        const idx = allD.indexOf(p);
+        const dias2 = diasDesde(s.created_at);
+        const capNom = p.captador ? p.captador.nombre : '?';
+        const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
+        const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+        h += `<div class="pkc">`;
+        h += `<div style="padding:6px 12px;background:var(--goldbg);border-bottom:1px solid rgba(245,158,11,.2);font-size:11px;font-weight:700;color:#92400e">🔍 Esperando respuesta de ${capNom}</div>`;
+        h += `<div class="pkc-row" onclick="oM&&oM(${idx})">`;
+        if (thumb) h += `<div class="pkc-thumb" style="background-image:url('${thumb}')"></div>`;
+        h += `<div class="pkc-body"><div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div><div class="pkci">📍 ${p.ciudad || ''}</div>${timerBadge(dias2, 5)}${s.nota_solicitante ? `<div style="font-size:11px;color:var(--sub);margin-top:4px;font-style:italic">"${s.nota_solicitante}"</div>` : ''}</div></div></div>`;
+      });
+    }
+  } else if (tab === 'me-consultan') {
+    if (!solsOnMyInm.length) { h = `<div class="emp"><span class="emp-i">📩</span><h3>Sin consultas recibidas</h3></div>`; }
+    else {
+      solsOnMyInm.forEach(s => {
+        const p = allD.find(x => x.id === s.inmueble_id);
+        if (!p) return;
+        const idx = allD.indexOf(p);
+        const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
+        const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+        h += `<div class="pkc">`;
+        h += `<div style="padding:6px 12px;background:var(--redbg);border-bottom:1px solid var(--rb);font-size:11px;font-weight:700;color:var(--red)">📩 ${s.solicitante ? s.solicitante.nombre : '?'} consulta disponibilidad</div>`;
+        h += `<div class="pkc-row" onclick="oM&&oM(${idx})">`;
+        if (thumb) h += `<div class="pkc-thumb" style="background-image:url('${thumb}')"></div>`;
+        h += `<div class="pkc-body"><div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div><div class="pkci">📍 ${p.ciudad || ''}</div></div></div>`;
+        h += `<div style="display:flex;gap:4px;padding:8px 12px" onclick="event.stopPropagation()"><button style="flex:1;padding:8px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','si')">✅ Disponible</button><button style="flex:1;padding:8px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="responderSol('${s.id}','no')">❌ No disponible</button></div>`;
         h += `</div>`;
-      }
-
-      // P4: Revalidate button
-      if (col.id === 'Aún Disponible') h += `<button class="pk-reval" onclick="event.stopPropagation();reVal('${p.id}')">🔄 Volver a validar</button>`;
-
-      // Footer: asesor + portals
-      h += `<div class="pkbt"><span class="pkas">👤 ${p.captador ? p.captador.nombre : ''}</span><div class="pkpt">${m2 ? '<span class="pp ppok">M²</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR</span>' : '<span class="pp ppno">FR</span>'}</div></div>`;
-
-      // P2: Move-to dropdown
-      h += `<div class="pk-move" onclick="event.stopPropagation()"><select class="esel" style="width:100%;font-size:10px;margin-top:6px;padding:6px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover a...</option>${otherCols.map(c2 => `<option value="${c2.id}">${c2.e} ${c2.l}</option>`).join('')}</select></div>`;
-
-      h += `</div>`; // close pkc
-    });
-
-    h += '</div></div>'; // close pcb + pcol
-  });
-
-  // P5: "Mis consultas" column
-  if (mySolsPend.length > 0) {
-    h += `<div class="pcol c-vd" style="border-color:var(--gold)"><div class="pch" style="background:rgba(245,158,11,.08)"><span class="pct" style="color:var(--gold)">🔍 Mis consultas</span><span class="pcc">${mySolsPend.length}</span></div><div class="pcb">`;
-    mySolsPend.forEach(s => {
-      const p = allD.find(x => x.id === s.inmueble_id);
-      if (!p) return;
-      const idx = allD.indexOf(p);
-      const dias2 = diasDesde(s.created_at);
-      const capNom = p.captador ? p.captador.nombre : '?';
-      h += `<div class="sol-card" onclick="oM&&oM(${idx})"><div class="sol-badge">🔍 Esperando respuesta de ${capNom}</div><div class="pktp">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div><div class="pkci">📍 ${p.ciudad || ''}</div>${timerBadge(dias2, 5)}${s.nota_solicitante ? `<div style="font-size:10px;color:var(--sub);margin-top:4px;font-style:italic">"${s.nota_solicitante}"</div>` : ''}</div>`;
-    });
-    h += '</div></div>';
-  }
-
-  // P6: Arriendos column (gestor) — Tarjeta rica
-  if (u.es_gestor_arriendos) {
-    h += `<div class="pcol" style="border-color:#065f46;border-width:2px"><div class="pch" style="background:rgba(6,95,70,.08)"><span class="pct" style="color:#065f46">🔑 Arriendos del inventario</span><span class="pcc" style="background:#065f46">${arrDisp.length}</span></div><div class="pcb">`;
-    if (!arrDisp.length) h += `<div style="text-align:center;padding:16px;font-size:12px;color:var(--sub)">✅ Sin arriendos pendientes</div>`;
+      });
+    }
+  } else if (tab === 'arriendos' && u.es_gestor_arriendos) {
+    if (!arrDisp.length) { h = `<div class="emp"><span class="emp-i">✅</span><h3>Sin arriendos pendientes</h3></div>`; }
     arrDisp.forEach(p => {
       const idx = allD.indexOf(p);
       const dias2 = p._dias || 0;
       const cod = p.codigo_house || '';
       const pa = p.precio_arriendo || 0;
-      const hab = p.habitaciones || '';
-      const ban = p.banos || '';
-      const area = p.area_construida || '';
-      const est = p.estrato || '';
-      const propTel = p.propietario_telefono || '';
-      const propNom = p.propietario_nombre || '';
+      const hab = p.habitaciones || '', ban = p.banos || '', area = p.area_construida || '', est = p.estrato || '';
+      const propTel = p.propietario_telefono || '', propNom = p.propietario_nombre || '';
       const capNom = p.captador ? p.captador.nombre : '?';
       const ubPub = p.direccion_publica || p.barrio || p.ciudad || '';
       const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
@@ -210,62 +231,55 @@ window.rPipe = function () {
       if (area) specs.push('📐 '+area+'m²');
       if (est) specs.push('E'+est);
 
-      h += `<div class="pkc" style="border-color:#065f46;border-width:2px;position:relative;padding:0;overflow:hidden">`;
-      // Checkbox seleccion masiva
+      h += `<div class="pkc" style="border-color:#065f46;border-width:2px">`;
       h += `<input type="checkbox" class="arr-check" onclick="event.stopPropagation();toggleArrSelect('${p.id}',this)" style="position:absolute;top:8px;left:8px;width:18px;height:18px;cursor:pointer;z-index:2;accent-color:#065f46">`;
-      // Zona superior: foto + info
-      h += `<div style="display:flex;gap:0" onclick="oM&&oM(${idx >= 0 ? idx : 0})">`;
-      if (thumb) h += `<div style="width:90px;min-height:90px;flex-shrink:0;background:url('${thumb}') center/cover no-repeat;border-radius:0"></div>`;
-      h += `<div style="flex:1;padding:12px 12px 8px ${thumb?'10px':'12px'}">`;
-      // Codigo + badge antiguedad
-      h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">`;
+      h += `<div class="pkc-row" onclick="oM&&oM(${idx >= 0 ? idx : 0})">`;
+      if (thumb) h += `<div class="pkc-thumb" style="background-image:url('${thumb}')"></div>`;
+      h += `<div class="pkc-body">`;
+      h += `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px">`;
       if (cod) h += `<span style="font-family:monospace;font-size:9px;font-weight:800;color:var(--b700);background:var(--b50);padding:1px 6px;border-radius:4px;border:1px solid var(--b200)">${cod}</span>`;
       h += `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630">Arriendo</span>`;
       h += timerBadge(dias2, 15);
       h += `</div>`;
-      // Tipo + ubicacion
       h += `<div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo || 'Inmueble'}</div>`;
       h += `<div style="font-size:11px;color:var(--sub);margin-top:1px">📍 ${ubPub}</div>`;
-      // Precio
-      if (pa > 0) h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:700;color:#065f46;margin-top:4px">${fm(pa)}<span style="font-size:11px;font-weight:500;color:var(--sub)">/mes</span></div>`;
-      h += `</div></div>`;
-      // Specs + propietario
-      h += `<div style="padding:0 12px 8px" onclick="oM&&oM(${idx >= 0 ? idx : 0})">`;
-      if (specs.length) h += `<div style="display:flex;gap:8px;font-size:11px;color:var(--sub);font-weight:600;margin-bottom:4px">${specs.join(' · ')}</div>`;
-      h += `<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sub)"><span>👤 Captador: <b>${capNom}</b></span>`;
-      if (propTel) h += `<span>· 📞 Dueño: <b>${propNom||'—'}</b></span>`;
-      h += `</div></div>`;
-      // Acciones
-      h += `<div style="padding:6px 10px 10px;display:flex;flex-wrap:wrap;gap:4px" onclick="event.stopPropagation()">`;
-      // Primarias
+      if (pa > 0) h += `<div style="font-family:Fraunces,serif;font-size:17px;font-weight:700;color:#065f46;margin-top:3px">${fm(pa)}<span style="font-size:11px;font-weight:500;color:var(--sub)">/mes</span></div>`;
+      if (specs.length) h += `<div style="display:flex;gap:8px;font-size:11px;color:var(--sub);font-weight:600;margin-top:4px">${specs.join(' · ')}</div>`;
+      h += `<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sub);margin-top:3px"><span>👤 <b>${capNom}</b></span>`;
+      if (propTel) h += `<span>· 📞 <b>${propNom||'—'}</b></span>`;
+      h += `</div></div></div>`; // close body + row
+      // Actions
+      h += `<div class="pkc-actions" onclick="event.stopPropagation()">`;
       h += `<button style="flex:1;min-width:100px;padding:8px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:var(--b600);color:#fff;font-family:inherit;cursor:pointer" onclick="abrirAgendarEvt('${p.id}',null,null,'visita')">📅 Agendar visita</button>`;
       h += `<button style="flex:1;min-width:80px;padding:8px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:#065f46;color:#fff;font-family:inherit;cursor:pointer" onclick="quickMove('${p.id}','Arrendado')">🔑 Arrendado</button>`;
-      // Secundarias
       h += `<button style="padding:8px 10px;border:1.5px solid var(--brd);border-radius:6px;font-size:10px;font-weight:700;background:var(--cd);color:var(--tx);font-family:inherit;cursor:pointer" onclick="shareInm('${p.id}')">📤</button>`;
       if (propTel) h += `<a href="tel:+${propTel}" style="padding:8px 10px;border:1.5px solid var(--brd);border-radius:6px;font-size:10px;font-weight:700;background:var(--cd);color:var(--tx);text-decoration:none;display:inline-flex;align-items:center" onclick="event.stopPropagation()">📞</a>`;
       h += `<button style="padding:8px 10px;border:1.5px solid var(--red);border-radius:6px;font-size:10px;font-weight:700;background:var(--redbg);color:var(--red);font-family:inherit;cursor:pointer" onclick="gestorEliminar('${p.id}')">🗑️</button>`;
       h += `</div></div>`;
     });
-    h += '</div></div>';
+  } else {
+    // Standard PCOL tab
+    const col = PCOLS.find(c => c.id === tab) || PCOLS[0];
+    const items = MIS.filter(p => (p.estado === col.id || (col.id === 'Disponible' && (!p.estado || p.estado === 'Disponible' || p.estado === 'Verificar Disponibilidad'))) && pipeFilter(p));
+    items.sort(pipeSortFn);
+
+    if (!items.length) { h = `<div class="emp"><span class="emp-i">${col.e}</span><h3>Sin inmuebles en "${col.l}"</h3></div>`; }
+    else { items.forEach(p => { h += renderCard(p, col.id); }); }
   }
 
   el.innerHTML = h;
 
-  // P1: Bind drag-drop on columns
-  el.querySelectorAll('.pcol').forEach(c => {
-    c.addEventListener('dragover', e => { e.preventDefault(); c.classList.add('drag-over'); });
-    c.addEventListener('dragleave', () => c.classList.remove('drag-over'));
-    c.addEventListener('drop', e => {
-      e.preventDefault(); c.classList.remove('drag-over');
-      const id = e.dataTransfer.getData('text/plain');
-      if (id && c.dataset.estado) window.quickMove(id, c.dataset.estado);
-    });
-  });
+  // Auto-scroll tab bar to show active tab
+  if (nav) {
+    const activeBtn = nav.querySelector('.pnav-btn.active');
+    if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
 };
 
 window.scrollToCol = function (i) {
-  const cols = document.querySelectorAll('.pcol');
-  if (cols[i]) cols[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+  // Legacy compat — now tabs handle navigation
+  const cols = PCOLS;
+  if (cols[i]) window.setPipeTab(cols[i].id);
 };
 
 // ══════════════════════════════════════════════════════════════════
