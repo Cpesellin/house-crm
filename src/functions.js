@@ -762,12 +762,14 @@ window.F = F;
 window._myFilter = false;
 window._favFilterActive = false;
 window._tiempoFiltro = null;
-window._openAcc = null;
+window._openPanel = null;
+window._asesorFilter = null;
 
-// ── Accordion options data ──
-const NEG_OPTS = [{v:'venta',l:'Comprar',e:'🏠',d:'Inmuebles en venta',c:'#059669',bg:'#ecfdf5'},{v:'arriendo',l:'Arrendar',e:'🔑',d:'Inmuebles en arriendo',c:'#d97706',bg:'#fffbeb'},{v:'ambas',l:'Las dos',e:'🔄',d:'Explorar todo',c:'#7c3aed',bg:'#f5f3ff'}];
+// ── Filter options data ──
+const NEG_OPTS = [{v:'venta',l:'Comprar',e:'🏠',d:'En venta',c:'#059669'},{v:'arriendo',l:'Arrendar',e:'🔑',d:'En arriendo',c:'#d97706'},{v:'ambas',l:'Las dos',e:'🔄',d:'Ver todo',c:'#7c3aed'}];
 const CIU_OPTS = [{v:'Pereira',e:'🏙️',d:'Centro, Pinares, Álamos, Cuba...'},{v:'Dosquebradas',e:'🌆',d:'La Pradera, Camilo Torres...'},{v:'Santa Rosa',e:'🌿',d:'Centro, Termales, veredas'},{v:'Cerritos',e:'🌳',d:'Condominios, fincas, campestre'}];
 const TIPO_OPTS = [{v:'Apartamento',e:'🏢',l:'Apto'},{v:'Casa',e:'🏡',l:'Casa'},{v:'Finca',e:'🌾',l:'Finca'},{v:'Local',e:'🏪',l:'Local'},{v:'Lote',e:'📐',l:'Lote'},{v:'Oficina',e:'💼',l:'Oficina'},{v:'Bodega',e:'🏭',l:'Bodega'},{v:'Penthouse',e:'✨',l:'PH'}];
+const NEG_MAP = {venta:'Comprar',arriendo:'Arrendar',ambas:'Las dos'};
 
 // ── Format price input with thousands separator ──
 window.fmtPrice = function(el) {
@@ -786,165 +788,97 @@ function fmShort(n) {
   return'$'+n.toLocaleString();
 }
 
-// ── Render accordion options (called once after load) ──
-window.renderAccOpts = function() {
-  // Negociación
-  const negC = document.getElementById('negOpts');
-  if(negC) negC.innerHTML = NEG_OPTS.map(o => `<button class="acc-opt-neg" data-v="${o.v}" onclick="accToggle('neg','${o.v}')" style="flex:1;padding:18px 6px 16px;border-radius:16px;border:1.5px solid var(--acc-brd);background:var(--acc-bg2);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;transition:all .15s"><span style="font-size:32px">${o.e}</span><span style="font-size:16px;font-weight:800;color:var(--acc-tx)">${o.l}</span><span style="font-size:11px;color:var(--acc-sub);font-weight:500">${o.d}</span></button>`).join('');
-  // Ciudad
-  const ciuC = document.getElementById('ciuOpts');
-  if(ciuC) ciuC.innerHTML = CIU_OPTS.map(o => `<button class="acc-opt-ciu" data-v="${o.v}" onclick="accToggle('ciu','${o.v}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--acc-brd);background:var(--acc-bg);cursor:pointer;font-family:inherit;text-align:left;transition:all .15s"><span style="font-size:26px;width:36px;text-align:center">${o.e}</span><div style="flex:1"><div style="font-size:16px;font-weight:800;color:var(--acc-tx)">${o.v}</div><div style="font-size:12px;color:var(--acc-sub);margin-top:2px">${o.d}</div></div></button>`).join('');
-  // Tipo
-  const tipoC = document.getElementById('tipoOpts');
-  if(tipoC) tipoC.innerHTML = TIPO_OPTS.map(o => `<button class="acc-opt-tipo" data-v="${o.v}" onclick="accToggle('tipo','${o.v}')" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:16px 4px 12px;border-radius:14px;border:1.5px solid var(--acc-brd);background:var(--acc-bg);cursor:pointer;font-family:inherit;transition:all .15s"><span style="font-size:30px">${o.e}</span><span style="font-size:13px;font-weight:800;color:var(--acc-tx2)">${o.l}</span></button>`).join('');
-  // Tiempo dropdown
-  const tdC = document.getElementById('tiempoDD');
-  if(tdC) tdC.innerHTML = [{v:null,l:'Más recientes',d:'Todos los inmuebles'},{v:'7',l:'Últimos 7 días',d:'Publicados esta semana'},{v:'15',l:'Últimos 15 días',d:'Publicados en 2 semanas'}].map(o => `<button onclick="setTiempo(${o.v?"'"+o.v+"'":"null"})" style="width:100%;padding:10px 12px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left;display:flex;flex-direction:column;color:var(--acc-tx)"><span style="font-size:13px;font-weight:700">${o.l}</span><span style="font-size:10px;color:var(--acc-sub)">${o.d}</span></button>`).join('');
-  updateAccVisuals();
-};
+// ── SVG chevron helper ──
+function chevSvg(open, light) { return `<svg class="pill-chev${open?' open':''}" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="${light?'#fff':'#8b7e6e'}" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`; }
 
-// ── Toggle accordion ──
-window.toggleAcc = function(name) {
-  const prev = window._openAcc;
-  window._openAcc = (prev === name) ? null : name;
-  const _s = getComputedStyle(document.body);
-  const accBrd = _s.getPropertyValue('--acc-brd').trim();
-  const accBrdAct = _s.getPropertyValue('--acc-brd-act').trim();
-  const accBrd2 = _s.getPropertyValue('--acc-brd2').trim();
-  const accSub2 = _s.getPropertyValue('--acc-sub2').trim();
-  const isDark = document.body.classList.contains('dark');
-  document.querySelectorAll('.acc-sec').forEach(s => {
-    const id = s.dataset.acc;
-    const body = s.querySelector('.acc-body');
-    const chev = s.querySelector('.acc-chev');
-    const isOpen = id === window._openAcc;
-    body.style.display = isOpen ? '' : 'none';
-    s.style.border = isOpen ? `1.5px solid ${accBrdAct}` : (hasAccSel(id) ? `1.5px solid ${accBrd2}` : `1.5px solid ${accBrd}`);
-    s.style.boxShadow = isOpen ? '0 4px 16px rgba(0,0,0,.05)' : '0 1px 3px rgba(0,0,0,.02)';
-    chev.style.background = isOpen ? (isDark?'#475569':'#3a3530') : 'linear-gradient(135deg,#1a4f8b,#2563a8)';
-    chev.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-    chev.style.boxShadow = isOpen ? 'none' : '0 2px 8px rgba(26,79,139,.25)';
-    const ico = s.querySelector('.acc-ico');
-    if(ico) ico.style.border = isOpen ? `2px solid ${accSub2}` : `1.5px solid ${accBrd2}`;
+// ── Toggle panel ──
+window.togglePanel = function(name) {
+  const prev = window._openPanel;
+  window._openPanel = (prev === name) ? null : name;
+  ['neg','ciudad','tipo','precio','asesor'].forEach(p => {
+    const el = document.getElementById('panel' + p.charAt(0).toUpperCase() + p.slice(1));
+    if (el) el.style.display = (p === window._openPanel) ? '' : 'none';
   });
-  updateAccTitles();
+  if (window._openPanel) renderPanel(window._openPanel);
+  updatePills();
 };
 
-function hasAccSel(id) {
-  if(id==='neg')return F.neg.size>0;
-  if(id==='ciu')return F.ciu.size>0;
-  if(id==='tipo')return F.tipo.size>0;
-  if(id==='arr')return parsePriceInput('arMin')>0||parsePriceInput('arMax')>0;
-  if(id==='venta')return parsePriceInput('vnMin')>0||parsePriceInput('vnMax')>0;
-  return false;
+// ── Render panel content ──
+function renderPanel(name) {
+  const el = document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1));
+  if (!el) return;
+  if (name === 'neg') {
+    el.innerHTML = `<div class="fpanel"><div class="fpanel-title">¿Qué estás buscando?</div><div style="display:flex;gap:8px">${NEG_OPTS.map(o => { const s = F.neg.has(o.v); return `<button class="fopt-neg${s?' sel':''}" onclick="pillToggle('neg','${o.v}')" style="${s?'border-color:'+o.c+';background:'+o.c+'0c':''}"><span style="font-size:30px">${o.e}</span><span style="font-size:15px;font-weight:800;color:${s?o.c:'#3a3530'}">${o.l}</span><span style="font-size:11px;color:#a8977f">${o.d}</span>${s?`<div class="fopt-check" style="background:${o.c}">✓</div>`:''}</button>`; }).join('')}</div></div>`;
+  } else if (name === 'ciudad') {
+    el.innerHTML = `<div class="fpanel"><div class="fpanel-title">¿En qué ciudad buscas?</div><div style="display:flex;flex-direction:column;gap:6px">${CIU_OPTS.map(c => { const s = F.ciu.has(c.v); return `<button class="fopt-ciu${s?' sel':''}" onclick="pillToggle('ciu','${c.v}')"><span style="font-size:24px">${c.e}</span><div style="flex:1"><div style="font-size:16px;font-weight:800;color:${s?'#1a4f8b':'#3a3530'}">${c.v}</div><div style="font-size:12px;color:#a8977f;margin-top:1px">${c.d}</div></div>${s?'<div class="fopt-check-ciu">✓</div>':''}</button>`; }).join('')}</div></div>`;
+  } else if (name === 'tipo') {
+    el.innerHTML = `<div class="fpanel"><div class="fpanel-title">¿Qué tipo de inmueble?</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${TIPO_OPTS.map(t => { const s = F.tipo.has(t.v); return `<button class="fopt-tipo${s?' sel':''}" onclick="pillToggle('tipo','${t.v}')"><span style="font-size:28px">${t.e}</span><span style="font-size:13px;font-weight:800;color:${s?'#d4a853':'#5a5550'}">${t.l}</span></button>`; }).join('')}</div></div>`;
+  } else if (name === 'precio') {
+    const showArr = F.neg.size===0||F.neg.has('arriendo')||F.neg.has('ambas');
+    const showVnt = F.neg.size===0||F.neg.has('venta')||F.neg.has('ambas');
+    let h = '<div class="fpanel">';
+    if (showArr) {
+      h += `<div style="${showVnt?'margin-bottom:16px':''}"><div style="font-size:15px;font-weight:800;color:#2c2520;margin-bottom:10px">💰 Precio arriendo</div><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><div style="font-size:9px;color:#8b8178;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px">Desde</div><div class="precio-input" style="border:1.5px solid rgba(217,119,6,.15)"><span style="font-size:13px;color:#d97706;font-weight:800">$</span><input id="arMin" placeholder="0" inputmode="numeric" oninput="fmtPrice(this)" value="${document.getElementById('arMin')?.value||''}"></div></div><span style="color:#d4cdc4;font-weight:800;margin-top:16px">—</span><div style="flex:1"><div style="font-size:9px;color:#8b8178;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px">Hasta</div><div class="precio-input" style="border:1.5px solid rgba(217,119,6,.15)"><span style="font-size:13px;color:#d97706;font-weight:800">$</span><input id="arMax" placeholder="10.000.000" inputmode="numeric" oninput="fmtPrice(this)" value="${document.getElementById('arMax')?.value||''}"></div></div><span style="font-size:9px;color:#a8977f;font-weight:800;margin-top:16px">/mes</span></div></div>`;
+    }
+    if (showVnt) {
+      h += `<div><div style="font-size:15px;font-weight:800;color:#2c2520;margin-bottom:10px">🏦 Precio venta</div><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><div style="font-size:9px;color:#8b8178;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px">Desde</div><div class="precio-input" style="border:1.5px solid rgba(5,150,105,.15)"><span style="font-size:13px;color:#059669;font-weight:800">$</span><input id="vnMin" placeholder="0" inputmode="numeric" oninput="fmtPrice(this)" value="${document.getElementById('vnMin')?.value||''}"></div></div><span style="color:#d4cdc4;font-weight:800;margin-top:16px">—</span><div style="flex:1"><div style="font-size:9px;color:#8b8178;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px">Hasta</div><div class="precio-input" style="border:1.5px solid rgba(5,150,105,.15)"><span style="font-size:13px;color:#059669;font-weight:800">$</span><input id="vnMax" placeholder="3.000M" inputmode="numeric" oninput="fmtPrice(this)" value="${document.getElementById('vnMax')?.value||''}"></div></div></div></div>`;
+    }
+    h += `<button class="precio-apply" onclick="togglePanel(null);doSearch()">🔍 Aplicar precio</button></div>`;
+    el.innerHTML = h;
+  } else if (name === 'asesor') {
+    const asesores = {};
+    D().forEach(p => { if(p.captador){asesores[p.captador_id]=asesores[p.captador_id]||{id:p.captador_id,nombre:p.captador.nombre,gestor:p.captador.gestor_arriendos,count:0};asesores[p.captador_id].count++;} });
+    const sorted = Object.values(asesores).sort((a,b)=>b.count-a.count);
+    el.innerHTML = `<div class="fpanel"><div class="fpanel-title">Filtrar por asesor</div><div style="font-size:12px;color:#a8977f;margin-bottom:12px">Ordenados por cantidad de inmuebles</div><div style="display:flex;flex-direction:column;gap:6px">${sorted.map(a => { const s = window._asesorFilter===a.id; return `<button class="fopt-ase${s?' sel':''}" onclick="pickAsesor('${a.id}')"><div style="width:36px;height:36px;border-radius:10px;background:${s?'#1a4f8b':'#eae6e1'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:${s?'#fff':'#5a5550'}">${a.nombre.charAt(0)}</div><div style="flex:1"><div style="font-size:15px;font-weight:800;color:${s?'#1a4f8b':'#3a3530'}">${a.nombre}${a.gestor?' 🔑':''}</div><div style="font-size:12px;color:#a8977f;margin-top:1px">${a.count} inmuebles</div></div><div style="font-size:16px;font-weight:800;color:${s?'#1a4f8b':'#c4b9a8'}">${a.count}</div>${s?'<div class="fopt-check-ciu">✓</div>':''}</button>`; }).join('')}</div></div>`;
+  }
 }
 
-// ── Toggle filter value ──
-window.accToggle = function(g,v) {
+// ── Update pill styles ──
+function updatePills() {
+  const negMap = {venta:'Comprar',arriendo:'Arrendar',ambas:'Las dos'};
+  // Neg pill
+  const pNeg = document.getElementById('pillNeg');
+  if(pNeg) { const on=F.neg.size>0||window._openPanel==='neg'; pNeg.className='pill '+(on?'pill-on':'pill-off'); const txt=document.getElementById('pillNegTxt'); if(txt)txt.textContent=F.neg.size>0?Array.from(F.neg).map(v=>negMap[v]).join(', '):'Negocio'; pNeg.querySelector('.pill-chev')?.classList.toggle('open',window._openPanel==='neg'); const badge=pNeg.querySelector('.pill-badge'); if(F.neg.size>0&&!badge){const b=document.createElement('span');b.className='pill-badge';b.textContent=F.neg.size;pNeg.insertBefore(b,pNeg.querySelector('.pill-chev'));}else if(F.neg.size===0&&badge)badge.remove();else if(badge)badge.textContent=F.neg.size; }
+  // Ciudad pill
+  const pCiu = document.getElementById('pillCiu');
+  if(pCiu) { const on=F.ciu.size>0||window._openPanel==='ciudad'; pCiu.className='pill '+(on?'pill-on':'pill-off'); const txt=document.getElementById('pillCiuTxt'); if(txt)txt.textContent=F.ciu.size>0?Array.from(F.ciu).join(', '):'Ciudad'; pCiu.querySelector('.pill-chev')?.classList.toggle('open',window._openPanel==='ciudad'); const badge=pCiu.querySelector('.pill-badge'); if(F.ciu.size>0&&!badge){const b=document.createElement('span');b.className='pill-badge';b.textContent=F.ciu.size;pCiu.insertBefore(b,pCiu.querySelector('.pill-chev'));}else if(F.ciu.size===0&&badge)badge.remove();else if(badge)badge.textContent=F.ciu.size; }
+  // Tipo pill
+  const pTipo = document.getElementById('pillTipo');
+  if(pTipo) { const on=F.tipo.size>0||window._openPanel==='tipo'; pTipo.className='pill '+(on?'pill-on':'pill-off'); const txt=document.getElementById('pillTipoTxt'); if(txt)txt.textContent=F.tipo.size>0?Array.from(F.tipo).join(', '):'Tipo'; pTipo.querySelector('.pill-chev')?.classList.toggle('open',window._openPanel==='tipo'); const badge=pTipo.querySelector('.pill-badge'); if(F.tipo.size>0&&!badge){const b=document.createElement('span');b.className='pill-badge';b.textContent=F.tipo.size;pTipo.insertBefore(b,pTipo.querySelector('.pill-chev'));}else if(F.tipo.size===0&&badge)badge.remove();else if(badge)badge.textContent=F.tipo.size; }
+  // Precio pill
+  const pPrecio = document.getElementById('pillPrecio');
+  if(pPrecio) { const hasP=parsePriceInput('arMin')>0||parsePriceInput('arMax')>0||parsePriceInput('vnMin')>0||parsePriceInput('vnMax')>0; const on=hasP||window._openPanel==='precio'; pPrecio.className='pill '+(on?'pill-on':'pill-off'); const txt=document.getElementById('pillPrecioTxt'); if(txt)txt.textContent=hasP?'Precio ✓':'Precio'; pPrecio.querySelector('.pill-chev')?.classList.toggle('open',window._openPanel==='precio'); }
+  // Asesor pill
+  const pAse = document.getElementById('pillAsesor');
+  if(pAse) { const on=!!window._asesorFilter||window._openPanel==='asesor'; pAse.className='pill '+(on?'pill-on':'pill-off'); const txt=document.getElementById('pillAseTxt'); if(txt){ const aseData=window._asesorFilter?D().find(p=>p.captador_id===window._asesorFilter)?.captador?.nombre:null; txt.textContent=aseData||'Asesores'; } pAse.querySelector('.pill-chev')?.classList.toggle('open',window._openPanel==='asesor'); }
+  // Update chevron stroke colors
+  document.querySelectorAll('.pill').forEach(p => { const svg = p.querySelector('.pill-chev path'); if(svg) svg.setAttribute('stroke', p.classList.contains('pill-on')||p.classList.contains('pill-mis')||p.classList.contains('pill-fav')?'#fff':'#8b7e6e'); });
+}
+
+// ── Toggle filter value from panel ──
+window.pillToggle = function(g,v) {
   if(F[g].has(v))F[g].delete(v); else F[g].add(v);
-  updateAccVisuals();
-  updatePriceVis();
+  if(window._openPanel)renderPanel(window._openPanel);
+  updatePills();
   window.renderSel();
   window.doSearch();
 };
 
-// ── Update accordion visuals ──
-function updateAccVisuals() {
-  const _s = getComputedStyle(document.body);
-  const accBrd = _s.getPropertyValue('--acc-brd').trim();
-  const accBg2 = _s.getPropertyValue('--acc-bg2').trim();
-  const accBg = _s.getPropertyValue('--acc-bg').trim();
-  const accTx = _s.getPropertyValue('--acc-tx').trim();
-  const accTx2 = _s.getPropertyValue('--acc-tx2').trim();
-  const isDark = document.body.classList.contains('dark');
-  // Neg
-  document.querySelectorAll('.acc-opt-neg').forEach(btn => {
-    const v=btn.dataset.v, sel=F.neg.has(v), o=NEG_OPTS.find(x=>x.v===v);
-    btn.style.border=sel?`2.5px solid ${o.c}`:`1.5px solid ${accBrd}`;
-    btn.style.background=sel?(isDark?o.c+'18':o.bg):accBg2;
-    btn.style.boxShadow=sel?`0 4px 14px ${o.c}15`:'none';
-    const nameEl=btn.children[1]; if(nameEl)nameEl.style.color=sel?o.c:accTx;
-    let ck=btn.querySelector('.acc-ck');
-    if(sel&&!ck){ck=document.createElement('div');ck.className='acc-ck';ck.style.cssText='position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:'+o.c+';color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:900';ck.textContent='✓';btn.appendChild(ck);}
-    else if(!sel&&ck)ck.remove();
-  });
-  // Ciu
-  document.querySelectorAll('.acc-opt-ciu').forEach(btn => {
-    const v=btn.dataset.v, sel=F.ciu.has(v);
-    btn.style.border=sel?'2.5px solid #1a4f8b':`1.5px solid ${accBrd}`;
-    btn.style.background=sel?(isDark?'rgba(26,79,139,.15)':'#eef3fb'):accBg;
-    btn.style.boxShadow=sel?'0 2px 10px rgba(26,79,139,.08)':'none';
-    const nameEl=btn.querySelector('div > div:first-child'); if(nameEl)nameEl.style.color=sel?'#5b9bd5':accTx;
-    let ck=btn.querySelector('.acc-ck');
-    if(sel&&!ck){ck=document.createElement('div');ck.className='acc-ck';ck.style.cssText='width:24px;height:24px;border-radius:50%;background:#1a4f8b;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0';ck.textContent='✓';btn.appendChild(ck);}
-    else if(!sel&&ck)ck.remove();
-  });
-  // Tipo
-  document.querySelectorAll('.acc-opt-tipo').forEach(btn => {
-    const v=btn.dataset.v, sel=F.tipo.has(v);
-    btn.style.border=sel?(isDark?'2.5px solid #d4a853':'2.5px solid #3a3530'):`1.5px solid ${accBrd}`;
-    btn.style.background=sel?(isDark?'#2a2520':'#3a3530'):accBg;
-    btn.style.boxShadow=sel?'0 4px 12px rgba(58,53,48,.2)':'none';
-    const lbl=btn.children[1]; if(lbl)lbl.style.color=sel?'#d4a853':accTx2;
-  });
-  updateAccTitles();
-}
-
-function updateAccTitles() {
-  const _s = getComputedStyle(document.body);
-  const accTx = _s.getPropertyValue('--acc-tx').trim();
-  const accSub3 = _s.getPropertyValue('--acc-sub3').trim();
-  const accBrd2 = _s.getPropertyValue('--acc-brd2').trim();
-  const sections = [
-    {id:'neg',title:'¿Qué estás buscando?',map:v=>{const o=NEG_OPTS.find(x=>x.v===v);return o?{icon:o.e,label:o.l}:{label:v};}},
-    {id:'ciu',title:'¿En qué ciudad buscas?',map:v=>{const o=CIU_OPTS.find(x=>x.v===v);return o?{icon:o.e,label:o.v}:{label:v};}},
-    {id:'tipo',title:'¿Qué tipo de inmueble buscas?',map:v=>{const o=TIPO_OPTS.find(x=>x.v===v);return o?{icon:o.e,label:o.l}:{label:v};}},
-    {id:'arr',title:'¿En qué precio buscas arriendo?',price:true,min:'arMin',max:'arMax',suffix:'/mes'},
-    {id:'venta',title:'¿En qué precio buscas inmueble?',price:true,min:'vnMin',max:'vnMax',suffix:''}
-  ];
-  sections.forEach(s => {
-    const titleEl = document.getElementById('accTitle'+s.id.charAt(0).toUpperCase()+s.id.slice(1));
-    const selEl = document.getElementById('accSel'+s.id.charAt(0).toUpperCase()+s.id.slice(1));
-    if(!titleEl||!selEl)return;
-    const isOpen = window._openAcc === s.id;
-    let hasSel = false, selHtml = '';
-    if(s.price){
-      const mn=parsePriceInput(s.min),mx=parsePriceInput(s.max);
-      if(mn>0||mx>0){hasSel=true;selHtml=`<span style="font-size:17px;font-weight:800;color:var(--acc-tx)">${fmShort(mn)||'$0'} — ${mx?fmShort(mx):'∞'}${s.suffix}</span>`;}
-    } else {
-      const vals = Array.from(F[s.id]||[]);
-      if(vals.length>0){
-        hasSel=true;
-        selHtml=vals.map((v,i)=>{const m=s.map(v);return `<span style="font-size:17px;font-weight:800;color:var(--acc-tx);display:inline-flex;align-items:center;gap:4px">${m.icon?'<span style="font-size:16px">'+m.icon+'</span>':''}${m.label}${i<vals.length-1?'<span style="color:var(--acc-brd2);font-weight:400;margin:0 2px">·</span>':''}</span>`;}).join('');
-      }
-    }
-    if(isOpen){
-      titleEl.style.fontSize='12px';titleEl.style.fontWeight='600';titleEl.style.color=accSub3;
-      selEl.style.display='none';
-    } else if(hasSel){
-      titleEl.style.fontSize='12px';titleEl.style.fontWeight='600';titleEl.style.color=accSub3;titleEl.style.marginBottom='2px';
-      selEl.style.display='';selEl.innerHTML=selHtml;
-    } else {
-      titleEl.style.fontSize='16px';titleEl.style.fontWeight='700';titleEl.style.color=accTx;titleEl.style.marginBottom='0';
-      selEl.style.display='none';
-    }
-  });
-}
-
-// ── Price accordion visibility ──
-function updatePriceVis() {
-  const showArr = F.neg.size===0 || F.neg.has('arriendo') || F.neg.has('ambas');
-  const showVnt = F.neg.size===0 || F.neg.has('venta') || F.neg.has('ambas');
-  const arrS=document.getElementById('accSecArr');if(arrS)arrS.style.display=showArr?'':'none';
-  const vntS=document.getElementById('accSecVenta');if(vntS)vntS.style.display=showVnt?'':'none';
-}
+// ── Asesor pick (single select, close panel) ──
+window.pickAsesor = function(id) {
+  window._asesorFilter = (window._asesorFilter===id) ? null : id;
+  togglePanel(null);
+  window.renderSel();
+  window.doSearch();
+};
 
 // ── Selection bar ──
 window.renderSel = function() {
   const chips = [];
-  F.neg.forEach(v=>{const o=NEG_OPTS.find(x=>x.v===v);chips.push({key:'n-'+v,label:o?o.e+' '+o.l:v,remove:`accToggle('neg','${v}')`});});
-  F.ciu.forEach(v=>{chips.push({key:'c-'+v,label:'📍 '+v,remove:`accToggle('ciu','${v}')`});});
-  F.tipo.forEach(v=>{const o=TIPO_OPTS.find(x=>x.v===v);chips.push({key:'t-'+v,label:o?o.l:v,remove:`accToggle('tipo','${v}')`});});
+  F.neg.forEach(v=>{const o=NEG_OPTS.find(x=>x.v===v);chips.push({key:'n-'+v,label:o?o.e+' '+o.l:v,remove:`pillToggle('neg','${v}')`});});
+  F.ciu.forEach(v=>{chips.push({key:'c-'+v,label:'📍 '+v,remove:`pillToggle('ciu','${v}')`});});
+  F.tipo.forEach(v=>{const o=TIPO_OPTS.find(x=>x.v===v);chips.push({key:'t-'+v,label:o?o.l:v,remove:`pillToggle('tipo','${v}')`});});
+  if(window._asesorFilter){const a=D().find(p=>p.captador_id===window._asesorFilter)?.captador;chips.push({key:'ase',label:'👤 '+(a?.nombre||'Asesor'),remove:"pickAsesor('"+window._asesorFilter+"')"});}
   const arMn=parsePriceInput('arMin'),arMx=parsePriceInput('arMax');
   if(arMn>0||arMx>0)chips.push({key:'arr',label:'💰 '+(fmShort(arMn)||'$0')+'-'+(arMx?fmShort(arMx):'∞'),remove:"document.getElementById('arMin').value='';document.getElementById('arMax').value='';renderSel();doSearch()"});
   const vnMn=parsePriceInput('vnMin'),vnMx=parsePriceInput('vnMax');
@@ -960,9 +894,9 @@ window.renderSel = function() {
   if(!bar||!chipsEl)return;
   if(chips.length===0){bar.style.display='none';return;}
   bar.style.display='';
-  chipsEl.innerHTML=chips.map(s=>`<span class="sel-chip" onclick="${s.remove}" style="font-size:13px;padding:6px 12px;border-radius:10px;background:var(--acc-sel-bg);color:var(--acc-tx2);font-weight:700;border:1.5px solid var(--acc-sel-brd);display:inline-flex;align-items:center;gap:5px;cursor:pointer">${s.label}<span style="width:16px;height:16px;border-radius:50%;background:rgba(128,128,128,.15);display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">✕</span></span>`).join('');
-  // Show/hide qClear
+  chipsEl.innerHTML=chips.map(s=>`<span class="sel-chip" onclick="${s.remove}">${s.label}<span class="sel-x">✕</span></span>`).join('');
   const qC=document.getElementById('qClear');if(qC)qC.style.display=qv?'flex':'none';
+  updatePills();
 };
 
 // ── Toggles ──
@@ -970,8 +904,8 @@ window.toggleMis = function() {
   window._myFilter = !window._myFilter;
   const btn=document.getElementById('myToggle');
   if(btn){
-    if(window._myFilter){btn.style.background='#1a4f8b';btn.style.color='#fff';btn.style.border='none';btn.style.boxShadow='0 3px 10px rgba(26,79,139,.3)';btn.textContent='📌 Mis inmuebles ✓';}
-    else{btn.style.background='var(--acc-toggle-bg)';btn.style.color='#1a4f8b';btn.style.border='1.5px solid #d0dff2';btn.style.boxShadow='none';btn.textContent='📌 Mis inmuebles';}
+    if(window._myFilter){btn.className='pill pill-mis';btn.textContent='📌 Míos ✓';}
+    else{btn.className='pill pill-off';btn.style.color='#1a4f8b';btn.style.borderColor='#d0dff2';btn.textContent='📌 Míos';}
   }
   window.renderSel();window.doSearch();
 };
@@ -980,8 +914,8 @@ window.toggleFavFilter = function() {
   window._favFilterActive = !window._favFilterActive;
   const btn=document.getElementById('favToggle');
   if(btn){
-    if(window._favFilterActive){btn.style.background='#b91c3a';btn.style.color='#fff';btn.style.border='none';btn.style.boxShadow='0 3px 10px rgba(185,28,58,.3)';btn.innerHTML='♥ Favoritos ✓';}
-    else{btn.style.background='var(--acc-toggle-bg)';btn.style.color='#b91c3a';btn.style.border='1.5px solid #f5d0d7';btn.style.boxShadow='none';btn.innerHTML='♡ Favoritos';}
+    if(window._favFilterActive){btn.className='pill pill-fav';btn.innerHTML='♥ Favs ✓';}
+    else{btn.className='pill pill-off';btn.style.color='#b91c3a';btn.style.borderColor='#f5d0d7';btn.innerHTML='♡ Favs';}
   }
   window.renderSel();window.doSearch();
 };
@@ -989,26 +923,37 @@ window.toggleFavFilter = function() {
 // ── Time filter ──
 window.toggleTiempo = function() {
   const dd=document.getElementById('tiempoDD');
-  if(dd)dd.style.display=dd.style.display==='none'?'':'none';
+  if(!dd)return;
+  if(dd.style.display==='none'||!dd.style.display){
+    dd.style.display='block';
+    dd.innerHTML=[{v:null,l:'Más recientes',d:'Todos'},{v:'7',l:'Últimos 7 días',d:'Esta semana'},{v:'15',l:'Últimos 15 días',d:'2 semanas'}].map(o=>`<button class="tiempo-opt${window._tiempoFiltro===o.v?' sel':''}" onclick="setTiempo(${o.v?"'"+o.v+"'":"null"})"><div style="font-size:14px;font-weight:700;color:${window._tiempoFiltro===o.v?'#1a4f8b':'#3a3530'}">${o.l}</div><div style="font-size:10px;color:#a8977f">${o.d}</div></button>`).join('');
+  } else dd.style.display='none';
 };
 window.setTiempo = function(v) {
   window._tiempoFiltro=v;
   const btn=document.getElementById('tiempoBtn');
   if(btn){
-    if(v){btn.style.color='#4338ca';btn.style.background='#eef2ff';btn.style.border='1.5px solid #c7d2fe';btn.textContent='📅 Últimos '+v+' días ▾';}
-    else{btn.style.color='';btn.style.background='';btn.style.border='';btn.textContent='📅 Más recientes ▾';}
+    if(v){btn.style.color='#1a4f8b';btn.style.background='#eef3fb';btn.style.border='1.5px solid #b8d4f0';btn.textContent='📅 Últimos '+v+' días ▾';}
+    else{btn.style.color='#6b5c4d';btn.style.background='#fff';btn.style.border='1.5px solid #e8e4df';btn.textContent='📅 Más recientes ▾';}
   }
   const dd=document.getElementById('tiempoDD');if(dd)dd.style.display='none';
   window.renderSel();window.doSearch();
 };
 
+// ── Asesor pill visibility ──
 window.populateAsesorFilter = function() {
-  const af=document.getElementById('asesorFilter');if(!af)return;
+  const pAse=document.getElementById('pillAsesor');if(!pAse)return;
   const u=U();const isAdmin=u&&(u.rol==='admin'||u.rol==='oficina');
-  if(!isAdmin){af.style.display='none';return;}
-  af.style.display='inline-block';
-  const asesores={};D().forEach(p=>{if(p.captador){asesores[p.captador_id]=asesores[p.captador_id]||{nombre:p.captador.nombre,count:0};asesores[p.captador_id].count++;}});
-  af.innerHTML='<option value="">👤 Todos los asesores</option>'+Object.entries(asesores).sort((a,b)=>b[1].count-a[1].count).map(([id,a])=>`<option value="${id}">👤 ${a.nombre} ${a.count}</option>`).join('');
+  pAse.style.display=isAdmin?'flex':'none';
+};
+
+// ── Init pills (called after data load) ──
+window.renderAccOpts = function() {
+  // Render tiempo dropdown
+  const tdC=document.getElementById('tiempoDD');
+  if(tdC)tdC.innerHTML='';
+  updatePills();
+  window.populateAsesorFilter();
 };
 
 window.renderRecent = function() {
@@ -1033,8 +978,7 @@ window.doSearch = function() {
   let list = allD;
   if (window._myFilter) list = list.filter(p => p.captador_id === U()?.id);
   if (window._favFilterActive) list = list.filter(p => (window.FAVS||[]).includes(p.id));
-  const af = document.getElementById('asesorFilter');
-  if (af && af.value) list = list.filter(p => p.captador_id === af.value);
+  if (window._asesorFilter) list = list.filter(p => p.captador_id === window._asesorFilter);
   if (window._tiempoFiltro) { const maxD = parseInt(window._tiempoFiltro); list = list.filter(p => (p._dias||999) <= maxD); }
 
   const hasFilters = Object.values(F).some(s => s.size > 0) || qv.length > 0 || arMin > 0 || arMax > 0 || vnMin > 0 || vnMax > 0;
@@ -1058,6 +1002,9 @@ window.doSearch = function() {
 
 window.autoSearch = function() { clearTimeout(window._searchTimer); window._searchTimer = setTimeout(() => window.doSearch(), 300); };
 window._searchTimer = null;
+
+// Close panels on outside click
+document.addEventListener('click', function(e) { if(window._openPanel && !e.target.closest('.fpanel') && !e.target.closest('.pill') && !e.target.closest('.pill-bar')) togglePanel(null); });
 
 // Autocomplete
 window._acIdx = -1;
@@ -1186,8 +1133,8 @@ document.addEventListener('click', function(e) { if (!e.target.closest('#acDrop'
 // Legacy compat
 window.collapseFilters = function() {};
 window.expandFilters = function() {};
-window.qf = function(g,v) { F[g]?.delete(v); updateAccVisuals(); window.renderSel(); window.doSearch(); };
-window.tc = window.accToggle;
+window.qf = function(g,v) { F[g]?.delete(v); updatePills(); window.renderSel(); window.doSearch(); };
+window.tc = function() {};
 
 // ══════════════════════════════════════════════════════════════════
 // 14. CONCILIACION

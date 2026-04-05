@@ -464,16 +464,17 @@ window.limpiar = () => {
   const vnMax=document.getElementById('vnMax');if(vnMax)vnMax.value='';
   // Reset toggles
   window._myFilter=false;
-  const myBtn=document.getElementById('myToggle');
-  if(myBtn){myBtn.style.background='var(--acc-toggle-bg)';myBtn.style.color='#1a4f8b';myBtn.style.border='1.5px solid #d0dff2';myBtn.style.boxShadow='none';myBtn.textContent='📌 Mis inmuebles';}
+  const myBtn=document.getElementById('pillMis');
+  if(myBtn)myBtn.className='pill pill-mis pill-off';
   window._favFilterActive=false;
-  const favBtn=document.getElementById('favToggle');
-  if(favBtn){favBtn.style.background='var(--acc-toggle-bg)';favBtn.style.color='#b91c3a';favBtn.style.border='1.5px solid #f5d0d7';favBtn.style.boxShadow='none';favBtn.innerHTML='♡ Favoritos';}
+  const favBtn=document.getElementById('pillFav');
+  if(favBtn)favBtn.className='pill pill-fav pill-off';
   window._tiempoFiltro=null;
   if(window.setTiempo)window.setTiempo(null);
-  const af=document.getElementById('asesorFilter');if(af)af.value='';
-  window._openAcc=null;
-  if(window.toggleAcc)window.toggleAcc(null);
+  window._asesorFilter=null;
+  window._openPanel=null;
+  if(window.togglePanel)window.togglePanel(null);
+  if(window.updatePills)window.updatePills();
   if(window.renderSel)window.renderSel();
   render(window.D||[]);
 };

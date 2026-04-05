@@ -155,132 +155,48 @@ function renderShell(container) {
 
     <!-- SEARCH -->
     <div style="padding:12px 16px 0;position:relative">
-      <div style="display:flex;align-items:center;gap:10px;background:var(--acc-bg);border-radius:14px;padding:0 14px;border:1.5px solid var(--acc-search-brd);box-shadow:0 2px 8px rgba(0,0,0,.02)">
-        <span style="font-size:16px;color:var(--acc-sub)">🔍</span>
-        <input id="q" placeholder="Busca por barrio, tipo o dirección..." autocomplete="off" oninput="autoSearch();updateAC()" onfocus="showAC()" onkeydown="acKey(event)" style="flex:1;border:none;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:var(--acc-tx);background:transparent">
-        <button id="qClear" onclick="document.getElementById('q').value='';this.style.display='none';hideAC();doSearch()" style="display:none;border:none;background:var(--acc-sel-bg);border-radius:8px;width:24px;height:24px;cursor:pointer;font-size:10px;color:var(--acc-sub2);font-weight:800">✕</button>
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:0 14px;border:1.5px solid #e8e4df">
+        <span style="font-size:16px;color:#c4b9a8">🔍</span>
+        <input id="q" placeholder="Busca por barrio, tipo o dirección..." autocomplete="off" oninput="autoSearch();updateAC()" onfocus="showAC()" onkeydown="acKey(event)" style="flex:1;border:none;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:#2c2520;background:transparent">
+        <button id="qClear" onclick="document.getElementById('q').value='';this.style.display='none';hideAC();doSearch()" style="display:none;border:none;background:#f0ece6;border-radius:8px;width:24px;height:24px;cursor:pointer;font-size:10px;color:#8b7e6e;display:flex;align-items:center;justify-content:center;font-weight:800">✕</button>
       </div>
       <div id="acDrop" class="ac-drop" style="display:none"></div>
     </div>
 
-    <!-- TOGGLES -->
-    <div style="display:flex;gap:8px;padding:10px 16px 0;overflow-x:auto">
-      <button id="myToggle" onclick="toggleMis()" class="acc-toggle" style="display:flex;align-items:center;gap:5px;white-space:nowrap;background:var(--acc-toggle-bg);color:#1a4f8b;border:1.5px solid #d0dff2;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📌 Mis inmuebles</button>
-      <button id="favToggle" onclick="toggleFavFilter()" class="acc-toggle" style="display:flex;align-items:center;gap:5px;white-space:nowrap;background:var(--acc-toggle-bg);color:#b91c3a;border:1.5px solid #f5d0d7;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">♡ Favoritos</button>
-      <select id="asesorFilter" class="esel" style="font-size:12px;padding:8px 12px;display:none;border-radius:12px;border:1.5px solid #d0dff2;font-weight:700;color:#1a4f8b;background:var(--acc-toggle-bg);font-family:inherit" onchange="doSearch()"><option value="">👤 Todos los asesores</option></select>
+    <!-- PILLS BAR -->
+    <div class="pill-bar" id="pillBar">
+      <button class="pill pill-off" id="pillNeg" onclick="togglePanel('neg')"><span style="font-size:15px">🏷️</span><span id="pillNegTxt">Negocio</span><svg class="pill-chev" id="chevNeg" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
+      <button class="pill pill-off" id="pillCiu" onclick="togglePanel('ciudad')"><span style="font-size:15px">📍</span><span id="pillCiuTxt">Ciudad</span><svg class="pill-chev" id="chevCiu" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
+      <button class="pill pill-off" id="pillTipo" onclick="togglePanel('tipo')"><span style="font-size:15px">🏢</span><span id="pillTipoTxt">Tipo</span><svg class="pill-chev" id="chevTipo" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
+      <button class="pill pill-off" id="pillPrecio" onclick="togglePanel('precio')"><span style="font-size:15px">💰</span><span id="pillPrecioTxt">Precio</span><svg class="pill-chev" id="chevPrecio" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
+      <button class="pill pill-off" id="pillAsesor" onclick="togglePanel('asesor')" style="display:none"><span style="font-size:15px">👤</span><span id="pillAseTxt">Asesores</span><svg class="pill-chev" id="chevAsesor" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
+      <button class="pill pill-off" id="myToggle" onclick="toggleMis()" style="color:#1a4f8b;border-color:#d0dff2">📌 Míos</button>
+      <button class="pill pill-off" id="favToggle" onclick="toggleFavFilter()" style="color:#b91c3a;border-color:#f5d0d7">♡ Favs</button>
     </div>
 
-    <!-- ACCORDION FILTERS -->
-    <div id="accFilters" style="padding:12px 16px 0">
-
-      <!-- Negociación -->
-      <div class="acc-sec" data-acc="neg" id="accSecNeg">
-        <button class="acc-hdr" onclick="toggleAcc('neg')">
-          <div class="acc-ico">🏷️</div>
-          <div style="flex:1;min-width:0">
-            <div class="acc-title" id="accTitleNeg">¿Qué estás buscando?</div>
-            <div class="acc-sel" id="accSelNeg" style="display:none"></div>
-          </div>
-          <div class="acc-chev" id="accChevNeg"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        </button>
-        <div class="acc-body" id="accBodyNeg" style="display:none">
-          <div style="display:flex;gap:8px" id="negOpts"></div>
-        </div>
-      </div>
-
-      <!-- Ciudad -->
-      <div class="acc-sec" data-acc="ciu" id="accSecCiu">
-        <button class="acc-hdr" onclick="toggleAcc('ciu')">
-          <div class="acc-ico">📍</div>
-          <div style="flex:1;min-width:0">
-            <div class="acc-title" id="accTitleCiu">¿En qué ciudad buscas?</div>
-            <div class="acc-sel" id="accSelCiu" style="display:none"></div>
-          </div>
-          <div class="acc-chev" id="accChevCiu"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        </button>
-        <div class="acc-body" id="accBodyCiu" style="display:none">
-          <div style="display:flex;flex-direction:column;gap:6px" id="ciuOpts"></div>
-        </div>
-      </div>
-
-      <!-- Tipo -->
-      <div class="acc-sec" data-acc="tipo" id="accSecTipo">
-        <button class="acc-hdr" onclick="toggleAcc('tipo')">
-          <div class="acc-ico">🏢</div>
-          <div style="flex:1;min-width:0">
-            <div class="acc-title" id="accTitleTipo">¿Qué tipo de inmueble buscas?</div>
-            <div class="acc-sel" id="accSelTipo" style="display:none"></div>
-          </div>
-          <div class="acc-chev" id="accChevTipo"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        </button>
-        <div class="acc-body" id="accBodyTipo" style="display:none">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="tipoOpts"></div>
-        </div>
-      </div>
-
-      <!-- Precio Arriendo -->
-      <div class="acc-sec" data-acc="arr" id="accSecArr">
-        <button class="acc-hdr" onclick="toggleAcc('arr')">
-          <div class="acc-ico">💰</div>
-          <div style="flex:1;min-width:0">
-            <div class="acc-title" id="accTitleArr">¿En qué precio buscas arriendo?</div>
-            <div class="acc-sel" id="accSelArr" style="display:none"></div>
-          </div>
-          <div class="acc-chev" id="accChevArr"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        </button>
-        <div class="acc-body" id="accBodyArr" style="display:none">
-          <div style="margin-top:6px">
-            <div style="display:flex;gap:10px;align-items:center">
-              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Desde</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(217,119,6,.12);padding:0 12px"><span style="font-size:14px;color:#d97706;font-weight:800;margin-right:4px">$</span><input id="arMin" placeholder="0" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
-              <div style="color:var(--acc-brd2);font-size:14px;font-weight:800;margin-top:18px">—</div>
-              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Hasta</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(217,119,6,.12);padding:0 12px"><span style="font-size:14px;color:#d97706;font-weight:800;margin-right:4px">$</span><input id="arMax" placeholder="10.000.000" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
-              <div style="font-size:9px;color:var(--acc-sub);font-weight:800;margin-top:18px;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:1px">/MES</div>
-            </div>
-            <button onclick="toggleAcc(null);doSearch()" style="width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#3a3530,#4d453c);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(58,53,48,.2)"><span style="font-size:15px">🔍</span> Buscar en este rango</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Precio Venta -->
-      <div class="acc-sec" data-acc="venta" id="accSecVenta">
-        <button class="acc-hdr" onclick="toggleAcc('venta')">
-          <div class="acc-ico">🏦</div>
-          <div style="flex:1;min-width:0">
-            <div class="acc-title" id="accTitleVenta">¿En qué precio buscas inmueble?</div>
-            <div class="acc-sel" id="accSelVenta" style="display:none"></div>
-          </div>
-          <div class="acc-chev" id="accChevVenta"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        </button>
-        <div class="acc-body" id="accBodyVenta" style="display:none">
-          <div style="margin-top:6px">
-            <div style="display:flex;gap:10px;align-items:center">
-              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Desde</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(5,150,105,.12);padding:0 12px"><span style="font-size:14px;color:#059669;font-weight:800;margin-right:4px">$</span><input id="vnMin" placeholder="0" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
-              <div style="color:var(--acc-brd2);font-size:14px;font-weight:800;margin-top:18px">—</div>
-              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Hasta</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(5,150,105,.12);padding:0 12px"><span style="font-size:14px;color:#059669;font-weight:800;margin-right:4px">$</span><input id="vnMax" placeholder="3.000.000.000" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
-            </div>
-            <button onclick="toggleAcc(null);doSearch()" style="width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#3a3530,#4d453c);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(58,53,48,.2)"><span style="font-size:15px">🔍</span> Buscar en este rango</button>
-          </div>
-        </div>
-      </div>
-
-    </div>
+    <!-- PANELS (outside scroll container) -->
+    <div id="panelNeg" style="display:none"></div>
+    <div id="panelCiudad" style="display:none"></div>
+    <div id="panelTipo" style="display:none"></div>
+    <div id="panelPrecio" style="display:none"></div>
+    <div id="panelAsesor" style="display:none"></div>
 
     <!-- SELECTION BAR -->
-    <div id="selBar" style="display:none;padding:10px 16px 4px">
-      <div style="background:var(--acc-bg);border-radius:18px;padding:14px;border:1.5px solid var(--acc-search-brd);box-shadow:0 2px 12px rgba(0,0,0,.03)">
-        <div style="font-size:13px;font-weight:700;color:var(--acc-tx2);margin-bottom:10px">Lo que seleccionaste</div>
-        <div id="selChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
-        <button onclick="limpiar()" style="width:100%;padding:14px 20px;background:var(--redbg);color:#dc2626;border:2px solid var(--rb);border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 8px rgba(220,38,38,.06)"><span style="font-size:16px">🗑️</span> Limpiar todos los filtros</button>
+    <div id="selBar" style="display:none" class="sel-bar">
+      <div class="sel-bar-inner">
+        <div class="sel-title">Lo que seleccionaste</div>
+        <div id="selChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+        <button onclick="limpiar()" class="sel-clear">🗑️ Limpiar todos los filtros</button>
       </div>
     </div>
 
     <!-- RESULTS HEADER + TIME DROPDOWN -->
     <div style="padding:14px 16px 0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:13px;color:var(--acc-sub)"><span id="resCount" style="font-weight:800;color:var(--acc-tx);font-size:16px">0</span> inmuebles</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;color:#8b7e6e"><span id="resCount" style="font-weight:800;color:#2c2520;font-size:16px">0</span> inmuebles</div>
         <div style="position:relative" id="tiempoWrap">
-          <button id="tiempoBtn" onclick="toggleTiempo()" style="font-size:12px;color:var(--acc-sub2);font-weight:700;background:var(--acc-bg);padding:8px 14px;border-radius:10px;border:1.5px solid var(--acc-search-brd);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">📅 Más recientes ▾</button>
-          <div id="tiempoDD" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--acc-bg);border-radius:14px;padding:6px;border:1.5px solid var(--acc-search-brd);box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:50;min-width:180px"></div>
+          <button id="tiempoBtn" onclick="toggleTiempo()" style="font-size:12px;color:#6b5c4d;font-weight:700;background:#fff;padding:8px 12px;border-radius:10px;border:1.5px solid #e8e4df;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">📅 Más recientes ▾</button>
+          <div id="tiempoDD" class="tiempo-dd" style="display:none"></div>
         </div>
       </div>
     </div>
