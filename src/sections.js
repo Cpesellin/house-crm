@@ -1281,7 +1281,10 @@ window.renderMisReferidos = async function() {
   const isAdmin = u.rol === 'admin' || u.rol === 'oficina';
   let q = SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,foto,usuario,email,telefono_contacto),inmueble:inmuebles!inmueble_id(id,tipo,ciudad,barrio,precio_arriendo,estado,codigo_house)').order('created_at', { ascending: false });
   if (!isAdmin) q = q.eq('referidor_id', u.id);
-  if (window._refFiltro && window._refFiltro !== 'todos') q = q.eq('estado', window._refFiltro);
+  if (window._refFiltro && window._refFiltro !== 'todos') {
+    if (window._refFiltro === 'en_proceso') q = q.in('estado', ['registrado', 'verificando']);
+    else q = q.eq('estado', window._refFiltro);
+  }
   const { data: refs, error } = await q;
   if (error) { el.innerHTML = '<div class="emp"><span class="emp-i">❌</span><h3>Error</h3><p>' + error.message + '</p></div>'; return; }
   const all = refs || [];
@@ -1303,7 +1306,7 @@ window.renderMisReferidos = async function() {
     const _rc = (estado) => "window._refFiltro='" + estado + "';renderMisReferidos()";
     h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:16px">';
     h += '<div class="dc" style="cursor:pointer" onclick="' + _rc('todos') + '"><div class="dn2" style="color:var(--b700)">' + all.length + '</div><div class="dl">Total</div></div>';
-    h += '<div class="dc" style="cursor:pointer;border-color:var(--gold)" onclick="' + _rc('registrado') + '"><div class="dn2" style="color:var(--gold)">' + all.filter(r => r.estado === 'registrado').length + '</div><div class="dl">En proceso</div></div>';
+    h += '<div class="dc" style="cursor:pointer;border-color:var(--gold)" onclick="' + _rc('en_proceso') + '"><div class="dn2" style="color:var(--gold)">' + all.filter(r => r.estado === 'registrado' || r.estado === 'verificando').length + '</div><div class="dl">En proceso</div></div>';
     h += '<div class="dc" style="cursor:pointer;border-color:var(--b600)" onclick="' + _rc('contrato_firmado') + '"><div class="dn2" style="color:var(--b600)">' + all.filter(r => r.estado === 'contrato_firmado').length + '</div><div class="dl">Contrato</div></div>';
     h += '<div class="dc" style="cursor:pointer;border-color:var(--green)" onclick="' + _rc('arrendado') + '"><div class="dn2" style="color:var(--green)">' + all.filter(r => r.estado === 'arrendado').length + '</div><div class="dl">Arrendados</div></div>';
     h += '<div class="dc" style="cursor:pointer;border-color:var(--red)" onclick="' + _rc('rechazado') + '"><div class="dn2" style="color:var(--red)">' + all.filter(r => r.estado === 'rechazado').length + '</div><div class="dl">Rechazados</div></div>';

@@ -2016,7 +2016,7 @@ window.renderReferralStrategies = function() {
 
 window.renderCommissionDashboard = function(stats, refs) {
   const pendPago = (refs||[]).filter(r => r.bono_pagado && !r.comision_pagada && r.estado === 'arrendado').reduce((s, r) => s + (r.comision_monto || 0), 0);
-  const enProc = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).length;
+  const enProc = (refs||[]).filter(r => r.estado === 'registrado' || r.estado === 'verificando').length;
   const potencial = (refs||[]).filter(r => !['rechazado', 'arrendado'].includes(r.estado)).reduce((s, r) => s + Math.max(0, Math.round((r.canon_aproximado || 0) * 0.10)), 0);
   let h = '<div style="background:linear-gradient(135deg,#1e3a5f,#1e40af);border-radius:16px;padding:24px;margin-bottom:16px;color:#fff;text-align:center">';
   h += '<div style="font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total ganado</div>';
@@ -2029,7 +2029,7 @@ window.renderCommissionDashboard = function(stats, refs) {
   const contratoProp = (refs||[]).filter(r => r.estado === 'contrato_firmado').length;
   h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">';
   const _f = (e) => "window._refFiltro='" + e + "';renderMisReferidos()";
-  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="' + _f('registrado') + '"><div style="font-size:18px;font-weight:700;color:var(--gold)">' + enProc + '</div><div style="font-size:9px;color:var(--sub)">En proceso</div></div>';
+  h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--brd);cursor:pointer" onclick="window._refFiltro=\'en_proceso\';renderMisReferidos()"><div style="font-size:18px;font-weight:700;color:var(--gold)">' + enProc + '</div><div style="font-size:9px;color:var(--sub)">En proceso</div></div>';
   h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--b600);cursor:pointer" onclick="' + _f('contrato_firmado') + '"><div style="font-size:18px;font-weight:700;color:var(--b600)">' + contratoProp + '</div><div style="font-size:9px;color:var(--sub)">Contrato prop.</div></div>';
   h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--green);cursor:pointer" onclick="' + _f('arrendado') + '"><div style="font-size:18px;font-weight:700;color:var(--green)">' + stats.arrendados + '</div><div style="font-size:9px;color:var(--sub)">Arrendados</div></div>';
   h += '<div style="text-align:center;padding:10px 4px;background:var(--cd);border-radius:10px;border:1px solid var(--red);cursor:pointer" onclick="' + _f('rechazado') + '"><div style="font-size:18px;font-weight:700;color:var(--red)">' + stats.rechazados + '</div><div style="font-size:9px;color:var(--sub)">Rechazados</div></div>';
