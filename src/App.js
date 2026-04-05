@@ -102,6 +102,7 @@ function renderShell(container) {
   <div style="padding:6px 0">
     <button class="mi act" data-s="inv" onclick="go('inv')"><span class="mic">\u{1F3E0}</span>Inventario</button>
     <button class="mi" data-s="mis" onclick="go('mis')"><span class="mic">\u{1F500}</span>Mis Inmuebles</button>
+    <button class="mi" data-s="favoritos" onclick="go('favoritos')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>
     <button class="mi" data-s="reg" onclick="go('reg')"><span class="mic">\u2795</span>Registrar</button>
     <button class="mi" data-s="alertas" onclick="go('alertas')"><span class="mic">\u{1F514}</span>Alertas<span class="mib" id="malb" style="display:none">0</span></button>
     <button class="mi" data-s="portales" onclick="go('portales')" id="mport" style="display:none"><span class="mic">\u{1F310}</span>Portales</button>

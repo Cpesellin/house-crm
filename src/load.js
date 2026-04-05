@@ -205,8 +205,8 @@ function render(ls) {
     // Portales badge (hidden for external users)
     const ptbHtml = _isExt ? '' : `<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>`;
 
-    // Fav button for external users
-    const favBtn = _isExt ? `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)${(window.FAVS||[]).includes(p.id)?';background:#e11d73':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${(window.FAVS||[]).includes(p.id)?'❤️':'🤍'}</button>` : '';
+    // Fav button for all logged-in users
+    const favBtn = U ? `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)${(window.FAVS||[]).includes(p.id)?';background:#e11d73':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${(window.FAVS||[]).includes(p.id)?'❤️':'🤍'}</button>` : '';
 
     if (hasF) {
       h += `<div class="pc" style="position:relative">${favBtn}${cardTop}<div class="pcbd"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:18px">${emo(tip)}</span><div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><div style="font-size:14px;font-weight:800">${tip}</div>${cod ? `<span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${cod}');toast('📋 ${cod} copiado')">${cod}</span>` : ''}</div><div style="font-size:11px;color:var(--sub)">${ubiTxt}</div></div></div><div class="mods">${md}</div>${pr}${sp2 ? `<div class="sps">${sp2}</div>` : ''}${ase ? `<div class="asl">👤 ${ase}</div>` : ''}${ptbHtml}${actBtn}</div></div>`;

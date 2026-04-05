@@ -1944,7 +1944,7 @@ window.toggleFavorito = async function(inmId) {
     else { window.FAVS = [...(window.FAVS||[]), inmId]; }
     // Refresh UI
     if (typeof window.rFavoritos === 'function' && location.hash === '#/favoritos') window.rFavoritos();
-    if (location.hash === '#/portafolio') window.render(window.D || []);
+    window.render(window.D || []);
   } catch(e) { console.error('[toggleFavorito]', e); }
 };
 
