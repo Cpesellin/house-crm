@@ -29,7 +29,7 @@ function oM(idx) {
   const esMio = U && p.captador_id === U.id;
   const esP = U && (U.rol === 'admin' || U.rol === 'oficina');
   const esGestor = U && U.es_gestor_arriendos;
-  const canEdit = esMio || esP;
+  const canEdit = esMio || esP || esGestor;
 
   _modalDirty = false;
 
@@ -43,7 +43,7 @@ function oM(idx) {
 
   // ── Helper para inputs editables (CORREGIDO: usa escapeAttr) ──
   const inp = (id, val, ph, type) =>
-    `<input id="${id}" type="${type || 'text'}" ` +
+    `<input id="${id}" type="${type || 'text'}" autocomplete="off" ` +
     `value="${escapeAttr(val)}" ` +
     `placeholder="${escapeAttr(ph)}" ` +
     `style="width:100%;padding:5px 8px;border:1.5px solid var(--brd);border-radius:5px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--cd)">`;

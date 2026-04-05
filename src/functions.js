@@ -162,7 +162,7 @@ window.oM = function(idx) {
   const esMio = u && p.captador_id === u.id;
   const esP = u && (u.rol === 'admin' || u.rol === 'oficina');
   const esGestor = u && u.es_gestor_arriendos;
-  const canEdit = esMio || esP;
+  const canEdit = esMio || esP || esGestor;
   _modalDirty = false;
 
   const canSeeRealDir = esMio || esP || esGestor;
@@ -170,7 +170,7 @@ window.oM = function(idx) {
   document.getElementById('mtt').textContent = (p.codigo_house ? p.codigo_house + ' · ' : '') + (p.tipo || 'Inmueble');
   document.getElementById('msb3').textContent = (p.ciudad ? '📍 ' + p.ciudad : '') + (canSeeRealDir && p.direccion ? ' · ' + p.direccion : p.direccion_publica ? ' · ' + p.direccion_publica : '');
 
-  const inp = (id,val,ph,type) => `<input id="${id}" type="${type||'text'}" value="${(val||'').toString().replace(/"/g,'&quot;')}" placeholder="${ph||''}" style="width:100%;padding:5px 8px;border:1.5px solid var(--brd);border-radius:5px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--cd)">`;
+  const inp = (id,val,ph,type) => `<input id="${id}" type="${type||'text'}" autocomplete="off" value="${(val||'').toString().replace(/"/g,'&quot;')}" placeholder="${ph||''}" style="width:100%;padding:5px 8px;border:1.5px solid var(--brd);border-radius:5px;font-size:11px;font-family:inherit;color:var(--tx);background:var(--cd)">`;
   const sel = (id,opts,cur) => `<select id="${id}" class="esel" style="width:100%;font-size:11px">${opts.map(o=>`<option ${o===(cur||'')?'selected':''}>${o}</option>`).join('')}</select>`;
 
   let b = '';

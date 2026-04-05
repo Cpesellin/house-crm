@@ -194,7 +194,7 @@ function renderShell(container) {
 <div class="sec" id="sec-mis-inm"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinmc"></div></div>
 
 <!-- MODAL -->
-<div class="mo" id="mdl" style="display:none" onclick="if(event.target===this)cm()"><div class="mb2"><div class="m-handle"></div><div class="mhd2"><div><div class="mtt" id="mtt"></div><div class="msb2" id="msb3"></div></div><button class="mcl3" onclick="cm()">\u2715</button></div><div class="mbd2" id="mbd"></div></div></div>
+<div class="mo" id="mdl" style="display:none" onclick="if(event.target===this)cm()"><div class="mb2"><div class="m-handle"></div><div class="mhd2"><div><div class="mtt" id="mtt"></div><div class="msb2" id="msb3"></div></div><button class="mcl3" onclick="cm()">\u2715</button></div><form autocomplete="off" onsubmit="return false"><div class="mbd2" id="mbd"></div></form></div></div>
 
 <!-- CONFIRM -->
 <div class="cfdlg" id="cfdlg" style="display:none"><div class="cfbox"><div class="cfi" id="cfi"></div><div class="cft" id="cft"></div><div class="cfm" id="cfm"></div><div class="cfbtns"><button style="background:var(--g100);color:var(--g700)" onclick="cfCancel()">Cancelar</button><button id="cfok" style="background:var(--b600);color:#fff">Confirmar</button></div></div></div>
