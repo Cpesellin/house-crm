@@ -134,38 +134,158 @@ function renderShell(container) {
 
 <!-- SECTIONS -->
 <div class="sec act" id="sec-inv">
-  <!-- Hidden counters for uSt() compatibility -->
   <div style="display:none"><span id="hst"></span><span id="hsv"></span><span id="hsa"></span><span id="hsb"></span></div>
-  <div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px">
+  <div style="font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;min-height:100vh">
     <div class="wban" id="wban" style="display:none"></div>
-    <div class="rsrch" id="rsrch"></div>
-    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
-      <button id="myToggle" onclick="toggleMis()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:22px;font-size:12px;font-weight:800;border:2.5px solid #e11d73;background:linear-gradient(135deg,#fdf2f8,#fce7f3);color:#be185d;cursor:pointer;transition:all .15s;box-shadow:0 2px 8px rgba(225,29,115,.15);letter-spacing:.3px">\u{1F3E0} Mostrar mis inmuebles</button>
-      <select id="asesorFilter" class="esel" style="font-size:11px;padding:6px 10px;display:none" onchange="doSearch()"><option value="">\u{1F464} Todos los asesores</option></select>
-    </div>
-    <div style="margin-bottom:8px"><div class="siw"><span class="sii">\u{1F50D}</span><input class="si" id="q" placeholder="Buscar..." onkeypress="if(event.key==='Enter')doSearch()" oninput="autoSearch()"><button class="sig" onclick="doSearch()">\u2192</button></div></div>
-    <!-- COLLAPSED STATE: compact bar with tags + expand button -->
-    <div id="filterCollapsed" style="display:none;background:var(--cd);border:1px solid var(--brd);border-radius:var(--r);padding:10px 14px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--b600)">\u2726 Filtros activos</span>
-        <div style="flex:1"></div>
-        <button class="bt bsm bp" onclick="expandFilters()" style="font-size:10px;padding:5px 10px">\u2699\uFE0F Modificar</button>
-        <button class="bt bsm bd" onclick="limpiar()" style="font-size:10px;padding:5px 10px">\u2715 Limpiar</button>
+
+    <!-- HEADER STATS -->
+    <div id="invHeader" style="background:linear-gradient(170deg,#122d4f 0%,#1a4f8b 40%,#2563a8 100%);padding:14px 16px 16px;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;opacity:.03;background-image:radial-gradient(circle at 30% 60%,#fff 1px,transparent 1px);background-size:20px 20px"></div>
+      <div style="position:relative;z-index:1">
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-bottom:3px">Portafolio disponible</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4)">Encuentra el inmueble perfecto para ti</div>
+        <div style="display:flex;gap:6px;margin-top:14px">
+          <div style="flex:1;background:rgba(255,255,255,.06);border-radius:10;padding:8px 0;text-align:center;border:1px solid rgba(255,255,255,.06)"><div id="hst2" style="font-size:20px;font-weight:800;color:#fff">0</div><div style="font-size:9px;color:rgba(255,255,255,.35);font-weight:700;letter-spacing:.5px;text-transform:uppercase">Total</div></div>
+          <div style="flex:1;background:rgba(52,211,153,.1);border-radius:10;padding:8px 0;text-align:center;border:1px solid rgba(52,211,153,.06)"><div id="hsv2" style="font-size:20px;font-weight:800;color:#34d399">0</div><div style="font-size:9px;color:rgba(255,255,255,.35);font-weight:700;letter-spacing:.5px;text-transform:uppercase">Venta</div></div>
+          <div style="flex:1;background:rgba(251,191,36,.1);border-radius:10;padding:8px 0;text-align:center;border:1px solid rgba(251,191,36,.06)"><div id="hsa2" style="font-size:20px;font-weight:800;color:#fbbf24">0</div><div style="font-size:9px;color:rgba(255,255,255,.35);font-weight:700;letter-spacing:.5px;text-transform:uppercase">Arriendo</div></div>
+          <div style="flex:1;background:rgba(167,139,250,.12);border-radius:10;padding:8px 0;text-align:center;border:1px solid rgba(167,139,250,.06)"><div id="hsb2" style="font-size:20px;font-weight:800;color:#a78bfa">0</div><div style="font-size:9px;color:rgba(255,255,255,.35);font-weight:700;letter-spacing:.5px;text-transform:uppercase">Ambas</div></div>
+        </div>
       </div>
-      <div id="seltagsCompact" style="display:flex;flex-wrap:wrap;gap:4px"></div>
     </div>
 
-    <!-- EXPANDED STATE: full filter panel -->
-    <div class="card" id="filterExpanded"><div class="cdh"><div class="chl"><div class="chi">\u2699\uFE0F</div><div><div class="cht">Filtros</div></div></div><button class="bt bsm bd" onclick="limpiar()">\u2715 Limpiar</button></div><div class="cdb"><div class="fg">
-      <div class="fs"><div class="fl">Negociaci\u00F3n</div><div class="cps"><div class="ch" data-g="neg" data-v="venta" data-c="cg" onclick="tc(this)">\u{1F4B0} Venta</div><div class="ch" data-g="neg" data-v="arriendo" onclick="tc(this)">\u{1F511} Arriendo</div><div class="ch" data-g="neg" data-v="ambas" data-c="cy" onclick="tc(this)">\u{1F504} Ambas</div></div></div>
-      <div class="fs"><div class="fl">Ciudad</div><div class="cps"><div class="ch" data-g="ciu" data-v="pereira" onclick="tc(this)">\u{1F4CD} Pereira</div><div class="ch" data-g="ciu" data-v="dosquebradas" onclick="tc(this)">\u{1F4CD} Dosq.</div><div class="ch" data-g="ciu" data-v="santa rosa" onclick="tc(this)">\u{1F4CD} Sta Rosa</div><div class="ch" data-g="ciu" data-v="cerritos" onclick="tc(this)">\u{1F4CD} Cerritos</div></div></div>
-      <div class="fs ful"><div class="fl">Tipo</div><div class="cps"><div class="ch" data-g="tipo" data-v="apartamento" onclick="tc(this)">\u{1F3E2} Apto</div><div class="ch" data-g="tipo" data-v="casa" onclick="tc(this)">\u{1F3E1} Casa</div><div class="ch" data-g="tipo" data-v="finca" data-c="cg" onclick="tc(this)">\u{1F33E} Finca</div><div class="ch" data-g="tipo" data-v="local" data-c="cy" onclick="tc(this)">\u{1F3EA} Local</div><div class="ch" data-g="tipo" data-v="lote" data-c="cg" onclick="tc(this)">\u{1F333} Lote</div><div class="ch" data-g="tipo" data-v="oficina" onclick="tc(this)">\u{1F4BC} Oficina</div><div class="ch" data-g="tipo" data-v="bodega" onclick="tc(this)">\u{1F3ED} Bodega</div><div class="ch" data-g="tipo" data-v="penthouse" data-c="cy" onclick="tc(this)">\u{1F451} PH</div></div></div>
-      <div class="fs ful" id="filterEstadoInfo"><div class="fl">Estado de info</div><div class="cps"><div class="ch" data-g="fresco" data-v="si" data-c="cg" onclick="tc(this)">\u2705 Solo frescos (\u22647d)</div><div class="ch" data-g="fresco" data-v="atencion" data-c="cy" onclick="tc(this)">\u26A0\uFE0F Necesitan atenci\u00F3n</div></div></div>
-      <div class="slb"><div class="slt"><span class="sltt">\u{1F511} Arriendo/mes</span></div><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00CDN</label><input id="arMin" type="number" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div><span style="color:var(--sub);font-weight:700;font-size:14px">\u2014</span><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00C1X</label><input id="arMax" type="number" placeholder="10.000.000" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div></div></div>
-      <div class="slb"><div class="slt"><span class="sltt">\u{1F4B0} Precio venta</span></div><div style="display:flex;gap:8px;align-items:center"><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00CDN</label><input id="vnMin" type="number" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div><span style="color:var(--sub);font-weight:700;font-size:14px">\u2014</span><div style="flex:1"><label style="font-size:8px;color:var(--sub);font-weight:700">M\u00C1X</label><input id="vnMax" type="number" placeholder="3.000.000.000" style="width:100%;padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx);background:var(--cd)" onchange="doSearch()"></div></div></div>
+    <!-- SEARCH -->
+    <div style="padding:12px 16px 0">
+      <div style="display:flex;align-items:center;gap:10px;background:var(--acc-bg);border-radius:14px;padding:0 14px;border:1.5px solid var(--acc-search-brd);box-shadow:0 2px 8px rgba(0,0,0,.02)">
+        <span style="font-size:16px;color:var(--acc-sub)">🔍</span>
+        <input id="q" placeholder="Busca por barrio, tipo o dirección..." oninput="autoSearch()" onkeypress="if(event.key==='Enter')doSearch()" style="flex:1;border:none;outline:none;padding:13px 0;font-size:14px;font-family:inherit;color:var(--acc-tx);background:transparent">
+        <button id="qClear" onclick="document.getElementById('q').value='';this.style.display='none';doSearch()" style="display:none;border:none;background:var(--acc-sel-bg);border-radius:8px;width:24px;height:24px;cursor:pointer;font-size:10px;color:var(--acc-sub2);font-weight:800">✕</button>
+      </div>
     </div>
-    <div class="br"><button class="bt bp" onclick="doSearch();collapseFilters()">\u{1F50D} Buscar</button><button class="bt bs2" onclick="mostrarTodo()">Todos</button><button class="bt bd" onclick="limpiar()">\u2715</button></div></div></div>
-    <div id="res"></div>
+
+    <!-- TOGGLES -->
+    <div style="display:flex;gap:8px;padding:10px 16px 0;overflow-x:auto">
+      <button id="myToggle" onclick="toggleMis()" class="acc-toggle" style="display:flex;align-items:center;gap:5px;white-space:nowrap;background:var(--acc-toggle-bg);color:#1a4f8b;border:1.5px solid #d0dff2;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📌 Mis inmuebles</button>
+      <button id="favToggle" onclick="toggleFavFilter()" class="acc-toggle" style="display:flex;align-items:center;gap:5px;white-space:nowrap;background:var(--acc-toggle-bg);color:#b91c3a;border:1.5px solid #f5d0d7;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">♡ Favoritos</button>
+      <select id="asesorFilter" class="esel" style="font-size:12px;padding:8px 12px;display:none;border-radius:12px;border:1.5px solid #d0dff2;font-weight:700;color:#1a4f8b;background:var(--acc-toggle-bg);font-family:inherit" onchange="doSearch()"><option value="">👤 Todos los asesores</option></select>
+    </div>
+
+    <!-- ACCORDION FILTERS -->
+    <div id="accFilters" style="padding:12px 16px 0">
+
+      <!-- Negociación -->
+      <div class="acc-sec" data-acc="neg" id="accSecNeg">
+        <button class="acc-hdr" onclick="toggleAcc('neg')">
+          <div class="acc-ico">🏷️</div>
+          <div style="flex:1;min-width:0">
+            <div class="acc-title" id="accTitleNeg">¿Qué estás buscando?</div>
+            <div class="acc-sel" id="accSelNeg" style="display:none"></div>
+          </div>
+          <div class="acc-chev" id="accChevNeg"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </button>
+        <div class="acc-body" id="accBodyNeg" style="display:none">
+          <div style="display:flex;gap:8px" id="negOpts"></div>
+        </div>
+      </div>
+
+      <!-- Ciudad -->
+      <div class="acc-sec" data-acc="ciu" id="accSecCiu">
+        <button class="acc-hdr" onclick="toggleAcc('ciu')">
+          <div class="acc-ico">📍</div>
+          <div style="flex:1;min-width:0">
+            <div class="acc-title" id="accTitleCiu">¿En qué ciudad buscas?</div>
+            <div class="acc-sel" id="accSelCiu" style="display:none"></div>
+          </div>
+          <div class="acc-chev" id="accChevCiu"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </button>
+        <div class="acc-body" id="accBodyCiu" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:6px" id="ciuOpts"></div>
+        </div>
+      </div>
+
+      <!-- Tipo -->
+      <div class="acc-sec" data-acc="tipo" id="accSecTipo">
+        <button class="acc-hdr" onclick="toggleAcc('tipo')">
+          <div class="acc-ico">🏢</div>
+          <div style="flex:1;min-width:0">
+            <div class="acc-title" id="accTitleTipo">¿Qué tipo de inmueble buscas?</div>
+            <div class="acc-sel" id="accSelTipo" style="display:none"></div>
+          </div>
+          <div class="acc-chev" id="accChevTipo"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </button>
+        <div class="acc-body" id="accBodyTipo" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="tipoOpts"></div>
+        </div>
+      </div>
+
+      <!-- Precio Arriendo -->
+      <div class="acc-sec" data-acc="arr" id="accSecArr">
+        <button class="acc-hdr" onclick="toggleAcc('arr')">
+          <div class="acc-ico">💰</div>
+          <div style="flex:1;min-width:0">
+            <div class="acc-title" id="accTitleArr">¿En qué precio buscas arriendo?</div>
+            <div class="acc-sel" id="accSelArr" style="display:none"></div>
+          </div>
+          <div class="acc-chev" id="accChevArr"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </button>
+        <div class="acc-body" id="accBodyArr" style="display:none">
+          <div style="margin-top:6px">
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Desde</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(217,119,6,.12);padding:0 12px"><span style="font-size:14px;color:#d97706;font-weight:800;margin-right:4px">$</span><input id="arMin" placeholder="0" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
+              <div style="color:var(--acc-brd2);font-size:14px;font-weight:800;margin-top:18px">—</div>
+              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Hasta</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(217,119,6,.12);padding:0 12px"><span style="font-size:14px;color:#d97706;font-weight:800;margin-right:4px">$</span><input id="arMax" placeholder="10.000.000" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
+              <div style="font-size:9px;color:var(--acc-sub);font-weight:800;margin-top:18px;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:1px">/MES</div>
+            </div>
+            <button onclick="toggleAcc(null);doSearch()" style="width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#3a3530,#4d453c);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(58,53,48,.2)"><span style="font-size:15px">🔍</span> Buscar en este rango</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Precio Venta -->
+      <div class="acc-sec" data-acc="venta" id="accSecVenta">
+        <button class="acc-hdr" onclick="toggleAcc('venta')">
+          <div class="acc-ico">🏦</div>
+          <div style="flex:1;min-width:0">
+            <div class="acc-title" id="accTitleVenta">¿En qué precio buscas inmueble?</div>
+            <div class="acc-sel" id="accSelVenta" style="display:none"></div>
+          </div>
+          <div class="acc-chev" id="accChevVenta"><svg width="14" height="14" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </button>
+        <div class="acc-body" id="accBodyVenta" style="display:none">
+          <div style="margin-top:6px">
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Desde</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(5,150,105,.12);padding:0 12px"><span style="font-size:14px;color:#059669;font-weight:800;margin-right:4px">$</span><input id="vnMin" placeholder="0" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
+              <div style="color:var(--acc-brd2);font-size:14px;font-weight:800;margin-top:18px">—</div>
+              <div style="flex:1"><div style="font-size:10px;color:var(--acc-sub2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Hasta</div><div style="display:flex;align-items:center;background:var(--acc-bg2);border-radius:12px;border:1.5px solid rgba(5,150,105,.12);padding:0 12px"><span style="font-size:14px;color:#059669;font-weight:800;margin-right:4px">$</span><input id="vnMax" placeholder="3.000.000.000" inputmode="numeric" oninput="fmtPrice(this)" style="flex:1;border:none;outline:none;padding:12px 0;font-size:15px;font-weight:700;font-family:inherit;color:var(--acc-tx);background:transparent;width:100%"></div></div>
+            </div>
+            <button onclick="toggleAcc(null);doSearch()" style="width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,#3a3530,#4d453c);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 12px rgba(58,53,48,.2)"><span style="font-size:15px">🔍</span> Buscar en este rango</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SELECTION BAR -->
+    <div id="selBar" style="display:none;padding:10px 16px 4px">
+      <div style="background:var(--acc-bg);border-radius:18px;padding:14px;border:1.5px solid var(--acc-search-brd);box-shadow:0 2px 12px rgba(0,0,0,.03)">
+        <div style="font-size:13px;font-weight:700;color:var(--acc-tx2);margin-bottom:10px">Lo que seleccionaste</div>
+        <div id="selChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+        <button onclick="limpiar()" style="width:100%;padding:14px 20px;background:var(--redbg);color:#dc2626;border:2px solid var(--rb);border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 8px rgba(220,38,38,.06)"><span style="font-size:16px">🗑️</span> Limpiar todos los filtros</button>
+      </div>
+    </div>
+
+    <!-- RESULTS HEADER + TIME DROPDOWN -->
+    <div style="padding:14px 16px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;color:var(--acc-sub)"><span id="resCount" style="font-weight:800;color:var(--acc-tx);font-size:16px">0</span> inmuebles</div>
+        <div style="position:relative" id="tiempoWrap">
+          <button id="tiempoBtn" onclick="toggleTiempo()" style="font-size:12px;color:var(--acc-sub2);font-weight:700;background:var(--acc-bg);padding:8px 14px;border-radius:10px;border:1.5px solid var(--acc-search-brd);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">📅 Más recientes ▾</button>
+          <div id="tiempoDD" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--acc-bg);border-radius:14px;padding:6px;border:1.5px solid var(--acc-search-brd);box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:50;min-width:180px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="res" style="padding:0 16px 24px"></div>
+    <div class="rsrch" id="rsrch"></div>
   </div>
 </div>
 <div class="sec" id="sec-mis"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 80px"><div class="pnav-wrap" id="mis-nav"></div><div class="pipe-filters"><input class="pf-search" id="pipeQ" placeholder="\u{1F50D} Buscar en mi embudo..." oninput="rPipe()"><select class="pf-sort" id="pipeSort" onchange="rPipe()"><option value="dias">\u23F1\uFE0F Por d\u00EDas</option><option value="precio_desc">\u{1F4B0} Precio \u2193</option><option value="precio_asc">\u{1F4B0} Precio \u2191</option></select></div><div class="pw"><div class="pipe" id="pipeline"></div></div></div></div>
@@ -210,6 +330,9 @@ function tTh() {
   localStorage.setItem('ht', d ? 'd' : 'l');
   const btn = document.getElementById('tbtn');
   if (btn) btn.textContent = d ? '\u{1F319}' : '\u2600\uFE0F';
+  // Refresh accordion visuals for new theme colors
+  if (window.renderAccOpts) window.renderAccOpts();
+  if (window.toggleAcc) window.toggleAcc(window._openAcc || null);
 }
 
 function iTh() {
@@ -373,6 +496,10 @@ function sApp() {
     document.getElementById('muname').textContent = U.nombre;
     document.getElementById('murole').textContent = U.rol;
     document.getElementById('mport').style.display = 'flex';
+
+    // Show asesor filter for admin/oficina
+    const aseF = document.getElementById('asesorFilter');
+    if (aseF) aseF.style.display = (U.rol === 'admin' || U.rol === 'oficina') ? 'inline-block' : 'none';
 
     if (U.rol === 'admin' || U.rol === 'oficina' || U.es_gestor_arriendos)
       document.getElementById('magenda').style.display = 'flex';

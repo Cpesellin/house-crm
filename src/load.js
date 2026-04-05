@@ -57,14 +57,17 @@ function uB(id, n) {
 function uSt() {
   const FINAL = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
   const D = (window.D || []).filter(p => !FINAL.includes(p.estado));
-  const hst = document.getElementById('hst');
-  const hsv = document.getElementById('hsv');
-  const hsa = document.getElementById('hsa');
-  const hsb = document.getElementById('hsb');
-  if (hst) hst.textContent = D.length;
-  if (hsv) hsv.textContent = D.filter(p => eV(p) && !eA2(p)).length;
-  if (hsa) hsa.textContent = D.filter(p => eA(p) && !eA2(p)).length;
-  if (hsb) hsb.textContent = D.filter(p => eA2(p)).length;
+  const t = D.length, v = D.filter(p => eV(p) && !eA2(p)).length, a = D.filter(p => eA(p) && !eA2(p)).length, b = D.filter(p => eA2(p)).length;
+  // Hidden legacy
+  const hst = document.getElementById('hst'); if (hst) hst.textContent = t;
+  const hsv = document.getElementById('hsv'); if (hsv) hsv.textContent = v;
+  const hsa = document.getElementById('hsa'); if (hsa) hsa.textContent = a;
+  const hsb = document.getElementById('hsb'); if (hsb) hsb.textContent = b;
+  // Visible header stats
+  const hst2 = document.getElementById('hst2'); if (hst2) hst2.textContent = t;
+  const hsv2 = document.getElementById('hsv2'); if (hsv2) hsv2.textContent = v;
+  const hsa2 = document.getElementById('hsa2'); if (hsa2) hsa2.textContent = a;
+  const hsb2 = document.getElementById('hsb2'); if (hsb2) hsb2.textContent = b;
 }
 
 // ─── Welcome banner ──────────────────────────────────────────────
@@ -119,7 +122,9 @@ function render(ls) {
   }
 
   ls = filtered;
-  let h = `<div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;margin:10px 0">🎯 <b style="color:var(--b600)">${ls.length}</b> propiedades</div><div class="pgr">`;
+  // Update result count in header
+  const rcEl = document.getElementById('resCount'); if(rcEl) rcEl.textContent = ls.length;
+  let h = '<div class="pgr">';
 
   ls.slice(0, 60).forEach(p => {
     const idx = D.indexOf(p);
@@ -313,6 +318,8 @@ export async function load() {
     sSt('ok', window.D.filter(p => !_FIN.includes(p.estado)).length + ' inmuebles');
     render(window.D);
     uSt();
+    if(window.renderAccOpts)window.renderAccOpts();
+    if(window.populateAsesorFilter)window.populateAsesorFilter();
     renderWelcome();
     return;
   }
@@ -402,6 +409,8 @@ export async function load() {
 
     // 7. Update UI
     uSt();
+    if(window.renderAccOpts)window.renderAccOpts();
+    if(window.populateAsesorFilter)window.populateAsesorFilter();
     const FINAL_S = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
     const activeCount = D.filter(p => !FINAL_S.includes(p.estado)).length;
     sSt('ok', '✅ ' + activeCount + ' propiedades');
@@ -447,19 +456,25 @@ window.findInm = (id) => (window.D || []).find(p => p.id === id);
 window.descInm = (p) => p ? (p.tipo || 'Inmueble') + ' en ' + (p.ciudad || '?') : 'inmueble';
 window.limpiar = () => {
   for(const k of Object.keys(window.F||{}))window.F[k]?.clear?.();
-  document.querySelectorAll('.ch').forEach(e=>e.classList.remove('on','cg','cy'));
   const q=document.getElementById('q');if(q)q.value='';
+  const qC=document.getElementById('qClear');if(qC)qC.style.display='none';
   const arMin=document.getElementById('arMin');if(arMin)arMin.value='';
   const arMax=document.getElementById('arMax');if(arMax)arMax.value='';
   const vnMin=document.getElementById('vnMin');if(vnMin)vnMin.value='';
   const vnMax=document.getElementById('vnMax');if(vnMax)vnMax.value='';
-  // Reset "Mis inmuebles" button
+  // Reset toggles
   window._myFilter=false;
-  const btn=document.getElementById('myToggle');
-  if(btn){btn.style.background='linear-gradient(135deg,#fdf2f8,#fce7f3)';btn.style.color='#be185d';btn.style.borderColor='#e11d73';btn.style.boxShadow='0 2px 8px rgba(225,29,115,.15)';btn.innerHTML='🏠 Mostrar mis inmuebles';}
+  const myBtn=document.getElementById('myToggle');
+  if(myBtn){myBtn.style.background='var(--acc-toggle-bg)';myBtn.style.color='#1a4f8b';myBtn.style.border='1.5px solid #d0dff2';myBtn.style.boxShadow='none';myBtn.textContent='📌 Mis inmuebles';}
+  window._favFilterActive=false;
+  const favBtn=document.getElementById('favToggle');
+  if(favBtn){favBtn.style.background='var(--acc-toggle-bg)';favBtn.style.color='#b91c3a';favBtn.style.border='1.5px solid #f5d0d7';favBtn.style.boxShadow='none';favBtn.innerHTML='♡ Favoritos';}
+  window._tiempoFiltro=null;
+  if(window.setTiempo)window.setTiempo(null);
   const af=document.getElementById('asesorFilter');if(af)af.value='';
+  window._openAcc=null;
+  if(window.toggleAcc)window.toggleAcc(null);
   if(window.renderSel)window.renderSel();
-  if(window.expandFilters)window.expandFilters();
   render(window.D||[]);
 };
 window.mostrarTodo = window.limpiar;
