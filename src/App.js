@@ -107,7 +107,7 @@ function renderShell(container) {
     <button class="mi" data-s="portales" onclick="go('portales')" id="mport" style="display:none"><span class="mic">\u{1F310}</span>Portales</button>
     <button class="mi" data-s="dash" onclick="go('dash')"><span class="mic">\u{1F4CA}</span>Dashboard</button>
     <button class="mi" data-s="agenda" onclick="go('agenda')" id="magenda" style="display:none"><span class="mic">\u{1F4C5}</span>Agenda<span class="mib" id="magb" style="display:none">0</span></button>
-    <button class="mi" data-s="conc" onclick="go('conc')"><span class="mic">\u{1F504}</span>Portales M\u00B2/FR<span class="mib" id="mconcb" style="display:none">0</span></button>
+
     <button class="mi" data-s="referir" onclick="go('referir')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>
     <button class="mi" data-s="mis-referidos" onclick="go('mis-referidos')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>
     <button class="mi" data-s="admin-pagos" onclick="go('admin-pagos')" id="madminpagos" style="display:none"><span class="mic">\u{1F4B3}</span>Pagos referidos</button>
@@ -174,7 +174,6 @@ function renderShell(container) {
 <div class="sec" id="sec-portales"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F310}</div><div><div class="cht">Portales</div></div></div></div><div class="cdb" id="ptl"></div></div></div>
 <div class="sec" id="sec-dash"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="dsc"></div></div>
 <div class="sec" id="sec-agenda"><div style="max-width:700px;margin:0 auto;padding:10px 14px 60px" id="agc"></div></div>
-<div class="sec" id="sec-conc"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="concc"></div></div>
 <div class="sec" id="sec-users"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F465}</div><div><div class="cht">Usuarios</div></div></div><button class="bt bsm bp" onclick="newUsr()">+ Nuevo</button></div><div class="cdb" id="usrl"></div></div></div>
 <div class="sec" id="sec-perfil"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u2699\uFE0F</div><div><div class="cht">Mi Perfil</div></div></div></div><div class="cdb" id="perfilc"></div></div></div></div>
 <div class="sec" id="sec-papelera"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F5D1}\uFE0F</div><div><div class="cht">Papelera</div><div class="chsb">Inmuebles eliminados</div></div></div></div><div class="cdb" id="papc"></div></div></div>
@@ -328,7 +327,7 @@ function sApp() {
     const estadoInfo = document.getElementById('filterEstadoInfo');
     if (estadoInfo) estadoInfo.style.display = 'none';
     // Hide internal sections from sidebar that shouldn't show
-    ['mis','reg','alertas','portales','dash','conc'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
+    ['mis','reg','alertas','portales','dash'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
     document.getElementById('murole').textContent = (tipoU === 'vendedor_externo' || tipoU === 'propietario') ? 'Asesor Externo' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';

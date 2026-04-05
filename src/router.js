@@ -7,7 +7,7 @@
 // Route definitions
 // ---------------------------------------------------------------------------
 // Internal CRM routes
-const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','agenda','conc','users','perfil','papelera'];
+const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','agenda','users','perfil','papelera'];
 // External user routes
 const ROUTES_CLIENTE = ['portafolio','favoritos','cuenta'];
 const ROUTES_PROPIETARIO = ['portafolio','favoritos','cuenta','mis-pub','publicar'];
@@ -21,7 +21,6 @@ const ROUTES = {
   'portales': { section: 'sec-portales', label: 'Portales',       icon: '\u{1F310}', auth: true, internal: true },
   'dash':     { section: 'sec-dash',     label: 'Dashboard',      icon: '\u{1F4CA}', auth: true, internal: true },
   'agenda':   { section: 'sec-agenda',   label: 'Agenda',         icon: '\u{1F4C5}', auth: true, internal: true, roles: ['admin', 'oficina', 'gestor'] },
-  'conc':     { section: 'sec-conc',     label: 'Portales M\u00B2/FR', icon: '\u{1F504}', auth: true, internal: true },
   'users':    { section: 'sec-users',    label: 'Usuarios',       icon: '\u{1F465}', auth: true, internal: true, roles: ['admin'] },
   'perfil':   { section: 'sec-perfil',   label: 'Mi Perfil',      icon: '\u2699\uFE0F', auth: true, internal: true },
   'papelera': { section: 'sec-papelera', label: 'Papelera',       icon: '\u{1F5D1}\uFE0F', auth: true, internal: true, roles: ['admin'] },
@@ -51,7 +50,6 @@ const ROUTE_RENDERERS = {
   'portales': 'rPort',
   'dash':     'rDash',
   'agenda':   'rAgenda',
-  'conc':     'rConc',
   'users':    'rUsers',
   'perfil':   'rPerfil',
   'papelera': 'rPapelera',
