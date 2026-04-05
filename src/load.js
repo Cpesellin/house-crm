@@ -180,11 +180,11 @@ function render(ls) {
     let actBtn;
     if (_isExt) {
       if (esInmExterno) {
-        // Inmueble de asesor externo → botón Contactar (chat)
+        // Inmueble de asesor externo → botón Contactar (chat interno)
         actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1;background:var(--b600);color:#fff;border:none" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">💬 Contactar</button><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
       } else {
-        // Inmueble del equipo interno → botón WhatsApp
-        actBtn = `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
+        // Inmueble del equipo interno → WhatsApp + Estoy interesado (chat interno)
+        actBtn = `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">🏠 Me interesa</button></div>`;
       }
     } else {
       actBtn = `<button class="vb" onclick="oM&&oM(${idx})">Ver detalle →</button>`;
@@ -209,9 +209,9 @@ function render(ls) {
   if (_isExt && typeof window.renderReferralBanner === 'function') {
     h += window.renderReferralBanner();
   }
-  // Add upgrade banner for clients
-  if (_tipoU === 'cliente') {
-    h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-radius:16px;padding:20px;margin:20px 0;text-align:center;border:1.5px solid #bbf7d0"><div style="font-size:28px;margin-bottom:8px">🏠</div><div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;color:#065f46;margin-bottom:6px">¿Quieres publicar tu inmueble?</div><div style="font-size:13px;color:#064e3b;margin-bottom:12px">Conviértete en asesor externo y publica hasta 3 inmuebles gratis</div><button onclick="requestUpgrade()" style="padding:12px 24px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Publicar inmuebles gratis →</button></div>';
+  // Publish CTA for external users
+  if (_isExt) {
+    h += '<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-radius:16px;padding:20px;margin:20px 0;text-align:center;border:1.5px solid #bbf7d0"><div style="font-size:28px;margin-bottom:8px">🏠</div><div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;color:#065f46;margin-bottom:6px">¿Tienes un inmueble?</div><div style="font-size:13px;color:#064e3b;margin-bottom:12px">Publica hasta 3 inmuebles gratis y llega a cientos de clientes</div><button onclick="go(\'publicar\')" style="padding:12px 24px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Publicar inmueble gratis →</button></div>';
   }
 
   el.innerHTML = h;
@@ -279,7 +279,7 @@ export async function load() {
     // Feed public data into the same window.D used by CRM render/filters
     window.D = pubData || [];
     window.D.forEach(p => { p._dias = diasDesde(p.fecha_estado || p.created_at); });
-    window.MIS = (tipoU === 'vendedor_externo' || tipoU === 'propietario') ? window.D.filter(p => p.captador_id === U.id) : [];
+    window.MIS = window.D.filter(p => p.captador_id === U.id);
     window.SOL = []; window.USERS = []; window.ALS = []; window.ALU = [];
     // Load favorites
     try {

@@ -927,14 +927,9 @@ window.rCuenta = function() {
   h += `<button onclick="saveExtCuenta()" style="width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">💾 Guardar</button>`;
   h += `</div>`;
 
-  // Upgrade banner for clients
-  if (u.tipo_usuario === 'cliente') {
-    h += `<div style="margin:0 16px 16px;padding:18px;border-radius:12px;background:linear-gradient(135deg,#f0fdf4,#f0fdf8);border:1.5px solid #bbf7d0;text-align:center">
-      <div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:6px">🏢 ¿Quieres publicar inmuebles?</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:4px">Sé asesor externo y publica gratis</div>
-      <div style="font-size:11px;color:#065f46;font-weight:600;margin-bottom:10px">✓ 3 publicaciones gratis · Te conectamos con cientos de inversionistas</div>
-      <button onclick="requestUpgrade()" style="padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">Quiero publicar inmuebles →</button>
-    </div>`;
+  // Publish CTA for external users
+  if (u.tipo_usuario === 'cliente' || u.tipo_usuario === 'vendedor_externo' || u.tipo_usuario === 'propietario') {
+    h += `<div style="margin:0 16px 16px;padding:14px;border-radius:12px;background:var(--b50);border:1.5px solid var(--b200);display:flex;align-items:center;gap:12px;cursor:pointer" onclick="go('publicar')"><div style="font-size:24px">🏠</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--b700)">Publicar inmueble</div><div style="font-size:11px;color:var(--sub)">Publica hasta 3 inmuebles gratis</div></div><span style="color:var(--sub)">→</span></div>`;
   }
 
   // Payment method link
