@@ -572,7 +572,7 @@ window.shareInm = function(id) {
 // 10. REGISTRATION WIZARD
 // ══════════════════════════════════════════════════════════════════
 
-const fD = {tipo:'',negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:'',barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:'',fecha_vencimiento_autorizacion:''};
+const fD = {tipo:'',negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:'',barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:''};
 let fS = 1;
 const fLb=['Lo esencial','Propietario','Características','Amenidades','Revisar'];
 const fTp=[{id:'Casa',i:'🏠'},{id:'Apartamento',i:'🏢'},{id:'Finca',i:'🌾'},{id:'Local comercial',i:'🏪'},{id:'Oficina',i:'💼'},{id:'Lote',i:'🌳'},{id:'Casa campestre',i:'🌿'},{id:'Bodega',i:'🏭'},{id:'Penthouse',i:'👑'}];
@@ -608,12 +608,12 @@ window.rFS = function(){
   if(fS===1)rF1(c);else if(fS===2)rF2(c);else if(fS===3)rF3(c);else if(fS===4)rF4(c);else{c.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub)">Generando código...</div>';rF5(c);}
 };
 
-function rF1(c){const nxt=nextHouseCode();let h=`<div style="background:var(--b50);border:2px solid var(--b200);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:9px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px">ID INMUEBLE</div><div style="font-family:monospace;font-size:20px;font-weight:800;color:var(--b700);margin-top:2px">${nxt}</div></div><button type="button" style="padding:6px 12px;border:1.5px solid var(--b200);border-radius:6px;background:var(--cd);font-size:11px;font-weight:700;color:var(--b600);cursor:pointer" onclick="navigator.clipboard.writeText('${nxt}');toast('📋 Copiado')">📋</button></div>`;
+async function rF1(c){const nxt=await nextHouseCode();let h=`<div style="background:var(--b50);border:2px solid var(--b200);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:9px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px">ID INMUEBLE</div><div style="font-family:monospace;font-size:20px;font-weight:800;color:var(--b700);margin-top:2px">${nxt}</div></div><button type="button" style="padding:6px 12px;border:1.5px solid var(--b200);border-radius:6px;background:var(--cd);font-size:11px;font-weight:700;color:var(--b600);cursor:pointer" onclick="navigator.clipboard.writeText('${nxt}');toast('📋 Copiado')">📋</button></div>`;
 h+='<div class="ff"><label class="ffl">Tipo <span class="ffr">*</span></label><div class="ftg">';fTp.forEach(t=>{h+=`<div class="ftc ${fD.tipo===t.id?'sel':''}" onclick="fD.tipo='${t.id}';rFS()"><div class="fti">${t.i}</div>${t.id}</div>`;});
 h+=`</div></div><div class="ff"><label class="ffl">Negociación <span class="ffr">*</span></label><div class="fsg"><button class="fsgb ${fD.negociacion==='VENTA'?'act':''}" onclick="fD.negociacion='VENTA';rFS()">Venta</button><button class="fsgb ${fD.negociacion==='ARRIENDO'?'act':''}" onclick="fD.negociacion='ARRIENDO';rFS()">Arriendo</button><button class="fsgb ${fD.negociacion==='AMBAS'?'act':''}" onclick="fD.negociacion='AMBAS';rFS()">Ambas</button></div></div>`;
 if(fD.negociacion!=='ARRIENDO')h+=`<div class="ff"><label class="ffl">Precio Venta</label><input class="ffi" type="number" value="${fD.precioVenta}" onchange="fD.precioVenta=this.value" placeholder="450000000"></div>`;
 if(fD.negociacion!=='VENTA')h+=`<div class="ff"><label class="ffl">Arriendo/mes</label><input class="ffi" type="number" value="${fD.precioArriendo}" onchange="fD.precioArriendo=this.value" placeholder="2500000"></div>`;
-h+=`<div class="ff"><label class="ffl">Dirección <span class="ffr">*</span></label><input class="ffi" value="${fD.direccion}" onchange="fD.direccion=this.value" placeholder="Calle 50 #32-15"></div><div class="ffg"><div class="ff"><label class="ffl">Ciudad <span class="ffr">*</span></label><input class="ffi" value="${fD.ciudad}" onchange="fD.ciudad=this.value" placeholder="Pereira"></div><div class="ff"><label class="ffl">Barrio</label><input class="ffi" value="${fD.barrio}" onchange="fD.barrio=this.value"></div></div><div class="ff"><label class="ffl">Vencimiento autorización</label><input class="ffi" type="date" value="${fD.fecha_vencimiento_autorizacion}" onchange="fD.fecha_vencimiento_autorizacion=this.value"></div>`;
+h+=`<div class="ff"><label class="ffl">Dirección <span class="ffr">*</span></label><input class="ffi" value="${fD.direccion}" onchange="fD.direccion=this.value" placeholder="Calle 50 #32-15"></div><div class="ffg"><div class="ff"><label class="ffl">Ciudad <span class="ffr">*</span></label><input class="ffi" value="${fD.ciudad}" onchange="fD.ciudad=this.value" placeholder="Pereira"></div><div class="ff"><label class="ffl">Barrio</label><input class="ffi" value="${fD.barrio}" onchange="fD.barrio=this.value"></div></div>`;
 c.innerHTML=h;}
 
 function rF2(c){c.innerHTML=`<div class="ff"><label class="ffl">Propietario <span class="ffr">*</span></label><input class="ffi" value="${fD.nombre}" onchange="fD.nombre=this.value" placeholder="Nombre"></div><div class="ff"><label class="ffl">Teléfono <span class="ffr">*</span></label><input class="ffi" type="tel" value="${fD.telefono}" onchange="fD.telefono=this.value" placeholder="3001234567"></div><div class="ff"><label class="ffl">Email</label><input class="ffi" type="email" value="${fD.email}" onchange="fD.email=this.value"></div><div style="background:var(--goldbg);border:1px solid var(--yb);border-radius:6px;padding:8px;font-size:10px">🔒 Solo visible para ti y admin</div>`;}
@@ -640,13 +640,20 @@ window.fNx = async function(){
   try{localStorage.setItem('hcrm_fmem',JSON.stringify({ciudad:fD.ciudad,tipo:fD.tipo}));}catch(e){}
   const neg=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';
   const u=U();
-  const{data:newInm,error}=await SB().from('inmuebles').insert({captador_id:u.id,tipo:fD.tipo,negociacion:neg,direccion:fD.direccion,ciudad:fD.ciudad,barrio:fD.barrio,precio_venta:fD.precioVenta?parseFloat(fD.precioVenta):null,precio_arriendo:fD.precioArriendo?parseFloat(fD.precioArriendo):null,area_construida:fD.area?parseFloat(fD.area):null,area_total:fD.areaTotal?parseFloat(fD.areaTotal):null,estrato:fD.estrato?String(fD.estrato):null,habitaciones:fD.habitaciones||null,banos:fD.banos||null,parqueaderos:fD.parqueos||null,caracteristicas:fD.amenidades.join(', '),observaciones:fD.observaciones,propietario_nombre:fD.nombre,propietario_telefono:fD.telefono,propietario_email:fD.email,fecha_vencimiento_aut:fD.fecha_vencimiento_autorizacion||null,estado:'Disponible'}).select().single();
+  let newInm=null,error=null;
+  for(let attempt=0;attempt<3;attempt++){
+    const codigo=await nextHouseCode();
+    const res=await SB().from('inmuebles').insert({captador_id:u.id,codigo_house:codigo,tipo:fD.tipo,negociacion:neg,direccion:fD.direccion,ciudad:fD.ciudad,barrio:fD.barrio,precio_venta:fD.precioVenta?parseFloat(fD.precioVenta):null,precio_arriendo:fD.precioArriendo?parseFloat(fD.precioArriendo):null,area_construida:fD.area?parseFloat(fD.area):null,area_total:fD.areaTotal?parseFloat(fD.areaTotal):null,estrato:fD.estrato?String(fD.estrato):null,habitaciones:fD.habitaciones||null,banos:fD.banos||null,parqueaderos:fD.parqueos||null,caracteristicas:fD.amenidades.join(', '),observaciones:fD.observaciones,propietario_nombre:fD.nombre,propietario_telefono:fD.telefono,propietario_email:fD.email,estado:'Disponible'}).select().single();
+    if(!res.error){newInm=res.data;error=null;break;}
+    if(res.error?.message?.includes('codigo_house')){error=res.error;continue;}
+    error=res.error;break;
+  }
   if(!error&&newInm){
     if(_pendingFotos.length>0){for(let i=0;i<_pendingFotos.length;i++){await SB().from('fotos').insert({inmueble_id:newInm.id,url:_pendingFotos[i].url,url_thumb:_pendingFotos[i].thumb,origen:'cloudinary',tipo:_pendingFotos[i].tipo||'imagen',orden:i});}_pendingFotos=[];}
     const desc2=(fD.tipo||'Inmueble')+' en '+(fD.ciudad||'?');
     await window.noti('inmueble_nuevo','info','🆕 '+u.nombre+' registró: '+desc2,u.nombre+' registró nuevo '+desc2,null,'all',newInm.id);
     window.toast('✅ Inmueble registrado');
-    const lastC=fD.ciudad,lastT=fD.tipo;Object.assign(fD,{tipo:lastT,negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:lastC,barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:'',fecha_vencimiento_autorizacion:''});
+    const lastC=fD.ciudad,lastT=fD.tipo;Object.assign(fD,{tipo:lastT,negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:lastC,barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:''});
     fS=1;window.rFS();window.load();window.go('inv');
   }else window.toast(error?.message||'Error','terr');
   btn.disabled=false;btn.textContent='✓ Publicar';
