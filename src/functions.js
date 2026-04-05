@@ -455,19 +455,29 @@ window.delFoto = async function(fotoId,inmId) {
 
 window.quickMove = async function(id,estado) {
   if(!id||!estado)return;
-  if(FINAL_STATES.includes(estado)){const ok=await window.cfShow(estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔','¿Mover a '+estado+'?','Genera alertas');if(!ok)return;}
   const p=findInm(id);const desc=descInm(p);const u=U();const capNom=p?.captador?.nombre||'?';const capEmail=p?.captador?.usuario||p?.captador?.email||'';
+  if(FINAL_STATES.includes(estado)){
+    const ico=estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔';
+    const ok=await window.cfShow(ico,'¿Mover a '+estado+'?','Este inmueble dejará de aparecer en el inventario.\nSe notificará al administrador para revisión.');
+    if(!ok)return;
+  }
   await SB().from('inmuebles').update({estado,fecha_estado:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
   await SB().from('historial').insert({inmueble_id:id,usuario_id:u.id,accion:'cambio_estado',campo:'estado',valor_nuevo:estado});
   if(estado==='Verificar Disponibilidad'){await window.noti('verificar','rojo','🔍 '+u.nombre+' solicita verificar: '+desc,u.nombre+' necesita saber si tu '+desc+' sigue disponible.',capEmail,null,id);}
   else if(estado==='Aún Disponible'){await window.noti('cambio_estado','verde','✅ '+capNom+' confirmó: '+desc+' disponible',capNom+' verificó que '+desc+' está disponible.',null,'all',id);}
-  else if(FINAL_STATES.includes(estado)){const ico=estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔';await window.noti('cambio_estado','verde',ico+' Cierre: '+desc+' → '+estado,u.nombre+' cerró '+desc+'.',null,'all',id);}
+  else if(FINAL_STATES.includes(estado)){
+    const ico=estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔';
+    // Notify everyone about the closure
+    await window.noti('cambio_estado','verde',ico+' Cierre: '+desc+' → '+estado,u.nombre+' cerró '+desc+'.',null,'all',id);
+    // Specific notification to admin to review/delete
+    await window.noti('eliminar_inmueble','rojo','🗑️ Revisar: '+desc+' fue marcado como '+estado,u.nombre+' marcó '+desc+' como '+estado+'. Revisar si se debe eliminar del sistema.','admin',null,id);
+  }
   else{await window.noti('cambio_estado','info','🔄 '+desc+' → '+estado,u.nombre+' movió '+desc+' a '+estado,null,'all',id);}
   // Auto-register comision if Arrendado and has referido
   if (estado === 'Arrendado' && typeof window.registrarComisionArrendado === 'function') {
     try { await window.registrarComisionArrendado(id); } catch(e) { console.error('[quickMove] comision referido:', e); }
   }
-  window.toast('✅ Movido a '+estado);window.load();
+  window.toast(estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':estado==='Retirado'?'⛔':'✅'+' Movido a '+estado+'. Ya no aparecerá en inventario.');window.load();
 };
 
 window.reVal = async function(id) {

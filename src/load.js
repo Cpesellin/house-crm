@@ -55,7 +55,8 @@ function uB(id, n) {
 }
 
 function uSt() {
-  const D = window.D || [];
+  const FINAL = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
+  const D = (window.D || []).filter(p => !FINAL.includes(p.estado));
   const hst = document.getElementById('hst');
   const hsv = document.getElementById('hsv');
   const hsa = document.getElementById('hsa');
@@ -70,7 +71,8 @@ function uSt() {
 
 function renderWelcome() {
   const U = window.userStore?.get();
-  const D = window.D || [];
+  const FINAL = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
+  const D = (window.D || []).filter(p => !FINAL.includes(p.estado));
   if (!U || !D.length) return;
 
   const el = document.getElementById('wban');
@@ -107,11 +109,16 @@ function render(ls) {
   const _tipoU = U?.tipo_usuario || 'interno';
   const _isExt = _tipoU === 'cliente' || _tipoU === 'vendedor_externo' || _tipoU === 'propietario';
 
-  if (!ls || !ls.length) {
+  // Filter out final states (Arrendado, Vendido, Retirado) from inventory view
+  const FINAL = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
+  const filtered = (ls || []).filter(p => !FINAL.includes(p.estado));
+
+  if (!filtered.length) {
     el.innerHTML = '<div class="emp"><span class="emp-i">🔍</span><h3>Sin resultados</h3></div>';
     return;
   }
 
+  ls = filtered;
   let h = `<div style="font-family:'Fraunces',serif;font-size:16px;font-weight:700;margin:10px 0">🎯 <b style="color:var(--b600)">${ls.length}</b> propiedades</div><div class="pgr">`;
 
   ls.slice(0, 60).forEach(p => {
@@ -302,7 +309,8 @@ export async function load() {
       const refB = document.getElementById('mrefb');
       if (refB) { if (refCount > 0) { refB.textContent = refCount; refB.style.display = 'inline-flex'; } else refB.style.display = 'none'; }
     } catch(e) {}
-    sSt('ok', window.D.length + ' inmuebles');
+    const _FIN = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
+    sSt('ok', window.D.filter(p => !_FIN.includes(p.estado)).length + ' inmuebles');
     render(window.D);
     uSt();
     renderWelcome();
@@ -394,7 +402,9 @@ export async function load() {
 
     // 7. Update UI
     uSt();
-    sSt('ok', '✅ ' + D.length + ' propiedades');
+    const FINAL_S = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
+    const activeCount = D.filter(p => !FINAL_S.includes(p.estado)).length;
+    sSt('ok', '✅ ' + activeCount + ' propiedades');
     render(D);
     renderWelcome();
 
