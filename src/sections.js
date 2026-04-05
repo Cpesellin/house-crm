@@ -1279,17 +1279,22 @@ window.renderMisReferidos = async function() {
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">Cargando referidos...</div>';
 
   const isAdmin = u.rol === 'admin' || u.rol === 'oficina';
-  let q = SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,foto,usuario,email,telefono_contacto),inmueble:inmuebles!inmueble_id(id,tipo,ciudad,barrio,precio_arriendo,estado,codigo_house)').order('created_at', { ascending: false });
-  if (!isAdmin) q = q.eq('referidor_id', u.id);
-  if (window._refFiltro && window._refFiltro !== 'todos') {
-    if (window._refFiltro === 'en_proceso') q = q.in('estado', ['registrado', 'verificando']);
-    else q = q.eq('estado', window._refFiltro);
-  }
-  const { data: refs, error } = await q;
-  if (error) { el.innerHTML = '<div class="emp"><span class="emp-i">❌</span><h3>Error</h3><p>' + error.message + '</p></div>'; return; }
-  const all = refs || [];
 
-  // Stats
+  // Query ALL referidos (unfiltered) for KPIs/stats
+  let qAll = SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,foto,usuario,email,telefono_contacto),inmueble:inmuebles!inmueble_id(id,tipo,ciudad,barrio,precio_arriendo,estado,codigo_house)').order('created_at', { ascending: false });
+  if (!isAdmin) qAll = qAll.eq('referidor_id', u.id);
+  const { data: allRefs, error } = await qAll;
+  if (error) { el.innerHTML = '<div class="emp"><span class="emp-i">❌</span><h3>Error</h3><p>' + error.message + '</p></div>'; return; }
+  const all = allRefs || [];
+
+  // Apply filter client-side for the displayed list
+  let filtered = all;
+  if (window._refFiltro && window._refFiltro !== 'todos') {
+    if (window._refFiltro === 'en_proceso') filtered = all.filter(r => r.estado === 'registrado' || r.estado === 'verificando');
+    else filtered = all.filter(r => r.estado === window._refFiltro);
+  }
+
+  // Stats (always from ALL, not filtered)
   const activos = all.filter(r => !['rechazado'].includes(r.estado));
   const bonos = all.filter(r => r.bono_pagado).reduce((s, r) => s + (r.bono_monto || 0), 0);
   const comPagadas = all.filter(r => r.comision_pagada).reduce((s, r) => s + (r.comision_monto || 0), 0);
@@ -1325,8 +1330,8 @@ window.renderMisReferidos = async function() {
 
   const EC = { registrado: { c: 'var(--sub)', l: 'En proceso', i: '📝', s: 1 }, verificando: { c: 'var(--gold)', l: 'Verificando', i: '🔍', s: 2 }, contrato_firmado: { c: 'var(--b600)', l: 'Contrato propietario', i: '📄', s: 3 }, publicado: { c: 'var(--b700)', l: 'Publicado', i: '📢', s: 4 }, arrendado: { c: 'var(--green)', l: '¡Arrendado!', i: '🎉', s: 5 }, rechazado: { c: 'var(--red)', l: 'Rechazado', i: '❌', s: 0 } };
 
-  // Cards
-  all.forEach(r => {
+  // Cards (use filtered list, not all)
+  filtered.forEach(r => {
     const cfg = EC[r.estado] || EC.registrado;
     const canon = r.inmueble?.precio_arriendo || r.canon_real || r.canon_aproximado || 0;
     const comNeta = Math.max(0, Math.round(canon * (r.comision_porcentaje || 0.10)) - (r.bono_monto || 50000));
@@ -1390,8 +1395,12 @@ window.renderMisReferidos = async function() {
     h += '</div>';
   });
 
-  if (!all.length) {
-    h += '<div class="emp"><span class="emp-i">🤝</span><h3>Aún no tienes referidos</h3><p style="font-size:12px;color:var(--sub)">¿Conoces un inmueble en arriendo? Refierelo y gana hasta 10% del canon.</p><button class="bt bp" style="margin-top:10px" onclick="go(\'referir\')">🤝 Referir mi primer inmueble</button></div>';
+  if (!filtered.length) {
+    if (all.length > 0) {
+      h += '<div class="emp"><span class="emp-i">📋</span><h3>Sin referidos en este estado</h3><button class="bt bs2" style="margin-top:8px" onclick="window._refFiltro=\'todos\';renderMisReferidos()">Ver todos</button></div>';
+    } else {
+      h += '<div class="emp"><span class="emp-i">🤝</span><h3>Aún no tienes referidos</h3><p style="font-size:12px;color:var(--sub)">¿Conoces un inmueble en arriendo? Refierelo y gana hasta 10% del canon.</p><button class="bt bp" style="margin-top:10px" onclick="go(\'referir\')">🤝 Referir mi primer inmueble</button></div>';
+    }
   }
 
   // Desplegables informativos al final
