@@ -153,6 +153,8 @@ function renderShell(container) {
       </div>
     </div>
 
+    <!-- STICKY FILTERS -->
+    <div class="sticky-filters" id="stickyFilters">
     <!-- SEARCH -->
     <div style="padding:12px 16px 0;position:relative">
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:0 14px;border:1.5px solid #e8e4df">
@@ -173,6 +175,8 @@ function renderShell(container) {
       <button class="pill pill-off" id="myToggle" onclick="toggleMis()" style="color:#1a4f8b;border-color:#d0dff2">📌 Míos</button>
       <button class="pill pill-off" id="favToggle" onclick="toggleFavFilter()" style="color:#b91c3a;border-color:#f5d0d7">♡ Favs</button>
     </div>
+
+    </div><!-- /sticky-filters -->
 
     <!-- PANELS (outside scroll container) -->
     <div id="panelNeg" style="display:none"></div>

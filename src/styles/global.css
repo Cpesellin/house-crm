@@ -365,6 +365,7 @@ body.dark .vb{background:linear-gradient(135deg,#3d3520,#5a4a2a);color:#d4a853}b
 .wiz-type-btn .wiz-emoji{font-size:24px;display:block;margin-bottom:4px}
 .wiz-type-btn .wiz-tname{font-size:11px;font-weight:700;color:var(--tx)}
 /* PILLS + PANELS FILTER SYSTEM */
+.sticky-filters{position:sticky;top:54px;z-index:90;background:var(--cd,#fff);border-bottom:1px solid var(--brd,#e8e4df);padding-bottom:10px;transition:box-shadow .2s}.sticky-filters.shadowed{box-shadow:0 4px 16px rgba(0,0,0,.08)}
 .pill-bar{padding:10px 16px 0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pill-bar::-webkit-scrollbar{display:none}
 .pill{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:12px;white-space:nowrap;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .pill:active{transform:scale(.97)}
@@ -404,7 +405,7 @@ body.dark .vb{background:linear-gradient(135deg,#3d3520,#5a4a2a);color:#d4a853}b
 .tiempo-opt{width:100%;padding:10px 12px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left;transition:background .1s}
 .tiempo-opt:hover,.tiempo-opt.sel{background:#eef3fb}
 .precio-input{display:flex;align-items:center;background:#faf8f5;border-radius:10px;padding:0 10px}
-.precio-input input{flex:1;border:none;outline:none;padding:10px 6px;font-size:14px;font-weight:700;font-family:inherit;color:#2c2520;background:transparent;width:60px}
+.precio-input input{flex:1;border:none;outline:none;padding:10px 6px;font-size:14px;font-weight:700;font-family:inherit;color:#2c2520;background:transparent;min-width:0;width:100%}
 .precio-input input::placeholder{color:#c4b9a8;font-weight:500}
 .precio-apply{width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,#122d4f,#1a4f8b);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
 .precio-apply:active{transform:scale(.96)}
@@ -460,6 +461,7 @@ body.dark .pub-card-price{color:#d4a853}body.dark .pub-card-tipo{color:#d4a853}
 body.dark .pub-chip.act{background:rgba(212,168,83,.15);color:#d4a853;border-color:rgba(212,168,83,.3)}
 body.dark ::-webkit-scrollbar-thumb{background:rgba(212,168,83,.3)}
 body.dark .ac-drop{box-shadow:0 8px 24px rgba(0,0,0,.4)}
+body.dark .sticky-filters{background:var(--cd);border-bottom-color:rgba(255,255,255,.06)}body.dark .sticky-filters.shadowed{box-shadow:0 4px 16px rgba(0,0,0,.3)}
 body.dark .pill-off{background:var(--cd);color:var(--tx);border-color:rgba(255,255,255,.08)}body.dark .pill-on{background:rgba(212,168,83,.15);color:#d4a853;border-color:rgba(212,168,83,.3)}
 body.dark .fpanel{background:var(--cd);border-color:rgba(255,255,255,.08);box-shadow:0 8px 30px rgba(0,0,0,.4)}body.dark .fpanel-title{color:var(--tx)}
 body.dark .fopt-neg{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08)}body.dark .fopt-ciu{background:var(--cd);border-color:rgba(255,255,255,.08)}body.dark .fopt-ciu.sel{background:rgba(212,168,83,.08);border-color:rgba(212,168,83,.3)}
