@@ -87,7 +87,7 @@ function renderShell(container) {
         </div>
       </div>
       <button class="ib" onclick="tTh()" id="tbtn">\u2600\uFE0F</button>
-      <div class="up"><img id="ufoto" src=""><span id="uname">\u2014</span></div>
+      <div class="up"><img id="ufoto" src="" style="display:none"><div id="ufoto-ini" style="display:none;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--b700));color:#fff;font-size:12px;font-weight:800;align-items:center;justify-content:center"></div><span id="uname">\u2014</span></div>
     </div>
   </div>
 </header>
@@ -117,7 +117,7 @@ function renderShell(container) {
   </div>
   <div class="mdv"></div>
   <div class="mu">
-    <img id="mufoto" src="">
+    <img id="mufoto" src="" style="display:none"><div id="mufoto-ini" style="display:none;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--b700));color:#fff;font-size:14px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0"></div>
     <div style="flex:1"><div class="mun" id="muname">\u2014</div><div class="mur" id="murole">\u2014</div></div>
     <button class="mlo" onclick="logout()">Salir</button>
   </div>
@@ -301,9 +301,21 @@ function sApp() {
   const _pc = document.getElementById('portafolioc');
   if (_pc) _pc.innerHTML = '';
 
+  const _ini = (U.nombre||'?')[0].toUpperCase();
   if (U.foto) {
     document.getElementById('ufoto').src = U.foto;
+    document.getElementById('ufoto').style.display = '';
+    document.getElementById('ufoto-ini').style.display = 'none';
     document.getElementById('mufoto').src = U.foto;
+    document.getElementById('mufoto').style.display = '';
+    document.getElementById('mufoto-ini').style.display = 'none';
+  } else {
+    document.getElementById('ufoto').style.display = 'none';
+    document.getElementById('ufoto-ini').textContent = _ini;
+    document.getElementById('ufoto-ini').style.display = 'flex';
+    document.getElementById('mufoto').style.display = 'none';
+    document.getElementById('mufoto-ini').textContent = _ini;
+    document.getElementById('mufoto-ini').style.display = 'flex';
   }
 
   if (isExterno) {
