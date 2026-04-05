@@ -563,7 +563,18 @@ const fAP=[{id:'parqueadero',l:'Parqueo',i:'🚗'},{id:'ascensor',l:'Ascensor',i
 const fAX=[{id:'cancha_tennis',l:'Tenis',i:'🎾'},{id:'cancha_futbol',l:'Fútbol',i:'⚽'},{id:'sauna',l:'Sauna',i:'🧖'},{id:'juegos_ninos',l:'Juegos',i:'🎠'},{id:'bbq',l:'BBQ',i:'🔥'},{id:'coworking',l:'Cowork',i:'💻'},{id:'pet_friendly',l:'Pet',i:'🐕'},{id:'cuarto_util',l:'Útil',i:'📦'},{id:'lavanderia',l:'Lavand.',i:'🧺'},{id:'deposito',l:'Depósito',i:'🗄️'}];
 
 window.fD = fD;
-window.nextHouseCode = function(){let maxN=0;D().forEach(p=>{if(p.codigo_house){const n=parseInt(p.codigo_house.replace('HOUSE-',''));if(n>maxN)maxN=n;}});return'HOUSE-'+String(maxN+1).padStart(3,'0');};
+window.nextHouseCode = async function(){
+  try {
+    const{data}=await SB().from('inmuebles').select('codigo_house').not('codigo_house','is',null).order('codigo_house',{ascending:false}).limit(1);
+    let maxN=0;
+    if(data&&data[0]&&data[0].codigo_house){maxN=parseInt(data[0].codigo_house.replace('HOUSE-',''))||0;}
+    // Also check local data as fallback
+    D().forEach(p=>{if(p.codigo_house){const n=parseInt(p.codigo_house.replace('HOUSE-',''));if(n>maxN)maxN=n;}});
+    return'HOUSE-'+String(maxN+1).padStart(3,'0');
+  }catch(e){
+    let maxN=0;D().forEach(p=>{if(p.codigo_house){const n=parseInt(p.codigo_house.replace('HOUSE-',''));if(n>maxN)maxN=n;}});return'HOUSE-'+String(maxN+1).padStart(3,'0');
+  }
+};
 
 window.tgC = function(id){const i=fD.caracteristicas.indexOf(id);if(i>-1)fD.caracteristicas.splice(i,1);else fD.caracteristicas.push(id);window.rFS();};
 window.tgAm = function(id){const i=fD.amenidades.indexOf(id);if(i>-1)fD.amenidades.splice(i,1);else fD.amenidades.push(id);window.rFS();};
@@ -577,7 +588,7 @@ window.rFS = function(){
   document.getElementById('fp').style.display=fS>1?'flex':'none';
   document.getElementById('fn').textContent=fS<5?'Continuar →':'✓ Publicar';
   const c=document.getElementById('fc');
-  if(fS===1)rF1(c);else if(fS===2)rF2(c);else if(fS===3)rF3(c);else if(fS===4)rF4(c);else rF5(c);
+  if(fS===1)rF1(c);else if(fS===2)rF2(c);else if(fS===3)rF3(c);else if(fS===4)rF4(c);else{c.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub)">Generando código...</div>';rF5(c);}
 };
 
 function rF1(c){const nxt=nextHouseCode();let h=`<div style="background:var(--b50);border:2px solid var(--b200);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:9px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px">ID INMUEBLE</div><div style="font-family:monospace;font-size:20px;font-weight:800;color:var(--b700);margin-top:2px">${nxt}</div></div><button type="button" style="padding:6px 12px;border:1.5px solid var(--b200);border-radius:6px;background:var(--cd);font-size:11px;font-weight:700;color:var(--b600);cursor:pointer" onclick="navigator.clipboard.writeText('${nxt}');toast('📋 Copiado')">📋</button></div>`;
@@ -601,7 +612,7 @@ h+='</div><div class="cps">';fAX.forEach(a=>{h+=`<div class="ch ${fD.amenidades.
 h+=`</div></div><div class="ff"><label class="ffl">📷 Fotos</label><div id="fotoUpReg"></div></div><div class="ff"><label class="ffl">Observaciones</label><textarea class="ffi" style="min-height:60px;resize:vertical" onchange="fD.observaciones=this.value">${fD.observaciones}</textarea></div>`;
 c.innerHTML=h;_pendingFotos=[];if(typeof window.initFotoUpload==='function')window.initFotoUpload('fotoUpReg',r=>{_pendingFotos.push(r);},0);}
 
-function rF5(c){const nl=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';const nxt=nextHouseCode();
+async function rF5(c){const nl=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';const nxt=await nextHouseCode();
 c.innerHTML=`<div style="background:var(--b50);border:2px solid var(--b200);border-radius:9px;padding:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:20px">${emo(fD.tipo)}</span><span class="cod-badge" style="font-size:13px;padding:4px 10px">${nxt}</span></div><div style="font-family:Fraunces,serif;font-size:18px;font-weight:700;color:var(--b800)">${fD.tipo||'Sin tipo'}</div><div style="font-size:10px;color:var(--sub);margin-top:2px">📍 ${fD.direccion}, ${fD.ciudad}</div>${fD.precioVenta?`<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:var(--b700);margin-top:4px">${fm(+fD.precioVenta)}</div>`:''}${fD.precioArriendo?`<div style="font-size:13px;font-weight:700;color:#065f46;margin-top:2px">${fm(+fD.precioArriendo)}/mes</div>`:''}<div style="display:flex;gap:3px;margin-top:6px;flex-wrap:wrap"><span class="sp">${nl}</span>${fD.habitaciones?`<span class="sp">🛏️${fD.habitaciones}</span>`:''}${fD.banos?`<span class="sp">🚿${fD.banos}</span>`:''}${fD.area?`<span class="sp">📐${fD.area}m²</span>`:''}</div></div><div style="font-size:10px;color:var(--sub);margin-top:6px">👤 ${fD.nombre} · ${fD.telefono}</div>`;}
 
 window.fPr = function(){if(fS>1){fS--;window.rFS();}};
