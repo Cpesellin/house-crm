@@ -404,8 +404,8 @@ body.dark .vb{background:linear-gradient(135deg,#3d3520,#5a4a2a);color:#d4a853}b
 .tiempo-dd{position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border-radius:14px;padding:6px;border:1.5px solid #e8e4df;box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:50;min-width:200px;animation:panelIn .2s}
 .tiempo-opt{width:100%;padding:10px 12px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left;transition:background .1s}
 .tiempo-opt:hover,.tiempo-opt.sel{background:#eef3fb}
-.precio-input{display:flex;align-items:center;background:#faf8f5;border-radius:10px;padding:0 10px}
-.precio-input input{flex:1;border:none;outline:none;padding:10px 6px;font-size:14px;font-weight:700;font-family:inherit;color:#2c2520;background:transparent;min-width:0;width:100%}
+.precio-input{display:flex;align-items:center;background:#faf8f5;border-radius:10px;padding:0 8px}
+.precio-input input{flex:1;border:none;outline:none;padding:10px 4px;font-size:13px;font-weight:700;font-family:inherit;color:#2c2520;background:transparent;min-width:0;width:100%}
 .precio-input input::placeholder{color:#c4b9a8;font-weight:500}
 .precio-apply{width:100%;margin-top:14px;padding:12px;background:linear-gradient(135deg,#122d4f,#1a4f8b);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
 .precio-apply:active{transform:scale(.96)}
