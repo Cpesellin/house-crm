@@ -1495,7 +1495,7 @@ window.renderPropietariosLanding = function() {
     { icon: '🔍', title: 'Estudio completo al inquilino', desc: 'Verificamos en DataCrédito (centrales de riesgo), confirmamos empleo e ingresos, pedimos referencias personales y familiares, y revisamos antecedentes judiciales. No entra cualquier persona.', color: '#2563eb' },
     { icon: '📄', title: 'Contrato notariado y blindado', desc: 'Elaboramos contrato de arrendamiento con cláusulas de protección: seguro de arrendamiento, póliza de daños, procedimiento claro de desalojo, e inventario fotográfico detallado al momento de la entrega.', color: '#7c3aed' },
     { icon: '🏠', title: 'Administración integral', desc: 'Nos encargamos de TODO: publicación profesional con fotografías, visitas guiadas, estudio del candidato, contrato, cobros mensuales, gestión de mantenimiento y reclamos del inquilino. Usted no hace nada.', color: '#0891b2' },
-    { icon: '📢', title: 'Exposición masiva en 3 portales', desc: 'Su inmueble se publica simultáneamente en Metrocuadrado, Fincaraíz y Facebook Marketplace con fotografía profesional, descripción completa y contacto directo. Miles de personas buscando arriendo lo verán.', color: '#ea580c' },
+    { icon: '📢', title: 'Exposición masiva en 4 canales', desc: 'Su inmueble se publica simultáneamente en nuestro portal oficial inmobiliariahouse.com.co, Metrocuadrado, Fincaraíz y Facebook Marketplace, con fotografía profesional, descripción completa y contacto directo. Miles de personas buscando arriendo lo verán.', color: '#ea580c' },
     { icon: '💵', title: 'Comisión justa: solo 10% del canon', desc: 'Cobramos el 10% del canon mensual. Usted recibe el 90% todos los meses sin mover un dedo. No hay comisiones ocultas, ni cobros de mantenimiento, ni gastos administrativos adicionales.', color: '#059669' },
     { icon: '🆓', title: 'Sin costo inicial', desc: 'Usted no paga absolutamente nada para empezar. Ni por publicación, ni por estudio, ni por contrato. La comisión solo se aplica cuando el inmueble YA está arrendado y generando ingresos.', color: '#d97706' },
     { icon: '🛡️', title: 'Tranquilidad total', desc: 'Si hay problemas con el inquilino — no paga, daña el inmueble, quiere irse antes de tiempo, subarrienda sin permiso — nosotros lo manejamos. Notificación, cobro, proceso jurídico si es necesario. Usted no tiene que lidiar con nada.', color: '#dc2626' }
@@ -1517,7 +1517,7 @@ window.renderPropietariosLanding = function() {
     { n: '1', t: 'Usted nos contacta', d: 'Nos llama, nos escribe por WhatsApp, o viene a nuestra oficina. Le explicamos todo sin compromiso.' },
     { n: '2', t: 'Visitamos su inmueble', d: 'Nuestro equipo visita el inmueble, toma fotografías profesionales y evalúa las condiciones.' },
     { n: '3', t: 'Firmamos contrato de administración', d: 'Un contrato claro y transparente. Usted nos entrega las llaves y nosotros nos hacemos cargo de todo.' },
-    { n: '4', t: 'Publicamos y buscamos inquilino', d: 'Publicación en 3 portales + red de asesores buscando activamente. Promedio de arriendo: menos de 30 días.' },
+    { n: '4', t: 'Publicamos y buscamos inquilino', d: 'Publicación en 4 canales (inmobiliariahouse.com.co + Metrocuadrado + Fincaraíz + Facebook) y red de asesores buscando activamente. Promedio de arriendo: menos de 30 días.' },
     { n: '5', t: 'Usted recibe su plata cada mes', d: 'Cada 10 del mes, transferimos el 90% del canon a su cuenta. Sin excusas, sin demoras.' }
   ];
   steps.forEach(s => {
@@ -1527,6 +1527,30 @@ window.renderPropietariosLanding = function() {
     h += '<div style="font-size:12px;color:var(--sub);line-height:1.5;margin-top:2px">' + s.d + '</div></div>';
     h += '</div>';
   });
+  h += '</div>';
+
+  // Canales de exposición
+  h += '<div style="padding:24px 16px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;text-align:center;margin-bottom:6px;color:var(--tx)">📢 4 canales de exposición</div>';
+  h += '<div style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:20px">Su inmueble visible donde están los inquilinos buscando</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  const canales = [
+    { icon: '🏠', name: 'inmobiliariahouse.com.co', desc: 'Nuestro portal oficial', color: '#1e3a5f', highlight: true },
+    { icon: '🌐', name: 'Metrocuadrado', desc: 'Portal #1 en Colombia', color: '#0891b2' },
+    { icon: '🔍', name: 'Fincaraíz', desc: 'Líder en búsquedas', color: '#7c3aed' },
+    { icon: '📱', name: 'Facebook Marketplace', desc: 'Alcance masivo', color: '#2563eb' }
+  ];
+  canales.forEach(c => {
+    h += '<div style="background:' + (c.highlight ? c.color : 'var(--cd)') + ';border:2px solid ' + c.color + ';border-radius:14px;padding:14px;text-align:center;color:' + (c.highlight ? '#fff' : 'var(--tx)') + ';position:relative">';
+    if (c.highlight) h += '<div style="position:absolute;top:-8px;right:-8px;background:#fbbf24;color:#78350f;font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;letter-spacing:.5px">EXCLUSIVO</div>';
+    h += '<div style="font-size:28px;margin-bottom:6px">' + c.icon + '</div>';
+    h += '<div style="font-size:12px;font-weight:800;margin-bottom:2px;word-break:break-word">' + c.name + '</div>';
+    h += '<div style="font-size:10px;opacity:.85">' + c.desc + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<div style="margin-top:14px;padding:14px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:12px;text-align:center"><div style="font-size:12px;color:var(--sub);margin-bottom:6px">+ Red de asesores buscando inquilinos activamente</div>';
+  h += '<a href="https://inmobiliariahouse.com.co" target="_blank" style="display:inline-block;margin-top:4px;padding:10px 22px;background:var(--b600);color:#fff;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none">🌐 Visitar nuestro sitio web</a></div>';
   h += '</div>';
 
   // Calculator
@@ -1552,6 +1576,7 @@ window.renderPropietariosLanding = function() {
   h += '<div style="font-size:13px;color:var(--sub);margin-bottom:20px">Contáctenos hoy. Sin compromiso.</div>';
   h += '<a href="https://wa.me/' + waTel + '?text=' + waMsg + '" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:16px 32px;background:#25d366;color:#fff;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,211,102,.3)">💬 Contactar por WhatsApp</a>';
   h += '<div style="margin-top:12px"><a href="tel:+573105922763" style="font-size:14px;color:var(--b600);font-weight:700;text-decoration:none">📞 Llamar: 310 592 2763</a></div>';
+  h += '<div style="margin-top:10px"><a href="https://inmobiliariahouse.com.co" target="_blank" style="font-size:14px;color:var(--b600);font-weight:700;text-decoration:none">🌐 inmobiliariahouse.com.co</a></div>';
   h += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--brd)">';
   h += '<div style="font-size:12px;color:var(--sub);margin-bottom:4px">📍 Visítenos</div>';
   h += '<div style="font-size:14px;font-weight:700;color:var(--tx)">Cl. 14 #14-09, Pereira, Risaralda</div>';
