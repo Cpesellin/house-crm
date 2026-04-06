@@ -1449,6 +1449,43 @@ window.renderPropietariosLanding = function() {
   h += '<div style="font-size:12px;opacity:.7">📍 Cl. 14 #14-09, Pereira · Risaralda</div>';
   h += '</div>';
 
+  // Office photo
+  h += '<div style="padding:20px 16px 0">';
+  h += '<div style="position:relative;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12);border:1.5px solid var(--brd)">';
+  h += '<img src="/img/oficina.jpg" alt="Oficina Inmobiliaria House" style="width:100%;height:auto;display:block" onerror="this.parentElement.style.display=\'none\'">';
+  h += '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:20px 16px 14px;color:#fff">';
+  h += '<div style="font-family:Fraunces,serif;font-size:16px;font-weight:800">📍 Visítenos en nuestra oficina</div>';
+  h += '<div style="font-size:12px;opacity:.95;margin-top:2px">Cl. 14 #14-09, Pereira · Risaralda</div>';
+  h += '</div></div></div>';
+
+  // Energy savings flow — antes vs después
+  h += '<div style="padding:24px 16px 8px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;text-align:center;margin-bottom:6px;color:var(--tx)">⚡ Ahorre su energía</div>';
+  h += '<div style="font-size:13px;color:var(--sub);text-align:center;margin-bottom:20px">Deje de gastar tiempo, dinero y preocupaciones</div>';
+
+  // Antes (rojo - cansado)
+  h += '<div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px solid #fecaca;border-radius:16px;padding:16px;margin-bottom:14px">';
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div style="font-size:28px">😩</div><div><div style="font-size:11px;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:1px">Sin nosotros</div><div style="font-size:14px;font-weight:800;color:#7f1d1d">Usted hace TODO</div></div></div>';
+  ['📸 Tomar fotos y publicar avisos','📞 Atender llamadas a toda hora','🚶 Mostrar el inmueble una y otra vez','🔍 Verificar inquilinos sin herramientas','📄 Redactar contratos legales','💸 Cobrar el canon mes a mes','🔧 Atender daños y reclamos','⚖️ Pelear si no le pagan'].forEach(t => {
+    h += '<div style="font-size:12px;color:#7f1d1d;padding:4px 0;display:flex;align-items:center;gap:6px"><span style="color:#dc2626;font-weight:800">✗</span> ' + t + '</div>';
+  });
+  h += '</div>';
+
+  // Flecha de transformación
+  h += '<div style="text-align:center;margin:8px 0"><div style="display:inline-block;background:var(--b600);color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:800">⬇ NOS DELEGA TODO ⬇</div></div>';
+
+  // Después (verde - relajado)
+  h += '<div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #bbf7d0;border-radius:16px;padding:16px;margin-top:14px">';
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div style="font-size:28px">😎</div><div><div style="font-size:11px;font-weight:800;color:#065f46;text-transform:uppercase;letter-spacing:1px">Con House</div><div style="font-size:14px;font-weight:800;color:#064e3b">Usted no hace NADA</div></div></div>';
+  h += '<div style="background:#fff;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #bbf7d0">';
+  h += '<div style="font-size:48px;margin-bottom:6px">☕</div>';
+  h += '<div style="font-size:14px;font-weight:800;color:#064e3b;margin-bottom:4px">Solo recibe su plata</div>';
+  h += '<div style="font-size:12px;color:#065f46">Cada 10 del mes, sin falta</div>';
+  h += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #d1fae5;font-family:Fraunces,serif;font-size:22px;font-weight:800;color:#065f46">90% del canon</div>';
+  h += '<div style="font-size:11px;color:#065f46;opacity:.8">Directo a su cuenta</div>';
+  h += '</div></div>';
+  h += '</div>';
+
   // Main benefits
   h += '<div style="padding:24px 16px">';
   h += '<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;text-align:center;margin-bottom:20px;color:var(--tx)">¿Qué hacemos por usted?</div>';
