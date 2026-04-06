@@ -474,5 +474,37 @@ body.dark .precio-input{background:rgba(255,255,255,.04)}body.dark .precio-input
 body.dark .sp{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.06);color:var(--sub)}
 body.dark .hero{background:linear-gradient(155deg,#1a1510,#2a2518,#3d3520)}
 body.dark .stb{background:var(--cd);border-color:rgba(255,255,255,.06)}
+/* INVENTORY WRAPPER — mobile narrow, desktop wide */
+.inv-wrap{max-width:520px;margin:0 auto}
 /* RESPONSIVE */
 @media(max-width:640px){.fg{grid-template-columns:1fr}.pgr{grid-template-columns:1fr}.mgr{grid-template-columns:1fr}.ffg{grid-template-columns:1fr}.ftg{grid-template-columns:repeat(2,1fr)}.amg{grid-template-columns:repeat(3,1fr)}.hin{flex-direction:column;text-align:center}.sr{width:100%}.pnav-btn{padding:8px 10px;font-size:11px}.pkc-thumb{width:75px;min-height:75px}}
+/* DESKTOP UX — expand mobile-first wrappers to use horizontal space */
+@media(min-width:900px){
+  /* Inventory main view (all profiles) */
+  .inv-wrap{max-width:1280px}
+  .inv-wrap #res{padding:0 24px 32px}
+  .inv-wrap .pill-bar{padding:12px 24px 0;flex-wrap:wrap;overflow-x:visible}
+  .inv-wrap .sel-bar{padding:10px 24px 4px}
+  .inv-wrap .sticky-filters{padding-bottom:14px}
+  .inv-wrap .fpanel{margin:10px 24px 0;max-width:760px}
+  .inv-wrap .pgr{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  /* Visitor portal */
+  .pub-wrap{max-width:1200px;padding:24px}
+  .pub-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;padding:18px 24px}
+  .pub-filters{padding:14px 24px;flex-wrap:wrap}
+  .pub-banner{margin:18px 24px;padding:32px 24px}
+  /* Pipeline (admin/oficina/gestor) — multi-column grid on desktop */
+  #pipeline{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+  #pipeline .pkc{margin-bottom:0}
+  /* Modals — wider on desktop */
+  .mb2{max-width:760px!important}
+  /* Narrow section wrappers — expand for better desktop use */
+  #sec-mis-pub>div,#sec-misref>div,#sec-admin-pagos>div{max-width:1100px!important}
+  #sec-propietarios>div{max-width:1100px!important;padding:10px 14px 60px!important}
+  /* Favoritos grid (uses .pgr via render) */
+  #favoritosc .pgr{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+}
+@media(min-width:1280px){
+  .inv-wrap .pgr{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  #pipeline{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+}

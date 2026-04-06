@@ -136,7 +136,7 @@ function renderShell(container) {
 <!-- SECTIONS -->
 <div class="sec act" id="sec-inv">
   <div style="display:none"><span id="hst"></span><span id="hsv"></span><span id="hsa"></span><span id="hsb"></span></div>
-  <div style="font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;min-height:100vh">
+  <div class="inv-wrap" style="font-family:'DM Sans',sans-serif;min-height:100vh">
     <div class="wban" id="wban" style="display:none"></div>
 
     <!-- HEADER STATS -->
