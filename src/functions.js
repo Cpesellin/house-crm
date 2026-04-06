@@ -1831,6 +1831,9 @@ window.completeEmailReg = async function(tipo) {
     if (modal) modal.remove();
     if (typeof window.sApp === 'function') window.sApp();
     window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+    // Carga el inventario público para que el portafolio muestre inmuebles inmediatamente
+    // (el registro manual no dispara el evento LOGIN que normalmente llama a load())
+    if (typeof window.load === 'function') window.load();
 
   } catch(e) {
     console.error('[completeEmailReg]', e);
@@ -1885,6 +1888,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       if (modal) modal.remove();
       if (typeof window.sApp === 'function') window.sApp();
       window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+      // Carga el inventario público (igual que el flujo de login normal)
+      if (typeof window.load === 'function') window.load();
       return;
     }
     const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
@@ -1914,6 +1919,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     if (modal) modal.remove();
     if (typeof window.sApp === 'function') window.sApp();
     window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+    // Carga el inventario público (igual que el flujo de login normal)
+    if (typeof window.load === 'function') window.load();
   } catch(e) {
     console.error('[selectProfile]', e);
     if (modal) modal.remove();
