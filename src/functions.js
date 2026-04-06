@@ -1801,7 +1801,9 @@ window.completeEmailReg = async function(tipo) {
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
 
   try {
-    const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
+    // Todos los registros externos crean cliente — vendedor_externo ya no se crea
+    const tipoU = 'cliente';
+    const quierePublicar = tipo === 'vendedor_externo';
 
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email: reg.email, nombre: reg.nombre, foto: reg.foto || null,
@@ -1811,13 +1813,8 @@ window.completeEmailReg = async function(tipo) {
     }).select().single();
     if (error) throw error;
 
-    // If propietario request
-    if (tipo === 'vendedor_externo') {
-      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'vendedor_externo', estado: 'pendiente' });
-      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de asesor externo', reg.nombre + ' (' + reg.email + ') quiere publicar inmuebles', null, 'admin', null);
-    } else {
-      await window.noti('registro_externo', 'info', '👤 Nuevo cliente registrado', reg.nombre + ' (' + reg.email + ') se registró como cliente', null, 'admin', null);
-    }
+    const notiTitulo = quierePublicar ? '👤 Nuevo cliente registrado (interesado en publicar)' : '👤 Nuevo cliente registrado';
+    await window.noti('registro_externo', 'info', notiTitulo, reg.nombre + ' (' + reg.email + ') se registró como cliente' + (quierePublicar ? ' — manifestó interés en publicar inmuebles' : ''), null, 'admin', null);
 
     // Log in
     const userData = {
@@ -1830,7 +1827,7 @@ window.completeEmailReg = async function(tipo) {
     window._pendingReg = null;
     if (modal) modal.remove();
     if (typeof window.sApp === 'function') window.sApp();
-    window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+    window.go('portafolio');
     // Carga el inventario público para que el portafolio muestre inmuebles inmediatamente
     // (el registro manual no dispara el evento LOGIN que normalmente llama a load())
     if (typeof window.load === 'function') window.load();
@@ -1875,24 +1872,26 @@ window.showOnboarding = function(googlePayload) {
 window.selectProfile = async function(tipo, email, nombre, foto) {
   const modal = document.getElementById('onbModal');
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
+  // Todos los registros externos crean cliente — vendedor_externo ya no se crea
+  const tipoU = 'cliente';
+  const quierePublicar = tipo === 'vendedor_externo';
   try {
     // Check if user already exists (could be inactive)
     const { data: existingUser } = await SB().from('usuarios').select('*').eq('email', email).single();
     if (existingUser) {
-      // Reactivate existing user
-      const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
-      await SB().from('usuarios').update({ activo: true, tipo_usuario: tipoU, foto: foto || existingUser.foto }).eq('id', existingUser.id);
-      existingUser.activo = true; existingUser.tipo_usuario = tipoU;
-      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: false, tipo_usuario: tipoU, token: 'google:' + email };
+      // Reactivate existing user (preserve existing tipo_usuario if it was internal/propietario)
+      const keepTipo = (existingUser.tipo_usuario === 'interno' || existingUser.tipo_usuario === 'propietario') ? existingUser.tipo_usuario : tipoU;
+      await SB().from('usuarios').update({ activo: true, tipo_usuario: keepTipo, foto: foto || existingUser.foto }).eq('id', existingUser.id);
+      existingUser.activo = true; existingUser.tipo_usuario = keepTipo;
+      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: false, tipo_usuario: keepTipo, token: 'google:' + email };
       window.userStore.set(userData);
       if (modal) modal.remove();
       if (typeof window.sApp === 'function') window.sApp();
-      window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+      window.go('portafolio');
       // Carga el inventario público (igual que el flujo de login normal)
       if (typeof window.load === 'function') window.load();
       return;
     }
-    const tipoU = tipo === 'vendedor_externo' ? 'vendedor_externo' : 'cliente';
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
       rol: 'cliente', tipo_usuario: tipoU, activo: true,
@@ -1900,13 +1899,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     }).select().single();
     if (error) throw error;
 
-    // If propietario request, create registro_solicitudes + alert admin
-    if (tipo === 'vendedor_externo') {
-      await SB().from('registro_solicitudes').insert({ usuario_id: newUser.id, tipo_solicitado: 'vendedor_externo', estado: 'pendiente' });
-      await window.noti('registro_externo', 'info', '🏠 Nueva solicitud de asesor externo', nombre + ' (' + email + ') quiere publicar inmuebles', null, 'admin', null);
-    } else {
-      await window.noti('registro_externo', 'info', '👤 Nuevo cliente registrado', nombre + ' (' + email + ') se registró como cliente', null, 'admin', null);
-    }
+    const notiTitulo = quierePublicar ? '👤 Nuevo cliente registrado (interesado en publicar)' : '👤 Nuevo cliente registrado';
+    await window.noti('registro_externo', 'info', notiTitulo, nombre + ' (' + email + ') se registró como cliente' + (quierePublicar ? ' — manifestó interés en publicar inmuebles' : ''), null, 'admin', null);
 
     // Log in the new user
     const userData = {
@@ -1918,7 +1912,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     window.userStore.set(userData);
     if (modal) modal.remove();
     if (typeof window.sApp === 'function') window.sApp();
-    window.go(tipoU === 'pendiente' ? 'espera' : 'portafolio');
+    window.go('portafolio');
     // Carga el inventario público (igual que el flujo de login normal)
     if (typeof window.load === 'function') window.load();
   } catch(e) {
