@@ -1276,7 +1276,7 @@ function _renderRefWizard() {
   }
   el.innerHTML = h;
   if (step === 2) {
-    if (typeof window.initFotoUpload === 'function') window.initFotoUpload('refFotoUp', r => { window._refData.fotoUrl = r.url; }, 0);
+    if (typeof window.initFotoUpload === 'function') window.initFotoUpload('refFotoUp', r => { window._refData.fotoUrl = r.url; window._refData.fotoHash = r.hash || null; }, 0);
     window.refUpdateCalc();
   }
 };

@@ -2360,26 +2360,156 @@ window.renderReferralInbox = async function(containerId) {
 const BONO_BASE = 50000;
 const COMISION_PCT = 0.10;
 
+// --- Helpers de normalización y dedup ---
+window.normTelRef = function(t) {
+  let x = (t || '').replace(/\D/g, '');
+  if (x.startsWith('57') && x.length === 12) x = x.slice(2);
+  return x;
+};
+window.normEmailRef = function(e) {
+  const v = (e || '').trim().toLowerCase();
+  return v || null;
+};
+
+// Rate limit: máx por referidor
+const REF_RATE_DAY = 5;
+const REF_RATE_WEEK = 20;
+
 // --- Crear referido ---
 window.crearReferido = async function(d) {
   if (!d.propNombre?.trim()) { window.toast('Nombre del propietario obligatorio', 'twarn'); return null; }
   if (!d.propTelefono?.trim()) { window.toast('Teléfono del propietario obligatorio', 'twarn'); return null; }
   if (!d.comoEncontro) { window.toast('Selecciona cómo lo encontraste', 'twarn'); return null; }
-  const tel = d.propTelefono.replace(/\D/g, '');
-  if (tel.length < 7) { window.toast('Teléfono inválido', 'twarn'); return null; }
-  // Check duplicate
-  const { data: dup } = await SB().from('referidos').select('id,referidor:usuarios!referidor_id(nombre)').eq('propietario_telefono', tel).not('estado', 'eq', 'rechazado').limit(1);
-  if (dup?.length) { window.toast('Este propietario ya fue referido por ' + (dup[0].referidor?.nombre || 'otro'), 'twarn'); return null; }
+
+  // Capa 1 — Normalización y validación estricta
+  const tel = window.normTelRef(d.propTelefono);
+  const email = window.normEmailRef(d.propEmail);
+  if (tel.length !== 10 || !tel.startsWith('3')) {
+    window.toast('Teléfono inválido. Debe ser celular colombiano de 10 dígitos (3XXXXXXXXX)', 'twarn');
+    return null;
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    window.toast('Email inválido', 'twarn'); return null;
+  }
+
   const u = U();
+  if (!u) { window.toast('Sesión expirada', 'twarn'); return null; }
+
+  // Capa 2 — Self-referral guard
+  const myTel = window.normTelRef(u.telefono_contacto);
+  const myEmail = window.normEmailRef(u.email || u.usuario);
+  if (tel && myTel && tel === myTel) {
+    window.toast('No puedes referirte a ti mismo', 'twarn'); return null;
+  }
+  if (email && myEmail && email === myEmail) {
+    window.toast('No puedes referirte a ti mismo', 'twarn'); return null;
+  }
+
+  // Capa 5 — Rate limit por referidor
+  const now = new Date();
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: cDay }, { count: cWeek }] = await Promise.all([
+    SB().from('referidos').select('id', { count: 'exact', head: true }).eq('referidor_id', u.id).gte('created_at', dayAgo),
+    SB().from('referidos').select('id', { count: 'exact', head: true }).eq('referidor_id', u.id).gte('created_at', weekAgo)
+  ]);
+  if ((cDay || 0) >= REF_RATE_DAY) {
+    window.toast('Límite diario alcanzado (' + REF_RATE_DAY + ' referidos/día). Intenta mañana.', 'twarn');
+    return null;
+  }
+  if ((cWeek || 0) >= REF_RATE_WEEK) {
+    window.toast('Límite semanal alcanzado (' + REF_RATE_WEEK + ' referidos/semana).', 'twarn');
+    return null;
+  }
+
+  // Capa 3 — Cruce multi-tabla (referidos, inmuebles, usuarios)
+  // Cooldown para rechazos subjetivos: 30 días
+  const COOLDOWN_DAYS = 30;
+  const cooldownCut = new Date(now.getTime() - COOLDOWN_DAYS * 24 * 60 * 60 * 1000).getTime();
+  const isBlockingReferral = (rows) => {
+    if (!rows?.length) return null;
+    for (const r of rows) {
+      if (r.estado !== 'rechazado') return r; // activo → bloquea siempre
+      if (r.tipo_rechazo === 'objetivo') return r; // rechazo objetivo → bloquea siempre
+      if (r.tipo_rechazo === 'subjetivo' && new Date(r.created_at).getTime() > cooldownCut) return r; // aún en cooldown
+    }
+    return null;
+  };
+
+  const checks = [
+    SB().from('referidos').select('id,estado,tipo_rechazo,created_at,referidor:usuarios!referidor_id(nombre)').eq('propietario_telefono', tel).order('created_at', { ascending: false }).limit(5),
+    SB().from('inmuebles').select('id,codigo_house,captador:usuarios!captador_id(nombre)').eq('propietario_telefono', tel).eq('eliminado', false).limit(1),
+    SB().from('usuarios').select('id,nombre,tipo_usuario').eq('telefono_contacto', tel).limit(1)
+  ];
+  if (email) {
+    checks.push(SB().from('referidos').select('id,estado,tipo_rechazo,created_at,referidor:usuarios!referidor_id(nombre)').eq('propietario_email', email).order('created_at', { ascending: false }).limit(5));
+    checks.push(SB().from('inmuebles').select('id,codigo_house,captador:usuarios!captador_id(nombre)').eq('propietario_email', email).eq('eliminado', false).limit(1));
+    checks.push(SB().from('usuarios').select('id,nombre,tipo_usuario').eq('email', email).limit(1));
+  }
+  // Capa 7 — foto hash (solo si viene)
+  if (d.fotoHash) {
+    checks.push(SB().from('referidos').select('id,referidor:usuarios!referidor_id(nombre)').eq('foto_hash', d.fotoHash).not('estado', 'eq', 'rechazado').limit(1));
+  }
+  const results = await Promise.all(checks);
+  let idx = 0;
+  const refTel = results[idx++];
+  const invTel = results[idx++];
+  const usrTel = results[idx++];
+  const refMail = email ? results[idx++] : null;
+  const invMail = email ? results[idx++] : null;
+  const usrMail = email ? results[idx++] : null;
+  const fotoDup = d.fotoHash ? results[idx++] : null;
+
+  const blockRefTel = isBlockingReferral(refTel?.data);
+  if (blockRefTel) {
+    window.toast('Este propietario ya fue referido por ' + (blockRefTel.referidor?.nombre || 'otro referidor'), 'twarn');
+    return null;
+  }
+  const blockRefMail = isBlockingReferral(refMail?.data);
+  if (blockRefMail) {
+    window.toast('Este email ya fue referido por ' + (blockRefMail.referidor?.nombre || 'otro referidor'), 'twarn');
+    return null;
+  }
+  if (invTel?.data?.length) {
+    window.toast('Este propietario ya está en el inventario House (código ' + (invTel.data[0].codigo_house || '?') + ')', 'twarn');
+    return null;
+  }
+  if (invMail?.data?.length) {
+    window.toast('Este email ya está en el inventario House (código ' + (invMail.data[0].codigo_house || '?') + ')', 'twarn');
+    return null;
+  }
+  if (usrTel?.data?.length) {
+    const tipo = usrTel.data[0].tipo_usuario || 'interno';
+    window.toast('Este teléfono ya pertenece a un usuario del portal (' + tipo + ')', 'twarn');
+    return null;
+  }
+  if (usrMail?.data?.length) {
+    const tipo = usrMail.data[0].tipo_usuario || 'interno';
+    window.toast('Este email ya pertenece a un usuario del portal (' + tipo + ')', 'twarn');
+    return null;
+  }
+  if (fotoDup?.data?.length) {
+    window.toast('Esta misma foto del aviso ya fue usada por ' + (fotoDup.data[0].referidor?.nombre || 'otro referidor'), 'twarn');
+    return null;
+  }
   const { data, error } = await SB().from('referidos').insert({
     referidor_id: u.id, propietario_nombre: d.propNombre.trim(), propietario_telefono: tel,
-    propietario_email: d.propEmail?.trim() || null, tipo_inmueble: d.tipo || null,
+    propietario_email: email, tipo_inmueble: d.tipo || null,
     ciudad: d.ciudad?.trim() || 'Pereira', barrio: d.barrio?.trim() || null,
     direccion_aprox: d.direccion?.trim() || null, canon_aproximado: d.canon ? parseFloat(d.canon) : null,
-    foto_aviso_url: d.fotoUrl || null, como_encontro: d.comoEncontro, notas: d.notas?.trim() || null,
+    foto_aviso_url: d.fotoUrl || null, foto_hash: d.fotoHash || null,
+    como_encontro: d.comoEncontro, notas: d.notas?.trim() || null,
     estado: 'registrado', bono_monto: BONO_BASE, comision_porcentaje: COMISION_PCT
   }).select().single();
-  if (error) { window.toast('Error: ' + error.message, 'terr'); return null; }
+  if (error) {
+    // Capa 4 — race condition: unique_violation (DB constraint)
+    if (error.code === '23505') {
+      window.toast('Este propietario ya fue referido (conflicto de concurrencia)', 'twarn');
+      return null;
+    }
+    window.toast('Error: ' + error.message, 'terr');
+    return null;
+  }
   await window.noti('referido_nuevo', 'amarillo', '🤝 Nuevo referido de ' + u.nombre,
     u.nombre + ' refirió ' + (d.tipo || 'inmueble') + ' en ' + (d.barrio || d.ciudad || '?') + '. Propietario: ' + d.propNombre + ' (' + tel + ')' + (d.canon ? '. Canon aprox: ' + fm(d.canon) : ''),
     null, 'admin', null);
@@ -2438,9 +2568,16 @@ window._ejecutarRechazo = async function(id) {
   if (!motivo) { window.toast('Selecciona un motivo', 'twarn'); return; }
   const nota = document.getElementById('rechazoNota')?.value?.trim();
   const motivoFinal = motivo + (nota ? ' — ' + nota : '');
+  // Capa 6 — categorizar el motivo como objetivo (bloqueo permanente) o subjetivo (permite reintento en 30 días)
+  const motivosObjetivos = [
+    'Datos falsos o teléfono inexistente',
+    'Inmueble ya está en el inventario de House',
+    'Propietario tiene impedimentos legales'
+  ];
+  const tipoRechazo = motivosObjetivos.includes(motivo) ? 'objetivo' : 'subjetivo';
   document.getElementById('rechazoDlg')?.remove();
   const u = U();
-  await SB().from('referidos').update({ estado: 'rechazado', motivo_rechazo: motivoFinal, verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
+  await SB().from('referidos').update({ estado: 'rechazado', motivo_rechazo: motivoFinal, tipo_rechazo: tipoRechazo, verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
   const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(usuario,email),tipo_inmueble,barrio').eq('id', id).single();
   if (r?.referidor) await window.noti('referido_rechazado', 'rojo', '❌ Referido no aprobado', 'Tu referido del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || '') + ' no fue aprobado. Motivo: ' + motivoFinal, r.referidor.usuario || r.referidor.email, null, null);
   window.toast('❌ Rechazado');

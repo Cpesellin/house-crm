@@ -32,6 +32,7 @@ export async function uploadToCloudinary(file) {
       url: data.secure_url,
       thumb: data.secure_url.replace('/upload/', '/upload/w_400,c_fill,f_auto/'),
       tipo: data.resource_type === 'video' ? 'video' : 'imagen',
+      hash: data.etag || null, // MD5 del archivo — usado para detectar fotos duplicadas
     };
   }
   throw new Error(data.error?.message || 'Upload failed');
