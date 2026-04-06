@@ -407,8 +407,7 @@ function sApp() {
         menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
         menuH += '<button class="mi" data-s="mis-inm" onclick="go(\'mis-inm\')"><span class="mic">\u{1F3E0}</span>Mis inmuebles<span class="mib" id="misinmBadge" style="display:none">0</span></button>';
         menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar inmueble</button>';
-        // Cliente: el filtro "♥ Mis favoritos" del portafolio cubre esta función, evitamos duplicación
-        if (tipoU !== 'cliente') menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
+        menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
         menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
         menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
         menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
