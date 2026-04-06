@@ -1452,7 +1452,7 @@ window.renderPropietariosLanding = function() {
   // Office photo
   h += '<div style="padding:20px 16px 0">';
   h += '<div style="position:relative;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12);border:1.5px solid var(--brd)">';
-  h += '<img src="/img/oficina.jpg" alt="Oficina Inmobiliaria House" style="width:100%;height:auto;display:block" onerror="this.parentElement.style.display=\'none\'">';
+  h += '<img src="/img/oficina.png" alt="Oficina Inmobiliaria House" style="width:100%;height:auto;display:block" onerror="this.parentElement.style.display=\'none\'">';
   h += '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:20px 16px 14px;color:#fff">';
   h += '<div style="font-family:Fraunces,serif;font-size:16px;font-weight:800">📍 Visítenos en nuestra oficina</div>';
   h += '<div style="font-size:12px;opacity:.95;margin-top:2px">Cl. 14 #14-09, Pereira · Risaralda</div>';
