@@ -2175,7 +2175,22 @@ window.enviarMsg = async function(convId,receptorId,inmuebleId) {
     if(c){c.insertAdjacentHTML('beforeend',`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><div style="max-width:75%;padding:10px 14px;border-radius:12px 12px 4px 12px;background:var(--b600);color:#fff"><div style="font-size:12px;line-height:1.5">${_escHtml(texto)}</div><div style="font-size:9px;opacity:.7;text-align:right;margin-top:4px">${hr} ✓</div></div></div>`);c.scrollTop=c.scrollHeight;}
     // Notification
     const p=inmuebleId?findInm(inmuebleId):null;const asunto=p?p.tipo+' en '+p.ciudad:'mensaje directo';
-    await window.noti('mensaje','info','💬 '+u.nombre+' te escribió',u.nombre+': "'+(texto.length>60?texto.substring(0,60)+'...':texto)+'" — Re: '+asunto,receptorId,null,inmuebleId);
+    const textoCorto=texto.length>60?texto.substring(0,60)+'...':texto;
+    // If sender is a cliente, attach contact info so the captador (and admin/oficina) can reach out
+    const esCli=u.tipo_usuario==='cliente';
+    let titulo='💬 '+u.nombre+' te escribió';
+    let mensajeNoti=u.nombre+': "'+textoCorto+'" — Re: '+asunto;
+    if(esCli){
+      const cliInfo='👤 '+u.nombre+(u.telefono_contacto?' · 📱 '+u.telefono_contacto:'')+(u.email?' · ✉️ '+u.email:'');
+      titulo='🏠 Cliente interesado: '+u.nombre+' — '+asunto;
+      mensajeNoti=cliInfo+' — "'+textoCorto+'"';
+    }
+    await window.noti('mensaje','info',titulo,mensajeNoti,receptorId,null,inmuebleId);
+    // Replicate to admin and oficina when sender is cliente
+    if(esCli){
+      await window.noti('mensaje','info',titulo,mensajeNoti,null,'admin',inmuebleId);
+      await window.noti('mensaje','info',titulo,mensajeNoti,null,'oficina',inmuebleId);
+    }
   }catch(e){console.error('[enviarMsg]',e);window.toast('Error','terr');}
 };
 

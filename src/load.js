@@ -191,11 +191,15 @@ function render(ls) {
     const esInmExterno = p.origen === 'externo';
     let actBtn;
     if (_isExt) {
+      const _isCli = _tipoU === 'cliente';
       if (esInmExterno) {
         // Inmueble de asesor externo → botón Contactar (chat interno)
         actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1;background:var(--b600);color:#fff;border:none" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">💬 Contactar</button><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
+      } else if (_isCli) {
+        // Cliente: priorizar Ver detalle (acceso a descripcion_cliente vía enlace público) + Me interesa
+        actBtn = `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">🏠 Me interesa</button></div>`;
       } else {
-        // Inmueble del equipo interno → WhatsApp + Estoy interesado (chat interno)
+        // Vendedor externo / propietario → WhatsApp + Estoy interesado (chat interno)
         actBtn = `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">🏠 Me interesa</button></div>`;
       }
     } else {
