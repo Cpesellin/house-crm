@@ -378,6 +378,10 @@ function sApp() {
         myTgl.setAttribute('onclick', 'toggleFavFilter()');
       }
     }
+    // Como myToggle ya cumple la función de "Mis favoritos" para externos,
+    // ocultamos el pill duplicado "♡ Favs" (favToggle). Para internos queda intacto.
+    const favTgl = document.getElementById('favToggle');
+    if (favTgl) favTgl.style.display = 'none';
     // Hide internal-only filters
     const aseFilter = document.getElementById('asesorFilter');
     if (aseFilter) aseFilter.style.display = 'none';
