@@ -1313,6 +1313,11 @@ window.renderMisReferidos = async function() {
   let h = '';
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">' + (isAdmin ? '🤝 Todos los referidos' : '💰 Mis referidos') + '</div></div><button class="bt bp" style="font-size:12px;padding:8px 16px" onclick="go(\'referir\')">+ Referir</button></div>';
 
+  // Gamification level card (for referrers, not admin)
+  if (!isAdmin && typeof window.renderGamificationCard === 'function') {
+    h += window.renderGamificationCard(all);
+  }
+
   // KPIs — Commission dashboard for referrers, basic KPIs for admin
   if (!isAdmin && typeof window.renderCommissionDashboard === 'function') {
     h += window.renderCommissionDashboard({ total: all.length, activos: activos.length, arrendados: all.filter(r => r.estado === 'arrendado').length, rechazados: all.filter(r => r.estado === 'rechazado').length, bonosCobrados: bonos, comisionesCobradas: comPagadas, comisionesPendientes: comPend, totalGanado: totalGanado }, all);
@@ -1542,6 +1547,119 @@ window.propCalcUpdate = function() {
     '<div style="border-top:2px solid var(--brd);padding-top:8px;display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:800;color:var(--tx)">Usted recibe</span><span style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:#065f46">' + fm(ustedRecibe) + '</span></div>' +
     '<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px">Cada mes, sin falta, el día 10</div>' +
     '</div>';
+};
+
+// ══════════════════════════════════════════════════════════════════
+// LANDING PAGE: /referidos-landing — Landing pública del programa de referidos
+// ══════════════════════════════════════════════════════════════════
+
+window.renderReferidosLanding = async function() {
+  const el = document.getElementById('referidosLandingC'); if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--sub)">Cargando...</div>';
+
+  // Fetch real stats
+  let totalReferidos = 0, totalPagado = 0, totalArrendados = 0;
+  try {
+    const { count: refCount } = await SB().from('referidos').select('id', { count: 'exact', head: true }).not('estado', 'eq', 'rechazado');
+    const { count: arrCount } = await SB().from('referidos').select('id', { count: 'exact', head: true }).eq('estado', 'arrendado');
+    const { data: pagos } = await SB().from('pagos_referidos').select('monto').eq('estado', 'pagado');
+    totalReferidos = refCount || 0;
+    totalArrendados = arrCount || 0;
+    totalPagado = (pagos || []).reduce((s, p) => s + (p.monto || 0), 0);
+  } catch(e) { console.error('[Landing]', e); }
+
+  // Fetch recent payouts for feed
+  let recentPayouts = [];
+  try {
+    const { data } = await SB().from('pagos_referidos').select('monto,tipo_pago,inmueble_tipo,inmueble_barrio,pagado_at,referidor:usuarios!referidor_id(nombre)').eq('estado', 'pagado').order('pagado_at', { ascending: false }).limit(10);
+    recentPayouts = data || [];
+  } catch(e) {}
+
+  let h = '';
+
+  // Hero
+  h += '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:40px 20px 32px;text-align:center;color:#fff;border-radius:0 0 24px 24px">';
+  h += '<div style="font-size:48px;margin-bottom:10px">💰</div>';
+  h += '<div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;line-height:1.2;margin-bottom:8px">Gana dinero<br>refiriendo inmuebles</div>';
+  h += '<div style="font-size:14px;opacity:.9;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un apartamento, casa o local en arriendo? Refiérelo a Inmobiliaria House y gana hasta el <strong>10%</strong> del canon mensual.</div>';
+  h += '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:20px">Un apto de $2.5M = $250.000 para ti</div>';
+  h += '<button onclick="go(\'referir\')" style="padding:16px 36px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.15)">🤝 Quiero referir</button>';
+  h += '</div>';
+
+  // Real stats
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:20px 16px">';
+  h += '<div style="text-align:center;padding:16px;background:var(--cd);border-radius:14px;border:1.5px solid var(--brd)"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:var(--b700)">' + totalReferidos + '</div><div style="font-size:10px;color:var(--sub);font-weight:600">Inmuebles referidos</div></div>';
+  h += '<div style="text-align:center;padding:16px;background:var(--cd);border-radius:14px;border:1.5px solid var(--brd)"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:var(--green)">' + totalArrendados + '</div><div style="font-size:10px;color:var(--sub);font-weight:600">Arrendados</div></div>';
+  h += '<div style="text-align:center;padding:16px;background:var(--cd);border-radius:14px;border:1.5px solid var(--brd)"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:#065f46">' + fm(totalPagado) + '</div><div style="font-size:10px;color:var(--sub);font-weight:600">Pagado a referidores</div></div>';
+  h += '</div>';
+
+  // How it works (using the existing renderer)
+  h += '<div style="padding:0 16px 16px">';
+  h += window.renderHowItWorks(true);
+  h += '</div>';
+
+  // Recent payouts feed
+  if (recentPayouts.length > 0) {
+    h += '<div style="padding:0 16px 20px">';
+    h += '<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;margin-bottom:12px;text-align:center;color:var(--tx)">💸 Pagos recientes a referidores</div>';
+    h += '<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:14px;overflow:hidden">';
+    recentPayouts.forEach((p, i) => {
+      const nombre = p.referidor?.nombre || 'Referidor';
+      const masked = nombre.length > 3 ? nombre[0] + '***' + nombre[nombre.length - 1] : '***';
+      const fecha = p.pagado_at ? new Date(p.pagado_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : '';
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px' + (i < recentPayouts.length - 1 ? ';border-bottom:1px solid var(--g100)' : '') + '">';
+      h += '<div style="width:32px;height:32px;border-radius:50%;background:' + (p.tipo_pago === 'bono' ? 'var(--goldbg)' : 'var(--greenbg)') + ';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">' + (p.tipo_pago === 'bono' ? '🟡' : '🟢') + '</div>';
+      h += '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--tx)">' + masked + ' recibió <span style="color:var(--green)">' + fm(p.monto) + '</span></div>';
+      h += '<div style="font-size:10px;color:var(--sub)">' + (p.tipo_pago === 'bono' ? 'Bono' : 'Comisión') + ' · ' + (p.inmueble_tipo || '') + ' en ' + (p.inmueble_barrio || '?') + ' · ' + fecha + '</div></div></div>';
+    });
+    h += '</div></div>';
+  }
+
+  // Calculator
+  h += '<div style="padding:20px 16px;text-align:center;background:var(--cd2);border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)">';
+  h += '<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;margin-bottom:4px;color:var(--tx)">💰 ¿Cuánto puedes ganar?</div>';
+  h += '<div style="font-size:12px;color:var(--sub);margin-bottom:14px">Ingresa el canon del inmueble que quieres referir</div>';
+  h += '<input id="refLandCalc" type="number" inputmode="numeric" placeholder="Ej: 2500000" style="width:100%;max-width:280px;padding:14px;border:2px solid var(--b300);border-radius:12px;font-size:18px;font-weight:700;text-align:center;font-family:inherit;color:var(--tx);background:var(--cd)" oninput="refLandCalcUpdate()">';
+  h += '<div id="refLandCalcResult" style="margin-top:12px"></div>';
+  h += '</div>';
+
+  // Who can participate
+  h += '<div style="padding:24px 16px">';
+  h += '<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;text-align:center;margin-bottom:16px;color:var(--tx)">¿Quién puede participar?</div>';
+  [['🛡️','Celadores y vigilantes','Ustedes saben cuándo se desocupa un apto antes que nadie.'],['🏢','Administradores de conjuntos','Información privilegiada sobre inmuebles vacíos.'],['👨‍👩‍👧','Amigos y familiares','¿Tu vecino arrienda? ¿Tu tía tiene un apto vacío?'],['🧑‍💼','Asesores de la inmobiliaria','Ganan extra por cada referido que consigan.'],['🤷','Cualquier persona','Mayor de edad, sin requisitos ni experiencia.']].forEach(p => {
+    h += '<div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start"><div style="font-size:24px;flex-shrink:0">' + p[0] + '</div><div><div style="font-size:13px;font-weight:700;color:var(--tx)">' + p[1] + '</div><div style="font-size:12px;color:var(--sub)">' + p[2] + '</div></div></div>';
+  });
+  h += '</div>';
+
+  // Policies
+  h += '<div style="padding:0 16px 16px">';
+  h += window.renderReferralPolicies();
+  h += '</div>';
+
+  // CTA final
+  h += '<div style="padding:28px 16px;text-align:center;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff">';
+  h += '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:8px">¿Listo para ganar?</div>';
+  h += '<div style="font-size:13px;opacity:.9;margin-bottom:20px">Registra tu primer referido en menos de 2 minutos</div>';
+  h += '<button onclick="go(\'referir\')" style="padding:16px 36px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px">🤝 Referir ahora</button>';
+  h += '<div style="font-size:12px;opacity:.7;margin-top:8px">📍 Inmobiliaria House · Cl. 14 #14-09, Pereira</div>';
+  h += '</div>';
+
+  el.innerHTML = h;
+};
+
+window.refLandCalcUpdate = function() {
+  const input = document.getElementById('refLandCalc');
+  const box = document.getElementById('refLandCalcResult');
+  if (!input || !box) return;
+  const canon = parseFloat(input.value) || 0;
+  if (canon <= 0) { box.innerHTML = ''; return; }
+  const total = Math.round(canon * 0.10);
+  const bono = 50000;
+  const neto = Math.max(0, total - bono);
+  box.innerHTML = '<div style="background:var(--cd);border:2px solid #bbf7d0;border-radius:14px;padding:16px;max-width:300px;margin:0 auto;text-align:center">' +
+    '<div style="font-size:11px;color:#065f46;font-weight:600;margin-bottom:4px">Tu ganancia total</div>' +
+    '<div style="font-family:Fraunces,serif;font-size:30px;font-weight:800;color:#065f46">' + fm(total) + '</div>' +
+    '<div style="display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:11px;color:#065f46"><div>' + fm(bono) + '<br><span style="font-size:9px;opacity:.7">al firmar contrato</span></div><div style="width:1px;background:#bbf7d0"></div><div>' + fm(neto) + '<br><span style="font-size:9px;opacity:.7">al arrendar</span></div></div></div>';
 };
 
 // ══════════════════════════════════════════════════════════════════

@@ -2580,11 +2580,62 @@ window.refUpdateCalc = function() {
 
 // --- Referral Banner for portal ---
 window.renderReferralBanner = function() {
-  return '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:16px;padding:24px;margin:20px 14px;text-align:center;color:#fff"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:6px">Gana dinero refiriendo inmuebles</div><div style="font-size:13px;opacity:.9;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un inmueble en arriendo? Refierelo y gana hasta el <strong>10%</strong> del primer canon.</div><div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;margin-bottom:16px">Un apto de $2.5M = $250.000 para ti</div><button onclick="go(\'referir\')" style="padding:14px 32px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤝 Quiero referir un inmueble</button></div>';
+  const u = window.userStore?.get();
+  const cta = u ? "go('referir')" : "go('referidos-landing')";
+  const btnTxt = u ? '🤝 Quiero referir un inmueble' : '🤝 Conoce el programa';
+  return '<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:16px;padding:24px;margin:20px 14px;text-align:center;color:#fff"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:6px">Gana dinero refiriendo inmuebles</div><div style="font-size:13px;opacity:.9;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">¿Conoces un inmueble en arriendo? Refiérelo y gana hasta el <strong>10%</strong> del primer canon.</div><div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;margin-bottom:16px">Un apto de $2.5M = $250.000 para ti</div><button onclick="' + cta + '" style="padding:14px 32px;border:none;border-radius:30px;background:#fff;color:#1e3a5f;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">' + btnTxt + '</button></div>';
 };
 
 // ══════════════════════════════════════════════════════════════════
-// 25. PAYMENT SYSTEM — Métodos de pago + Panel admin + Historial
+// 25. GAMIFICATION — Niveles, progreso, logros
+// ══════════════════════════════════════════════════════════════════
+
+const REF_LEVELS = [
+  { name: 'Bronce', emoji: '🥉', min: 0, color: '#cd7f32', bg: 'linear-gradient(135deg,#cd7f32,#a0522d)' },
+  { name: 'Plata', emoji: '🥈', min: 3, color: '#a8a9ad', bg: 'linear-gradient(135deg,#a8a9ad,#71706e)' },
+  { name: 'Oro', emoji: '🥇', min: 8, color: '#ffd700', bg: 'linear-gradient(135deg,#ffd700,#daa520)' },
+  { name: 'Diamante', emoji: '💎', min: 15, color: '#b9f2ff', bg: 'linear-gradient(135deg,#48d1cc,#0097a7)' }
+];
+
+window.getRefLevel = function(refs) {
+  const count = (refs || []).filter(r => !['rechazado'].includes(r.estado)).length;
+  let lvl = REF_LEVELS[0];
+  for (let i = REF_LEVELS.length - 1; i >= 0; i--) {
+    if (count >= REF_LEVELS[i].min) { lvl = REF_LEVELS[i]; break; }
+  }
+  const nextIdx = REF_LEVELS.indexOf(lvl) + 1;
+  const next = nextIdx < REF_LEVELS.length ? REF_LEVELS[nextIdx] : null;
+  const progress = next ? Math.min(100, Math.round(((count - lvl.min) / (next.min - lvl.min)) * 100)) : 100;
+  return { ...lvl, count, next, progress };
+};
+
+window.renderGamificationCard = function(refs) {
+  const lv = window.getRefLevel(refs);
+  const totalGanado = (refs || []).reduce((s, r) => {
+    let g = 0;
+    if (r.bono_pagado) g += (r.bono_monto || 0);
+    if (r.comision_pagada) g += (r.comision_monto || 0);
+    return s + g;
+  }, 0);
+  let h = '<div style="background:' + lv.bg + ';border-radius:16px;padding:20px;margin-bottom:16px;color:#fff;text-align:center;position:relative;overflow:hidden">';
+  h += '<div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:.15">' + lv.emoji + '</div>';
+  h += '<div style="font-size:36px;margin-bottom:4px">' + lv.emoji + '</div>';
+  h += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;opacity:.8;margin-bottom:2px">Nivel</div>';
+  h += '<div style="font-family:Fraunces,serif;font-size:24px;font-weight:800">' + lv.name + '</div>';
+  h += '<div style="font-size:12px;opacity:.9;margin-top:4px">' + lv.count + ' referido' + (lv.count !== 1 ? 's' : '') + ' activos</div>';
+  if (lv.next) {
+    h += '<div style="margin-top:12px;background:rgba(0,0,0,.25);border-radius:10px;height:8px;overflow:hidden"><div style="height:100%;background:rgba(255,255,255,.8);border-radius:10px;width:' + lv.progress + '%;transition:width .5s"></div></div>';
+    h += '<div style="font-size:10px;opacity:.8;margin-top:4px">' + (lv.next.min - lv.count) + ' más para ' + lv.next.emoji + ' ' + lv.next.name + '</div>';
+  } else {
+    h += '<div style="font-size:12px;margin-top:8px;font-weight:700">🏆 ¡Nivel máximo alcanzado!</div>';
+  }
+  if (totalGanado > 0) h += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.3);font-size:12px">Total ganado: <strong style="font-size:16px">' + fm(totalGanado) + '</strong></div>';
+  h += '</div>';
+  return h;
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 26. PAYMENT SYSTEM — Métodos de pago + Panel admin + Historial
 // ══════════════════════════════════════════════════════════════════
 
 // --- Masking functions ---
