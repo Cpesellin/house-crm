@@ -809,6 +809,8 @@ function chevSvg(open, light) { return `<svg class="pill-chev${open?' open':''}"
 
 // ── Toggle panel ──
 window.togglePanel = function(name) {
+  // Cancela cualquier auto-cierre pendiente al abrir/cerrar manualmente
+  if (window._panelCloseTimer) { clearTimeout(window._panelCloseTimer); window._panelCloseTimer = null; }
   const prev = window._openPanel;
   window._openPanel = (prev === name) ? null : name;
   ['neg','ciudad','tipo','precio','asesor'].forEach(p => {
@@ -887,6 +889,13 @@ window.pillToggle = function(g,v) {
   updatePills();
   window.renderSel();
   window.doSearch();
+  // Auto-cierre del panel 400ms tras la última selección (debounced)
+  // permite multi-select continuo: cada click reinicia el timer
+  if (window._panelCloseTimer) clearTimeout(window._panelCloseTimer);
+  window._panelCloseTimer = setTimeout(() => {
+    window._panelCloseTimer = null;
+    if (window._openPanel) window.togglePanel(null);
+  }, 400);
 };
 
 // ── Asesor pick (single select, close panel) ──
