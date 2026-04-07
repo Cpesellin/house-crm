@@ -109,8 +109,9 @@ function render(ls) {
   const D = window.D || [];
   const U = window.userStore?.get();
   const SOL = window.SOL || [];
-  const _tipoU = U?.tipo_usuario || 'interno';
-  const _isExt = _tipoU === 'cliente' || _tipoU === 'vendedor_externo' || _tipoU === 'propietario';
+  const _tipoU = U?.tipo_usuario || (U ? 'interno' : 'visitante');
+  // Visitantes (sin login) se tratan como externos: sin direccion real, sin asesor, sin portales.
+  const _isExt = !U || _tipoU === 'cliente' || _tipoU === 'vendedor_externo' || _tipoU === 'propietario';
 
   // Filter out final states (Arrendado, Vendido, Retirado) from inventory view
   const FINAL = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
@@ -191,8 +192,12 @@ function render(ls) {
     const esInmExterno = p.origen === 'externo';
     let actBtn;
     if (_isExt) {
+      const _isVisitor = !U;
       const _isCli = _tipoU === 'cliente';
-      if (esInmExterno) {
+      if (_isVisitor) {
+        // Visitante: Ver detalle (abre showPublicView con wa/llamar gateados) + Me interesa gateado
+        actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1" onclick="event.stopPropagation();window.trackPropertyView&&window.trackPropertyView('${p.id}');showPublicView('${p.id}')">Ver detalle →</button><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();window._pendingContactInmuebleId='${p.id}';window.showAuthPrompt('contacto',{icono:'🏠',titulo:'Me interesa · Contactar al asesor',mensaje:'Crea tu cuenta gratis para ponerte en contacto con el asesor de este inmueble.',beneficios:['📱 Contacta directo al asesor','💬 WhatsApp y llamada','🔔 Solo te enviamos notificaciones si tú lo autorizas','🔒 Sin spam — tus datos protegidos'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'})">🔒 Me interesa</button></div>`;
+      } else if (esInmExterno) {
         // Inmueble de asesor externo → botón Contactar (chat interno)
         actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1;background:var(--b600);color:#fff;border:none" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">💬 Contactar</button><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
       } else if (_isCli) {
@@ -209,8 +214,13 @@ function render(ls) {
     // Portales badge (hidden for external users)
     const ptbHtml = _isExt ? '' : `<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>`;
 
-    // Fav button for all logged-in users
-    const favBtn = U ? `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)${(window.FAVS||[]).includes(p.id)?';background:#e11d73':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${(window.FAVS||[]).includes(p.id)?'❤️':'🤍'}</button>` : '';
+    // Fav button — visitantes ven un corazón gateado (dispara auth prompt)
+    let favBtn;
+    if (U) {
+      favBtn = `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)${(window.FAVS||[]).includes(p.id)?';background:#e11d73':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${(window.FAVS||[]).includes(p.id)?'❤️':'🤍'}</button>`;
+    } else {
+      favBtn = `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="event.stopPropagation();toggleFavorito('${p.id}')">🤍</button>`;
+    }
 
     if (hasF) {
       h += `<div class="pc" style="position:relative">${favBtn}${cardTop}<div class="pcbd"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:18px">${emo(tip)}</span><div style="flex:1"><div style="display:flex;align-items:center;gap:6px"><div style="font-size:14px;font-weight:800">${tip}</div>${cod ? `<span class="cod-badge" onclick="event.stopPropagation();navigator.clipboard.writeText('${cod}');toast('📋 ${cod} copiado')">${cod}</span>` : ''}</div><div style="font-size:11px;color:var(--sub)">${ubiTxt}</div></div></div><div class="mods">${md}</div>${pr}${sp2 ? `<div class="sps">${sp2}</div>` : ''}${ase ? `<div class="asl">👤 ${ase}</div>` : ''}${ptbHtml}${actBtn}</div></div>`;

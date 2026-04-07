@@ -1402,6 +1402,18 @@ window.showPublicView = async function(id) {
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
     const neg = pv > 0 && pa > 0 ? 'Venta y Arriendo' : pa > 0 ? 'Arriendo' : 'Venta';
 
+    // Visitor gate: sin login, contactos protegidos
+    const _isVisitor = !U();
+    const _waUrl = 'https://wa.me/' + capTel + '?text=' + encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id));
+    const _telUrl = 'tel:+' + capTel;
+    if (_isVisitor) { window._pendingContactInmuebleId = id; }
+    const _gateCall = `window._pendingContactInmuebleId='${id}';window.showAuthPrompt('contacto',{icono:'📞',titulo:'Contactar al asesor',mensaje:'Crea tu cuenta gratis para acceder a los datos de contacto del asesor.',beneficios:['📱 Número directo del asesor','💬 WhatsApp para consultas rápidas','🔔 Solo te enviamos notificaciones si tú lo autorizas','🔒 Tus datos están protegidos'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'});return false;`;
+    const _waHref = _isVisitor ? 'javascript:void(0)' : _waUrl;
+    const _telHref = _isVisitor ? 'javascript:void(0)' : _telUrl;
+    const _waClick = _isVisitor ? `onclick="${_gateCall}"` : '';
+    const _telClick = _isVisitor ? `onclick="${_gateCall}"` : '';
+    const _waTarget = _isVisitor ? '' : 'target="_blank"';
+
     let h = '';
 
     // ── HEADER FIJO ──
@@ -1409,7 +1421,7 @@ window.showPublicView = async function(id) {
       <img src="/img/logo.png" style="height:30px">
       <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>
       <div style="flex:1"></div>
-      <a href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id))}" target="_blank" style="padding:6px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Contactar</a>
+      <a href="${_waHref}" ${_waTarget} ${_waClick} style="padding:6px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">${_isVisitor ? '🔒 Contactar' : 'Contactar'}</a>
     </div>`;
 
     h += '<div style="max-width:560px;margin:0 auto;padding:0 0 80px;background:#fff;min-height:100vh">';
@@ -1502,10 +1514,20 @@ window.showPublicView = async function(id) {
     h += `</div>`; // close padding div
 
     // ── FOOTER CON BOTONES STICKY ──
-    h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;display:flex;gap:8px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-      <a href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id))}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
-      <a href="tel:+${capTel}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
-    </div>`;
+    if (_isVisitor) {
+      h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <a href="javascript:void(0)" ${_waClick} style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 WhatsApp</a>
+          <a href="javascript:void(0)" ${_telClick} style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 Llamar</a>
+        </div>
+        <div style="font-size:10px;color:#64748b;text-align:center;font-weight:600">Crea tu cuenta gratis para contactar al asesor · Solo enviamos notificaciones si las autorizas</div>
+      </div>`;
+    } else {
+      h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;display:flex;gap:8px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
+        <a href="${_waUrl}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
+        <a href="${_telUrl}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
+      </div>`;
+    }
 
     // ── BANNERS CTA ──
     const baseUrl = window.location.origin;
@@ -3392,5 +3414,40 @@ window.onRegistrationComplete = async function(contexto) {
 
 // --- Init visitor state on load ---
 window.initVisitorState();
+
+// ══════════════════════════════════════════════════════════════════
+// Visitor chrome overrides — sec-inv (CRM filters) for unauth users
+// ══════════════════════════════════════════════════════════════════
+// Los visitantes usan la MISMA UI de filtros que el cliente (sec-inv con pills)
+// a excepción de Favs (gated) y Míos (oculto).
+window._applyVisitorChrome = function() {
+  if (window.U && window.U()) return; // solo visitante
+  // 1) Ocultar botón "Míos" (no aplica sin sesión)
+  const myBtn = document.getElementById('myToggle');
+  if (myBtn) myBtn.style.display = 'none';
+  // 2) Gatear botón "Favs" — al click, mostrar prompt de suscripción
+  const favBtn = document.getElementById('favToggle');
+  if (favBtn && !favBtn.dataset.visitorGated) {
+    favBtn.dataset.visitorGated = '1';
+    favBtn.setAttribute('onclick', "window.showAuthPrompt('favorito',{icono:'❤️',titulo:'Mis favoritos · solo suscriptores',mensaje:'Crea tu cuenta gratis para guardar los inmuebles que te gustan y acceder a beneficios exclusivos.',beneficios:['❤️ Guarda todos tus favoritos','🔔 Alertas cuando bajen de precio','📱 Accede desde cualquier dispositivo','✅ Sin spam — solo si tú lo autorizas'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'})");
+    favBtn.innerHTML = '♡ Favs 🔒';
+    favBtn.style.borderStyle = 'dashed';
+  }
+  // 3) Inyectar banner de visitante (Ingresar / Registrarse) al tope de sec-inv
+  const invWrap = document.querySelector('#sec-inv .inv-wrap');
+  if (invWrap && !document.getElementById('visitorTopBanner')) {
+    const banner = document.createElement('div');
+    banner.id = 'visitorTopBanner';
+    banner.style.cssText = 'background:#fff;border-bottom:1px solid #e8e4df;padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:60';
+    banner.innerHTML = `
+      <img src="/img/logo.png" style="height:26px" onerror="this.style.display='none'">
+      <span style="font-family:Fraunces,serif;font-size:15px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>
+      <div style="flex:1"></div>
+      <a href="?login=1" style="padding:7px 14px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Ingresar</a>
+      <a href="?reg=1" style="padding:7px 14px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Registrarse gratis</a>
+    `;
+    invWrap.insertBefore(banner, invWrap.firstChild);
+  }
+};
 
 console.log('[functions] ✅ All window functions registered');

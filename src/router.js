@@ -170,8 +170,11 @@ function navigateTo(route) {
   // --- Show target section ---
   const targetCfg = ROUTES[route];
   if (targetCfg) {
-    // Use sectionLoggedIn if user is logged in and the route has it
-    const sectionId = (user && targetCfg.sectionLoggedIn) ? targetCfg.sectionLoggedIn : targetCfg.section;
+    // For /portafolio use sec-inv for ALL (visitors + logged-in externals)
+    // so the filter UX is identical. Visitor-specific UI differences
+    // (hide Míos, gate Favs) are handled inside rInv/load flow.
+    const useLoggedInSection = (route === 'portafolio') || (user && targetCfg.sectionLoggedIn);
+    const sectionId = useLoggedInSection ? (targetCfg.sectionLoggedIn || targetCfg.section) : targetCfg.section;
     if (sectionId) {
       const target = document.getElementById(sectionId);
       if (target) {
@@ -194,8 +197,9 @@ function navigateTo(route) {
 
   // --- Call the route's render function (window global) ---
   let rendererName = ROUTE_RENDERERS[route];
-  // For logged-in external users on portafolio, use rInv (CRM inventory renderer)
-  if (route === 'portafolio' && user && (user.tipo_usuario === 'cliente' || user.tipo_usuario === 'vendedor_externo' || user.tipo_usuario === 'propietario')) {
+  // For /portafolio use rInv (CRM inventory renderer) for ALL users including visitors.
+  // rPortafolio se mantiene como no-op para no romper nada.
+  if (route === 'portafolio') {
     rendererName = 'rInv';
   }
   if (rendererName && typeof window[rendererName] === 'function') {

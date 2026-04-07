@@ -511,6 +511,20 @@ export async function initApp(container) {
       }
       // Init visitor state (localStorage tracking)
       if (typeof window.initVisitorState === 'function') window.initVisitorState();
+
+      // Visitor: load public inventory into window.D so sec-inv (CRM filters) works
+      if (!wantsLogin && typeof window.loadPublic === 'function') {
+        window.loadPublic(null).then(pub => {
+          window.D = pub || [];
+          window.D.forEach(p => { p._dias = window.diasDesde ? window.diasDesde(p.fecha_estado || p.created_at) : 0; });
+          window.MIS = []; window.SOL = []; window.USERS = []; window.ALS = []; window.ALU = []; window.FAVS = [];
+          // Hide internal-only pills + header stats for visitor
+          try { window._applyVisitorChrome && window._applyVisitorChrome(); } catch(e) {}
+          // Render cards with full CRM inventory filters
+          if (typeof window.rInv === 'function') window.rInv();
+          if (typeof window.populateAsesorFilter === 'function') window.populateAsesorFilter();
+        }).catch(e => console.error('[Visitor loadPublic]', e));
+      }
     }
 
     // Auto-open registration form if ?reg=1

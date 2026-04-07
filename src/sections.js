@@ -751,220 +751,46 @@ window.pubFilter = function(group, value, el) {
   window.rPortafolio();
 };
 
-window.rPortafolio = async function() {
-  const el = document.getElementById('portafolioc'); if (!el) return;
-  const u = U();
-  // If user is logged in, portafolio is handled by sec-inv + rInv via router
-  // Don't render the visitor portal header/content
-  if (u) { el.innerHTML = ''; return; }
-  const isVisitor = true;
-  const loginUrl = window.location.pathname + '?login=1';
-  const regUrl = window.location.pathname + '?reg=1';
-
-  // Load data
-  let data = window.PUB;
-  if (!data || !data.length) {
-    el.innerHTML = '<div style="text-align:center;padding:60px;background:#fff"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
-    // Auth progresiva: visitantes ven todo el inventario público (no muro)
-    data = await window.loadPublic(null);
-  }
-
-  // Load favorites for logged-in users
-  let favIds = new Set();
-  if (u && isExterno) {
-    try {
-      const { data: favs } = await SB().from('favoritos').select('inmueble_id').eq('usuario_id', u.id);
-      if (favs) favs.forEach(f => favIds.add(f.inmueble_id));
-    } catch(e) {}
-  }
-
-  // Apply filters
-  const f = window._pubFilters;
-  let filtered = data;
-  if (window._pubFavFilter && favIds.size > 0) filtered = filtered.filter(p => favIds.has(p.id));
-  if (window._pubMyFilter && u) filtered = filtered.filter(p => p.captador_id === u.id || (p.captador && p.captador.id === u.id));
-  filtered = filtered.filter(p => {
-    if (f.neg) { const n = (p.negociacion||'').toLowerCase(); if (f.neg === 'arriendo' && !n.includes('arriendo')) return false; if (f.neg === 'venta' && !n.includes('venta')) return false; }
-    if (f.tipo && !(p.tipo||'').toLowerCase().includes(f.tipo)) return false;
-    if (f.ciudad && !(p.ciudad||'').toLowerCase().includes(f.ciudad)) return false;
-    if (f.q) { const q = f.q.toLowerCase(); if (!(p.tipo||'').toLowerCase().includes(q) && !(p.ciudad||'').toLowerCase().includes(q) && !(p.barrio||'').toLowerCase().includes(q) && !(p.direccion_publica||'').toLowerCase().includes(q)) return false; }
-    return true;
-  });
-
+// Single filter chips block used by the public portafolio (visitantes).
+// Usuarios logueados usan sec-inv (CRM interno), nunca llegan aquí.
+window._renderFilterChips = function(f) {
   let h = '';
-
-  // ════════════════════════════════════════════════
-  // LOGGED-IN EXTERNAL USERS: CRM-style layout (no own header)
-  // ════════════════════════════════════════════════
-  if (u && isExterno) {
-    h += `<div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px">`;
-
-    // Search bar (same style as CRM)
-    h += `<div class="sr"><input class="sin" placeholder="🔍 Buscar zona, tipo, barrio..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()"></div>`;
-
-    // Filter chips (same as CRM but with Favoritos toggle)
-    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">`;
-    h += `<div class="ch${f.neg==='arriendo'?' on':''}" onclick="pubFilter('neg','arriendo',this)">🔑 Arriendo</div>`;
-    h += `<div class="ch${f.neg==='venta'?' on':''}" onclick="pubFilter('neg','venta',this)">💰 Venta</div>`;
-    h += `<div class="ch${f.tipo==='apartamento'?' on':''}" onclick="pubFilter('tipo','apartamento',this)">🏢 Apto</div>`;
-    h += `<div class="ch${f.tipo==='casa'?' on':''}" onclick="pubFilter('tipo','casa',this)">🏡 Casa</div>`;
-    h += `<div class="ch${f.tipo==='finca'?' on':''}" onclick="pubFilter('tipo','finca',this)">🌾 Finca</div>`;
-    h += `<div class="ch${f.tipo==='local'?' on':''}" onclick="pubFilter('tipo','local',this)">🏪 Local</div>`;
-    h += `<div class="ch${f.tipo==='lote'?' on':''}" onclick="pubFilter('tipo','lote',this)">🌳 Lote</div>`;
-    h += `<div class="ch${f.tipo==='oficina'?' on':''}" onclick="pubFilter('tipo','oficina',this)">💼 Oficina</div>`;
-    h += `</div>`;
-
-    // City chips
-    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`;
-    h += `<div class="ch${f.ciudad==='pereira'?' on':''}" onclick="pubFilter('ciudad','pereira',this)">📍 Pereira</div>`;
-    h += `<div class="ch${f.ciudad==='dosquebradas'?' on':''}" onclick="pubFilter('ciudad','dosquebradas',this)">📍 Dosq.</div>`;
-    h += `<div class="ch${f.ciudad==='santa rosa'?' on':''}" onclick="pubFilter('ciudad','santa rosa',this)">📍 Sta Rosa</div>`;
-    h += `<div class="ch${f.ciudad==='cerritos'?' on':''}" onclick="pubFilter('ciudad','cerritos',this)">📍 Cerritos</div>`;
-    h += `</div>`;
-
-    // Favoritos toggle (pink, like Mis inmuebles in CRM)
-    h += `<div style="display:flex;gap:6px;margin-bottom:10px">`;
-    h += `<button onclick="window._pubFavFilter=!window._pubFavFilter;if(window._pubFavFilter)window._pubMyFilter=false;rPortafolio()" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:2px solid ${window._pubFavFilter?'#e11d73':'var(--brd)'};background:${window._pubFavFilter?'#e11d73':'var(--cd)'};color:${window._pubFavFilter?'#fff':'var(--tx)'}">♥ Mis favoritos</button>`;
-    if (tipoU === 'vendedor_externo' || tipoU === 'propietario') {
-      h += `<button onclick="window._pubMyFilter=!window._pubMyFilter;if(window._pubMyFilter)window._pubFavFilter=false;rPortafolio()" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:2px solid ${window._pubMyFilter?'#e11d73':'var(--brd)'};background:${window._pubMyFilter?'#e11d73':'var(--cd)'};color:${window._pubMyFilter?'#fff':'var(--tx)'}">🏠 Mis inmuebles</button>`;
-    }
-    h += `</div>`;
-
-    // Results count
-    h += `<div style="font-size:12px;color:var(--sub);font-weight:700;margin-bottom:8px">${filtered.length} inmueble${filtered.length!==1?'s':''} disponible${filtered.length!==1?'s':''}</div>`;
-
-    // Cards grid (same card style as CRM)
-    h += `<div id="pub-res" class="pub-grid">`;
-    filtered.forEach(p => {
-      const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
-      const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
-      const capTel = p.captador?.telefono_contacto || '573105922763';
-      const capNom = p.captador?.nombre || 'House';
-      const cod = p.codigo_house || '';
-      const previewUrl = cod ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
-      const isFav = favIds.has(p.id);
-      const specs = [];
-      if (p.habitaciones) specs.push('🛏️ '+p.habitaciones);
-      if (p.banos) specs.push('🚿 '+p.banos);
-      if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
-      if (p.estrato) specs.push('E'+p.estrato);
-
-      h += `<div class="pub-card" style="background:var(--cd)">`;
-      if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
-      else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:var(--g100)">${emo(p.tipo)}</div>`;
-      h += `<button class="pub-fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${isFav?'❤️':'🤍'}</button>`;
-      if (p.origen === 'externo') h += `<span style="position:absolute;top:10px;left:10px;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff">🏢 Asesor externo</span>`;
-      h += `<div class="pub-card-body">`;
-      h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
-      h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
-      h += `<div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
-      if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}<span style="font-size:12px;font-weight:500;color:var(--sub)">/mes</span></div>`;
-      if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
-      if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
-      h += `</div>`;
-      h += `<div class="pub-card-actions"><a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado en este inmueble: '+previewUrl)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="pub-card-det" href="${previewUrl}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a></div>`;
-      h += `</div>`;
-    });
-    h += `</div></div>`;
-
-    el.innerHTML = h;
-    return;
-  }
-
-  // ════════════════════════════════════════════════
-  // VISITOR (not logged in): standalone portal with own header
-  // ════════════════════════════════════════════════
-
-  // Header
-  h += `<div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.04)">`;
-  h += `<img src="/img/logo.png" style="height:28px" onerror="this.style.display='none'">`;
-  h += `<span style="font-family:Fraunces,serif;font-size:15px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>`;
-  h += `<div style="flex:1"></div>`;
-  h += `<a href="${loginUrl}" style="padding:8px 16px;background:#fff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">Ingresar</a>`;
-  h += `<a href="${regUrl}" style="padding:8px 16px;background:#2563eb;color:#fff;border:2px solid #2563eb;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;margin-left:6px;white-space:nowrap">Registrarse gratis</a>`;
-  h += `</div>`;
-
-  // Hero banner
-  h += `<div style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:28px 20px;text-align:center;color:#fff">`;
-  h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;line-height:1.2;margin-bottom:6px">Encuentra tu hogar ideal en Pereira</div>`;
-  h += `<div style="font-size:13px;opacity:.85;margin-bottom:16px">Arriendos, ventas y más en el Eje Cafetero</div>`;
-  h += `<div style="max-width:400px;margin:0 auto"><input class="pub-search" placeholder="🔍 Buscar zona, tipo de inmueble..." value="${f.q||''}" oninput="window._pubFilters.q=this.value;window.rPortafolio()" style="background:#fff;color:#1e293b;border:none;padding:12px 16px;border-radius:10px;width:100%;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>`;
-  h += `</div>`;
-
-  // Filters
-  h += `<div style="padding:8px 14px;background:#fff;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap">`;
+  // Negociación + Tipo
+  h += `<div style="padding:8px 14px 4px;background:#fff;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap">`;
   h += `<button class="pub-chip${f.neg==='arriendo'?' act':''}" data-g="neg" onclick="pubFilter('neg','arriendo',this)">🔑 Arriendo</button>`;
   h += `<button class="pub-chip${f.neg==='venta'?' act':''}" data-g="neg" onclick="pubFilter('neg','venta',this)">💰 Venta</button>`;
   h += `<button class="pub-chip${f.tipo==='apartamento'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','apartamento',this)">🏢 Apto</button>`;
   h += `<button class="pub-chip${f.tipo==='casa'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','casa',this)">🏡 Casa</button>`;
   h += `<button class="pub-chip${f.tipo==='finca'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','finca',this)">🌾 Finca</button>`;
   h += `<button class="pub-chip${f.tipo==='local'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','local',this)">🏪 Local</button>`;
+  h += `<button class="pub-chip${f.tipo==='lote'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','lote',this)">🌳 Lote</button>`;
+  h += `<button class="pub-chip${f.tipo==='oficina'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','oficina',this)">💼 Oficina</button>`;
+  h += `<button class="pub-chip${f.tipo==='bodega'?' act':''}" data-g="tipo" onclick="pubFilter('tipo','bodega',this)">🏭 Bodega</button>`;
   h += `</div>`;
-
-  h += `<div style="padding:6px 14px;font-size:12px;color:#64748b;font-weight:700;background:#fff">${filtered.length} inmueble${filtered.length!==1?'s':''}</div>`;
-
-  // Grid
-  h += `<div style="padding:8px 14px;background:#f8fafc;min-height:60vh"><div class="pub-grid">`;
-  filtered.forEach((p, idx) => {
-    const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-    const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
-    const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
-    const cod = p.codigo_house || '';
-    const previewUrl = cod ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
-    const specs = [];
-    if (p.habitaciones) specs.push('🛏️ '+p.habitaciones);
-    if (p.banos) specs.push('🚿 '+p.banos);
-    if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
-
-    h += `<div class="pub-card" style="background:#fff" onclick="window.trackPropertyView&&window.trackPropertyView('${p.id}');typeof showPublicView==='function'?showPublicView('${p.id}'):(window.location.href='${previewUrl}')">`;
-    if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
-    else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:#f1f5f9">${emo(p.tipo)}</div>`;
-    h += `<button class="pub-fav-btn" onclick="event.stopPropagation();toggleFavorito('${p.id}')" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.95);border:none;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">🤍</button>`;
-    h += `<div class="pub-card-body">`;
-    h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
-    h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
-    h += `<div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
-    if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}<span style="font-size:12px;font-weight:500;color:#94a3b8">/mes</span></div>`;
-    if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
-    if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
-    h += `</div>`;
-    h += `</div>`;
-
-    // Scroll banner inline después de la card 10 (solo 1 vez, si aplica)
-    if (idx === 9 && !window.VISITOR?.promptsDismissed?.scroll_banner && !window.VISITOR?.promptsShown?.scroll_banner) {
-      h += `<div class="vis-scroll-banner" id="vis-scroll-banner" style="grid-column:1/-1">`;
-      h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
-      h += `<div class="vsb-title">¿Te gusta lo que ves?</div>`;
-      h += `<div class="vsb-msg">Con una cuenta gratis puedes guardar favoritos, contactar asesores, recibir alertas de precio y hasta ganar dinero refiriendo inmuebles.</div>`;
-      h += `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">`;
-      h += `<button onclick="window.trackPromptShown('scroll_banner');showRegisterModal('scroll')" style="padding:12px 24px;background:linear-gradient(135deg,#122d4f,#1a4f8b);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Crear cuenta gratis</button>`;
-      h += `<button onclick="window.dismissPrompt('scroll_banner');document.getElementById('vis-scroll-banner').remove()" style="padding:12px 16px;background:var(--g100);color:var(--sub);border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">No gracias</button>`;
-      h += `</div></div>`;
-    }
-  });
-  h += `</div></div>`;
-
-  // Registration gate
-  h += `<div id="pub-gate" style="background:#fff;padding:32px 20px;text-align:center;border-top:1px solid #e2e8f0">`;
-  h += `<div style="font-size:32px;margin-bottom:10px">🔓</div>`;
-  h += `<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:#1e293b;margin-bottom:6px">Regístrate gratis para ver todo</div>`;
-  h += `<div style="font-size:14px;color:#64748b;max-width:360px;margin:0 auto 20px;line-height:1.5">Accede al inventario completo, guarda favoritos y recibe alertas de nuevos inmuebles.</div>`;
-  h += `<a href="${regUrl}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">Registrarse gratis</a>`;
-  h += `<div style="margin-top:10px"><a href="${loginUrl}" style="font-size:13px;color:#64748b;text-decoration:underline">Ya tengo cuenta → Ingresar</a></div>`;
+  // Ciudad
+  h += `<div style="padding:4px 14px;background:#fff;display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap">`;
+  h += `<button class="pub-chip${f.ciudad==='pereira'?' act':''}" data-g="ciudad" onclick="pubFilter('ciudad','pereira',this)">📍 Pereira</button>`;
+  h += `<button class="pub-chip${f.ciudad==='dosquebradas'?' act':''}" data-g="ciudad" onclick="pubFilter('ciudad','dosquebradas',this)">📍 Dosquebradas</button>`;
+  h += `<button class="pub-chip${f.ciudad==='santa rosa'?' act':''}" data-g="ciudad" onclick="pubFilter('ciudad','santa rosa',this)">📍 Sta Rosa</button>`;
+  h += `<button class="pub-chip${f.ciudad==='cerritos'?' act':''}" data-g="ciudad" onclick="pubFilter('ciudad','cerritos',this)">📍 Cerritos</button>`;
   h += `</div>`;
-
-  // Owner CTA
-  h += `<div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);padding:28px 20px;text-align:center;border-top:1px solid #bbf7d0">`;
-  h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
-  h += `<div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:#065f46;margin-bottom:6px">¿Tienes un inmueble?</div>`;
-  h += `<div style="font-size:14px;color:#064e3b;max-width:340px;margin:0 auto 16px;line-height:1.5">Suscríbete y publica gratis. Te conectamos con cientos de compradores e inversionistas.</div>`;
-  h += `<a href="${regUrl}" style="display:inline-block;padding:12px 28px;background:#065f46;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">Publicar mi inmueble gratis</a>`;
+  // Favoritos — gate con beneficios (prompt de suscripción)
+  h += `<div style="padding:6px 14px 10px;background:#fff;display:flex;gap:6px;align-items:center;flex-wrap:wrap">`;
+  h += `<button class="pub-chip" style="border:2px dashed #e11d73;color:#e11d73;background:#fff5f9;font-weight:800" onclick="window.showAuthPrompt('favorito',{icono:'❤️',titulo:'Mis favoritos · solo suscriptores',mensaje:'Crea tu cuenta gratis para guardar los inmuebles que te gustan y acceder a beneficios exclusivos.',beneficios:['❤️ Guarda todos tus favoritos','🔔 Alertas cuando bajen de precio','📱 Accede desde cualquier dispositivo','✅ Sin spam — solo si tú lo autorizas'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'})">♥ Mis favoritos 🔒</button>`;
+  h += `<span style="font-size:10px;color:#94a3b8;font-weight:600">· Solo con cuenta gratis</span>`;
   h += `</div>`;
+  return h;
+};
 
-  h += `<div style="background:#fff;padding:20px;text-align:center;border-top:1px solid #e2e8f0"><div style="font-size:11px;color:#94a3b8">© ${new Date().getFullYear()} House · Asesores Inmobiliarios · Pereira, Colombia</div></div>`;
-
-  el.innerHTML = h;
+// rPortafolio: no-op. El router ahora usa sec-inv (rInv) para TODOS los usuarios
+// en /portafolio — visitantes y externos logueados comparten los mismos filtros
+// del CRM (pills de Negocio/Ciudad/Tipo/Precio). Las diferencias para visitante
+// (gate de Favs, ocultar Míos, banner Ingresar/Registrarse) se aplican vía
+// window._applyVisitorChrome() después del render.
+window.rPortafolio = function() {
+  // Limpiar div legacy por si quedó contenido
+  const el = document.getElementById('portafolioc');
+  if (el) el.innerHTML = '';
 };
 
 // --- Favoritos ---
