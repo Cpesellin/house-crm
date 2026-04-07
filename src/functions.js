@@ -1516,16 +1516,20 @@ window.showPublicView = async function(id) {
     // ── FOOTER CON BOTONES STICKY ──
     if (_isVisitor) {
       h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-        <div style="display:flex;gap:8px;margin-bottom:6px">
-          <a href="javascript:void(0)" ${_waClick} style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 WhatsApp</a>
-          <a href="javascript:void(0)" ${_telClick} style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 Llamar</a>
+        <div style="max-width:720px;margin:0 auto">
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <a href="javascript:void(0)" ${_waClick} style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 WhatsApp</a>
+            <a href="javascript:void(0)" ${_telClick} style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 Llamar</a>
+          </div>
+          <div style="font-size:10px;color:#64748b;text-align:center;font-weight:600">Crea tu cuenta gratis para contactar al asesor · Solo enviamos notificaciones si las autorizas</div>
         </div>
-        <div style="font-size:10px;color:#64748b;text-align:center;font-weight:600">Crea tu cuenta gratis para contactar al asesor · Solo enviamos notificaciones si las autorizas</div>
       </div>`;
     } else {
-      h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;display:flex;gap:8px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-        <a href="${_waUrl}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
-        <a href="${_telUrl}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
+      h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
+        <div style="max-width:720px;margin:0 auto;display:flex;gap:8px">
+          <a href="${_waUrl}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
+          <a href="${_telUrl}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
+        </div>
       </div>`;
     }
 
