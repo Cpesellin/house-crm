@@ -28,6 +28,24 @@
   <link rel="icon" type="image/png" href="/img/logo.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
 
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#122d4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="House">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Auto-redirect to portafolio when landing on root -->
+  <script>
+    (function(){
+      var h = location.hash;
+      if (!h || h === '#' || h === '#/') {
+        location.replace(location.pathname + '#/portafolio');
+      }
+    })();
+  </script>
+
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,600;1,9..144,700&display=swap" rel="stylesheet">
 

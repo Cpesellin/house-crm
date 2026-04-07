@@ -1,0 +1,26 @@
+{
+  "name": "House · Asesores Inmobiliarios",
+  "short_name": "House",
+  "description": "Venta y arriendo de inmuebles en Pereira y el Eje Cafetero",
+  "start_url": "/#/portafolio",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#122d4f",
+  "lang": "es-CO",
+  "icons": [
+    {
+      "src": "/img/logo.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/logo.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
