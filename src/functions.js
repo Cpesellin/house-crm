@@ -3319,7 +3319,7 @@ window.showRegisterModal = function(contexto) {
     <div class="regmx-box">
       <button class="regmx-close" onclick="document.getElementById('register-modal')?.remove()">✕</button>
       <div style="text-align:center;margin-bottom:20px">
-        <div class="regmx-logo">H</div>
+        <div class="regmx-logo"><img src="/img/logo.png" alt="House" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.textContent='H'"></div>
         <div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:var(--tx)">Crear cuenta</div>
         <div style="font-size:12px;color:var(--sub);margin-top:4px">${ctxMsg}</div>
       </div>
