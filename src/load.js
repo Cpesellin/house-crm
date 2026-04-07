@@ -383,22 +383,67 @@ export async function load() {
       }
     }
 
-    // 5. Alertas
-    const { data: als } = await SB
-      .from('alertas')
-      .select('*,emisor:usuarios!de_usuario(nombre)')
-      .order('created_at', { ascending: false })
-      .limit(100);
+    // 5. Notificaciones (sistema nuevo — tabla notificaciones)
+    // Si la tabla no existe (migración pendiente), cae a la tabla legacy 'alertas'
+    let notifs = null;
+    try {
+      const r = await SB
+        .from('notificaciones')
+        .select('*,emisor:usuarios!emisor_id(nombre)')
+        .eq('destinatario_id', U.id)
+        .eq('descartada', false)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!r.error) notifs = r.data;
+      else console.warn('[load] notificaciones no disponible, usando alertas legacy:', r.error.message);
+    } catch (e) {
+      console.warn('[load] notificaciones query failed:', e?.message);
+    }
 
-    window.ALS = (als || []).filter(a => a.para_rol === 'all' || a.para_rol === U.rol);
-    window.ALU = (als || []).filter(a =>
-      a.para_email === U.email || a.para_email === U.usuario ||
-      a.para_rol === 'all' || a.para_rol === U.rol
-    );
+    if (notifs === null) {
+      // Fallback legacy: tabla alertas
+      const { data: als } = await SB
+        .from('alertas')
+        .select('*,emisor:usuarios!de_usuario(nombre)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      notifs = (als || []).filter(a =>
+        a.para_email === U.email || a.para_email === U.usuario ||
+        a.para_rol === 'all' || a.para_rol === U.rol
+      ).map(a => ({
+        id: a.id,
+        titulo: a.titulo,
+        mensaje: a.mensaje,
+        tipo: a.tipo,
+        categoria: 'sistema',
+        prioridad: a.nivel === 'rojo' ? 'alta' : 'normal',
+        icono: '📌',
+        color: '#3b82f6',
+        accion_tipo: a.inmueble_id ? 'abrir_inmueble' : 'abrir_seccion',
+        accion_destino: a.inmueble_id || null,
+        contexto_id: a.inmueble_id || null,
+        contexto_tipo: a.inmueble_id ? 'inmueble' : null,
+        leida: a.leida || false,
+        descartada: false,
+        emisor: a.emisor,
+        created_at: a.created_at,
+      }));
+    }
 
-    const nl = window.ALU.filter(a => !a.leida).length;
+    window.NOTIFS = notifs || [];
+    // Compat: ALS/ALU mantienen las mismas referencias para código legacy
+    window.ALS = window.NOTIFS;
+    window.ALU = window.NOTIFS;
+
+    const nl = window.NOTIFS.filter(n => !n.leida).length;
+    window.NOTIF_COUNT = nl;
     uB('habdg', nl);
     uB('malb', nl);
+
+    // Procesar escalamientos (solo admin, ejecuta una vez por carga)
+    if (U.rol === 'admin' && typeof window.procesarEscalamientos === 'function') {
+      window.procesarEscalamientos().catch(e => console.warn('[escalamiento]', e));
+    }
 
     // 6. Referidos badge
     try {

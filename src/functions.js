@@ -47,12 +47,7 @@ function timerBadge(d,umb){if(d<=Math.floor(umb*.5))return`<span class="pk-timer
 // 1. NOTIFICATIONS
 // ══════════════════════════════════════════════════════════════════
 
-window.noti = async function(tipo,nivel,titulo,mensaje,paraEmail,paraRol,inmId) {
-  try {
-    const u = U();
-    await SB().from('alertas').insert({tipo,nivel,titulo,mensaje,para_email:paraEmail||null,para_rol:paraRol||null,inmueble_id:inmId||null,de_usuario:u?.id});
-  } catch(e) { console.error('[noti]',e); }
-};
+// window.noti se define en core/notifications.js (bridge al nuevo sistema notificaciones)
 
 window.openAlertInm = function(id) {
   const idx = D().findIndex(p => p.id === id);
@@ -78,21 +73,183 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.bell-wrap')) window.closeBell();
 });
 
+// Helper: tiempo relativo (hace 5min, 2h, 3d)
+window._timeAgo = function(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'ahora';
+  if (diff < 3600) return Math.floor(diff/60) + 'm';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h';
+  if (diff < 604800) return Math.floor(diff/86400) + 'd';
+  return new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+};
+
 window.renderBell = function() {
   const el = document.getElementById('belllist');
   if (!el) return;
-  const all = (window.ALU||[]).slice(0,6);
-  const em = {inmueble_nuevo:'🆕',cambio_estado:'🔄',solicitud_info:'📩',portal_pendiente:'🌐',portal_listo:'✅',verificar:'🔍',tiempo_estado:'⏰',autorizacion_vencer:'⚠️',autorizacion_vencida:'🔴',cambio_precio:'💲',actualizar_portal:'🌐'};
-  if(!all.length){el.innerHTML='<div class="bell-empty">🎉 Sin notificaciones</div>';return;}
-  el.innerHTML=all.map(a=>{
-    const e2=em[a.tipo]||'📌',idI=a.inmueble_id||'';
-    const f=a.created_at?new Date(a.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-    let actions='';
-    if(a.tipo==='verificar'&&idI){
-      actions=`<div style="display:flex;gap:4px;margin-top:4px"><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:8px;font-weight:700;background:var(--green);color:#fff;font-family:inherit;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Aún Disponible')">✅ Disponible</button><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:8px;font-weight:700;background:var(--red);color:#fff;font-family:inherit;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Retirado')">❌ No disponible</button></div>`;
+  const notifs = (window.NOTIFS || window.ALU || []).filter(n => !n.descartada);
+  if (!notifs.length) { el.innerHTML='<div class="bell-empty">🎉 Sin notificaciones</div>'; return; }
+
+  // Agrupar por contexto_id (las del mismo inmueble/referido se colapsan)
+  const grupos = {};
+  const sueltas = [];
+  notifs.forEach(n => {
+    if (n.contexto_id) {
+      if (!grupos[n.contexto_id]) grupos[n.contexto_id] = [];
+      grupos[n.contexto_id].push(n);
+    } else {
+      sueltas.push(n);
     }
-    return`<div class="bell-item" onclick="closeBell();${idI?`openAlertInm('${idI}')`:''}"><div class="be">${e2}</div><div style="flex:1"><div class="bt2">${a.titulo||''}</div><div class="bd2">👤 ${a.emisor?a.emisor.nombre:''}</div><div class="bf">${f}</div>${actions}</div></div>`;
+  });
+
+  // Construir lista combinada (grupos + sueltas) ordenada por fecha de la más reciente
+  const items = [];
+  Object.values(grupos).forEach(grupo => {
+    grupo.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    items.push({ kind: 'group', items: grupo, latest: grupo[0] });
+  });
+  sueltas.forEach(n => items.push({ kind: 'single', latest: n }));
+  items.sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
+
+  const top = items.slice(0, 8);
+
+  el.innerHTML = top.map(it => {
+    const n = it.latest;
+    const count = it.kind === 'group' ? it.items.length : 1;
+    const noLeidas = it.kind === 'group' ? it.items.filter(x => !x.leida).length : (n.leida ? 0 : 1);
+    const ico = n.icono || '📌';
+    const color = n.color || '#3b82f6';
+    const titulo = (n.titulo || '').replace(/'/g,"\\'");
+    const mensaje = (n.mensaje || '').replace(/</g,'&lt;');
+    const tiempo = window._timeAgo(n.created_at);
+    const dotPrio = (n.prioridad === 'critica') ? '#ef4444'
+      : (n.prioridad === 'alta') ? '#f59e0b' : '';
+    const opacity = noLeidas === 0 ? '.55' : '1';
+
+    // Botones rápidos para verificar
+    let actions = '';
+    if (n.tipo === 'verificar' && n.accion_destino) {
+      const idI = n.accion_destino;
+      actions = `<div style="display:flex;gap:4px;margin-top:6px"><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:9px;font-weight:700;background:#10b981;color:#fff;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Aún Disponible')">✅ Disponible</button><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:9px;font-weight:700;background:#ef4444;color:#fff;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Retirado')">❌ No disponible</button></div>`;
+    }
+
+    return `<div class="bell-item" style="opacity:${opacity};display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--brd);cursor:pointer" onclick="handleNotifClick('${n.id}','${n.accion_tipo||''}','${n.accion_destino||''}','${n.accion_seccion||''}')">
+      <div style="position:relative;flex-shrink:0">
+        <div style="width:34px;height:34px;border-radius:9px;background:${color}1a;display:flex;align-items:center;justify-content:center;font-size:17px">${ico}</div>
+        ${count > 1 ? `<div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:50%;background:${color};color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center">${count}</div>` : ''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:var(--tx);line-height:1.3">${n.titulo || ''}</div>
+        ${mensaje ? `<div style="font-size:11px;color:var(--sub);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mensaje}</div>` : ''}
+        <div style="font-size:10px;color:var(--sub);margin-top:3px;opacity:.7">${tiempo}${n.emisor?.nombre ? ' · ' + n.emisor.nombre : ''}</div>
+        ${actions}
+      </div>
+      ${dotPrio ? `<div style="width:8px;height:8px;border-radius:50%;background:${dotPrio};flex-shrink:0;margin-top:6px"></div>` : ''}
+    </div>`;
   }).join('');
+};
+
+// ── Click en notificación: marcar leída + navegar contextual ──
+window.handleNotifClick = async function(notifId, accionTipo, accionDestino, accionSeccion) {
+  const SBc = SB();
+  const u = U();
+  if (!u) return;
+
+  // 1. Marcar leída
+  try {
+    await SBc.from('notificaciones').update({
+      leida: true, leida_at: new Date().toISOString(),
+      actuada: true, actuada_at: new Date().toISOString()
+    }).eq('id', notifId);
+
+    // 2. Si tiene contexto, marcar todas las del mismo contexto
+    const n = (window.NOTIFS || []).find(x => x.id === notifId);
+    if (n?.contexto_id) {
+      await SBc.from('notificaciones').update({
+        leida: true, leida_at: new Date().toISOString()
+      })
+      .eq('destinatario_id', u.id)
+      .eq('contexto_id', n.contexto_id)
+      .eq('leida', false);
+    }
+  } catch (e) { console.error('[notif click]', e); }
+
+  // 3. Cerrar dropdown
+  if (window.closeBell) window.closeBell();
+
+  // 4. Navegar según accion_tipo
+  switch (accionTipo) {
+    case 'abrir_inmueble':
+      if (accionDestino) {
+        const idx = (window.D || []).findIndex(p => p.id === accionDestino);
+        if (idx > -1) {
+          if (window.go) window.go('inv');
+          setTimeout(() => window.oM && window.oM(idx), 200);
+        } else if (window.go) {
+          window.go('inv');
+        }
+      } else if (window.go) window.go('inv');
+      break;
+    case 'abrir_referido':
+      if (window.go) window.go('mis-referidos');
+      if (accionDestino) {
+        setTimeout(() => {
+          const card = document.querySelector('[data-referido-id="' + accionDestino + '"]');
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 3px #3b82f6';
+            setTimeout(() => { card.style.boxShadow = ''; }, 3000);
+          }
+        }, 500);
+      }
+      break;
+    case 'abrir_solicitud':
+      if (window.go) window.go('mis');
+      break;
+    case 'abrir_pago':
+      if (u.rol === 'admin' || u.rol === 'oficina') {
+        if (window.go) window.go('admin-pagos');
+      } else {
+        if (window.go) window.go('metodo-pago');
+      }
+      break;
+    case 'abrir_agenda':
+      if (window.go) window.go('agenda');
+      break;
+    case 'abrir_mensaje':
+      if (window.go) window.go('mensajes');
+      break;
+    case 'abrir_usuario':
+      if (window.go) window.go('users');
+      break;
+    case 'abrir_seccion':
+      if (accionSeccion && window.go) window.go(accionSeccion);
+      break;
+    default:
+      console.warn('[notif] acción no reconocida:', accionTipo);
+  }
+
+  // 5. Recargar conteos
+  if (window.load) window.load();
+};
+
+// ── Marcar todas como leídas ──
+window.marcarTodasLeidas = async function() {
+  const u = U();
+  if (!u) return;
+  await SB().from('notificaciones').update({
+    leida: true, leida_at: new Date().toISOString()
+  }).eq('destinatario_id', u.id).eq('leida', false);
+  if (window.load) window.load();
+  if (window.toast) window.toast('✅ Todas marcadas como leídas');
+};
+
+// ── Descartar una notificación ──
+window.descartarNotificacion = async function(notifId) {
+  await SB().from('notificaciones').update({
+    descartada: true, leida: true, leida_at: new Date().toISOString()
+  }).eq('id', notifId);
+  if (window.load) window.load();
 };
 
 // ══════════════════════════════════════════════════════════════════

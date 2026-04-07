@@ -292,26 +292,89 @@ window.rReg = function () { if (typeof window.iForm === 'function') window.iForm
 // F28: rAl — Alertas (click abre inmueble)
 // ══════════════════════════════════════════════════════════════════
 
+// Tab activo de la sección Alertas (filtro por categoría)
+window._notifTab = window._notifTab || 'todas';
+
+const NOTIF_TABS = [
+  { id: 'todas',     label: 'Todas',       emoji: '🔔' },
+  { id: 'inmueble',  label: 'Inmuebles',   emoji: '🏠' },
+  { id: 'solicitud', label: 'Solicitudes', emoji: '📋' },
+  { id: 'referido',  label: 'Referidos',   emoji: '🤝' },
+  { id: 'pago',      label: 'Pagos',       emoji: '💰' },
+  { id: 'agenda',    label: 'Agenda',      emoji: '📅' },
+  { id: 'mensaje',   label: 'Mensajes',    emoji: '💬' },
+  { id: 'sistema',   label: 'Sistema',     emoji: '⚙️' },
+];
+
+window.setNotifTab = function(tab) {
+  window._notifTab = tab;
+  if (window.rAl) window.rAl();
+};
+
 window.rAl = function () {
   const el = document.getElementById('all'); if (!el) return;
-  const all = window.ALU || [];
-  const em = {inmueble_nuevo:'🆕',cambio_estado:'🔄',solicitud_info:'📩',portal_pendiente:'🌐',portal_listo:'✅',verificar:'🔍',tiempo_estado:'⏰',cambio_precio:'💲',actualizar_portal:'🌐'};
-  const urg = all.filter(a => a.tipo==='verificar'||a.tipo==='cambio_precio').length;
-  const pv2 = all.filter(a => a.tipo==='verificar'&&!a.leida).length;
+  const all = (window.NOTIFS || window.ALU || []).filter(n => !n.descartada);
+  const tab = window._notifTab || 'todas';
+  const filtered = tab === 'todas' ? all : all.filter(n => n.categoria === tab);
 
-  let h = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><div style="flex:1;min-width:80px;padding:10px;background:var(--redbg);border:1px solid var(--rb);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--red)">${urg}</div><div style="font-size:7px;color:var(--red);text-transform:uppercase;letter-spacing:1px">Urgentes</div></div><div style="flex:1;min-width:80px;padding:10px;background:var(--goldbg);border:1px solid var(--yb);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--gold)">${pv2}</div><div style="font-size:7px;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Verificar</div></div><div style="flex:1;min-width:80px;padding:10px;background:var(--b50);border:1px solid var(--b200);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--b700)">${all.length}</div><div style="font-size:7px;color:var(--b700);text-transform:uppercase;letter-spacing:1px">Total</div></div></div>`;
-  if (!all.length) { el.innerHTML = h+'<div class="emp"><span class="emp-i">🎉</span><h3>Todo al día</h3></div>'; return; }
+  // KPIs
+  const noLeidas = all.filter(n => !n.leida).length;
+  const criticas = all.filter(n => n.prioridad === 'critica' && !n.leida).length;
+  const altas = all.filter(n => n.prioridad === 'alta' && !n.leida).length;
 
-  const sorted = [...all].sort((a,b) => {const pa=(a.tipo==='verificar'||a.tipo==='cambio_precio')?0:1;const pb=(b.tipo==='verificar'||b.tipo==='cambio_precio')?0:1;return pa-pb;});
-  h += sorted.slice(0,50).map(a => {
-    const e2=em[a.tipo]||'📌', n=a.nivel||'info';
-    const f=a.created_at?new Date(a.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-    const idI=a.inmueble_id||'';
-    const click=idI?` onclick="openAlertInm('${idI}')" style="cursor:pointer"`:'';
-    const isU=a.tipo==='verificar'||a.tipo==='cambio_precio';
-    let ub='';if(isU)ub='<span style="font-size:7px;font-weight:800;background:var(--red);color:#fff;padding:1px 5px;border-radius:8px;margin-left:4px">URGENTE</span>';
-    return`<div class="ali ${n}"${click}${isU?' style="border-width:3px;cursor:pointer"':''}><div class="ale">${e2}</div><div class="alinf"><div class="altt">${a.titulo||''}${ub}</div><div class="aldsc">${a.mensaje||''}</div><div class="alusr">👤 ${a.emisor?a.emisor.nombre:''}</div><div class="altm">${f}</div></div></div>`;
+  let h = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <div style="flex:1;min-width:80px;padding:10px;background:var(--redbg);border:1px solid var(--rb);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--red)">${criticas}</div><div style="font-size:7px;color:var(--red);text-transform:uppercase;letter-spacing:1px">Críticas</div></div>
+    <div style="flex:1;min-width:80px;padding:10px;background:var(--goldbg);border:1px solid var(--yb);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--gold)">${altas}</div><div style="font-size:7px;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Altas</div></div>
+    <div style="flex:1;min-width:80px;padding:10px;background:var(--b50);border:1px solid var(--b200);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--b700)">${noLeidas}</div><div style="font-size:7px;color:var(--b700);text-transform:uppercase;letter-spacing:1px">No leídas</div></div>
+  </div>`;
+
+  // Botón "marcar todas leídas"
+  if (noLeidas > 0) {
+    h += `<div style="text-align:right;margin-bottom:8px"><button onclick="marcarTodasLeidas()" style="padding:5px 10px;background:var(--cd);border:1px solid var(--brd);border-radius:6px;font-size:11px;font-weight:700;color:var(--b600);cursor:pointer">✓ Marcar todas como leídas</button></div>`;
+  }
+
+  // Tabs por categoría
+  h += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--brd)">`;
+  NOTIF_TABS.forEach(t => {
+    const cnt = t.id === 'todas' ? all.length : all.filter(n => n.categoria === t.id).length;
+    if (t.id !== 'todas' && cnt === 0) return;
+    const active = tab === t.id;
+    h += `<button onclick="setNotifTab('${t.id}')" style="padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${active?'var(--b500)':'var(--brd)'};background:${active?'var(--b500)':'var(--cd)'};color:${active?'#fff':'var(--tx)'}">${t.emoji} ${t.label}${cnt>0?' ('+cnt+')':''}</button>`;
+  });
+  h += `</div>`;
+
+  if (!filtered.length) {
+    el.innerHTML = h + '<div class="emp"><span class="emp-i">🎉</span><h3>Sin notificaciones en esta categoría</h3></div>';
+    return;
+  }
+
+  // Ordenar: no leídas primero, luego por fecha
+  const sorted = [...filtered].sort((a, b) => {
+    if (a.leida !== b.leida) return a.leida ? 1 : -1;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  h += sorted.slice(0, 100).map(n => {
+    const ico = n.icono || '📌';
+    const color = n.color || '#3b82f6';
+    const fecha = n.created_at ? new Date(n.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    const opacity = n.leida ? '.6' : '1';
+    const prioBadge = n.prioridad === 'critica'
+      ? '<span style="font-size:8px;font-weight:800;background:#ef4444;color:#fff;padding:2px 6px;border-radius:8px;margin-left:6px">CRÍTICA</span>'
+      : n.prioridad === 'alta'
+        ? '<span style="font-size:8px;font-weight:800;background:#f59e0b;color:#fff;padding:2px 6px;border-radius:8px;margin-left:6px">ALTA</span>'
+        : '';
+    return `<div style="display:flex;gap:10px;padding:12px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ${color};border-radius:10px;margin-bottom:6px;cursor:pointer;opacity:${opacity}" onclick="handleNotifClick('${n.id}','${n.accion_tipo||''}','${n.accion_destino||''}','${n.accion_seccion||''}')">
+      <div style="width:38px;height:38px;border-radius:10px;background:${color}1a;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">${ico}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">${n.titulo || ''}${prioBadge}</div>
+        ${n.mensaje ? `<div style="font-size:11px;color:var(--sub);margin-top:3px">${n.mensaje}</div>` : ''}
+        <div style="font-size:10px;color:var(--sub);margin-top:4px;opacity:.75">${fecha}${n.emisor?.nombre ? ' · 👤 ' + n.emisor.nombre : ''}</div>
+      </div>
+      <button onclick="event.stopPropagation();descartarNotificacion('${n.id}')" title="Descartar" style="background:none;border:none;color:var(--sub);font-size:16px;cursor:pointer;padding:4px;align-self:flex-start">×</button>
+    </div>`;
   }).join('');
+
   el.innerHTML = h;
 };
 
