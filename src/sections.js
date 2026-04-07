@@ -695,8 +695,8 @@ window.rPortafolio = async function() {
   // Don't render the visitor portal header/content
   if (u) { el.innerHTML = ''; return; }
   const isVisitor = true;
-  const loginUrl = window.location.origin + '/';
-  const regUrl = window.location.origin + '/?reg=1';
+  const loginUrl = window.location.pathname + '?login=1';
+  const regUrl = window.location.pathname + '?reg=1';
 
   // Load data
   let data = window.PUB;

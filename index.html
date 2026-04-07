@@ -36,10 +36,13 @@
   <meta name="apple-mobile-web-app-title" content="House">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- Auto-redirect to portafolio when landing on root -->
+  <!-- Auto-redirect root to portafolio (skip if explicit login/reg query) -->
   <script>
     (function(){
       var h = location.hash;
+      var s = location.search;
+      // Skip redirect when an explicit query param is present (?login=1, ?reg=1, etc.)
+      if (s && s.length > 1) return;
       if (!h || h === '#' || h === '#/') {
         location.replace(location.pathname + '#/portafolio');
       }
