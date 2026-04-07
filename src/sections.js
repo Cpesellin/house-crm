@@ -765,7 +765,8 @@ window.rPortafolio = async function() {
   let data = window.PUB;
   if (!data || !data.length) {
     el.innerHTML = '<div style="text-align:center;padding:60px;background:#fff"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
-    data = await window.loadPublic(isVisitor ? 10 : null);
+    // Auth progresiva: visitantes ven todo el inventario público (no muro)
+    data = await window.loadPublic(null);
   }
 
   // Load favorites for logged-in users
@@ -905,18 +906,21 @@ window.rPortafolio = async function() {
 
   // Grid
   h += `<div style="padding:8px 14px;background:#f8fafc;min-height:60vh"><div class="pub-grid">`;
-  filtered.forEach(p => {
+  filtered.forEach((p, idx) => {
     const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
     const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
+    const cod = p.codigo_house || '';
+    const previewUrl = cod ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
     const specs = [];
     if (p.habitaciones) specs.push('🛏️ '+p.habitaciones);
     if (p.banos) specs.push('🚿 '+p.banos);
     if (p.area_construida) specs.push('📐 '+p.area_construida+'m²');
 
-    h += `<div class="pub-card" style="background:#fff" onclick="event.preventDefault();document.getElementById('pub-gate')&&document.getElementById('pub-gate').scrollIntoView({behavior:'smooth'})">`;
+    h += `<div class="pub-card" style="background:#fff" onclick="window.trackPropertyView&&window.trackPropertyView('${p.id}');typeof showPublicView==='function'?showPublicView('${p.id}'):(window.location.href='${previewUrl}')">`;
     if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
     else h += `<div class="pub-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;background:#f1f5f9">${emo(p.tipo)}</div>`;
+    h += `<button class="pub-fav-btn" onclick="event.stopPropagation();toggleFavorito('${p.id}')" style="position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.95);border:none;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">🤍</button>`;
     h += `<div class="pub-card-body">`;
     h += `<div class="pub-card-tipo">${p.tipo||'Inmueble'} · ${(p.negociacion||'').replace(/Venta y Arriendo/i,'Venta/Arriendo')}</div>`;
     h += `<div class="pub-card-title">${p.direccion_publica || p.barrio || p.ciudad || ''}</div>`;
@@ -925,8 +929,19 @@ window.rPortafolio = async function() {
     if (pv > 0) h += `<div class="pub-card-price" style="font-size:${pa>0?'14px':'20px'}">${fm(pv)}</div>`;
     if (specs.length) h += `<div class="pub-card-specs">${specs.join(' · ')}</div>`;
     h += `</div>`;
-    h += `<div style="padding:10px 14px 12px;text-align:center"><div style="font-size:11px;color:#2563eb;font-weight:700">🔒 Regístrate gratis para ver más</div></div>`;
     h += `</div>`;
+
+    // Scroll banner inline después de la card 10 (solo 1 vez, si aplica)
+    if (idx === 9 && !window.VISITOR?.promptsDismissed?.scroll_banner && !window.VISITOR?.promptsShown?.scroll_banner) {
+      h += `<div class="vis-scroll-banner" id="vis-scroll-banner" style="grid-column:1/-1">`;
+      h += `<div style="font-size:28px;margin-bottom:8px">🏠</div>`;
+      h += `<div class="vsb-title">¿Te gusta lo que ves?</div>`;
+      h += `<div class="vsb-msg">Con una cuenta gratis puedes guardar favoritos, contactar asesores, recibir alertas de precio y hasta ganar dinero refiriendo inmuebles.</div>`;
+      h += `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">`;
+      h += `<button onclick="window.trackPromptShown('scroll_banner');showRegisterModal('scroll')" style="padding:12px 24px;background:linear-gradient(135deg,#122d4f,#1a4f8b);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Crear cuenta gratis</button>`;
+      h += `<button onclick="window.dismissPrompt('scroll_banner');document.getElementById('vis-scroll-banner').remove()" style="padding:12px 16px;background:var(--g100);color:var(--sub);border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">No gracias</button>`;
+      h += `</div></div>`;
+    }
   });
   h += `</div></div>`;
 

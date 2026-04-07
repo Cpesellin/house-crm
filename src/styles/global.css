@@ -508,3 +508,39 @@ body.dark .stb{background:var(--cd);border-color:rgba(255,255,255,.06)}
   .inv-wrap .pgr{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
   #pipeline{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
 }
+
+/* ── AUTH PROGRESIVA — Bottom Sheet + Register Modal ───────────── */
+@keyframes authps-in{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes authps-out{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@keyframes authps-fade{from{opacity:0}to{opacity:1}}
+.authps{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center}
+.authps-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);animation:authps-fade .2s ease}
+.authps-box{position:relative;width:100%;max-width:420px;background:var(--cd);border-radius:20px 20px 0 0;padding:24px 20px;box-shadow:0 -8px 40px rgba(0,0,0,.18);animation:authps-in .35s cubic-bezier(.16,1,.3,1)}
+.authps.closing .authps-box{animation:authps-out .25s ease forwards}
+.authps.closing .authps-backdrop{opacity:0;transition:opacity .2s}
+.authps-handle{width:40px;height:4px;background:var(--brd);border-radius:2px;margin:0 auto 16px}
+.authps-benefits{background:var(--bg);border-radius:14px;padding:14px;margin-bottom:16px}
+.authps-benefit{padding:6px 0;font-size:13px;color:var(--tx);font-weight:600;line-height:1.4}
+.authps-cta{width:100%;padding:15px;background:linear-gradient(135deg,#122d4f,#1a4f8b);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:8px}
+.authps-cta:hover{filter:brightness(1.05)}
+.authps-skip{width:100%;padding:12px;background:transparent;color:var(--sub);border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* Register Modal */
+.regmx{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px}
+.regmx-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);animation:authps-fade .2s ease}
+.regmx-box{position:relative;background:var(--cd);border-radius:20px;padding:28px 24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:authps-in .3s cubic-bezier(.16,1,.3,1);max-height:90vh;overflow-y:auto}
+.regmx-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:10px;background:var(--bg);border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sub);font-family:inherit}
+.regmx-logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#d4a853,#c49b3e);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#122d4f;margin:0 auto 12px;font-family:Fraunces,serif}
+.regmx-input{width:100%;padding:13px 14px;border:1.5px solid var(--brd);border-radius:12px;font-size:14px;font-family:inherit;margin-bottom:8px;outline:none;box-sizing:border-box;background:var(--cd);color:var(--tx)}
+.regmx-input:focus{border-color:var(--b600)}
+.regmx-cta{width:100%;padding:14px;background:linear-gradient(135deg,#122d4f,#1a4f8b);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
+.regmx-optin{display:flex;align-items:flex-start;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--brd)}
+.regmx-optin input{margin-top:2px;accent-color:var(--b600)}
+.regmx-optin label{font-size:11px;color:var(--sub);line-height:1.5;cursor:pointer}
+
+/* Scroll banner (engagement) y Price alert visitor */
+.vis-scroll-banner{background:var(--cd);border:1.5px solid var(--brd);border-radius:18px;padding:20px;margin:10px 0;text-align:center}
+.vis-scroll-banner .vsb-title{font-size:16px;font-weight:800;color:var(--tx);margin-bottom:4px;font-family:Fraunces,serif}
+.vis-scroll-banner .vsb-msg{font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5}
+.vis-price-alert{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin:8px 0;display:flex;align-items:center;gap:10px}
+body.dark .vis-price-alert{background:rgba(253,230,138,.08);border-color:rgba(253,230,138,.25)}

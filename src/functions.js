@@ -2102,7 +2102,19 @@ window.toggleFavFilter = function() {
 
 // --- Favoritos ---
 window.toggleFavorito = async function(inmId) {
-  const u = U(); if (!u) { window.toast('Inicia sesión para guardar favoritos', 'twarn'); return; }
+  const u = U();
+  if (!u) {
+    window._pendingFavoriteId = inmId;
+    window.showAuthPrompt('favorito', {
+      icono: '❤️',
+      titulo: 'Guarda tus favoritos',
+      mensaje: 'Crea tu cuenta gratis para guardar inmuebles y verlos cuando quieras. Solo toma 30 segundos.',
+      beneficios: ['❤️ Guarda inmuebles que te gustan', '🔔 Te avisamos si baja de precio', '📱 Accede desde cualquier dispositivo'],
+      cta: 'Crear cuenta gratis',
+      ctaSecundario: 'Ahora no',
+    });
+    return;
+  }
   try {
     // Check if already favorited
     const { data: existing } = await SB().from('favoritos').select('id').eq('usuario_id', u.id).eq('inmueble_id', inmId).single();
@@ -3126,5 +3138,259 @@ window.copiarDatosPago = function(metodo, numero, titular, cedula, monto, concep
   const txt = (labels[metodo] || metodo) + ': ' + numero + '\nTitular: ' + titular + '\nCédula: ' + cedula + '\nMonto: ' + fm(monto) + '\nConcepto: ' + concepto;
   navigator.clipboard.writeText(txt).then(() => window.toast('📋 Datos copiados')).catch(() => window.toast('📋 Copiado'));
 };
+
+// ══════════════════════════════════════════════════════════════════
+// AUTH PROGRESIVA — Browse-first (Spec Abril 2026)
+// ══════════════════════════════════════════════════════════════════
+
+// --- Visitor state (localStorage) ---
+window.initVisitorState = function() {
+  if (U()) { window.VISITOR = null; return; }
+  let vid = localStorage.getItem('house_visitor_id');
+  if (!vid) {
+    vid = 'v_' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('house_visitor_id', vid);
+  }
+  window.VISITOR = {
+    isAuthenticated: false,
+    id: vid,
+    viewedProperties: JSON.parse(localStorage.getItem('house_viewed') || '[]'),
+    searches: JSON.parse(localStorage.getItem('house_searches') || '[]'),
+    promptsShown: JSON.parse(localStorage.getItem('house_prompts') || '{}'),
+    promptsDismissed: JSON.parse(localStorage.getItem('house_dismissed') || '{}'),
+  };
+};
+
+window.isAuthenticated = function() {
+  return !!U();
+};
+
+// --- Property view tracker ---
+window.trackPropertyView = function(inmuebleId) {
+  if (window.isAuthenticated()) return;
+  if (!window.VISITOR) window.initVisitorState();
+  let viewed = window.VISITOR.viewedProperties || [];
+  viewed.push(inmuebleId);
+  if (viewed.length > 50) viewed = viewed.slice(-50);
+  window.VISITOR.viewedProperties = viewed;
+  localStorage.setItem('house_viewed', JSON.stringify(viewed));
+};
+
+window.getViewCount = function(inmuebleId) {
+  if (!window.VISITOR) window.initVisitorState();
+  return (window.VISITOR?.viewedProperties || []).filter(id => id === inmuebleId).length;
+};
+
+// --- Auth prompt rules (anti-saturación) ---
+const AUTH_PROMPT_RULES = {
+  maxPromptsPerSession: 2,
+  cooldownMinutes: 5,
+  oneTimePerSession: ['scroll_banner', 'price_alert'],
+  repeatable: ['favorito', 'contacto'],
+};
+let _promptsShownThisSession = 0;
+let _lastPromptTime = 0;
+
+window.canShowPrompt = function(promptId) {
+  if (window.isAuthenticated()) return false;
+  if (!window.VISITOR) window.initVisitorState();
+  if (_promptsShownThisSession >= AUTH_PROMPT_RULES.maxPromptsPerSession) return false;
+  if (Date.now() - _lastPromptTime < AUTH_PROMPT_RULES.cooldownMinutes * 60000 && _lastPromptTime > 0) return false;
+  if (window.VISITOR?.promptsDismissed?.[promptId]) return false;
+  if (AUTH_PROMPT_RULES.oneTimePerSession.includes(promptId) && window.VISITOR?.promptsShown?.[promptId]) return false;
+  return true;
+};
+
+window.trackPromptShown = function(promptId) {
+  _promptsShownThisSession++;
+  _lastPromptTime = Date.now();
+  if (!window.VISITOR) window.initVisitorState();
+  if (!window.VISITOR.promptsShown) window.VISITOR.promptsShown = {};
+  window.VISITOR.promptsShown[promptId] = true;
+  localStorage.setItem('house_prompts', JSON.stringify(window.VISITOR.promptsShown));
+};
+
+window.dismissPrompt = function(promptId) {
+  if (!window.VISITOR) window.initVisitorState();
+  if (!window.VISITOR.promptsDismissed) window.VISITOR.promptsDismissed = {};
+  window.VISITOR.promptsDismissed[promptId] = true;
+  localStorage.setItem('house_dismissed', JSON.stringify(window.VISITOR.promptsDismissed));
+};
+
+// --- Universal Auth Prompt (bottom sheet) ---
+window.showAuthPrompt = function(contexto, opts) {
+  if (!window.canShowPrompt(contexto)) {
+    // If cant show prompt (e.g. repeated) but action needs auth, fallback directly to register modal
+    window.showRegisterModal(contexto);
+    return;
+  }
+  window.trackPromptShown(contexto);
+  const { icono = '✨', titulo = 'Crea tu cuenta', mensaje = '', beneficios = [], cta = 'Crear cuenta gratis', ctaSecundario = 'Ahora no' } = opts || {};
+  const prev = document.getElementById('auth-prompt-sheet');
+  if (prev) prev.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'auth-prompt-sheet';
+  sheet.className = 'authps';
+  sheet.innerHTML = `
+    <div class="authps-backdrop" onclick="closeAuthPrompt()"></div>
+    <div class="authps-box">
+      <div class="authps-handle"></div>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">${icono}</div>
+        <div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:var(--tx);line-height:1.2">${titulo}</div>
+        <div style="font-size:13px;color:var(--sub);margin-top:6px;line-height:1.5">${mensaje}</div>
+      </div>
+      ${beneficios.length ? `<div class="authps-benefits">${beneficios.map(b => `<div class="authps-benefit">${b}</div>`).join('')}</div>` : ''}
+      <button class="authps-cta" onclick="closeAuthPrompt();showRegisterModal('${contexto}')">${cta}</button>
+      ${ctaSecundario ? `<button class="authps-skip" onclick="dismissPrompt('${contexto}');closeAuthPrompt()">${ctaSecundario}</button>` : ''}
+      <div style="text-align:center;font-size:10px;color:var(--g400);margin-top:4px">Sin spam · Gratis · Google o email</div>
+    </div>`;
+  document.body.appendChild(sheet);
+};
+
+window.closeAuthPrompt = function() {
+  const sheet = document.getElementById('auth-prompt-sheet');
+  if (!sheet) return;
+  sheet.classList.add('closing');
+  setTimeout(() => sheet.remove(), 250);
+};
+
+// --- Register Modal ---
+window.showRegisterModal = function(contexto) {
+  const prev = document.getElementById('register-modal');
+  if (prev) prev.remove();
+  const ctxMsg = ({
+    favorito: 'para guardar tus inmuebles favoritos',
+    contacto: 'para contactar al asesor',
+    publicar: 'para publicar tu inmueble',
+    referir: 'para empezar a ganar dinero',
+    precio: 'para recibir alertas de precio',
+    scroll: 'para acceder a todas las funciones',
+    menu: 'y desbloquea todas las funciones',
+  })[contexto] || 'para acceder a todas las funciones';
+  window._pendingAuthContext = contexto;
+  const modal = document.createElement('div');
+  modal.id = 'register-modal';
+  modal.className = 'regmx';
+  modal.innerHTML = `
+    <div class="regmx-backdrop" onclick="document.getElementById('register-modal')?.remove()"></div>
+    <div class="regmx-box">
+      <button class="regmx-close" onclick="document.getElementById('register-modal')?.remove()">✕</button>
+      <div style="text-align:center;margin-bottom:20px">
+        <div class="regmx-logo">H</div>
+        <div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;color:var(--tx)">Crear cuenta</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:4px">${ctxMsg}</div>
+      </div>
+      <div id="regmx-google-wrap" style="margin-bottom:10px"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin:12px 0">
+        <div style="flex:1;height:1px;background:var(--brd)"></div>
+        <span style="font-size:11px;color:var(--g400);font-weight:600">o con email</span>
+        <div style="flex:1;height:1px;background:var(--brd)"></div>
+      </div>
+      <input id="regmx-nombre" type="text" placeholder="Tu nombre" class="regmx-input">
+      <input id="regmx-email" type="email" placeholder="tu@email.com" class="regmx-input">
+      <input id="regmx-pass" type="password" placeholder="Contraseña (mín. 6)" class="regmx-input">
+      <button class="regmx-cta" onclick="window._registerFromModal('${contexto}')">Crear cuenta</button>
+      <div id="regmx-err" style="display:none;color:var(--red);font-size:11px;margin-top:8px;text-align:center"></div>
+      <div style="text-align:center;margin-top:12px">
+        <span style="font-size:12px;color:var(--sub)">¿Ya tienes cuenta? </span>
+        <a onclick="document.getElementById('register-modal')?.remove();document.getElementById('lov').style.display='flex'" style="font-size:12px;color:var(--b600);font-weight:700;cursor:pointer">Inicia sesión</a>
+      </div>
+      <div class="regmx-optin">
+        <input type="checkbox" id="regmx-email-notifs">
+        <label for="regmx-email-notifs">Quiero recibir notificaciones por email cuando los inmuebles que me gustan cambien de precio o estado. <span style="font-weight:700">Puedes desactivarlo cuando quieras.</span></label>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Re-render Google button inside modal if available
+  try {
+    if (window.google?.accounts?.id) {
+      const container = document.getElementById('regmx-google-wrap');
+      if (container) {
+        window.google.accounts.id.renderButton(container, { theme: 'outline', size: 'large', width: 300, text: 'signup_with', shape: 'pill' });
+      }
+    }
+  } catch(e) { console.warn('[register-modal] Google button render failed:', e); }
+};
+
+// --- Register from modal (email + pass) ---
+window._registerFromModal = async function(contexto) {
+  const nombre = (document.getElementById('regmx-nombre')?.value || '').trim();
+  const email = (document.getElementById('regmx-email')?.value || '').trim().toLowerCase();
+  const pass = (document.getElementById('regmx-pass')?.value || '').trim();
+  const optInEmail = !!document.getElementById('regmx-email-notifs')?.checked;
+  const err = document.getElementById('regmx-err');
+  const showErr = (m) => { if (err) { err.textContent = m; err.style.display = 'block'; } };
+  if (err) err.style.display = 'none';
+  if (nombre.length < 2) return showErr('Ingresa tu nombre');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showErr('Email inválido');
+  if (pass.length < 6) return showErr('Contraseña mínimo 6 caracteres');
+  try {
+    // Check if email already exists
+    const { data: existing } = await SB().from('usuarios').select('id').eq('email', email).maybeSingle();
+    if (existing) return showErr('Ese email ya está registrado. Inicia sesión.');
+    const hash = await window.hashPwd(pass);
+    const { data: newUser, error } = await SB().from('usuarios').insert({
+      nombre, email, usuario: email, password_hash: hash,
+      rol: 'asesor', tipo_usuario: 'cliente', activo: true,
+      notificaciones_email: optInEmail,
+    }).select().single();
+    if (error) return showErr(error.message || 'Error al crear cuenta');
+    document.getElementById('register-modal')?.remove();
+    window.userStore.set({
+      id: newUser.id, email: newUser.email, nombre: newUser.nombre,
+      rol: newUser.rol, tipo_usuario: newUser.tipo_usuario,
+      token: 'cred:' + newUser.email + ':' + hash,
+    });
+    window.toast('🎉 ¡Bienvenido a House!');
+    await window.onRegistrationComplete(contexto);
+  } catch(e) {
+    console.error('[register-modal]', e);
+    showErr('Error: ' + (e.message || 'intenta de nuevo'));
+  }
+};
+
+// --- Post-Registration Continuity ---
+window.onRegistrationComplete = async function(contexto) {
+  try {
+    // Load user data (reuses existing load.js)
+    if (typeof window.load === 'function') await window.load();
+  } catch(e) { console.warn('[postreg] load error:', e); }
+  // Resume pending action based on context
+  switch (contexto) {
+    case 'favorito':
+      if (window._pendingFavoriteId) {
+        await window.toggleFavorito(window._pendingFavoriteId);
+        window._pendingFavoriteId = null;
+      }
+      break;
+    case 'contacto':
+      if (window._pendingContactInmuebleId && typeof window.oM === 'function') {
+        window.oM(window._pendingContactInmuebleId);
+        window._pendingContactInmuebleId = null;
+      }
+      break;
+    case 'publicar':
+      window.go?.('publicar');
+      break;
+    case 'referir':
+      window.go?.('referir');
+      break;
+    case 'precio':
+      window.toast?.('🔔 Alertas de precio activadas');
+      break;
+  }
+  // Clean visitor state
+  try {
+    localStorage.removeItem('house_visitor_id');
+    localStorage.removeItem('house_viewed');
+    localStorage.removeItem('house_prompts');
+    localStorage.removeItem('house_dismissed');
+    window.VISITOR = null;
+  } catch(e) {}
+};
+
+// --- Init visitor state on load ---
+window.initVisitorState();
 
 console.log('[functions] ✅ All window functions registered');

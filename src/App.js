@@ -497,12 +497,20 @@ export async function initApp(container) {
     if (hasSession) {
       sApp();
     } else {
-      // Check if visitor wants to access public portal
+      // Auth progresiva — "Browse-first": los visitantes NO ven el overlay de login.
+      // El overlay solo aparece cuando ?login=1 o ?reg=1 explícito, o al intentar una acción autenticada.
       const hash = location.hash.replace(/^#\/?/, '');
-      if (hash === 'portafolio' || hash === 'propietarios') {
-        // Hide login for visitors browsing public pages
+      const params = new URLSearchParams(window.location.search);
+      const wantsLogin = params.get('login') === '1' || params.get('reg') === '1';
+      if (!wantsLogin) {
         document.getElementById('lov').style.display = 'none';
+        // Default visitor lands on /portafolio
+        if (!hash || hash === 'inv') {
+          location.hash = '#/portafolio';
+        }
       }
+      // Init visitor state (localStorage tracking)
+      if (typeof window.initVisitorState === 'function') window.initVisitorState();
     }
 
     // Auto-open registration form if ?reg=1
