@@ -352,7 +352,7 @@ window.oM = function(idx) {
   if (canEdit) {
     // EDITABLE MODE
     b += `<div class="msc"><div class="msct">🏠 Información <span style="font-size:12px;color:var(--gold)">(editable)</span></div><div class="mgr">`;
-    b += `<div class="mf"><div class="mfl">Tipo</div>${sel('me_tipo',['Casa','Apartamento','Finca','Local comercial','Oficina','Lote','Casa campestre','Bodega','Penthouse'],p.tipo)}</div>`;
+    b += `<div class="mf"><div class="mfl">Tipo</div>${sel('me_tipo',['Casa','Apartamento','Apartaestudio','Finca','Local comercial','Oficina','Lote','Casa campestre','Bodega','Penthouse'],p.tipo)}</div>`;
     b += `<div class="mf"><div class="mfl">Negociación</div>${sel('me_neg',['Venta','Arriendo','Venta y Arriendo'],p.negociacion)}</div>`;
     b += `<div class="mf ful"><div class="mfl">🔒 Dirección real</div>${inp('me_dir',p.direccion,'Dirección completa')}<div style="font-size:10px;color:var(--gold);margin-top:3px">🔒 Solo tú y admin</div></div>`;
     b += `<div class="mf ful"><div class="mfl">📍 Ubicación pública</div>${inp('me_dir_pub',p.direccion_publica||'','Barrio, zona')}<div style="font-size:10px;color:var(--green);margin-top:3px">👁️ Visible para todos</div></div>`;
@@ -732,7 +732,7 @@ window.shareInm = function(id) {
 const fD = {tipo:'',negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:'',barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:''};
 let fS = 1;
 const fLb=['Lo esencial','Propietario','Características','Amenidades','Revisar'];
-const fTp=[{id:'Casa',i:'🏠'},{id:'Apartamento',i:'🏢'},{id:'Finca',i:'🌾'},{id:'Local comercial',i:'🏪'},{id:'Oficina',i:'💼'},{id:'Lote',i:'🌳'},{id:'Casa campestre',i:'🌿'},{id:'Bodega',i:'🏭'},{id:'Penthouse',i:'👑'}];
+const fTp=[{id:'Casa',i:'🏠'},{id:'Apartamento',i:'🏢'},{id:'Apartaestudio',i:'🏬'},{id:'Finca',i:'🌾'},{id:'Local comercial',i:'🏪'},{id:'Oficina',i:'💼'},{id:'Lote',i:'🌳'},{id:'Casa campestre',i:'🌿'},{id:'Bodega',i:'🏭'},{id:'Penthouse',i:'👑'}];
 const fAP=[{id:'parqueadero',l:'Parqueo',i:'🚗'},{id:'ascensor',l:'Ascensor',i:'🛗'},{id:'piscina',l:'Piscina',i:'🏊'},{id:'gimnasio',l:'Gimnasio',i:'🏋️'},{id:'zonas_verdes',l:'Zonas V.',i:'🌿'},{id:'seguridad',l:'Seguridad',i:'🛡️'},{id:'salon_comunal',l:'Salón',i:'🎉'},{id:'terraza',l:'Terraza',i:'☀️'}];
 const fAX=[{id:'cancha_tennis',l:'Tenis',i:'🎾'},{id:'cancha_futbol',l:'Fútbol',i:'⚽'},{id:'sauna',l:'Sauna',i:'🧖'},{id:'juegos_ninos',l:'Juegos',i:'🎠'},{id:'bbq',l:'BBQ',i:'🔥'},{id:'coworking',l:'Cowork',i:'💻'},{id:'pet_friendly',l:'Pet',i:'🐕'},{id:'cuarto_util',l:'Útil',i:'📦'},{id:'lavanderia',l:'Lavand.',i:'🧺'},{id:'deposito',l:'Depósito',i:'🗄️'}];
 
@@ -783,7 +783,7 @@ c.innerHTML=h;}
 
 function rF4(c){let h='<div class="ff"><label class="ffl">Amenidades</label><div class="amg">';fAP.forEach(a=>{h+=`<button class="amb ${fD.amenidades.includes(a.id)?'on':''}" onclick="tgAm('${a.id}')"><div class="ami">${a.i}</div>${a.l}</button>`;});
 h+='</div><div class="cps">';fAX.forEach(a=>{h+=`<div class="ch ${fD.amenidades.includes(a.id)?'on':''}" onclick="tgAm('${a.id}')">${a.i} ${a.l}</div>`;});
-h+=`</div></div><div class="ff"><label class="ffl">📷 Fotos</label><div id="fotoUpReg"></div></div><div class="ff"><label class="ffl">Observaciones</label><textarea class="ffi" style="min-height:60px;resize:vertical" onchange="fD.observaciones=this.value">${fD.observaciones}</textarea></div>`;
+h+=`</div></div><div class="ff"><label class="ffl">📷 Fotos</label><div id="fotoUpReg"></div></div><div class="ff"><label class="ffl">Descripción del inmueble <span style="font-size:10px;font-weight:600;color:var(--b600);background:var(--b50);padding:2px 8px;border-radius:10px;margin-left:6px">👁️ Visible para clientes</span></label><textarea class="ffi" style="min-height:80px;resize:vertical" placeholder="Describe lo más atractivo del inmueble: ubicación, vista, acabados, cercanía a servicios..." onchange="fD.observaciones=this.value">${fD.observaciones}</textarea><div style="font-size:10px;color:var(--sub);margin-top:4px">Este texto se mostrará en la página pública del inmueble.</div></div>`;
 c.innerHTML=h;_pendingFotos=[];if(typeof window.initFotoUpload==='function')window.initFotoUpload('fotoUpReg',r=>{_pendingFotos.push(r);},0);}
 
 async function rF5(c){const nl=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';const nxt=await nextHouseCode();
@@ -800,7 +800,7 @@ window.fNx = async function(){
   let newInm=null,error=null;
   for(let attempt=0;attempt<3;attempt++){
     const codigo=await nextHouseCode();
-    const res=await SB().from('inmuebles').insert({captador_id:u.id,codigo_house:codigo,tipo:fD.tipo,negociacion:neg,direccion:fD.direccion,ciudad:fD.ciudad,barrio:fD.barrio,precio_venta:fD.precioVenta?parseFloat(fD.precioVenta):null,precio_arriendo:fD.precioArriendo?parseFloat(fD.precioArriendo):null,area_construida:fD.area?parseFloat(fD.area):null,area_total:fD.areaTotal?parseFloat(fD.areaTotal):null,estrato:fD.estrato?String(fD.estrato):null,habitaciones:fD.habitaciones||null,banos:fD.banos||null,parqueaderos:fD.parqueos||null,caracteristicas:fD.amenidades.join(', '),observaciones:fD.observaciones,propietario_nombre:fD.nombre,propietario_telefono:fD.telefono,propietario_email:fD.email,estado:'Disponible'}).select().single();
+    const res=await SB().from('inmuebles').insert({captador_id:u.id,codigo_house:codigo,tipo:fD.tipo,negociacion:neg,direccion:fD.direccion,ciudad:fD.ciudad,barrio:fD.barrio,precio_venta:fD.precioVenta?parseFloat(fD.precioVenta):null,precio_arriendo:fD.precioArriendo?parseFloat(fD.precioArriendo):null,area_construida:fD.area?parseFloat(fD.area):null,area_total:fD.areaTotal?parseFloat(fD.areaTotal):null,estrato:fD.estrato?String(fD.estrato):null,habitaciones:fD.habitaciones||null,banos:fD.banos||null,parqueaderos:fD.parqueos||null,caracteristicas:fD.amenidades.join(', '),observaciones:fD.observaciones,descripcion_cliente:fD.observaciones,propietario_nombre:fD.nombre,propietario_telefono:fD.telefono,propietario_email:fD.email,estado:'Disponible'}).select().single();
     if(!res.error){newInm=res.data;error=null;break;}
     if(res.error?.message?.includes('codigo_house')){error=res.error;continue;}
     error=res.error;break;
@@ -932,7 +932,7 @@ window._asesorFilter = null;
 // ── Filter options data ──
 const NEG_OPTS = [{v:'venta',l:'Comprar',e:'🏠',d:'En venta',c:'#059669'},{v:'arriendo',l:'Arrendar',e:'🔑',d:'En arriendo',c:'#d97706'},{v:'ambas',l:'Las dos',e:'🔄',d:'Ver todo',c:'#7c3aed'}];
 const CIU_OPTS = [{v:'Pereira',e:'🏙️',d:'Centro, Pinares, Álamos, Cuba...'},{v:'Dosquebradas',e:'🌆',d:'La Pradera, Camilo Torres...'},{v:'Santa Rosa',e:'🌿',d:'Centro, Termales, veredas'},{v:'Cerritos',e:'🌳',d:'Condominios, fincas, campestre'}];
-const TIPO_OPTS = [{v:'Apartamento',e:'🏢',l:'Apto'},{v:'Casa',e:'🏡',l:'Casa'},{v:'Finca',e:'🌾',l:'Finca'},{v:'Local',e:'🏪',l:'Local'},{v:'Lote',e:'📐',l:'Lote'},{v:'Oficina',e:'💼',l:'Oficina'},{v:'Bodega',e:'🏭',l:'Bodega'},{v:'Penthouse',e:'✨',l:'PH'}];
+const TIPO_OPTS = [{v:'Apartamento',e:'🏢',l:'Apto'},{v:'Apartaestudio',e:'🏬',l:'Apartaestudio'},{v:'Casa',e:'🏡',l:'Casa'},{v:'Finca',e:'🌾',l:'Finca'},{v:'Local',e:'🏪',l:'Local'},{v:'Lote',e:'📐',l:'Lote'},{v:'Oficina',e:'💼',l:'Oficina'},{v:'Bodega',e:'🏭',l:'Bodega'},{v:'Penthouse',e:'✨',l:'PH'}];
 const NEG_MAP = {venta:'Comprar',arriendo:'Arrendar',ambas:'Las dos'};
 
 // ── Format price input with thousands separator ──

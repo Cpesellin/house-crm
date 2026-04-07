@@ -35,10 +35,11 @@ export function renderStep4(container) {
     </div>
 
     <div class="ff" style="margin-top:16px">
-      <label class="ffl">Observaciones</label>
-      <textarea class="ffi" style="min-height:60px;resize:vertical"
-        placeholder="Notas adicionales sobre la propiedad..."
+      <label class="ffl">Descripción del inmueble <span style="font-size:10px;font-weight:600;color:var(--b600);background:var(--b50);padding:2px 8px;border-radius:10px;margin-left:6px">👁️ Visible para clientes</span></label>
+      <textarea class="ffi" style="min-height:80px;resize:vertical"
+        placeholder="Describe lo más atractivo del inmueble: ubicación, vista, acabados, cercanía a servicios..."
         onchange="window._reg.updateField('observaciones', this.value)">${f.observaciones || ''}</textarea>
+      <div style="font-size:10px;color:var(--sub);margin-top:4px">Este texto se mostrará en la página pública del inmueble.</div>
     </div>
   `;
 

@@ -936,7 +936,7 @@ window.rPublicar = async function() {
   const u = U(); if (!u) return;
   const step = window._ownerStep || 1;
   const d = window._ownerData || {};
-  const tipos = ['Apartamento','Casa','Finca','Local','Lote','Oficina','Bodega','Penthouse'];
+  const tipos = ['Apartamento','Apartaestudio','Casa','Finca','Local','Lote','Oficina','Bodega','Penthouse'];
   const ciudades = ['Pereira','Dosquebradas','Santa Rosa de Cabal','Cerritos','Cartago'];
   const LIMITE = 3;
 
@@ -1163,7 +1163,7 @@ function _renderRefWizard() {
     h += '<div style="text-align:center;margin-bottom:20px"><div style="font-size:40px;margin-bottom:8px">🏠</div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700">¿Cómo es el inmueble?</div><div style="font-size:12px;color:var(--sub);margin-top:6px">No necesitas ser preciso. Nuestro equipo verificará.</div></div>';
     // Type chips
     h += '<div class="ff"><label class="ffl">Tipo</label><div style="display:flex;flex-wrap:wrap;gap:6px">';
-    [['Apartamento','🏢'],['Casa','🏡'],['Local','🏪'],['Oficina','💼'],['Bodega','🏭'],['Finca','🌾']].forEach(tp => {
+    [['Apartamento','🏢'],['Apartaestudio','🏬'],['Casa','🏡'],['Local','🏪'],['Oficina','💼'],['Bodega','🏭'],['Finca','🌾']].forEach(tp => {
       const sel = d.tipo === tp[0];
       h += '<div onclick="window._refData.tipo=\'' + tp[0] + '\';renderReferralForm()" style="padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ' + (sel ? 'var(--b600)' : 'var(--brd)') + ';background:' + (sel ? 'var(--b600)' : 'transparent') + ';color:' + (sel ? '#fff' : 'var(--tx)') + '">' + tp[1] + ' ' + tp[0] + '</div>';
     });

@@ -68,6 +68,7 @@ function propertyEmoji(t) {
   if (t.includes('penthouse')) return '👑';
   if (t.includes('campestre')) return '🌿';
   if (t.includes('finca'))     return '🌾';
+  if (t.includes('apartaestudio') || t.includes('aparta-estudio') || t.includes('aparta estudio')) return '🏬';
   if (t.includes('apto') || t.includes('apartamento')) return '🏢';
   if (t.includes('casa'))      return '🏡';
   if (t.includes('local'))     return '🏪';

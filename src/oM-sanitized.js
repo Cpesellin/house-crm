@@ -96,7 +96,7 @@ function oM(idx) {
     // ── Información básica ──
     b += `<div class="msc"><div class="msct">🏠 Información <span style="font-size:12px;color:var(--gold)">(editable)</span></div><div class="mgr">`;
 
-    b += `<div class="mf"><div class="mfl">Tipo</div>${sel('me_tipo', ['Casa', 'Apartamento', 'Finca', 'Local comercial', 'Oficina', 'Lote', 'Casa campestre', 'Bodega', 'Penthouse'], p.tipo)}</div>`;
+    b += `<div class="mf"><div class="mfl">Tipo</div>${sel('me_tipo', ['Casa', 'Apartamento', 'Apartaestudio', 'Finca', 'Local comercial', 'Oficina', 'Lote', 'Casa campestre', 'Bodega', 'Penthouse'], p.tipo)}</div>`;
 
     b += `<div class="mf"><div class="mfl">Negociación</div>${sel('me_neg', ['Venta', 'Arriendo', 'Venta y Arriendo'], p.negociacion)}</div>`;
 

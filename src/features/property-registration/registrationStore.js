@@ -13,6 +13,7 @@ export const STEP_LABELS = ['Lo esencial', 'Propietario', 'Características', 'A
 
 export const PROPERTY_TYPES = [
   { id: 'Casa', emoji: '🏠' }, { id: 'Apartamento', emoji: '🏢' },
+  { id: 'Apartaestudio', emoji: '🏬' },
   { id: 'Finca', emoji: '🌾' }, { id: 'Local comercial', emoji: '🏪' },
   { id: 'Oficina', emoji: '💼' }, { id: 'Lote', emoji: '🌳' },
   { id: 'Casa campestre', emoji: '🌿' }, { id: 'Bodega', emoji: '🏭' },
@@ -255,6 +256,7 @@ const registration = {
       parqueaderos: fd.parqueos || null,
       caracteristicas: fd.amenidades.join(', '),
       observaciones: fd.observaciones,
+      descripcion_cliente: fd.observaciones,
       propietario_nombre: fd.nombre,
       propietario_telefono: fd.telefono,
       propietario_email: fd.email,
