@@ -17,8 +17,14 @@
       "purpose": "any"
     },
     {
-      "src": "/img/logo.png",
-      "sizes": "200x200",
+      "src": "/img/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/logo-maskable.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
