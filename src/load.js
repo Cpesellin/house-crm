@@ -216,10 +216,11 @@ function render(ls) {
 
     // Fav button — visitantes ven un corazón gateado (dispara auth prompt)
     let favBtn;
+    const _isFavP = (window.FAVS||[]).includes(p.id);
     if (U) {
-      favBtn = `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)${(window.FAVS||[]).includes(p.id)?';background:#e11d73':''}" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${(window.FAVS||[]).includes(p.id)?'❤️':'🤍'}</button>`;
+      favBtn = `<button aria-label="Favorito" style="position:absolute;top:8px;right:8px;z-index:2;width:32px;height:32px;min-width:32px;border-radius:50%;background:${_isFavP?'#e11d73':'rgba(0,0,0,.45)'};border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);font-family:'Segoe UI Symbol','Apple Color Emoji','Noto Color Emoji',sans-serif" onclick="event.stopPropagation();toggleFavorito('${p.id}')">${_isFavP?'♥':'♡'}</button>`;
     } else {
-      favBtn = `<button style="position:absolute;top:8px;right:8px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.4);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)" onclick="event.stopPropagation();toggleFavorito('${p.id}')">🤍</button>`;
+      favBtn = `<button aria-label="Favorito" style="position:absolute;top:8px;right:8px;z-index:2;width:32px;height:32px;min-width:32px;border-radius:50%;background:rgba(0,0,0,.45);border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);font-family:'Segoe UI Symbol','Apple Color Emoji','Noto Color Emoji',sans-serif" onclick="event.stopPropagation();toggleFavorito('${p.id}')">♡</button>`;
     }
 
     if (hasF) {
