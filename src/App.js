@@ -522,6 +522,7 @@ export async function initApp(container) {
           try { window._applyVisitorChrome && window._applyVisitorChrome(); } catch(e) {}
           // Render cards with full CRM inventory filters
           if (typeof window.rInv === 'function') window.rInv();
+          if (typeof window.uSt === 'function') window.uSt();
           if (typeof window.populateAsesorFilter === 'function') window.populateAsesorFilter();
         }).catch(e => console.error('[Visitor loadPublic]', e));
       }
