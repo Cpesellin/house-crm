@@ -2692,17 +2692,34 @@ window.crearReferido = async function(d) {
     window.toast('Error: ' + error.message, 'terr');
     return null;
   }
-  await window.noti('referido_nuevo', 'amarillo', '🤝 Nuevo referido de ' + u.nombre,
-    u.nombre + ' refirió ' + (d.tipo || 'inmueble') + ' en ' + (d.barrio || d.ciudad || '?') + '. Propietario: ' + d.propNombre + ' (' + tel + ')' + (d.canon ? '. Canon aprox: ' + fm(d.canon) : ''),
-    null, 'admin', null);
+  const _admins = await window.getAdminIds();
+  await window.notificar({
+    tipo: 'referido_nuevo', categoria: 'referido',
+    titulo: '🤝 Nuevo referido de ' + u.nombre,
+    mensaje: u.nombre + ' refirió ' + (d.tipo || 'inmueble') + ' en ' + (d.barrio || d.ciudad || '?') + '. Propietario: ' + d.propNombre + ' (' + tel + ')' + (d.canon ? '. Canon aprox: ' + fm(d.canon) : ''),
+    icono: '🤝', color: '#f59e0b',
+    destinatarios: _admins,
+    accion_tipo: 'abrir_referido', accion_destino: data.id,
+    contexto_tipo: 'referido', contexto_id: data.id,
+    prioridad: 'alta',
+  });
   window.toast('🤝 Referido registrado exitosamente'); return data;
 };
 
 // --- Admin actions ---
 window.iniciarVerificacion = async function(id) {
   await SB().from('referidos').update({ estado: 'verificando' }).eq('id', id);
-  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(usuario,email),tipo_inmueble,barrio').eq('id', id).single();
-  if (r?.referidor) await window.noti('referido_verificando', 'amarillo', '🔍 Tu referido está siendo verificado', 'Estamos contactando al propietario del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || ''), r.referidor.usuario || r.referidor.email, null, null);
+  const { data: r } = await SB().from('referidos').select('referidor_id,tipo_inmueble,barrio').eq('id', id).single();
+  if (r?.referidor_id) await window.notificar({
+    tipo: 'referido_verificando', categoria: 'referido',
+    titulo: '🔍 Tu referido está siendo verificado',
+    mensaje: 'Estamos contactando al propietario del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || ''),
+    icono: '🔍', color: '#3b82f6',
+    destinatarios: [r.referidor_id],
+    accion_tipo: 'abrir_referido', accion_destino: id,
+    contexto_tipo: 'referido', contexto_id: id,
+    prioridad: 'normal',
+  });
   window.toast('🔍 En verificación');
 };
 
@@ -2710,13 +2727,31 @@ window.aprobarReferido = async function(id) {
   const u = U();
   await SB().from('referidos').update({ estado: 'contrato_firmado', verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
   const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(id,nombre,usuario,email),tipo_inmueble,barrio,ciudad').eq('id', id).single();
-  const refEmail = r?.referidor?.usuario || r?.referidor?.email || '';
+  const refId = r?.referidor?.id;
   // Check if referrer has payment method
-  const metodo = await window.obtenerMetodoPago(r?.referidor?.id);
-  if (!metodo) {
-    await window.noti('configurar_pago', 'amarillo', '💳 Configura tu método de pago', '¡Tu referido fue aprobado! Para recibir tu bono de ' + fm(BONO_BASE) + ', configura dónde quieres recibir tus pagos en Mi cuenta → Método de pago.', refEmail, null, null);
+  const metodo = await window.obtenerMetodoPago(refId);
+  if (!metodo && refId) {
+    await window.notificar({
+      tipo: 'configurar_pago', categoria: 'pago',
+      titulo: '💳 Configura tu método de pago',
+      mensaje: '¡Tu referido fue aprobado! Para recibir tu bono de ' + fm(BONO_BASE) + ', configura dónde quieres recibir tus pagos en Mi cuenta → Método de pago.',
+      icono: '💳', color: '#f59e0b',
+      destinatarios: [refId],
+      accion_tipo: 'abrir_pago', accion_destino: null,
+      contexto_tipo: 'referido', contexto_id: id,
+      prioridad: 'alta',
+    });
   }
-  await window.noti('referido_aprobado', 'verde', '🎉 ¡Tu referido fue aprobado!', '¡Felicidades ' + (r?.referidor?.nombre || '') + '! Contrato con propietario firmado. Tu bono de ' + fm(BONO_BASE) + ' está pendiente de pago.' + (!metodo ? ' Configura tu método de pago para recibirlo.' : ''), refEmail, null, null);
+  if (refId) await window.notificar({
+    tipo: 'referido_aprobado', categoria: 'referido',
+    titulo: '🎉 ¡Tu referido fue aprobado!',
+    mensaje: '¡Felicidades ' + (r?.referidor?.nombre || '') + '! Contrato con propietario firmado. Tu bono de ' + fm(BONO_BASE) + ' está pendiente de pago.' + (!metodo ? ' Configura tu método de pago para recibirlo.' : ''),
+    icono: '🎉', color: '#10b981',
+    destinatarios: [refId],
+    accion_tipo: 'abrir_referido', accion_destino: id,
+    contexto_tipo: 'referido', contexto_id: id,
+    prioridad: 'alta',
+  });
   window.toast('✅ Aprobado · Bono ' + fm(BONO_BASE) + ' pendiente de pago');
 };
 
@@ -2760,8 +2795,17 @@ window._ejecutarRechazo = async function(id) {
   document.getElementById('rechazoDlg')?.remove();
   const u = U();
   await SB().from('referidos').update({ estado: 'rechazado', motivo_rechazo: motivoFinal, tipo_rechazo: tipoRechazo, verificado_por: u.id, verificado_at: new Date().toISOString() }).eq('id', id);
-  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(usuario,email),tipo_inmueble,barrio').eq('id', id).single();
-  if (r?.referidor) await window.noti('referido_rechazado', 'rojo', '❌ Referido no aprobado', 'Tu referido del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || '') + ' no fue aprobado. Motivo: ' + motivoFinal, r.referidor.usuario || r.referidor.email, null, null);
+  const { data: r } = await SB().from('referidos').select('referidor_id,tipo_inmueble,barrio').eq('id', id).single();
+  if (r?.referidor_id) await window.notificar({
+    tipo: 'referido_rechazado', categoria: 'referido',
+    titulo: '❌ Referido no aprobado',
+    mensaje: 'Tu referido del ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || '') + ' no fue aprobado. Motivo: ' + motivoFinal,
+    icono: '❌', color: '#ef4444',
+    destinatarios: [r.referidor_id],
+    accion_tipo: 'abrir_referido', accion_destino: id,
+    contexto_tipo: 'referido', contexto_id: id,
+    prioridad: 'alta',
+  });
   window.toast('❌ Rechazado');
   if (window._rechazoResolve) { window._rechazoResolve(); window._rechazoResolve = null; }
   if (typeof window.renderMisReferidos === 'function') window.renderMisReferidos();
@@ -2775,16 +2819,34 @@ window.vincularPorCodigo = async function(refId) {
   const { data } = await q.single();
   if (!data) { window.toast('Inmueble no encontrado', 'terr'); return; }
   await SB().from('referidos').update({ inmueble_id: data.id, estado: 'publicado', publicado_at: new Date().toISOString() }).eq('id', refId);
-  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(nombre,usuario,email),tipo_inmueble,barrio,ciudad').eq('id', refId).single();
-  if (r?.referidor) await window.noti('referido_publicado', 'info', '📢 ¡Tu referido está publicado!', 'El ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || r.ciudad || '') + ' ya está en portales. Te avisaremos cuando se arriende.', r.referidor.usuario || r.referidor.email, null, data.id);
+  const { data: r } = await SB().from('referidos').select('referidor_id,tipo_inmueble,barrio,ciudad').eq('id', refId).single();
+  if (r?.referidor_id) await window.notificar({
+    tipo: 'referido_publicado', categoria: 'referido',
+    titulo: '📢 ¡Tu referido está publicado!',
+    mensaje: 'El ' + (r.tipo_inmueble || 'inmueble') + ' en ' + (r.barrio || r.ciudad || '') + ' ya está en portales. Te avisaremos cuando se arriende.',
+    icono: '📢', color: '#3b82f6',
+    destinatarios: [r.referidor_id],
+    accion_tipo: 'abrir_referido', accion_destino: refId,
+    contexto_tipo: 'referido', contexto_id: refId,
+    prioridad: 'normal',
+  });
   window.toast('📋 Vinculado y publicado'); window.renderMisReferidos();
 };
 
 window.marcarComisionPagada = async function(id) {
   const ok = await window.cfShow('💰', '¿Marcar comisión como pagada?', 'Confirma que ya transferiste al referidor.'); if (!ok) return;
   await SB().from('referidos').update({ comision_pagada: true, comision_fecha_pago: new Date().toISOString() }).eq('id', id);
-  const { data: r } = await SB().from('referidos').select('referidor:usuarios!referidor_id(nombre,usuario,email),comision_monto').eq('id', id).single();
-  if (r?.referidor) await window.noti('comision_pagada', 'verde', '✅ ¡Comisión pagada!', 'Tu comisión de ' + fm(r.comision_monto || 0) + ' fue pagada. ¡Gracias por referir!', r.referidor.usuario || r.referidor.email, null, null);
+  const { data: r } = await SB().from('referidos').select('referidor_id,comision_monto').eq('id', id).single();
+  if (r?.referidor_id) await window.notificar({
+    tipo: 'comision_pagada', categoria: 'pago',
+    titulo: '✅ ¡Comisión pagada!',
+    mensaje: 'Tu comisión de ' + fm(r.comision_monto || 0) + ' fue pagada. ¡Gracias por referir!',
+    icono: '✅', color: '#10b981',
+    destinatarios: [r.referidor_id],
+    accion_tipo: 'abrir_referido', accion_destino: id,
+    contexto_tipo: 'referido', contexto_id: id,
+    prioridad: 'normal',
+  });
   window.toast('💰 Comisión pagada');
 };
 
@@ -2800,9 +2862,27 @@ window.registrarComisionArrendado = async function(inmuebleId) {
   const canon = inm?.precio_arriendo || ref.canon_real || ref.canon_aproximado || 0;
   const comNeta = Math.max(0, Math.round(canon * ref.comision_porcentaje) - ref.bono_monto);
   await SB().from('referidos').update({ estado: 'arrendado', comision_monto: comNeta, canon_real: canon, arrendado_at: new Date().toISOString() }).eq('id', ref.id);
-  const refEmail = ref.referidor?.usuario || ref.referidor?.email || '';
-  await window.noti('comision_lista', 'verde', '💰 ¡Comisión lista! ' + fm(comNeta), '¡Felicidades ' + (ref.referidor?.nombre || '') + '! Canon: ' + fm(canon) + '/mes. Comisión: ' + fm(comNeta), refEmail, null, inmuebleId);
-  await window.noti('comision_pendiente', 'amarillo', '💰 Comisión pendiente: ' + fm(comNeta), 'Referido de ' + (ref.referidor?.nombre || '?') + ' fue arrendado. Pagar ' + fm(comNeta), null, 'admin', inmuebleId);
+  if (ref.referidor_id) await window.notificar({
+    tipo: 'comision_lista', categoria: 'pago',
+    titulo: '💰 ¡Comisión lista! ' + fm(comNeta),
+    mensaje: '¡Felicidades ' + (ref.referidor?.nombre || '') + '! Canon: ' + fm(canon) + '/mes. Comisión: ' + fm(comNeta),
+    icono: '💰', color: '#10b981',
+    destinatarios: [ref.referidor_id],
+    accion_tipo: 'abrir_referido', accion_destino: ref.id,
+    contexto_tipo: 'referido', contexto_id: ref.id,
+    prioridad: 'alta',
+  });
+  const _admins2 = await window.getAdminIds();
+  await window.notificar({
+    tipo: 'comision_pendiente', categoria: 'pago',
+    titulo: '💰 Comisión pendiente: ' + fm(comNeta),
+    mensaje: 'Referido de ' + (ref.referidor?.nombre || '?') + ' fue arrendado. Pagar ' + fm(comNeta),
+    icono: '💰', color: '#f59e0b',
+    destinatarios: _admins2,
+    accion_tipo: 'abrir_referido', accion_destino: ref.id,
+    contexto_tipo: 'referido', contexto_id: ref.id,
+    prioridad: 'alta', escalable: true, horas_para_escalar: 48,
+  });
 };
 
 // --- WhatsApp propuesta al propietario ---
@@ -3025,9 +3105,17 @@ window.registrarPagoReferido = async function(refId, tipoPago, monto) {
   if (error) { window.toast('Error: ' + error.message, 'terr'); return; }
   if (tipoPago === 'bono') await SB().from('referidos').update({ bono_pagado: true, bono_fecha_pago: new Date().toISOString() }).eq('id', refId);
   else await SB().from('referidos').update({ comision_pagada: true, comision_fecha_pago: new Date().toISOString() }).eq('id', refId);
-  const refEmail = ref.referidor?.usuario || ref.referidor?.email || '';
   const ml = metodo ? metodo.metodo + ' ' + window.maskAccount(metodo.numero_cuenta, metodo.metodo) : '';
-  await window.noti('pago_realizado', 'verde', '💰 ¡Pago recibido! ' + fm(monto), 'Tu ' + (tipoPago === 'bono' ? 'bono' : 'comisión') + ' de ' + fm(monto) + ' fue enviado a tu ' + ml + '. ¡Gracias por referir!', refEmail, null, ref.inmueble_id);
+  if (ref.referidor_id) await window.notificar({
+    tipo: 'pago_realizado', categoria: 'pago',
+    titulo: '💰 ¡Pago recibido! ' + fm(monto),
+    mensaje: 'Tu ' + (tipoPago === 'bono' ? 'bono' : 'comisión') + ' de ' + fm(monto) + ' fue enviado a tu ' + ml + '. ¡Gracias por referir!',
+    icono: '💰', color: '#10b981',
+    destinatarios: [ref.referidor_id],
+    accion_tipo: 'abrir_referido', accion_destino: refId,
+    contexto_tipo: 'referido', contexto_id: refId,
+    prioridad: 'alta',
+  });
   window.toast('✅ Pago registrado: ' + fm(monto));
   if (typeof window.renderAdminPaymentPanel === 'function') window.renderAdminPaymentPanel();
 };
