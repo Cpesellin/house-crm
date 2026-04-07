@@ -1414,10 +1414,26 @@ window.showPublicView = async function(id) {
     const _telClick = _isVisitor ? `onclick="${_gateCall}"` : '';
     const _waTarget = _isVisitor ? '' : 'target="_blank"';
 
+    // Push history state so the browser back button restores the portafolio
+    // (showPublicView replaces #app innerHTML, so the SPA route is destroyed —
+    // without this, pressing back exits the site instead of returning to /portafolio).
+    const _prevHash = location.hash || '#/portafolio';
+    try { history.pushState({ pubViewId: id }, '', location.href); } catch(e) {}
+    const _restorePubView = () => {
+      window.removeEventListener('popstate', _onPubPop);
+      const target = _prevHash.startsWith('#') ? _prevHash : '#/portafolio';
+      if (location.hash === target) { location.reload(); }
+      else { location.hash = target; location.reload(); }
+    };
+    const _onPubPop = () => { _restorePubView(); };
+    window.addEventListener('popstate', _onPubPop);
+    window._closePubView = () => { try { history.back(); } catch(e) { _restorePubView(); } };
+
     let h = '';
 
     // ── HEADER FIJO ──
     h += `<div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+      <button onclick="window._closePubView&&window._closePubView()" aria-label="Cerrar" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;border:none;color:#1e293b;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
       <img src="/img/logo.png" style="height:30px">
       <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>
       <div style="flex:1"></div>
