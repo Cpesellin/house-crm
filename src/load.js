@@ -8,6 +8,7 @@
  */
 
 import { getSupabaseClient } from './config/supabase.js';
+import { HOUSE_PHONE } from './core/constants.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -187,7 +188,7 @@ function render(ls) {
     }
 
     // For external users: show WhatsApp button instead of "Ver detalle" to internal modal
-    const capTel2 = p.captador?.telefono_contacto || '573105922763';
+    const capTel2 = HOUSE_PHONE;
     const capNom2 = p.captador?.nombre || 'House';
     const prevUrl2 = (p.codigo_house || '') ? 'https://inmobiliariahouse.com.co/ver/'+encodeURIComponent(p.codigo_house) : 'https://inmobiliariahouse.com.co/ver/'+p.id;
     const esInmExterno = p.origen === 'externo';

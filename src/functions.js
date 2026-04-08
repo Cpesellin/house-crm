@@ -23,6 +23,7 @@
  */
 
 import { getSupabaseClient } from './config/supabase.js';
+import { HOUSE_PHONE, HOUSE_PHONE_DISPLAY, houseWaUrl } from './core/constants.js';
 
 // ─── Shortcuts ───────────────────────────────────────────────────
 
@@ -690,7 +691,7 @@ window.shareInm = function(id) {
   const ubPub=p.direccion_publica||p.barrio||ciu;
   const pv=p.precio_venta||0,pa=p.precio_arriendo||0;
   const hab=p.habitaciones||'',ban=p.banos||'',area=p.area_construida||'',est=p.estrato||'';
-  const capTel=u?.telefono_contacto||'573105922763';
+  const capTel=HOUSE_PHONE;
   const capNom=u?.nombre||'Inmobiliaria House';
 
   // Clean URL with custom domain
@@ -1396,7 +1397,7 @@ window.showPublicView = async function(id) {
     if (!p) { app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc"><div style="text-align:center"><div style="font-size:40px;margin-bottom:12px">🏠</div><h3 style="font-size:18px;font-weight:800;color:#1e293b">Inmueble no encontrado</h3><p style="color:#94a3b8;font-size:13px;margin-top:6px">Este enlace puede haber expirado o el inmueble fue retirado.</p></div></div>'; return; }
 
     const fotos = p.fotos ? p.fotos.sort((a, b) => a.orden - b.orden) : [];
-    const capTel = p.captador?.telefono_contacto || '573105922763';
+    const capTel = HOUSE_PHONE;
     const capNom = p.captador?.nombre || 'House';
     const cod = p.codigo_house || '';
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
@@ -2234,7 +2235,7 @@ window.showPaywall = function(usados, limite) {
         <div style="font-size:15px;font-weight:800;color:var(--b700);margin-bottom:8px">📦 Plan Profesional</div>
         <div style="font-size:12px;color:var(--sub);line-height:1.6">✓ Publicaciones ilimitadas<br>✓ Tus inmuebles destacados<br>✓ Estadísticas de contacto<br>✓ Soporte prioritario</div>
       </div>
-      <button style="width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#25d366;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="window.open('https://wa.me/573105922763?text=${waMsg}','_blank')">📲 Contactar para activar</button>
+      <button style="width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;background:#25d366;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="window.open('https://wa.me/${HOUSE_PHONE}?text=${waMsg}','_blank')">📲 Contactar para activar</button>
       <button style="width:100%;padding:10px;border:none;border-radius:8px;font-size:12px;font-weight:600;background:none;color:var(--sub);font-family:inherit;cursor:pointer;margin-top:8px" onclick="document.getElementById('paywallDlg').remove()">← Volver a mis publicaciones</button>
     </div>
   </div>`;
@@ -2512,7 +2513,7 @@ window.renderReferralPolicies = function() {
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">✅ Requisitos</div><div style="padding-left:12px;border-left:2px solid var(--green);margin-bottom:14px">• Propietario dispuesto a firmar contrato de administración.<br>• Inmueble en condiciones habitables.<br>• Sin contrato vigente con otra inmobiliaria.<br>• Datos reales y verificables.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">⏰ Tiempos</div><div style="padding-left:12px;border-left:2px solid var(--gold);margin-bottom:14px">• Verificación: máximo <strong>5 días hábiles</strong>.<br>• Bono: se confirma al verificar.<br>• Comisión final: dentro de <strong>15 días</strong> después del arriendo.<br>• Pago: transferencia o efectivo.</div>' +
     '<div style="font-weight:700;color:var(--tx);font-size:13px;margin-bottom:6px">📌 General</div><div style="padding-left:12px;border-left:2px solid var(--sub);margin-bottom:14px">• Cualquier persona mayor de edad puede participar.<br>• No hay límite de referidos.<br>• Si uno es rechazado, puedes referir otro diferente.</div>' +
-    '<div style="text-align:center;padding:12px;background:var(--cd2);border-radius:10px;margin-top:8px"><div style="font-size:11px;color:var(--sub)">¿Dudas?</div><a href="https://wa.me/573105922763?text=Hola,%20tengo%20una%20pregunta%20sobre%20referidos" target="_blank" style="display:inline-block;margin-top:6px;padding:8px 20px;background:#25d366;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">📞 WhatsApp</a></div></div></details>';
+    '<div style="text-align:center;padding:12px;background:var(--cd2);border-radius:10px;margin-top:8px"><div style="font-size:11px;color:var(--sub)">¿Dudas?</div><a href="' + houseWaUrl('Hola, tengo una pregunta sobre referidos') + '" target="_blank" style="display:inline-block;margin-top:6px;padding:8px 20px;background:#25d366;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">📞 WhatsApp</a></div></div></details>';
 };
 
 window.renderReferralStrategies = function() {

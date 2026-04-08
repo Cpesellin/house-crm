@@ -8,6 +8,7 @@
  */
 
 import { getSupabaseClient } from './config/supabase.js';
+import { HOUSE_PHONE, HOUSE_PHONE_TEL, HOUSE_PHONE_DISPLAY, houseWaUrl } from './core/constants.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
@@ -812,7 +813,7 @@ window.rFavoritos = async function() {
       const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
       const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
       const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
-      const capTel = p.captador?.telefono_contacto || '573105922763';
+      const capTel = HOUSE_PHONE;
       const capNom = p.captador?.nombre || 'House';
       const cod = p.codigo_house || '';
       const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
@@ -1031,8 +1032,8 @@ window.rEspera = function() {
     <a href="#/portafolio" onclick="document.getElementById('lov')&&(document.getElementById('lov').style.display='none')" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:16px">🔍 Explorar inmuebles mientras esperas</a>
     <div style="padding:16px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:12px;margin-bottom:20px">
       <div style="font-size:12px;font-weight:700;color:var(--sub);margin-bottom:4px">¿Preguntas?</div>
-      <div style="font-size:13px;color:var(--tx);margin-top:6px">📱 Llamarnos: <a href="tel:+573105922763" style="color:var(--b600);font-weight:700">310 592 2763</a></div>
-      <div style="font-size:13px;color:var(--tx);margin-top:4px">💬 WhatsApp: <a href="https://wa.me/573105922763" target="_blank" style="color:#25d366;font-weight:700">Enviar mensaje</a></div>
+      <div style="font-size:13px;color:var(--tx);margin-top:6px">📱 Llamarnos: <a href="tel:${HOUSE_PHONE_TEL}" style="color:var(--b600);font-weight:700">${HOUSE_PHONE_DISPLAY}</a></div>
+      <div style="font-size:13px;color:var(--tx);margin-top:4px">💬 WhatsApp: <a href="${houseWaUrl()}" target="_blank" style="color:#25d366;font-weight:700">Enviar mensaje</a></div>
     </div>
     <button onclick="logout()" style="padding:10px 20px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cerrar sesión</button>`;
 };
@@ -1340,7 +1341,7 @@ window.renderMisReferidos = async function() {
 
 window.renderPropietariosLanding = function() {
   const el = document.getElementById('propietariosc'); if (!el) return;
-  const waTel = '573105922763';
+  const waTel = HOUSE_PHONE;
   const waMsg = encodeURIComponent('Hola, soy propietario y quiero conocer más sobre el servicio de administración de arriendo.');
 
   let h = '';
@@ -1479,7 +1480,7 @@ window.renderPropietariosLanding = function() {
   h += '<div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx);margin-bottom:8px">¿Listo para arrendar sin estrés?</div>';
   h += '<div style="font-size:13px;color:var(--sub);margin-bottom:20px">Contáctenos hoy. Sin compromiso.</div>';
   h += '<a href="https://wa.me/' + waTel + '?text=' + waMsg + '" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:16px 32px;background:#25d366;color:#fff;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(37,211,102,.3)">💬 Contactar por WhatsApp</a>';
-  h += '<div style="margin-top:12px"><a href="tel:+573105922763" style="font-size:14px;color:var(--b600);font-weight:700;text-decoration:none">📞 Llamar: 310 592 2763</a></div>';
+  h += '<div style="margin-top:12px"><a href="tel:' + HOUSE_PHONE_TEL + '" style="font-size:14px;color:var(--b600);font-weight:700;text-decoration:none">📞 Llamar: ' + HOUSE_PHONE_DISPLAY + '</a></div>';
   h += '<div style="margin-top:10px"><a href="https://inmobiliariahouse.com.co" target="_blank" style="font-size:14px;color:var(--b600);font-weight:700;text-decoration:none">🌐 inmobiliariahouse.com.co</a></div>';
   h += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--brd)">';
   h += '<div style="font-size:12px;color:var(--sub);margin-bottom:4px">📍 Visítenos</div>';
