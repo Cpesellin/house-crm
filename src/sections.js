@@ -1140,11 +1140,18 @@ window.rUsers = async function() {
   const { data: pendingRegs } = await SB().from('registro_solicitudes').select('id').eq('estado', 'pendiente');
   const { data: pendingInm } = await SB().from('inmuebles').select('id').eq('estado_revision', 'en_revision').eq('origen', 'externo');
   const pendCount = ((pendingRegs||[]).length) + ((pendingInm||[]).length);
+  // Intereses pendientes (Fase 4) — fallback silencioso si tabla no existe
+  let intCount = 0;
+  try {
+    const { data: pendingInt } = await SB().from('intereses_compradores').select('id').eq('estado', 'nuevo');
+    intCount = (pendingInt || []).length;
+  } catch(e) { /* tabla no existe */ }
 
   // Tabs
-  let h = `<div style="display:flex;gap:6px;margin-bottom:14px">`;
+  let h = `<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">`;
   h += `<button onclick="window._usersTab='equipo';rUsers()" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid ${window._usersTab==='equipo'?'var(--b600)':'var(--brd)'};background:${window._usersTab==='equipo'?'var(--b600)':'var(--cd)'};color:${window._usersTab==='equipo'?'#fff':'var(--tx)'};cursor:pointer;font-family:inherit">👥 Equipo</button>`;
   h += `<button onclick="window._usersTab='solicitudes';rUsers()" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid ${window._usersTab==='solicitudes'?'var(--b600)':'var(--brd)'};background:${window._usersTab==='solicitudes'?'var(--b600)':'var(--cd)'};color:${window._usersTab==='solicitudes'?'#fff':'var(--tx)'};cursor:pointer;font-family:inherit">📨 Solicitudes${pendCount>0?' ('+pendCount+')':''}</button>`;
+  h += `<button onclick="window._usersTab='intereses';rUsers()" style="padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid ${window._usersTab==='intereses'?'var(--b600)':'var(--brd)'};background:${window._usersTab==='intereses'?'var(--b600)':'var(--cd)'};color:${window._usersTab==='intereses'?'#fff':'var(--tx)'};cursor:pointer;font-family:inherit">💙 Intereses${intCount>0?' ('+intCount+')':''}</button>`;
   h += `</div>`;
 
   if (window._usersTab === 'equipo') {
@@ -1163,7 +1170,7 @@ window.rUsers = async function() {
       const upgradeBtn = (u2.tipo_usuario==='cliente'||u2.tipo_usuario==='pendiente') ? `<button onclick="aprobarRegistro('${u2.id}','vendedor_externo')" style="padding:5px 8px;border-radius:14px;font-size:9px;font-weight:700;border:1.5px solid #065f46;background:#065f4615;color:#065f46;cursor:pointer;font-family:inherit;margin-left:4px">🏢 Hacer asesor</button>` : '';
       return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}${externoBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}${upgradeBtn}</div>`;
     }).join('');
-  } else {
+  } else if (window._usersTab === 'solicitudes') {
     // Solicitudes tab
     // Pending registrations
     const { data: regs } = await SB().from('registro_solicitudes').select('*,usuario:usuarios(id,nombre,email,foto,telefono_contacto)').eq('estado', 'pendiente').order('created_at', { ascending: false });
@@ -1295,6 +1302,81 @@ window.rUsers = async function() {
 
     if ((!regs||!regs.length) && (!inmExt||!inmExt.length)) {
       h += '<div style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:8px">✅</div><p style="color:var(--sub)">No hay solicitudes pendientes</p></div>';
+    }
+  } else if (window._usersTab === 'intereses') {
+    // ── COLA DE CALIFICACIÓN DE INTERESES (FASE 4) ──
+    let intereses = null;
+    try {
+      const r = await SB().from('intereses_compradores')
+        .select('*,inmueble:inmuebles(id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,captador:usuarios!captador_id(id,nombre,email)),comprador:usuarios!usuario_id(id,nombre,email,foto,telefono_contacto)')
+        .eq('estado', 'nuevo')
+        .order('created_at', { ascending: true });
+      if (r.error) throw r.error;
+      intereses = r.data || [];
+    } catch(e) {
+      if (/intereses_compradores/i.test(e.message || '')) {
+        h += '<div style="text-align:center;padding:30px;color:var(--red)">⚠️ Falta correr <code>sql/21-intereses-compradores.sql</code></div>';
+      } else {
+        h += '<div style="text-align:center;padding:30px;color:var(--red)">Error: ' + e.message + '</div>';
+      }
+      el.innerHTML = h; return;
+    }
+
+    if (!intereses.length) {
+      h += '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:8px">💙</div><h3 style="font-size:15px;font-weight:800">No hay intereses por calificar</h3><p style="font-size:12px;color:var(--sub);margin-top:6px">Cuando un cliente exprese interés en un inmueble aparecerá aquí.</p></div>';
+    } else {
+      h += `<div style="font-size:12px;font-weight:800;color:var(--sub);margin-bottom:10px">💙 INTERESES POR CALIFICAR <span style="color:var(--b500)">(${intereses.length})</span></div>`;
+      h += `<div style="font-size:11px;color:var(--sub);margin-bottom:14px;padding:10px;background:var(--b50);border-left:3px solid var(--b500);border-radius:4px">🟢 <b>Verde</b>: cliente apto → notifica al captador. 🟡 <b>Amarillo</b>: pídele info adicional. 🔴 <b>Rojo</b>: descartar con motivo.</div>`;
+      const now = Date.now();
+      intereses.forEach(it => {
+        const inm = it.inmueble || {};
+        const c = it.comprador || {};
+        const created = it.created_at ? new Date(it.created_at).getTime() : now;
+        const hours = Math.floor((now - created) / 3600000);
+        const escalado = hours >= 4;
+        const borderColor = escalado ? '#c2410c' : 'var(--b500)';
+
+        h += `<div style="padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ${borderColor};border-radius:10px;margin-bottom:10px">`;
+
+        // Header: comprador + escalamiento
+        h += `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">`;
+        h += `<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">`;
+        if (c.foto) h += `<img src="${c.foto}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
+        else h += `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800;flex-shrink:0">${(c.nombre||'?')[0]}</div>`;
+        h += `<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800">${c.nombre || 'Cliente'}</div><div style="font-size:11px;color:var(--sub)">${c.email || ''}${c.telefono_contacto ? ' · 📞 '+c.telefono_contacto : ''}</div></div>`;
+        h += `</div>`;
+        if (escalado) {
+          h += `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:4px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;flex-shrink:0">🔥 ${hours}h</span>`;
+        } else {
+          h += `<span style="font-size:9px;font-weight:700;color:var(--sub);flex-shrink:0">hace ${hours||'<1'}h</span>`;
+        }
+        h += `</div>`;
+
+        // Inmueble
+        h += `<div style="padding:10px;background:var(--cd2);border-radius:8px;margin-bottom:8px">`;
+        h += `<div style="font-size:12px;font-weight:800">${emo(inm.tipo)} ${inm.tipo || ''} en ${(it.modalidad === 'arriendo' ? 'Arriendo' : 'Compra')}</div>`;
+        h += `<div style="font-size:11px;color:var(--sub)">📍 ${inm.barrio || ''}${inm.ciudad ? ' · '+inm.ciudad : ''}</div>`;
+        if (it.modalidad === 'arriendo' && inm.precio_arriendo > 0) h += `<div style="font-size:12px;font-weight:700;color:var(--b700);margin-top:2px">${fm(inm.precio_arriendo)}/mes</div>`;
+        else if (inm.precio_venta > 0) h += `<div style="font-size:12px;font-weight:700;margin-top:2px">${fm(inm.precio_venta)}</div>`;
+        if (inm.captador?.nombre) h += `<div style="font-size:10px;color:var(--sub);margin-top:4px">👤 Captador: ${inm.captador.nombre}</div>`;
+        h += `</div>`;
+
+        // Datos declarados por el comprador
+        h += `<div style="font-size:11px;font-weight:800;color:var(--sub);margin-bottom:4px;letter-spacing:.5px">DATOS DEL COMPRADOR</div>`;
+        h += `<div style="font-size:12px;line-height:1.6;margin-bottom:10px">`;
+        if (it.presupuesto_max) h += `<div>💰 Presupuesto: <b>${fm(it.presupuesto_max)}</b></div>`;
+        else h += `<div style="color:var(--sub)">💰 Presupuesto: <i>no declarado</i></div>`;
+        if (it.fecha_ideal) h += `<div>📅 Fecha ideal: <b>${it.fecha_ideal}</b></div>`;
+        if (it.mensaje) h += `<div style="margin-top:4px;padding:6px 8px;background:var(--cd2);border-radius:4px;font-style:italic;color:var(--tx)">"${(it.mensaje||'').replace(/</g,'&lt;')}"</div>`;
+        h += `</div>`;
+
+        // Botones de calificación
+        h += `<div style="display:flex;gap:6px;flex-wrap:wrap">`;
+        h += `<button onclick="calificarInteresRapido('${it.id}')" style="flex:1;min-width:110px;padding:8px 14px;border:none;border-radius:6px;font-size:11px;font-weight:800;background:#10b981;color:#fff;cursor:pointer;font-family:inherit">🟢 Calificar verde</button>`;
+        h += `<button onclick="abrirCalificarInteres('${it.id}','amarillo')" style="flex:1;min-width:110px;padding:8px 14px;border:1.5px solid var(--gold);border-radius:6px;font-size:11px;font-weight:800;background:var(--goldbg);color:#92400e;cursor:pointer;font-family:inherit">🟡 Pedir info</button>`;
+        h += `<button onclick="abrirCalificarInteres('${it.id}','rojo')" style="flex:1;min-width:110px;padding:8px 14px;border:1.5px solid var(--red);border-radius:6px;font-size:11px;font-weight:800;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">🔴 Descartar</button>`;
+        h += `</div></div>`;
+      });
     }
   }
 

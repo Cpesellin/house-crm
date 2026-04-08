@@ -2593,6 +2593,123 @@ window.guardarInteres = async function(inmId) {
 };
 
 // ══════════════════════════════════════════════════════════════════
+// 19c. CALIFICAR INTERESES (FASE 4) — Cola admin verde/amarillo/rojo
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Aplica una calificación rápida (verde) sin pedir motivo, o abre modal
+ * para amarillo/rojo (que requieren motivo).
+ */
+window.calificarInteresRapido = async function(intId) {
+  // Verde directo: sin motivo, notifica al captador
+  await window._aplicarCalificacionInteres(intId, 'verde', '');
+};
+
+window.abrirCalificarInteres = function(intId, score) {
+  // score = 'amarillo' | 'rojo' (necesitan motivo)
+  const titulo = score === 'amarillo' ? '🟡 Pedir más información al cliente' : '🔴 Descartar interés';
+  const placeholder = score === 'amarillo'
+    ? 'Ej: ¿Tienes fiador? ¿Cuándo puedes ver el inmueble? Necesito más detalles del presupuesto...'
+    : 'Ej: El inmueble ya está reservado. El presupuesto no alcanza. No cumple los requisitos del propietario...';
+  const btnTxt = score === 'amarillo' ? '📨 Enviar al cliente' : '🔴 Descartar';
+  const btnBg = score === 'amarillo' ? 'var(--gold)' : 'var(--red)';
+
+  document.getElementById('calIntDlg')?.remove();
+  const html = `
+  <div id="calIntDlg" class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)">
+    <div class="card" style="max-width:480px;width:100%;border-radius:14px">
+      <div class="cdh"><div class="chl"><div class="chi">${score==='amarillo'?'🟡':'🔴'}</div><div><div class="cht">${titulo}</div></div></div>
+        <button onclick="document.getElementById('calIntDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+      <div class="cdb" style="padding:18px">
+        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5">${score==='amarillo'?'El cliente recibirá una notificación pidiéndole que complete o ajuste su interés.':'El cliente verá su interés marcado como "No disponible" con este motivo.'}</div>
+        <textarea id="calIntMotivo" placeholder="${placeholder}" style="width:100%;min-height:100px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd);margin-bottom:14px"></textarea>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('calIntDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cancelar</button>
+          <button onclick="window._aplicarCalificacionInteres('${intId}','${score}',document.getElementById('calIntMotivo').value)" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:${btnBg};color:#fff;cursor:pointer;font-family:inherit">${btnTxt}</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window._aplicarCalificacionInteres = async function(intId, score, motivo) {
+  const u = U(); if (!u) return;
+  motivo = (motivo || '').trim();
+  if ((score === 'amarillo' || score === 'rojo') && !motivo) {
+    window.toast('Escribe un motivo', 'terr'); return;
+  }
+  try {
+    // Cargar interés con relaciones
+    const { data: it, error: errLoad } = await SB().from('intereses_compradores')
+      .select('*,inmueble:inmuebles(id,tipo,ciudad,barrio,captador_id,captador:usuarios!captador_id(id,nombre,email)),comprador:usuarios!usuario_id(id,nombre,email)')
+      .eq('id', intId).single();
+    if (errLoad) throw errLoad;
+    if (!it) { window.toast('Interés no encontrado', 'terr'); return; }
+
+    const nuevoEstado = score === 'verde' ? 'calificado' : score === 'rojo' ? 'descartado' : 'nuevo';
+    // Amarillo deja estado=nuevo (sigue en cola hasta que cliente ajuste)
+
+    const { error: errUpd } = await SB().from('intereses_compradores').update({
+      score, motivo_score: motivo || null,
+      calificado_por: u.id, calificado_at: new Date().toISOString(),
+      estado: nuevoEstado, updated_at: new Date().toISOString(),
+    }).eq('id', intId);
+    if (errUpd) throw errUpd;
+
+    const inm = it.inmueble || {};
+    const compradorEmail = it.comprador?.email || '';
+    const compradorNom = it.comprador?.nombre || 'Cliente';
+    const captadorEmail = inm.captador?.email || '';
+    const ubicacion = inm.barrio || inm.ciudad || '';
+    const detalleInteres = (it.presupuesto_max ? '\n💰 Presupuesto: ' + fm(it.presupuesto_max) : '') +
+                           (it.fecha_ideal ? '\n📅 Fecha ideal: ' + it.fecha_ideal : '') +
+                           (it.mensaje ? '\n💬 ' + it.mensaje : '');
+
+    if (score === 'verde') {
+      // Notificar captador del inmueble
+      if (captadorEmail) {
+        await window.noti('interes_calificado', 'verde',
+          '🟢 Cliente calificado para tu ' + (inm.tipo || 'inmueble'),
+          compradorNom + ' fue calificado por el admin como buen prospecto para tu ' +
+          (inm.tipo || 'inmueble') + ' en ' + ubicacion + '.' + detalleInteres,
+          captadorEmail, null, inm.id);
+      }
+      window.toast('🟢 Cliente calificado y notificado al captador');
+    } else if (score === 'amarillo') {
+      // Notificar comprador para que complete su interés
+      if (compradorEmail) {
+        await window.noti('interes_pedir_info', 'amarillo',
+          '🟡 Necesitamos más información',
+          'Sobre tu interés en ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + ':\n\n' + motivo,
+          compradorEmail, null, inm.id);
+      }
+      window.toast('🟡 Solicitud enviada al cliente');
+    } else if (score === 'rojo') {
+      // Notificar comprador del descarte
+      if (compradorEmail) {
+        await window.noti('interes_descartado', 'rojo',
+          '🔴 Tu interés fue revisado',
+          'Sobre tu interés en ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + ':\n\n' + motivo,
+          compradorEmail, null, inm.id);
+      }
+      window.toast('🔴 Interés descartado');
+    }
+
+    document.getElementById('calIntDlg')?.remove();
+    if (typeof window.rUsers === 'function') window.rUsers();
+  } catch(e) {
+    console.error('[_aplicarCalificacionInteres]', e);
+    if (/intereses_compradores|score|motivo_score/i.test(e.message || '')) {
+      window.toast('Falta correr sql/21-intereses-compradores.sql', 'terr');
+    } else {
+      window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════
 // 20. MESSAGING — Chat interno
 // ══════════════════════════════════════════════════════════════════
 

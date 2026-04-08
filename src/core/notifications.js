@@ -182,12 +182,29 @@ const TIPO_CONFIG = {
     escalable: true, horas_para_escalar: 12,
   },
 
-  // ── INTERESES (FASE 3) ──
+  // ── INTERESES (FASE 3 + 4) ──
   interes_nuevo: {
     categoria: 'solicitud', icono: '💙', color: '#3b82f6',
     accion_tipo: 'abrir_seccion', accion_seccion: 'users',
     prioridad: 'alta',
     escalable: true, horas_para_escalar: 4,
+  },
+  interes_calificado: {
+    // Verde: notifica al captador del inmueble que tiene un interés calificado
+    categoria: 'solicitud', icono: '🟢', color: '#10b981',
+    accion_tipo: 'abrir_inmueble', prioridad: 'alta',
+  },
+  interes_pedir_info: {
+    // Amarillo: notifica al cliente para que complete o ajuste su interés
+    categoria: 'solicitud', icono: '🟡', color: '#f59e0b',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-intereses',
+    prioridad: 'normal',
+  },
+  interes_descartado: {
+    // Rojo: notifica al cliente que el interés no procede
+    categoria: 'solicitud', icono: '🔴', color: '#ef4444',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-intereses',
+    prioridad: 'normal',
   },
 
   // ── REGISTROS / SISTEMA ──
