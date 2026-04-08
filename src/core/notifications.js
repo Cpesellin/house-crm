@@ -207,6 +207,27 @@ const TIPO_CONFIG = {
     prioridad: 'normal',
   },
 
+  // ── CITAS BILATERALES (FASE 5a) ──
+  cita_propuesta: {
+    // Captador propuso fecha/hora → cliente debe confirmar
+    categoria: 'agenda', icono: '📅', color: '#3b82f6',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-citas',
+    prioridad: 'alta',
+    escalable: true, horas_para_escalar: 24,
+  },
+  cita_confirmada: {
+    // Cliente confirmó → captador recibe la confirmación
+    categoria: 'agenda', icono: '✅', color: '#10b981',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'citas',
+    prioridad: 'alta',
+  },
+  cita_cancelada: {
+    // Cualquier parte canceló → la otra recibe el motivo
+    categoria: 'agenda', icono: '❌', color: '#ef4444',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'citas',
+    prioridad: 'alta',
+  },
+
   // ── REGISTROS / SISTEMA ──
   registro_externo: {
     categoria: 'sistema', icono: '👤', color: '#3b82f6',

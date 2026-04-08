@@ -2710,6 +2710,248 @@ window._aplicarCalificacionInteres = async function(intId, score, motivo) {
 };
 
 // ══════════════════════════════════════════════════════════════════
+// 19d. CITAS BILATERALES (FASE 5a)
+// Captador propone fecha → cliente confirma → cualquiera puede cancelar
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Abre el modal "Proponer cita" desde un interés calificado.
+ * Lo usa el captador del inmueble vinculado al interés.
+ */
+window.proponerCita = async function(interesId) {
+  const u = U(); if (!u) return;
+  // Cargar interés con relaciones
+  const { data: it, error } = await SB().from('intereses_compradores')
+    .select('*,inmueble:inmuebles(id,tipo,ciudad,barrio,captador_id),comprador:usuarios!usuario_id(id,nombre,email,telefono_contacto)')
+    .eq('id', interesId).single();
+  if (error || !it) { window.toast('Interés no encontrado', 'terr'); return; }
+
+  const inm = it.inmueble || {};
+  const c = it.comprador || {};
+  // Solo el captador del inmueble (o admin) puede proponer
+  const esCaptador = inm.captador_id === u.id;
+  const esAdmin = u.rol === 'admin';
+  if (!esCaptador && !esAdmin) { window.toast('Solo el captador del inmueble puede proponer la cita', 'terr'); return; }
+
+  // Fecha mínima = mañana
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+  document.getElementById('citDlg')?.remove();
+  const html = `
+  <div id="citDlg" class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)">
+    <div class="card" style="max-width:480px;width:100%;max-height:90vh;overflow:auto;border-radius:14px">
+      <div class="cdh"><div class="chl"><div class="chi">📅</div><div><div class="cht">Proponer cita</div><div style="font-size:11px;color:var(--sub);margin-top:2px">${inm.tipo || ''} en ${inm.barrio || inm.ciudad || ''}</div></div></div>
+        <button onclick="document.getElementById('citDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+      <div class="cdb" style="padding:18px">
+        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5">Estás proponiéndole una cita a <b>${c.nombre || 'el cliente'}</b>. Recibirá la propuesta en su sección "Mis citas" y deberá confirmarla.</div>
+
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">Fecha <span class="ffr">*</span></label>
+          <input id="cit_fecha" type="date" min="${tomorrow}" class="ffi">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div class="ff" style="flex:1">
+            <label class="ffl">Hora inicio <span class="ffr">*</span></label>
+            <input id="cit_hi" type="time" class="ffi">
+          </div>
+          <div class="ff" style="flex:1">
+            <label class="ffl">Hora fin <span class="ffr">*</span></label>
+            <input id="cit_hf" type="time" class="ffi">
+          </div>
+        </div>
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">Punto de encuentro / lugar</label>
+          <input id="cit_lugar" type="text" placeholder="Ej: en la portería del edificio" class="ffi">
+        </div>
+        <div class="ff" style="margin-bottom:14px">
+          <label class="ffl">Mensaje al cliente (opcional)</label>
+          <textarea id="cit_msg" placeholder="Ej: Te espero 5 minutos antes en la entrada principal..." style="width:100%;min-height:70px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd)"></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('citDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cancelar</button>
+          <button onclick="window.guardarPropuestaCita('${interesId}')" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">📨 Enviar propuesta</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.guardarPropuestaCita = async function(interesId) {
+  const u = U(); if (!u) return;
+  const fecha = document.getElementById('cit_fecha')?.value;
+  const hi = document.getElementById('cit_hi')?.value;
+  const hf = document.getElementById('cit_hf')?.value;
+  const lugar = (document.getElementById('cit_lugar')?.value || '').trim();
+  const msg = (document.getElementById('cit_msg')?.value || '').trim();
+  if (!fecha || !hi || !hf) { window.toast('Completa fecha y horas', 'terr'); return; }
+  if (hf <= hi) { window.toast('La hora fin debe ser después de la hora inicio', 'terr'); return; }
+
+  try {
+    // Recargar interés (necesitamos inmueble + comprador IDs y datos)
+    const { data: it } = await SB().from('intereses_compradores')
+      .select('*,inmueble:inmuebles(id,tipo,ciudad,barrio,captador_id),comprador:usuarios!usuario_id(id,nombre,email,telefono_contacto)')
+      .eq('id', interesId).single();
+    if (!it) throw new Error('Interés no encontrado');
+    const inm = it.inmueble || {};
+    const c = it.comprador || {};
+
+    const titulo = 'Visita: ' + (inm.tipo || 'inmueble') + ' en ' + (inm.barrio || inm.ciudad || '');
+    const notaCompleta = [
+      lugar ? '📍 Punto de encuentro: ' + lugar : '',
+      msg ? '💬 ' + msg : '',
+    ].filter(Boolean).join('\n');
+
+    const { data: cita, error } = await SB().from('agenda').insert({
+      usuario_id: inm.captador_id || u.id,  // captador es el dueño
+      creado_por: u.id,
+      inmueble_id: inm.id,
+      cliente_id: c.id || null,
+      interes_id: interesId,
+      fecha,
+      hora_inicio: hi,
+      hora_fin: hf,
+      tipo_evento: 'visita',
+      es_personal: false,
+      titulo,
+      cliente_nombre: c.nombre || null,
+      cliente_telefono: c.telefono_contacto || null,
+      nota_admin: notaCompleta || null,
+      estado: 'propuesta',
+      confirmada_captador_at: new Date().toISOString(),
+    }).select('id').single();
+    if (error) throw error;
+
+    // Marcar el interés como convertido en cita
+    await SB().from('intereses_compradores').update({
+      estado: 'convertido_cita', updated_at: new Date().toISOString(),
+    }).eq('id', interesId);
+
+    // Notificar al cliente
+    if (c.email) {
+      const fechaTxt = new Date(fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long' });
+      await window.noti('cita_propuesta', 'amarillo',
+        '📅 Tienes una propuesta de cita',
+        'El captador propone visitar el ' + (inm.tipo || 'inmueble') + ' en ' + (inm.barrio || inm.ciudad || '') +
+        '\n\n📅 ' + fechaTxt + '\n🕐 ' + hi + ' - ' + hf +
+        (lugar ? '\n📍 ' + lugar : '') +
+        (msg ? '\n\n💬 ' + msg : '') +
+        '\n\nConfirma o cancela en tu sección "Mis citas".',
+        c.email, null, inm.id);
+    }
+
+    document.getElementById('citDlg')?.remove();
+    window.toast('📨 Propuesta enviada al cliente');
+    if (typeof window.rCitasInternal === 'function' && location.hash === '#/citas') window.rCitasInternal();
+    if (typeof window.rUsers === 'function' && location.hash.startsWith('#/users')) window.rUsers();
+  } catch(e) {
+    console.error('[guardarPropuestaCita]', e);
+    if (/cliente_id|interes_id|confirmada_captador_at/i.test(e.message || '')) {
+      window.toast('Falta correr sql/22-citas-bilaterales.sql', 'terr');
+    } else {
+      window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
+    }
+  }
+};
+
+window.confirmarCitaCliente = async function(citaId) {
+  const u = U(); if (!u) return;
+  try {
+    const { data: cita, error: errLoad } = await SB().from('agenda')
+      .select('*,inmueble:inmuebles(tipo,ciudad,barrio,captador:usuarios!captador_id(email,nombre))')
+      .eq('id', citaId).single();
+    if (errLoad || !cita) throw errLoad || new Error('Cita no encontrada');
+    if (cita.cliente_id !== u.id) { window.toast('Esta cita no es tuya', 'terr'); return; }
+
+    const now = new Date().toISOString();
+    await SB().from('agenda').update({
+      confirmada_cliente_at: now,
+      estado: 'confirmada',  // ambos confirmados ya (captador lo hizo al proponer)
+    }).eq('id', citaId);
+
+    // Notificar al captador
+    const capEmail = cita.inmueble?.captador?.email;
+    if (capEmail) {
+      const fechaTxt = new Date(cita.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long' });
+      await window.noti('cita_confirmada', 'verde',
+        '✅ El cliente confirmó la cita',
+        (u.nombre || 'El cliente') + ' confirmó la visita al ' + (cita.inmueble?.tipo || 'inmueble') +
+        ' en ' + (cita.inmueble?.barrio || cita.inmueble?.ciudad || '') +
+        '\n\n📅 ' + fechaTxt + '\n🕐 ' + cita.hora_inicio + ' - ' + cita.hora_fin,
+        capEmail, null, cita.inmueble_id);
+    }
+
+    window.toast('✅ Cita confirmada');
+    if (typeof window.rMisCitas === 'function') window.rMisCitas();
+  } catch(e) {
+    console.error('[confirmarCitaCliente]', e);
+    window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
+  }
+};
+
+window.abrirCancelarCita = function(citaId) {
+  document.getElementById('cancCitDlg')?.remove();
+  const html = `
+  <div id="cancCitDlg" class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)">
+    <div class="card" style="max-width:440px;width:100%;border-radius:14px">
+      <div class="cdh"><div class="chl"><div class="chi">❌</div><div><div class="cht">Cancelar cita</div></div></div>
+        <button onclick="document.getElementById('cancCitDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+      <div class="cdb" style="padding:18px">
+        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5">La otra parte recibirá una notificación con el motivo. Esta acción no se puede deshacer.</div>
+        <textarea id="cancCitMot" placeholder="Ej: Tuve un imprevisto, ¿podemos reagendar?" style="width:100%;min-height:90px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd);margin-bottom:14px"></textarea>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('cancCitDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Volver</button>
+          <button onclick="window._aplicarCancelarCita('${citaId}')" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:var(--red);color:#fff;cursor:pointer;font-family:inherit">❌ Cancelar cita</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window._aplicarCancelarCita = async function(citaId) {
+  const u = U(); if (!u) return;
+  const motivo = (document.getElementById('cancCitMot')?.value || '').trim();
+  if (!motivo) { window.toast('Escribe un motivo', 'terr'); return; }
+  try {
+    const { data: cita, error: errLoad } = await SB().from('agenda')
+      .select('*,inmueble:inmuebles(tipo,ciudad,barrio,captador:usuarios!captador_id(email,nombre)),cliente:usuarios!cliente_id(email,nombre)')
+      .eq('id', citaId).single();
+    if (errLoad || !cita) throw errLoad || new Error('Cita no encontrada');
+
+    await SB().from('agenda').update({
+      estado: 'cancelada',
+      motivo_cancelacion: motivo,
+      cancelada_por: u.id,
+    }).eq('id', citaId);
+
+    // Notificar a la OTRA parte (no a quien canceló)
+    const esCliente = cita.cliente_id === u.id;
+    const destinoEmail = esCliente ? cita.inmueble?.captador?.email : cita.cliente?.email;
+    if (destinoEmail) {
+      const fechaTxt = new Date(cita.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long' });
+      await window.noti('cita_cancelada', 'rojo',
+        '❌ Se canceló la cita',
+        (u.nombre || (esCliente ? 'El cliente' : 'El captador')) + ' canceló la visita al ' +
+        (cita.inmueble?.tipo || 'inmueble') + ' del ' + fechaTxt + ' a las ' + cita.hora_inicio +
+        '\n\nMotivo: ' + motivo,
+        destinoEmail, null, cita.inmueble_id);
+    }
+
+    document.getElementById('cancCitDlg')?.remove();
+    window.toast('Cita cancelada');
+    if (typeof window.rMisCitas === 'function' && location.hash === '#/mis-citas') window.rMisCitas();
+    if (typeof window.rCitasInternal === 'function' && location.hash === '#/citas') window.rCitasInternal();
+  } catch(e) {
+    console.error('[_aplicarCancelarCita]', e);
+    window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════
 // 20. MESSAGING — Chat interno
 // ══════════════════════════════════════════════════════════════════
 

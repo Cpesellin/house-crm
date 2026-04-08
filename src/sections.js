@@ -920,6 +920,195 @@ window.rMisIntereses = async function() {
   }
 };
 
+// --- Mis Citas (cliente externo) FASE 5a ---
+window.rMisCitas = async function() {
+  const el = document.getElementById('miscitasc'); if (!el) return;
+  const u = U(); if (!u) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+
+  try {
+    const { data: citas, error } = await SB().from('agenda')
+      .select('*,inmueble:inmuebles(id,tipo,ciudad,barrio,direccion_publica,fotos(url,url_thumb,orden),captador:usuarios!captador_id(nombre,foto,telefono_contacto))')
+      .eq('cliente_id', u.id)
+      .order('fecha', { ascending: true })
+      .order('hora_inicio', { ascending: true });
+
+    if (error) {
+      if (/cliente_id/i.test(error.message || '')) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">⚠️ Falta correr <code>sql/22-citas-bilaterales.sql</code></div>';
+      } else {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + error.message + '</div>';
+      }
+      return;
+    }
+
+    if (!citas || !citas.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">📅</div><h3 style="font-size:16px;font-weight:800">No tienes citas todavía</h3><p style="font-size:13px;color:var(--sub);margin-top:6px;max-width:340px;margin-left:auto;margin-right:auto">Cuando un asesor te proponga visitar un inmueble, la cita aparecerá aquí para que la confirmes.</p><a href="#/mis-intereses" style="display:inline-block;margin-top:14px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">💙 Ver mis intereses</a></div>';
+      return;
+    }
+
+    const _estadoCfg = {
+      propuesta: { label: 'Por confirmar', bg: 'var(--goldbg)', fg: '#92400e', bd: 'var(--gold)', icon: '⏳' },
+      confirmada: { label: 'Confirmada', bg: 'var(--greenbg)', fg: '#065f46', bd: 'var(--green)', icon: '✅' },
+      cancelada: { label: 'Cancelada', bg: 'var(--redbg)', fg: 'var(--red)', bd: 'var(--red)', icon: '❌' },
+      realizada: { label: 'Realizada', bg: 'var(--b50)', fg: 'var(--b700)', bd: 'var(--b500)', icon: '🏁' },
+      no_asistio: { label: 'No asistió', bg: 'var(--cd2)', fg: 'var(--sub)', bd: 'var(--brd)', icon: '➖' },
+    };
+
+    let h = '<div style="padding:14px"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:4px">📅 Mis Citas</div><div style="font-size:12px;color:var(--sub);margin-bottom:14px">' + citas.length + ' cita' + (citas.length === 1 ? '' : 's') + ' agendada' + (citas.length === 1 ? '' : 's') + '</div></div>';
+
+    citas.forEach(c => {
+      const inm = c.inmueble || {};
+      const cap = inm.captador || {};
+      const est = _estadoCfg[c.estado] || _estadoCfg.propuesta;
+      const fechaTxt = new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+      const fotos = inm.fotos ? [...inm.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+      const thumb = fotos[0]?.url_thumb || fotos[0]?.url || '';
+      const isPast = c.fecha < new Date().toISOString().split('T')[0];
+
+      h += `<div class="card" style="margin:0 14px 12px;border-left:4px solid ${est.bd}">`;
+      h += `<div style="padding:14px">`;
+
+      // Header con badge estado
+      h += `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">`;
+      h += `<div style="flex:1"><div style="font-size:14px;font-weight:800">${emo(inm.tipo)} ${inm.tipo || 'Inmueble'}</div><div style="font-size:11px;color:var(--sub)">📍 ${inm.barrio || inm.ciudad || ''}</div></div>`;
+      h += `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:4px 8px;border-radius:4px;background:${est.bg};color:${est.fg};border:1px solid ${est.bd}">${est.icon} ${est.label}</span>`;
+      h += `</div>`;
+
+      // Foto + datos
+      h += `<div style="display:flex;gap:10px;margin-bottom:10px">`;
+      if (thumb) h += `<img src="${thumb}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0">`;
+      h += `<div style="flex:1;font-size:12px;line-height:1.6">`;
+      h += `<div>📅 <b>${fechaTxt}</b></div>`;
+      h += `<div>🕐 ${c.hora_inicio}${c.hora_fin ? ' - '+c.hora_fin : ''}</div>`;
+      if (c.nota_admin) h += `<div style="margin-top:4px;padding:6px 8px;background:var(--cd2);border-radius:4px;font-size:11px;white-space:pre-line">${(c.nota_admin||'').replace(/</g,'&lt;')}</div>`;
+      h += `</div></div>`;
+
+      // Captador
+      h += `<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--cd2);border-radius:6px;margin-bottom:10px">`;
+      if (cap.foto) h += `<img src="${cap.foto}" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`;
+      else h += `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800">${(cap.nombre||'?')[0]}</div>`;
+      h += `<div style="flex:1;font-size:11px"><div style="font-weight:700">${cap.nombre || 'Asesor'}</div><div style="color:var(--sub)">Asesor House</div></div>`;
+      if (cap.telefono_contacto) h += `<a href="https://wa.me/${cap.telefono_contacto}" target="_blank" style="padding:5px 10px;background:#25d366;color:#fff;border-radius:4px;font-size:10px;font-weight:700;text-decoration:none">💬 WhatsApp</a>`;
+      h += `</div>`;
+
+      // Motivo cancelación
+      if (c.estado === 'cancelada' && c.motivo_cancelacion) {
+        h += `<div style="margin-bottom:10px;padding:8px;background:var(--redbg);border-left:3px solid var(--red);border-radius:4px"><div style="font-size:10px;font-weight:800;color:var(--red);margin-bottom:3px">MOTIVO DE CANCELACIÓN:</div><div style="font-size:11px;white-space:pre-line">${(c.motivo_cancelacion||'').replace(/</g,'&lt;')}</div></div>`;
+      }
+
+      // Botones
+      if (c.estado === 'propuesta' && !isPast) {
+        h += `<div style="display:flex;gap:6px">`;
+        h += `<button onclick="confirmarCitaCliente('${c.id}')" style="flex:2;padding:10px;border:none;border-radius:6px;font-size:12px;font-weight:800;background:#10b981;color:#fff;cursor:pointer;font-family:inherit">✅ Confirmar cita</button>`;
+        h += `<button onclick="abrirCancelarCita('${c.id}')" style="flex:1;padding:10px;border:1.5px solid var(--red);border-radius:6px;font-size:12px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">❌</button>`;
+        h += `</div>`;
+      } else if (c.estado === 'confirmada' && !isPast) {
+        h += `<button onclick="abrirCancelarCita('${c.id}')" style="width:100%;padding:8px;border:1.5px solid var(--red);border-radius:6px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">❌ Cancelar cita</button>`;
+      }
+
+      h += `</div></div>`;
+    });
+
+    el.innerHTML = h;
+  } catch(e) {
+    console.error('[rMisCitas]', e);
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+};
+
+// --- Citas (interno: captadores y admin) FASE 5a ---
+window.rCitasInternal = async function() {
+  const el = document.getElementById('citasinternalc'); if (!el) return;
+  const u = U(); if (!u) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+
+  try {
+    // 1. Intereses calificados (verde) sobre inmuebles del captador, sin cita aún
+    let intQ = SB().from('intereses_compradores')
+      .select('*,inmueble:inmuebles(id,tipo,ciudad,barrio,captador_id),comprador:usuarios!usuario_id(id,nombre,email,telefono_contacto)')
+      .eq('estado', 'calificado')
+      .eq('score', 'verde');
+    const { data: intsRaw } = await intQ;
+    const isAdmin = u.rol === 'admin';
+    const intereses = (intsRaw || []).filter(it => isAdmin || it.inmueble?.captador_id === u.id);
+
+    // 2. Citas donde soy captador o creador
+    let citQ = SB().from('agenda')
+      .select('*,inmueble:inmuebles(id,tipo,ciudad,barrio),cliente:usuarios!cliente_id(id,nombre,email,telefono_contacto)')
+      .not('cliente_id', 'is', null)
+      .order('fecha', { ascending: true })
+      .order('hora_inicio', { ascending: true });
+    if (!isAdmin) citQ = citQ.eq('usuario_id', u.id);
+    const { data: citasRaw, error: citErr } = await citQ;
+
+    if (citErr && /cliente_id/i.test(citErr.message || '')) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">⚠️ Falta correr <code>sql/22-citas-bilaterales.sql</code></div>';
+      return;
+    }
+    const citas = citasRaw || [];
+
+    let h = '<div style="padding:0 0 14px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">🤝 Citas con clientes</div><div style="font-size:12px;color:var(--sub);margin-bottom:14px">Propón visitas a clientes calificados y haz seguimiento.</div></div>';
+
+    // SECCIÓN 1: Intereses calificados pendientes de proponer cita
+    if (intereses.length) {
+      h += `<div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">💙 INTERESES CALIFICADOS — PROPÓN UNA CITA (${intereses.length})</div>`;
+      intereses.forEach(it => {
+        const inm = it.inmueble || {};
+        const c = it.comprador || {};
+        h += `<div style="padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid var(--green);border-radius:10px;margin-bottom:8px">`;
+        h += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800">${(c.nombre||'?')[0]}</div><div style="flex:1"><div style="font-size:13px;font-weight:800">${c.nombre || 'Cliente'}</div><div style="font-size:11px;color:var(--sub)">${c.email || ''}${c.telefono_contacto ? ' · 📞 '+c.telefono_contacto : ''}</div></div></div>`;
+        h += `<div style="font-size:12px;color:var(--sub);margin-bottom:6px">🏠 ${inm.tipo || ''} en ${inm.barrio || inm.ciudad || ''}</div>`;
+        if (it.presupuesto_max) h += `<div style="font-size:11px">💰 Presupuesto: <b>${fm(it.presupuesto_max)}</b></div>`;
+        if (it.fecha_ideal) h += `<div style="font-size:11px">📅 Fecha ideal: <b>${it.fecha_ideal}</b></div>`;
+        if (it.mensaje) h += `<div style="font-size:11px;margin-top:4px;padding:6px 8px;background:var(--cd2);border-radius:4px;font-style:italic">"${(it.mensaje||'').replace(/</g,'&lt;')}"</div>`;
+        h += `<button onclick="proponerCita('${it.id}')" style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:6px;font-size:12px;font-weight:800;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">📅 Proponer cita</button>`;
+        h += `</div>`;
+      });
+    }
+
+    // SECCIÓN 2: Mis citas (propuestas + confirmadas + canceladas recientes)
+    if (citas.length) {
+      h += `<div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">📅 MIS CITAS (${citas.length})</div>`;
+      const _est = {
+        propuesta: { label: 'Esperando cliente', bg: 'var(--goldbg)', fg: '#92400e', bd: 'var(--gold)', icon: '⏳' },
+        confirmada: { label: 'Confirmada', bg: 'var(--greenbg)', fg: '#065f46', bd: 'var(--green)', icon: '✅' },
+        cancelada: { label: 'Cancelada', bg: 'var(--redbg)', fg: 'var(--red)', bd: 'var(--red)', icon: '❌' },
+        realizada: { label: 'Realizada', bg: 'var(--b50)', fg: 'var(--b700)', bd: 'var(--b500)', icon: '🏁' },
+      };
+      const today = new Date().toISOString().split('T')[0];
+      citas.forEach(c => {
+        const cli = c.cliente || {};
+        const inm = c.inmueble || {};
+        const est = _est[c.estado] || _est.propuesta;
+        const fechaTxt = new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'short', day:'2-digit', month:'short' });
+        const isPast = c.fecha < today;
+        h += `<div style="padding:12px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ${est.bd};border-radius:10px;margin-bottom:8px">`;
+        h += `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">`;
+        h += `<div style="flex:1"><div style="font-size:13px;font-weight:800">${cli.nombre || c.cliente_nombre || 'Cliente'}</div><div style="font-size:11px;color:var(--sub)">🏠 ${inm.tipo || ''} en ${inm.barrio || inm.ciudad || ''}</div></div>`;
+        h += `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:4px;background:${est.bg};color:${est.fg};border:1px solid ${est.bd}">${est.icon} ${est.label}</span>`;
+        h += `</div>`;
+        h += `<div style="font-size:12px;font-weight:700">📅 ${fechaTxt} · 🕐 ${c.hora_inicio}${c.hora_fin ? '-'+c.hora_fin : ''}</div>`;
+        if (c.nota_admin) h += `<div style="font-size:11px;margin-top:4px;padding:6px 8px;background:var(--cd2);border-radius:4px;white-space:pre-line">${(c.nota_admin||'').replace(/</g,'&lt;')}</div>`;
+        if (c.estado === 'cancelada' && c.motivo_cancelacion) h += `<div style="font-size:11px;margin-top:4px;padding:6px 8px;background:var(--redbg);border-left:3px solid var(--red);border-radius:4px"><b>Motivo:</b> ${(c.motivo_cancelacion||'').replace(/</g,'&lt;')}</div>`;
+        if ((c.estado === 'propuesta' || c.estado === 'confirmada') && !isPast) {
+          h += `<button onclick="abrirCancelarCita('${c.id}')" style="margin-top:8px;padding:6px 12px;border:1.5px solid var(--red);border-radius:6px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">❌ Cancelar</button>`;
+        }
+        h += `</div>`;
+      });
+    }
+
+    if (!intereses.length && !citas.length) {
+      h += '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:8px">📅</div><h3 style="font-size:15px;font-weight:800">Sin citas ni intereses calificados</h3><p style="font-size:12px;color:var(--sub);margin-top:6px">Cuando el admin califique un interés sobre tus inmuebles, podrás proponer citas desde aquí.</p></div>';
+    }
+
+    el.innerHTML = h;
+  } catch(e) {
+    console.error('[rCitasInternal]', e);
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+};
+
 // --- Mi Cuenta (externo) ---
 window.rCuenta = function() {
   const el = document.getElementById('cuentac'); if (!el) return;
