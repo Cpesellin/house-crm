@@ -24,6 +24,7 @@
 
 import { getSupabaseClient } from './config/supabase.js';
 import { HOUSE_PHONE, HOUSE_PHONE_DISPLAY, houseWaUrl } from './core/constants.js';
+import { analyzeContent } from './core/contentModerator.js';
 
 // ─── Shortcuts ───────────────────────────────────────────────────
 
@@ -798,11 +799,19 @@ window.fNx = async function(){
   try{localStorage.setItem('hcrm_fmem',JSON.stringify({ciudad:fD.ciudad,tipo:fD.tipo}));}catch(e){}
   const neg=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';
   const u=U();
-  let newInm=null,error=null;
+  // Auto-moderación PII (Fase 1): se analiza el campo público (descripcion_cliente).
+  // Las observaciones internas no se moderan porque nunca llegan al portal.
+  const _modReport=analyzeContent(fD.observaciones||'');
+  let newInm=null,error=null,_skipMod=false;
   for(let attempt=0;attempt<3;attempt++){
     const codigo=await nextHouseCode();
-    const res=await SB().from('inmuebles').insert({captador_id:u.id,codigo_house:codigo,tipo:fD.tipo,negociacion:neg,direccion:fD.direccion,ciudad:fD.ciudad,barrio:fD.barrio,precio_venta:fD.precioVenta?parseFloat(fD.precioVenta):null,precio_arriendo:fD.precioArriendo?parseFloat(fD.precioArriendo):null,area_construida:fD.area?parseFloat(fD.area):null,area_total:fD.areaTotal?parseFloat(fD.areaTotal):null,estrato:fD.estrato?String(fD.estrato):null,habitaciones:fD.habitaciones||null,banos:fD.banos||null,parqueaderos:fD.parqueos||null,caracteristicas:fD.amenidades.join(', '),observaciones:fD.observaciones,descripcion_cliente:fD.observaciones,propietario_nombre:fD.nombre,propietario_telefono:fD.telefono,propietario_email:fD.email,estado:'Disponible'}).select().single();
+    const _basePayload={captador_id:u.id,codigo_house:codigo,tipo:fD.tipo,negociacion:neg,direccion:fD.direccion,ciudad:fD.ciudad,barrio:fD.barrio,precio_venta:fD.precioVenta?parseFloat(fD.precioVenta):null,precio_arriendo:fD.precioArriendo?parseFloat(fD.precioArriendo):null,area_construida:fD.area?parseFloat(fD.area):null,area_total:fD.areaTotal?parseFloat(fD.areaTotal):null,estrato:fD.estrato?String(fD.estrato):null,habitaciones:fD.habitaciones||null,banos:fD.banos||null,parqueaderos:fD.parqueos||null,caracteristicas:fD.amenidades.join(', '),observaciones:fD.observaciones,descripcion_cliente:fD.observaciones,propietario_nombre:fD.nombre,propietario_telefono:fD.telefono,propietario_email:fD.email,estado:'Disponible'};
+    const _payload=_skipMod?_basePayload:{..._basePayload,alertas_moderacion:_modReport};
+    const res=await SB().from('inmuebles').insert(_payload).select().single();
     if(!res.error){newInm=res.data;error=null;break;}
+    // Si la columna alertas_moderacion no existe (migración #19 sin correr),
+    // reintenta sin ese campo y avisa por consola.
+    if(!_skipMod&&/alertas_moderacion/i.test(res.error?.message||'')){_skipMod=true;console.warn('[fNx] columna alertas_moderacion no existe — corre sql/19-moderacion-pii.sql');continue;}
     if(res.error?.message?.includes('codigo_house')){error=res.error;continue;}
     error=res.error;break;
   }
@@ -2254,7 +2263,10 @@ window.ownerPublish = async function() {
     // Generate next HOUSE code
     const code = typeof window.nextHouseCode === 'function' ? await window.nextHouseCode() : null;
 
-    const { data: newInm, error } = await SB().from('inmuebles').insert({
+    // Auto-moderación PII (Fase 1): analiza la descripción antes de guardar.
+    const _modReport = analyzeContent(d.descripcion_cliente || '');
+
+    const _basePayload = {
       tipo: d.tipo, negociacion: d.negociacion, ciudad: d.ciudad,
       direccion: d.direccion, barrio: d.barrio, direccion_publica: d.barrio + ', ' + d.ciudad,
       precio_venta: d.precio_venta || 0, precio_arriendo: d.precio_arriendo || 0,
@@ -2263,7 +2275,17 @@ window.ownerPublish = async function() {
       parqueaderos: d.parqueaderos || 0, descripcion_cliente: d.descripcion_cliente || '',
       captador_id: u.id, origen: 'externo', estado_revision: 'en_revision',
       estado: 'Disponible', codigo_house: code, eliminado: false
-    }).select('id').single();
+    };
+    let { data: newInm, error } = await SB().from('inmuebles')
+      .insert({ ..._basePayload, alertas_moderacion: _modReport })
+      .select('id').single();
+    // Si la migración SQL #19 aún no corrió, la columna no existe →
+    // reintentamos sin ella para no romper el flujo de publicación.
+    if (error && /alertas_moderacion/i.test(error.message || '')) {
+      console.warn('[ownerPublish] columna alertas_moderacion no existe — corre sql/19-moderacion-pii.sql');
+      ({ data: newInm, error } = await SB().from('inmuebles')
+        .insert(_basePayload).select('id').single());
+    }
     if (error) throw error;
 
     // Save photos to fotos table
