@@ -182,6 +182,14 @@ const TIPO_CONFIG = {
     escalable: true, horas_para_escalar: 12,
   },
 
+  // ── INTERESES (FASE 3) ──
+  interes_nuevo: {
+    categoria: 'solicitud', icono: '💙', color: '#3b82f6',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'users',
+    prioridad: 'alta',
+    escalable: true, horas_para_escalar: 4,
+  },
+
   // ── REGISTROS / SISTEMA ──
   registro_externo: {
     categoria: 'sistema', icono: '👤', color: '#3b82f6',

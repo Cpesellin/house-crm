@@ -9,8 +9,8 @@
 // Internal CRM routes
 const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','agenda','users','perfil','papelera'];
 // External user routes
-const ROUTES_CLIENTE = ['portafolio','favoritos','cuenta'];
-const ROUTES_PROPIETARIO = ['portafolio','favoritos','cuenta','mis-pub','publicar'];
+const ROUTES_CLIENTE = ['portafolio','favoritos','mis-intereses','cuenta'];
+const ROUTES_PROPIETARIO = ['portafolio','favoritos','mis-intereses','cuenta','mis-pub','publicar'];
 const ROUTES_PENDIENTE = ['espera'];
 
 const ROUTES = {
@@ -28,6 +28,7 @@ const ROUTES = {
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true },
+  'mis-intereses': { section: 'sec-mis-intereses', label: 'Mis Intereses', icon: '\u{1F499}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
   'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario','pendiente'] },
   'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
   'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
@@ -57,6 +58,7 @@ const ROUTE_RENDERERS = {
   // External
   'portafolio': 'rPortafolio',
   'favoritos':  'rFavoritos',
+  'mis-intereses': 'rMisIntereses',
   'cuenta':     'rCuenta',
   'mis-pub':    'rMisPub',
   'publicar':   'rPublicar',

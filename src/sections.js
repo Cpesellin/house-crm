@@ -830,6 +830,96 @@ window.rFavoritos = async function() {
   } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>'; }
 };
 
+// --- Mis Intereses (FASE 3) ---
+window.rMisIntereses = async function() {
+  const el = document.getElementById('misinteresesc'); if (!el) return;
+  const u = U(); if (!u) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+
+  try {
+    const { data: ints, error } = await SB().from('intereses_compradores')
+      .select('*,inmueble:inmuebles(id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,codigo_house,fotos(url,url_thumb,orden))')
+      .eq('usuario_id', u.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      if (/intereses_compradores/i.test(error.message || '')) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">⚠️ Falta correr <code>sql/21-intereses-compradores.sql</code></div>';
+      } else {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + error.message + '</div>';
+      }
+      return;
+    }
+
+    if (!ints || !ints.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">💙</div><h3 style="font-size:16px;font-weight:800">Aún no has expresado interés</h3><p style="font-size:13px;color:var(--sub);margin-top:6px;max-width:340px;margin-left:auto;margin-right:auto">Cuando un inmueble te llame la atención, dale a "💙 Me interesa" y nuestro asesor te contactará para mostrártelo.</p><a href="#/portafolio" style="display:inline-block;margin-top:14px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">🔍 Explorar inmuebles</a></div>';
+      return;
+    }
+
+    const _estadoCfg = {
+      nuevo:           { label: 'En revisión', bg: 'var(--goldbg)', fg: '#92400e', bd: 'var(--gold)', icon: '⏳' },
+      calificado:      { label: 'En contacto', bg: 'var(--greenbg)', fg: '#065f46', bd: 'var(--green)', icon: '✅' },
+      descartado:      { label: 'No disponible', bg: 'var(--cd2)', fg: 'var(--sub)', bd: 'var(--brd)', icon: '➖' },
+      convertido_cita: { label: 'Cita agendada', bg: 'var(--b50)', fg: 'var(--b700)', bd: 'var(--b500)', icon: '📅' },
+    };
+
+    let h = '<div style="padding:14px"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:4px">💙 Mis Intereses</div><div style="font-size:12px;color:var(--sub);margin-bottom:14px">' + ints.length + ' inmueble' + (ints.length === 1 ? '' : 's') + ' donde expresaste interés</div></div>';
+    h += '<div class="pub-grid">';
+
+    ints.forEach(it => {
+      const p = it.inmueble;
+      if (!p) {
+        // Inmueble eliminado pero el interés sigue
+        h += `<div class="pub-card" style="opacity:.6"><div class="pub-card-body"><div style="font-size:13px;color:var(--sub)">⚠️ Este inmueble ya no está disponible</div></div></div>`;
+        return;
+      }
+      const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+      const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
+      const cod = p.codigo_house || '';
+      const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
+
+      const est = _estadoCfg[it.estado] || _estadoCfg.nuevo;
+      const fechaInt = it.created_at ? new Date(it.created_at).toLocaleDateString('es-CO', { day:'2-digit', month:'short' }) : '';
+
+      h += `<div class="pub-card">`;
+      if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
+
+      // Badge de estado encima
+      h += `<div style="position:absolute;top:8px;left:8px;z-index:2;padding:4px 9px;border-radius:6px;background:${est.bg};color:${est.fg};border:1px solid ${est.bd};font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase">${est.icon} ${est.label}</div>`;
+
+      h += `<div class="pub-card-body">`;
+      h += `<div class="pub-card-tipo">${p.tipo||''} · ${(it.modalidad === 'arriendo' ? 'Arriendo' : 'Compra')}</div>`;
+      h += `<div class="pub-card-title">${p.direccion_publica||p.barrio||''}</div>`;
+      h += `<div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
+      if (it.modalidad === 'arriendo' && pa > 0) h += `<div class="pub-card-price">${fm(pa)}/mes</div>`;
+      else if (pv > 0) h += `<div class="pub-card-price">${fm(pv)}</div>`;
+      else if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}/mes</div>`;
+
+      // Detalles del interés (lo que el cliente declaró)
+      h += `<div style="margin-top:8px;padding:8px;background:var(--cd2);border-radius:6px;font-size:11px;line-height:1.5">`;
+      if (it.presupuesto_max) h += `<div>💰 Presupuesto: <b>${fm(it.presupuesto_max)}</b></div>`;
+      if (it.fecha_ideal) h += `<div>📅 Fecha ideal: <b>${it.fecha_ideal}</b></div>`;
+      if (it.mensaje) h += `<div style="margin-top:4px;color:var(--sub);font-style:italic">"${(it.mensaje||'').replace(/</g,'&lt;')}"</div>`;
+      if (!it.presupuesto_max && !it.fecha_ideal && !it.mensaje) h += `<div style="color:var(--sub)">Sin detalles adicionales</div>`;
+      h += `<div style="margin-top:6px;font-size:10px;color:var(--sub)">Enviado el ${fechaInt}</div>`;
+      h += `</div>`;
+
+      h += `</div>`;
+
+      h += `<div class="pub-card-actions">`;
+      h += `<button class="pub-card-wa" style="background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="abrirInteres('${p.id}')">✏️ Editar</button>`;
+      h += `<a class="pub-card-det" href="${url}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a>`;
+      h += `</div></div>`;
+    });
+    h += '</div>';
+    el.innerHTML = h;
+  } catch(e) {
+    console.error('[rMisIntereses]', e);
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+};
+
 // --- Mi Cuenta (externo) ---
 window.rCuenta = function() {
   const el = document.getElementById('cuentac'); if (!el) return;

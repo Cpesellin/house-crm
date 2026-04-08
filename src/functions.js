@@ -1551,10 +1551,15 @@ window.showPublicView = async function(id) {
         </div>
       </div>`;
     } else {
+      const _curU = U();
+      const _showInteres = _curU && (_curU.tipo_usuario === 'cliente' || !_curU.tipo_usuario || _curU.tipo_usuario === 'vendedor_externo' || _curU.tipo_usuario === 'propietario');
       h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-        <div style="max-width:720px;margin:0 auto;display:flex;gap:8px">
-          <a href="${_waUrl}" target="_blank" style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
-          <a href="${_telUrl}" style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
+        <div style="max-width:720px;margin:0 auto">
+          ${_showInteres ? `<button onclick="window.abrirInteres('${id}')" style="width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;font-family:inherit">💙 Me interesa este inmueble</button>` : ''}
+          <div style="display:flex;gap:8px">
+            <a href="${_waUrl}" target="_blank" style="flex:1;padding:12px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
+            <a href="${_telUrl}" style="flex:1;padding:12px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
+          </div>
         </div>
       </div>`;
     }
@@ -2432,6 +2437,157 @@ window.pedirCambiosInmuebleExterno = async function(inmId) {
       window.toast('Falta correr sql/20-cola-moderacion.sql', 'terr');
     } else {
       window.toast('Error: ' + e.message, 'terr');
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 19b. INTERESES (FASE 3) — "Me interesa" estructurado
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Abre el modal "Me interesa" sobre un inmueble. Si el usuario ya tiene
+ * un interés activo en este inmueble, lo carga en modo edición.
+ */
+window.abrirInteres = async function(inmId) {
+  const u = U();
+  if (!u) {
+    window._pendingContactInmuebleId = inmId;
+    window.showAuthPrompt('contacto', {
+      icono: '💙', titulo: 'Expresar interés',
+      mensaje: 'Crea tu cuenta gratis para que el asesor de House sepa que te interesa este inmueble.',
+      beneficios: ['💙 El asesor te contacta', '🔔 Solo notificaciones que autorices', '🔒 Tus datos protegidos'],
+      cta: 'Crear cuenta gratis', ctaSecundario: 'Ahora no',
+    });
+    return;
+  }
+
+  // Cargar inmueble + interés previo (si existe)
+  const { data: p } = await SB().from('inmuebles')
+    .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo')
+    .eq('id', inmId).single();
+  if (!p) { window.toast('Inmueble no encontrado', 'terr'); return; }
+
+  let prev = null;
+  try {
+    const { data } = await SB().from('intereses_compradores')
+      .select('*').eq('usuario_id', u.id).eq('inmueble_id', inmId).maybeSingle();
+    prev = data || null;
+  } catch(e) { /* tabla no existe → tratar como nuevo */ }
+
+  const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
+  const modalidadAuto = (pa > 0 && pv === 0) ? 'arriendo' : (pv > 0 && pa === 0) ? 'compra' : (prev?.modalidad || 'compra');
+  const modSelArriendo = modalidadAuto === 'arriendo' ? 'selected' : '';
+  const modSelCompra = modalidadAuto === 'compra' ? 'selected' : '';
+  const ambasModalidades = pa > 0 && pv > 0;
+
+  const presupVal = prev?.presupuesto_max ? String(prev.presupuesto_max) : '';
+  const fechaVal = prev?.fecha_ideal || '';
+  const msgVal = (prev?.mensaje || '').replace(/</g, '&lt;');
+  const isUpdate = !!prev;
+
+  // Sanitización inmId para inyección en onclick
+  const safeId = inmId.replace(/[^a-zA-Z0-9-]/g, '');
+
+  const html = `
+  <div id="ciDlg" class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)">
+    <div class="card" style="max-width:480px;width:100%;max-height:90vh;overflow:auto;border-radius:14px">
+      <div class="cdh"><div class="chl"><div class="chi">💙</div><div><div class="cht">${isUpdate?'Actualizar interés':'Me interesa este inmueble'}</div><div style="font-size:11px;color:var(--sub);margin-top:2px">${p.tipo||''} · ${p.barrio||p.ciudad||''}</div></div></div>
+        <button onclick="document.getElementById('ciDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+      <div class="cdb" style="padding:18px">
+        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5">Cuéntale al asesor qué buscas. Esta información es <b>privada</b> y solo la ve el equipo de House para ayudarte mejor.</div>
+
+        ${ambasModalidades ? `
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">Te interesa para</label>
+          <select id="ci_modalidad" class="esel" style="width:100%;padding:10px;font-size:13px">
+            <option value="arriendo" ${modSelArriendo}>🔑 Arriendo (${fm(pa)}/mes)</option>
+            <option value="compra" ${modSelCompra}>💰 Compra (${fm(pv)})</option>
+          </select>
+        </div>` : `<input type="hidden" id="ci_modalidad" value="${modalidadAuto}">`}
+
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">Presupuesto máximo (opcional)</label>
+          <input id="ci_presup" type="number" min="0" step="100000" placeholder="Ej: 1500000" value="${presupVal}" class="ffi">
+          <div style="font-size:10px;color:var(--sub);margin-top:4px">Lo que puedes pagar como tope. Nos ayuda a saber si encaja.</div>
+        </div>
+
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">¿Cuándo necesitas mudarte / cerrar? (opcional)</label>
+          <input id="ci_fecha" type="date" value="${fechaVal}" class="ffi">
+        </div>
+
+        <div class="ff" style="margin-bottom:14px">
+          <label class="ffl">Mensaje al asesor (opcional)</label>
+          <textarea id="ci_msg" placeholder="Ej: Lo quiero ver el sábado, tengo fiador, necesito 3 habitaciones..." style="width:100%;min-height:80px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd)">${msgVal}</textarea>
+        </div>
+
+        ${isUpdate ? `<div style="font-size:11px;color:var(--b700);background:var(--b50);border:1px solid var(--b200);padding:8px 10px;border-radius:6px;margin-bottom:12px">📝 Ya habías expresado interés en este inmueble. Estás actualizando los datos.</div>` : ''}
+
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('ciDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cancelar</button>
+          <button onclick="window.guardarInteres('${safeId}')" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:var(--b600);color:#fff;cursor:pointer;font-family:inherit">${isUpdate?'💾 Actualizar':'💙 Enviar interés'}</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.guardarInteres = async function(inmId) {
+  const u = U(); if (!u) return;
+  const dlg = document.getElementById('ciDlg'); if (!dlg) return;
+  const presup = parseFloat(document.getElementById('ci_presup')?.value || '') || null;
+  const fecha = document.getElementById('ci_fecha')?.value || null;
+  const modalidad = document.getElementById('ci_modalidad')?.value || 'compra';
+  const mensaje = (document.getElementById('ci_msg')?.value || '').trim() || null;
+
+  try {
+    // Verificar si ya existe (UPDATE vs INSERT)
+    const { data: prev } = await SB().from('intereses_compradores')
+      .select('id').eq('usuario_id', u.id).eq('inmueble_id', inmId).maybeSingle();
+
+    if (prev) {
+      const { error } = await SB().from('intereses_compradores').update({
+        presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje,
+        estado: 'nuevo',  // re-encolar para que admin lo revise de nuevo
+        updated_at: new Date().toISOString(),
+      }).eq('id', prev.id);
+      if (error) throw error;
+      window.toast('💾 Interés actualizado');
+    } else {
+      const { error } = await SB().from('intereses_compradores').insert({
+        inmueble_id: inmId, usuario_id: u.id,
+        presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje,
+        estado: 'nuevo',
+      });
+      if (error) throw error;
+      window.toast('💙 ¡Interés enviado!');
+    }
+
+    // Notificar a admins (escalable a 4h, Fase 4 lo recoge)
+    try {
+      const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,barrio').eq('id', inmId).single();
+      const titulo = '💙 Nuevo interés en ' + (inm?.tipo || 'inmueble');
+      const detalle = (u.nombre || 'Un cliente') + ' está interesado en ' + (inm?.tipo || 'inmueble') +
+        ' en ' + (inm?.barrio || inm?.ciudad || '') + '.' +
+        (presup ? '\nPresupuesto: ' + fm(presup) : '') +
+        (fecha ? '\nFecha ideal: ' + fecha : '') +
+        (mensaje ? '\nMensaje: ' + mensaje : '');
+      await window.noti('interes_nuevo', 'amarillo', titulo, detalle, null, 'admin', inmId);
+    } catch(e) { console.warn('[guardarInteres] noti falló:', e); }
+
+    dlg.remove();
+    if (typeof window.rMisIntereses === 'function' && location.hash === '#/mis-intereses') window.rMisIntereses();
+  } catch(e) {
+    console.error('[guardarInteres]', e);
+    if (/intereses_compradores/i.test(e.message || '')) {
+      window.toast('Falta correr sql/21-intereses-compradores.sql', 'terr');
+    } else if (/duplicate|unique/i.test(e.message || '')) {
+      window.toast('Ya tienes un interés activo en este inmueble', 'twarn');
+    } else {
+      window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
     }
   }
 };
