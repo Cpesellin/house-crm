@@ -1092,19 +1092,112 @@ window.rUsers = async function() {
       });
     }
 
-    // Pending inmuebles
-    const { data: inmExt } = await SB().from('inmuebles').select('*,captador:usuarios!captador_id(nombre,email,foto)').eq('estado_revision', 'en_revision').eq('origen', 'externo').order('created_at', { ascending: false });
+    // Pending inmuebles (en_revision + cambios_solicitados, oldest first → escalación natural)
+    let inmExt = null;
+    {
+      const r = await SB().from('inmuebles')
+        .select('*,captador:usuarios!captador_id(nombre,email,foto)')
+        .in('estado_revision', ['en_revision', 'cambios_solicitados'])
+        .eq('origen', 'externo')
+        .order('created_at', { ascending: true });
+      if (r.error && /cambios_solicitados|estado_revision/i.test(r.error.message || '')) {
+        // Fallback si la migración 20 aún no corrió: solo en_revision
+        const r2 = await SB().from('inmuebles')
+          .select('*,captador:usuarios!captador_id(nombre,email,foto)')
+          .eq('estado_revision', 'en_revision')
+          .eq('origen', 'externo')
+          .order('created_at', { ascending: true });
+        inmExt = r2.data || [];
+      } else {
+        inmExt = r.data || [];
+      }
+    }
     if (inmExt && inmExt.length) {
-      h += `<div style="font-size:12px;font-weight:800;color:var(--sub);margin-top:14px;margin-bottom:8px">🏠 INMUEBLES EN REVISIÓN</div>`;
+      h += `<div style="font-size:12px;font-weight:800;color:var(--sub);margin-top:14px;margin-bottom:8px">🏠 INMUEBLES EN REVISIÓN <span style="color:var(--b500)">(${inmExt.length})</span></div>`;
+      const now = Date.now();
       inmExt.forEach(p => {
-        h += `<div style="padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid var(--gold);border-radius:10px;margin-bottom:8px">`;
-        h += `<div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo||''} — ${p.ciudad||''}</div>`;
-        h += `<div style="font-size:12px;color:var(--sub)">📍 ${p.barrio||''} · ${p.direccion||''}</div>`;
+        const mod = p.alertas_moderacion || null;
+        const alertas = (mod && Array.isArray(mod.alertas)) ? mod.alertas : [];
+        const color = mod?.color || 'verde';
+        const isCambios = p.estado_revision === 'cambios_solicitados';
+        // Borde por estado / severidad PII
+        const borderColor = isCambios ? 'var(--b500)'
+          : color === 'rojo' ? 'var(--red)'
+          : color === 'amarillo' ? 'var(--gold)'
+          : 'var(--green)';
+        // Escalamiento: horas desde created_at
+        const created = p.created_at ? new Date(p.created_at).getTime() : now;
+        const hours = Math.floor((now - created) / 3600000);
+        const escalado = hours >= 12;
+
+        h += `<div style="padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ${borderColor};border-radius:10px;margin-bottom:8px">`;
+
+        // Hidden payload para que el modal "Pedir cambios" lea las alertas
+        const alertasJson = JSON.stringify(alertas).replace(/'/g, '&#39;');
+        h += `<div id="pc-data-${p.id}" data-alertas='${alertasJson}' style="display:none"></div>`;
+
+        // Header: título + badges de estado/PII/escalamiento
+        h += `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">`;
+        h += `<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800">${emo(p.tipo)} ${p.tipo||''} — ${p.ciudad||''}</div>`;
+        h += `<div style="font-size:12px;color:var(--sub)">📍 ${p.barrio||''}${p.direccion?' · '+p.direccion:''}</div></div>`;
+        h += `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">`;
+        if (isCambios) {
+          h += `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:4px;background:var(--b50);color:var(--b700);border:1px solid var(--b200)">⏳ Cambios solicitados</span>`;
+        }
+        if (escalado) {
+          h += `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:4px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74">🔥 Escalado · ${hours}h</span>`;
+        } else if (hours > 0) {
+          h += `<span style="font-size:9px;font-weight:700;color:var(--sub)">hace ${hours}h</span>`;
+        }
+        h += `</div></div>`;
+
+        // Badges PII por tipo
+        if (alertas.length) {
+          const porTipo = {};
+          alertas.forEach(a => { porTipo[a.tipo] = (porTipo[a.tipo] || 0) + 1; });
+          h += `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">`;
+          Object.entries(porTipo).forEach(([tipo, count]) => {
+            const a0 = alertas.find(x => x.tipo === tipo);
+            const sev = a0?.severidad || 'media';
+            const bg = sev === 'alta' ? 'var(--redbg)' : 'var(--goldbg)';
+            const fg = sev === 'alta' ? 'var(--red)' : '#92400e';
+            const bd = sev === 'alta' ? 'var(--red)' : 'var(--gold)';
+            h += `<span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;background:${bg};color:${fg};border:1px solid ${bd}">${a0?.emoji||'⚠️'} ${a0?.label||tipo}${count>1?' ×'+count:''}</span>`;
+          });
+          h += `</div>`;
+        } else if (mod) {
+          h += `<div style="margin:6px 0"><span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;background:var(--greenbg);color:#065f46;border:1px solid var(--green)">✅ Sin PII detectada</span></div>`;
+        }
+
+        // Precios
         if (p.precio_arriendo > 0) h += `<div style="font-size:13px;font-weight:700;color:var(--b700)">🔑 ${fm(p.precio_arriendo)}/mes</div>`;
         if (p.precio_venta > 0) h += `<div style="font-size:13px;font-weight:700">💰 ${fm(p.precio_venta)}</div>`;
-        h += `<div style="font-size:11px;color:var(--sub);margin-top:4px">👤 Subido por: ${p.captador?.nombre||'?'}</div>`;
-        h += `<div style="display:flex;gap:6px;margin-top:8px">`;
+
+        // Descripción con PII resaltada
+        if (p.descripcion_cliente) {
+          let descHtml = (p.descripcion_cliente || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          // Resaltar matches PII (orden por longitud desc para evitar conflictos)
+          const matches = [...alertas].sort((a,b) => (b.match||'').length - (a.match||'').length);
+          matches.forEach(a => {
+            if (!a.match) return;
+            const safe = a.match.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const escRe = safe.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            descHtml = descHtml.replace(new RegExp(escRe, 'g'), `<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:2px">${safe}</mark>`);
+          });
+          h += `<div style="font-size:12px;color:var(--tx);margin-top:8px;padding:8px;background:var(--cd2);border-radius:6px;line-height:1.5">${descHtml}</div>`;
+        }
+
+        // Motivo de cambios previo (si ya se pidieron cambios antes)
+        if (isCambios && p.motivo_cambios) {
+          h += `<div style="margin-top:8px;padding:8px;background:var(--b50);border-left:3px solid var(--b500);border-radius:4px"><div style="font-size:10px;font-weight:800;color:var(--b700);margin-bottom:3px">📝 CAMBIOS SOLICITADOS:</div><div style="font-size:11px;color:var(--tx);white-space:pre-line">${(p.motivo_cambios||'').replace(/</g,'&lt;')}</div></div>`;
+        }
+
+        h += `<div style="font-size:11px;color:var(--sub);margin-top:6px">👤 Subido por: ${p.captador?.nombre||'?'}</div>`;
+        h += `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">`;
         h += `<button onclick="aprobarInmuebleExterno('${p.id}')" style="padding:6px 14px;border:none;border-radius:6px;font-size:11px;font-weight:700;background:#065f46;color:#fff;cursor:pointer;font-family:inherit">✅ Aprobar y publicar</button>`;
+        if (!isCambios) {
+          h += `<button onclick="abrirPedirCambios('${p.id}')" style="padding:6px 14px;border:1.5px solid var(--b500);border-radius:6px;font-size:11px;font-weight:700;background:var(--b50);color:var(--b700);cursor:pointer;font-family:inherit">📝 Pedir cambios</button>`;
+        }
         h += `<button onclick="rechazarInmuebleExterno('${p.id}')" style="padding:6px 14px;border:1.5px solid var(--red);border-radius:6px;font-size:11px;font-weight:700;background:var(--redbg);color:var(--red);cursor:pointer;font-family:inherit">❌ Rechazar</button>`;
         h += `</div></div>`;
       });

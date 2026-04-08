@@ -2354,6 +2354,88 @@ window.rechazarInmuebleExterno = async function(inmId) {
   } catch(e) { console.error('[rechazarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
 };
 
+// --- Fase 2: Pedir cambios sobre inmueble en revisión ---
+// Abre un modal con checkboxes pre-seleccionados a partir de las
+// alertas detectadas por el moderador (Fase 1) + textarea para motivos
+// libres. Al enviar, deja el inmueble en estado_revision='cambios_solicitados'
+// y notifica al captador con el detalle.
+window.abrirPedirCambios = function(inmId) {
+  const old = document.getElementById('pcDlg'); if (old) old.remove();
+  const reportRaw = document.getElementById('pc-data-' + inmId)?.dataset?.alertas || '[]';
+  let alertas = [];
+  try { alertas = JSON.parse(reportRaw); } catch(e) {}
+
+  // Agrupa alertas por tipo para no listar 5 checkboxes idénticos.
+  const tipos = {};
+  alertas.forEach(a => {
+    if (!tipos[a.tipo]) tipos[a.tipo] = { label: a.label, emoji: a.emoji, count: 0 };
+    tipos[a.tipo].count++;
+  });
+
+  const checks = Object.entries(tipos).map(([tipo, info]) =>
+    `<label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--cd2);border:1.5px solid var(--brd);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:13px">
+      <input type="checkbox" class="pc-chk" data-label="Eliminar ${info.label.toLowerCase()}${info.count>1?' ('+info.count+' encontrad'+(info.count>1?'as':'a')+')':''}" checked style="width:16px;height:16px;cursor:pointer">
+      <span style="font-size:16px">${info.emoji}</span>
+      <span style="flex:1;font-weight:600">Eliminar ${info.label.toLowerCase()}</span>
+      ${info.count > 1 ? `<span style="font-size:10px;font-weight:700;background:var(--redbg);color:var(--red);padding:2px 7px;border-radius:10px">${info.count}</span>` : ''}
+    </label>`
+  ).join('');
+
+  const html = `<div id="pcDlg" style="position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.remove()">
+    <div style="background:var(--cd);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--goldbg);display:flex;align-items:center;justify-content:center;font-size:18px">📝</div>
+        <div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">Pedir cambios al propietario</div>
+      </div>
+      <div style="font-size:12px;color:var(--sub);margin-bottom:16px">El inmueble vuelve al propietario para que corrija. Recibirá una notificación con el detalle.</div>
+
+      ${alertas.length ? `<div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--sub);margin-bottom:8px">Detectado por el moderador</div>${checks}` : '<div style="font-size:12px;color:var(--sub);padding:12px;background:var(--cd2);border-radius:8px;margin-bottom:12px">No se detectaron alertas automáticas. Escribe abajo qué corregir.</div>'}
+
+      <div style="margin-top:14px">
+        <label style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--sub);display:block;margin-bottom:6px">Otros motivos (opcional)</label>
+        <textarea id="pcLibre" placeholder="Ej: La foto principal está borrosa, falta indicar si tiene parqueadero..." style="width:100%;min-height:80px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd)"></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button onclick="document.getElementById('pcDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="window.pedirCambiosInmuebleExterno('${inmId}')" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:var(--gold);color:#fff;cursor:pointer;font-family:inherit">📨 Enviar al propietario</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.pedirCambiosInmuebleExterno = async function(inmId) {
+  const dlg = document.getElementById('pcDlg'); if (!dlg) return;
+  const checks = Array.from(dlg.querySelectorAll('.pc-chk:checked')).map(c => '• ' + c.dataset.label);
+  const libre = (document.getElementById('pcLibre')?.value || '').trim();
+  if (!checks.length && !libre) { window.toast('Marca al menos un motivo o escribe el detalle', 'terr'); return; }
+  const motivo = [...checks, libre ? '• ' + libre : ''].filter(Boolean).join('\n');
+  try {
+    await SB().from('inmuebles').update({
+      estado_revision: 'cambios_solicitados',
+      motivo_cambios: motivo,
+      cambios_solicitados_at: new Date().toISOString(),
+    }).eq('id', inmId);
+    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
+    const capEmail = inm?.captador?.email || '';
+    await window.noti('inmueble_cambios_solicitados', 'amarillo',
+      '📝 Pedimos ajustes en tu inmueble',
+      'Tu ' + (inm?.tipo || 'inmueble') + ' en ' + (inm?.ciudad || '') + ' necesita correcciones antes de publicarse:\n\n' + motivo,
+      capEmail, null, inmId);
+    window.toast('📨 Cambios solicitados al propietario');
+    dlg.remove();
+    if (typeof window.rUsers === 'function') window.rUsers();
+  } catch(e) {
+    console.error('[pedirCambiosInmuebleExterno]', e);
+    if (/motivo_cambios|cambios_solicitados_at/i.test(e.message || '')) {
+      window.toast('Falta correr sql/20-cola-moderacion.sql', 'terr');
+    } else {
+      window.toast('Error: ' + e.message, 'terr');
+    }
+  }
+};
+
 // ══════════════════════════════════════════════════════════════════
 // 20. MESSAGING — Chat interno
 // ══════════════════════════════════════════════════════════════════
