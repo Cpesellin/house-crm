@@ -1109,6 +1109,171 @@ window.rCitasInternal = async function() {
   }
 };
 
+// --- Centro de Comando Admin (Fase 7) — 4 colas priorizadas ---
+window.rComando = async function() {
+  const el = document.getElementById('comandoc'); if (!el) return;
+  const u = U(); if (!u || u.rol !== 'admin') { el.innerHTML = ''; return; }
+
+  let h = '<div style="margin-bottom:20px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx)">Centro de Comando</div><div style="font-size:13px;color:var(--sub)">4 colas priorizadas · lo más urgente primero</div></div>';
+
+  // Fetch all 4 queues in parallel
+  const [resModeracion, resIntereses, resCierres, resReferidos, resVerif] = await Promise.all([
+    SB().from('inmuebles').select('id,tipo,ciudad,barrio,descripcion,created_at,estado_revision,alertas_moderacion,motivo_cambios,captador:usuarios!captador_id(nombre)').in('estado_revision', ['en_revision','cambios_solicitados']).eq('origen', 'externo').order('created_at', { ascending: true }).limit(20),
+    SB().from('intereses_compradores').select('id,created_at,presupuesto_max,fecha_ideal,mensaje,inmueble:inmuebles(id,tipo,ciudad,barrio,precio),usuario:usuarios!usuario_id(id,nombre,foto,telefono_contacto)').eq('estado', 'nuevo').order('created_at', { ascending: true }).limit(20),
+    SB().from('cierres').select('id,tipo,precio_final,comision_total,comision_captador,comision_casa,fase_a_pagada,fase_b_pagada,pagada,captador:usuarios!captador_id(nombre),inmueble:inmuebles(tipo,ciudad,barrio)').eq('estado', 'activo').or('fase_a_pagada.eq.false,fase_b_pagada.eq.false,pagada.eq.false').order('created_at', { ascending: true }).limit(20),
+    SB().from('referidos').select('id,estado,bono_monto,bono_pagado,comision_monto,comision_pagada,referidor:usuarios!referidor_id(nombre)').or('and(estado.in.(contrato_firmado,publicado),bono_pagado.eq.false),and(estado.eq.arrendado,comision_pagada.eq.false)').order('updated_at', { ascending: false }).limit(20),
+    SB().from('inmuebles').select('id,tipo,ciudad,barrio,fecha_estado,captador:usuarios!captador_id(nombre)').eq('estado', 'Verificar Disponibilidad').order('fecha_estado', { ascending: true }).limit(20),
+  ]);
+
+  const moderacion = resModeracion.data || [];
+  const intereses = resIntereses.data || [];
+  const cierresPend = resCierres.data || [];
+  const referidosPend = resReferidos.data || [];
+  const verif = resVerif.data || [];
+  const pagosTotalCount = cierresPend.length + referidosPend.length;
+
+  // KPI bar
+  const totalUrgentes = moderacion.filter(m => { const hrs = (Date.now() - new Date(m.created_at).getTime()) / 3600000; return hrs >= 12; }).length
+    + intereses.filter(i => { const hrs = (Date.now() - new Date(i.created_at).getTime()) / 3600000; return hrs >= 4; }).length
+    + verif.filter(v => { const dias = (Date.now() - new Date(v.fecha_estado).getTime()) / 86400000; return dias >= 3; }).length;
+
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:24px">';
+  h += _cmdKpi('🛡️', moderacion.length, 'Moderación', moderacion.length ? 'var(--gold)' : 'var(--green)');
+  h += _cmdKpi('💙', intereses.length, 'Intereses', intereses.length ? 'var(--b600)' : 'var(--green)');
+  h += _cmdKpi('💰', pagosTotalCount, 'Pagos pend.', pagosTotalCount ? 'var(--gold)' : 'var(--green)');
+  h += _cmdKpi('🔍', verif.length, 'Verificar', verif.length ? 'var(--red)' : 'var(--green)');
+  h += _cmdKpi('🔥', totalUrgentes, 'Urgentes', totalUrgentes ? 'var(--red)' : 'var(--green)');
+  h += '</div>';
+
+  // ── Cola 1: Moderación PII ──
+  h += _cmdQueueHeader('🛡️ Moderación PII', moderacion.length, 'users', 'Solicitudes');
+  if (!moderacion.length) {
+    h += '<div style="padding:20px;text-align:center;color:var(--sub);font-size:13px;background:#fff;border-radius:12px;margin-bottom:20px">Sin inmuebles pendientes de moderar</div>';
+  } else {
+    h += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">';
+    moderacion.forEach(m => {
+      const hrs = Math.round((Date.now() - new Date(m.created_at).getTime()) / 3600000);
+      const esc = hrs >= 12;
+      const pii = m.alertas_moderacion || {};
+      const piiColor = pii.color === 'rojo' ? 'var(--red)' : pii.color === 'amarillo' ? 'var(--gold)' : 'var(--green)';
+      const desc = (m.tipo || 'Inmueble') + ' en ' + (m.barrio || m.ciudad || '?');
+      h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid ' + piiColor + ';display:flex;align-items:center;gap:10px">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + desc + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">' + (m.captador?.nombre || '?') + ' · ' + hrs + 'h';
+      if (m.estado_revision === 'cambios_solicitados') h += ' · <span style="color:var(--b600)">📝 Cambios solicitados</span>';
+      h += '</div></div>';
+      if (pii.alertas?.length) h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:' + piiColor + ';color:#fff">' + pii.alertas.length + ' PII</span>';
+      if (esc) h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:var(--red);color:#fff">🔥 ' + hrs + 'h</span>';
+      h += '<button onclick="window._usersTab=\'solicitudes\';go(\'users\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Revisar</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+
+  // ── Cola 2: Intereses por calificar ──
+  h += _cmdQueueHeader('💙 Intereses por calificar', intereses.length, 'users', 'Intereses');
+  if (!intereses.length) {
+    h += '<div style="padding:20px;text-align:center;color:var(--sub);font-size:13px;background:#fff;border-radius:12px;margin-bottom:20px">Sin intereses pendientes</div>';
+  } else {
+    h += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">';
+    intereses.forEach(i => {
+      const hrs = Math.round((Date.now() - new Date(i.created_at).getTime()) / 3600000);
+      const esc = hrs >= 4;
+      const inm = i.inmueble || {};
+      const usr = i.usuario || {};
+      h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid ' + (esc ? '#c2410c' : 'var(--b600)') + ';display:flex;align-items:center;gap:10px">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (usr.nombre || 'Sin nombre') + ' → ' + (inm.tipo || '') + ' ' + (inm.barrio || inm.ciudad || '') + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">';
+      if (i.presupuesto_max) h += 'Presup: ' + fm(i.presupuesto_max) + ' · ';
+      h += hrs + 'h</div></div>';
+      if (esc) h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:#c2410c;color:#fff">🔥 ' + hrs + 'h</span>';
+      h += '<button onclick="calificarInteresRapido(\'' + i.id + '\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--green);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">🟢</button>';
+      h += '<button onclick="abrirCalificarInteres(\'' + i.id + '\',\'amarillo\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--gold);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">🟡</button>';
+      h += '<button onclick="abrirCalificarInteres(\'' + i.id + '\',\'rojo\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--red);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">🔴</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+
+  // ── Cola 3: Pagos pendientes (cierres + referidos) ──
+  h += _cmdQueueHeader('💰 Pagos pendientes', pagosTotalCount, 'admin-pagos', 'Ver referidos');
+  if (!pagosTotalCount) {
+    h += '<div style="padding:20px;text-align:center;color:var(--sub);font-size:13px;background:#fff;border-radius:12px;margin-bottom:20px">Sin pagos pendientes</div>';
+  } else {
+    h += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">';
+    // Cierres pendientes
+    cierresPend.forEach(c => {
+      const inm = c.inmueble || {};
+      const desc = (inm.tipo || 'Inmueble') + ' ' + (inm.barrio || inm.ciudad || '');
+      const pendFases = [];
+      if (c.tipo === 'arriendo') {
+        if (!c.fase_a_pagada) pendFases.push('Fase A');
+        if (!c.fase_b_pagada) pendFases.push('Fase B');
+      } else {
+        if (!c.pagada) pendFases.push('Comisión venta');
+      }
+      h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid var(--gold);display:flex;align-items:center;gap:10px">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🏆 ' + desc + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">' + (c.captador?.nombre || '?') + ' · ' + fm(c.comision_total) + ' · Pend: ' + pendFases.join(', ') + '</div></div>';
+      if (c.tipo === 'arriendo' && !c.fase_a_pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'a\')" style="font-size:10px;padding:4px 8px;border:none;border-radius:7px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Fase A</button>';
+      if (c.tipo === 'arriendo' && c.fase_a_pagada && !c.fase_b_pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'b\')" style="font-size:10px;padding:4px 8px;border:none;border-radius:7px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Fase B</button>';
+      if (c.tipo === 'venta' && !c.pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'venta\')" style="font-size:10px;padding:4px 8px;border:none;border-radius:7px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Pagar</button>';
+      h += '</div>';
+    });
+    // Referidos pendientes
+    referidosPend.forEach(r => {
+      const esBono = !r.bono_pagado && ['contrato_firmado','publicado'].includes(r.estado);
+      const monto = esBono ? (r.bono_monto || 50000) : (r.comision_monto || 0);
+      h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid ' + (esBono ? 'var(--gold)' : 'var(--green)') + ';display:flex;align-items:center;gap:10px">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--tx)">🤝 Referido · ' + (r.referidor?.nombre || '?') + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">' + (esBono ? 'Bono' : 'Comisión') + ': ' + fm(monto) + '</div></div>';
+      h += '<button onclick="go(\'admin-pagos\')" style="font-size:10px;padding:4px 8px;border:none;border-radius:7px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Ir a pagos</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+
+  // ── Cola 4: Verificaciones pendientes ──
+  h += _cmdQueueHeader('🔍 Verificaciones pendientes', verif.length, 'inv', 'Inventario');
+  if (!verif.length) {
+    h += '<div style="padding:20px;text-align:center;color:var(--sub);font-size:13px;background:#fff;border-radius:12px;margin-bottom:20px">Sin verificaciones pendientes</div>';
+  } else {
+    h += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">';
+    verif.forEach(v => {
+      const dias = Math.round((Date.now() - new Date(v.fecha_estado).getTime()) / 86400000);
+      const esc = dias >= 3;
+      const desc = (v.tipo || 'Inmueble') + ' en ' + (v.barrio || v.ciudad || '?');
+      h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid ' + (esc ? 'var(--red)' : 'var(--gold)') + ';display:flex;align-items:center;gap:10px">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + desc + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">' + (v.captador?.nombre || '?') + ' · ' + dias + 'd esperando</div></div>';
+      if (esc) h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:var(--red);color:#fff">🔥 ' + dias + 'd</span>';
+      h += '<button onclick="oM(' + (D().findIndex(p=>p.id===v.id)) + ')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">Abrir</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+
+  // Badge in sidebar
+  const totalPend = moderacion.length + intereses.length + pagosTotalCount + verif.length;
+  const badge = document.getElementById('mcmdb');
+  if (badge) { badge.textContent = totalPend; badge.style.display = totalPend ? 'inline-flex' : 'none'; }
+
+  el.innerHTML = h;
+};
+
+function _cmdKpi(ico, count, label, color) {
+  return '<div style="background:#fff;border-radius:12px;padding:14px 10px;border:1px solid var(--g100);text-align:center">' +
+    '<div style="font-size:18px">' + ico + '</div>' +
+    '<div style="font-size:24px;font-weight:800;color:' + color + '">' + count + '</div>' +
+    '<div style="font-size:10px;color:var(--sub);font-weight:600">' + label + '</div></div>';
+}
+
+function _cmdQueueHeader(title, count, linkRoute, linkLabel) {
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+    '<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:var(--tx)">' + title + ' <span style="font-size:13px;font-weight:400;color:var(--sub)">(' + count + ')</span></div>' +
+    '<button onclick="window._usersTab=\'' + (linkRoute === 'users' ? (title.includes('Intereses') ? 'intereses' : 'solicitudes') : '') + '\';go(\'' + linkRoute + '\')" style="font-size:11px;padding:4px 12px;border:1px solid var(--g200);border-radius:8px;background:#fff;color:var(--b600);font-weight:700;cursor:pointer;font-family:inherit">' + linkLabel + ' →</button></div>';
+}
+
 // --- Mis Negocios (interno — Fase 6) ---
 window.rMisNegocios = async function() {
   const el = document.getElementById('misnegociosc'); if (!el) return;
