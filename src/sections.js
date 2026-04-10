@@ -1109,6 +1109,118 @@ window.rCitasInternal = async function() {
   }
 };
 
+// --- Mis Negocios (interno — Fase 6) ---
+window.rMisNegocios = async function() {
+  const el = document.getElementById('misnegociosc'); if (!el) return;
+  const u = U(); if (!u) { el.innerHTML = ''; return; }
+  const isAdmin = u.rol === 'admin' || u.rol === 'oficina';
+
+  let h = '<div style="margin-bottom:20px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx)">Mis Negocios</div><div style="font-size:13px;color:var(--sub)">Cierres registrados y estado de comisiones</div></div>';
+
+  try {
+    // Admin sees all, captador sees own
+    let query = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,direccion,precio,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre,foto), cerrador:usuarios!cerrado_por(id,nombre)').eq('estado', 'activo').order('created_at', { ascending: false });
+    if (!isAdmin) query = query.eq('captador_id', u.id);
+    const { data: cierres, error } = await query;
+
+    if (error) {
+      if (/cierres/i.test(error.message) && /does not exist|relation/i.test(error.message)) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">⚠️ Falta correr <b>sql/23-cierres.sql</b> en Supabase SQL Editor</div>';
+        return;
+      }
+      throw error;
+    }
+
+    const all = cierres || [];
+
+    // Stats
+    const totalCom = all.reduce((s, c) => s + (c.comision_total || 0), 0);
+    const totalCaptador = all.reduce((s, c) => s + (c.comision_captador || 0), 0);
+    const totalCasa = all.reduce((s, c) => s + (c.comision_casa || 0), 0);
+    const arriendos = all.filter(c => c.tipo === 'arriendo');
+    const ventas = all.filter(c => c.tipo === 'venta');
+
+    // Pending payments count
+    const pendientes = all.filter(c => {
+      if (c.tipo === 'arriendo') return !c.fase_a_pagada || !c.fase_b_pagada;
+      return !c.pagada;
+    }).length;
+
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">';
+    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:var(--tx)">' + all.length + '</div><div style="font-size:11px;color:var(--sub)">Cierres totales</div></div>';
+    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:var(--green)">' + fm(totalCom) + '</div><div style="font-size:11px;color:var(--sub)">Comisión total</div></div>';
+    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:var(--b600)">' + fm(isAdmin ? totalCasa : totalCaptador) + '</div><div style="font-size:11px;color:var(--sub)">' + (isAdmin ? 'Para la casa' : 'Mi parte (50%)') + '</div></div>';
+    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:' + (pendientes ? 'var(--gold)' : 'var(--green)') + '">' + pendientes + '</div><div style="font-size:11px;color:var(--sub)">Pagos pendientes</div></div>';
+    h += '</div>';
+
+    // Tabs: Todos | Arriendos | Ventas
+    h += '<div style="display:flex;gap:8px;margin-bottom:16px">';
+    h += '<button class="pill ' + (!window._negociosTab || window._negociosTab === 'todos' ? '' : 'pill-off') + '" onclick="window._negociosTab=\'todos\';rMisNegocios()">Todos (' + all.length + ')</button>';
+    h += '<button class="pill ' + (window._negociosTab === 'arriendos' ? '' : 'pill-off') + '" onclick="window._negociosTab=\'arriendos\';rMisNegocios()">🔑 Arriendos (' + arriendos.length + ')</button>';
+    h += '<button class="pill ' + (window._negociosTab === 'ventas' ? '' : 'pill-off') + '" onclick="window._negociosTab=\'ventas\';rMisNegocios()">💰 Ventas (' + ventas.length + ')</button>';
+    h += '</div>';
+
+    const filtered = window._negociosTab === 'arriendos' ? arriendos : window._negociosTab === 'ventas' ? ventas : all;
+
+    if (!filtered.length) {
+      h += '<div style="text-align:center;padding:40px;color:var(--sub)">No hay cierres registrados' + (window._negociosTab && window._negociosTab !== 'todos' ? ' en esta categoría' : '') + '</div>';
+    } else {
+      filtered.forEach(c => {
+        const inm = c.inmueble || {};
+        const foto = inm.fotos?.[0]?.url || '';
+        const inmDesc = (inm.tipo || 'Inmueble') + ' en ' + (inm.barrio || inm.ciudad || '?');
+        const fechaTxt = c.fecha_cierre ? new Date(c.fecha_cierre + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+        const comCapt = c.comision_captador || 0;
+        const comCasa = c.comision_casa || 0;
+
+        h += '<div style="background:#fff;border-radius:14px;border:1px solid var(--g100);margin-bottom:12px;overflow:hidden">';
+        h += '<div style="display:flex;gap:12px;padding:14px">';
+        if (foto) h += '<img src="' + foto + '" style="width:70px;height:70px;border-radius:10px;object-fit:cover;flex-shrink:0">';
+        else h += '<div style="width:70px;height:70px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">' + (c.tipo === 'venta' ? '💰' : '🔑') + '</div>';
+
+        h += '<div style="flex:1;min-width:0">';
+        h += '<div style="font-weight:700;font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + inmDesc + '</div>';
+        h += '<div style="font-size:12px;color:var(--sub);margin-top:2px">' + (c.tipo === 'venta' ? 'Venta' : 'Arriendo') + ' · ' + fechaTxt + '</div>';
+        if (c.contraparte_nombre) h += '<div style="font-size:12px;color:var(--sub)">' + (c.tipo === 'venta' ? 'Comprador' : 'Arrendatario') + ': ' + c.contraparte_nombre + '</div>';
+        if (isAdmin && c.captador) h += '<div style="font-size:12px;color:var(--sub)">Captador: ' + c.captador.nombre + '</div>';
+        h += '<div style="margin-top:6px;font-size:13px"><span style="font-weight:700">Precio: ' + fm(c.precio_final) + '</span> · Comisión: <span style="color:var(--green);font-weight:700">' + fm(c.comision_total) + '</span></div>';
+        h += '</div></div>';
+
+        // Payment status
+        h += '<div style="padding:0 14px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
+        if (c.tipo === 'arriendo') {
+          const faseAMonto = Math.min(50000, c.comision_total);
+          const faseBMonto = Math.max(0, c.comision_total - 50000);
+          // Fase A
+          h += '<span style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;background:' + (c.fase_a_pagada ? 'var(--green)' : 'var(--gold)') + ';color:#fff">Fase A ' + fm(faseAMonto) + (c.fase_a_pagada ? ' ✅' : ' ⏳') + '</span>';
+          // Fase B
+          if (faseBMonto > 0) {
+            h += '<span style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;background:' + (c.fase_b_pagada ? 'var(--green)' : 'var(--gold)') + ';color:#fff">Fase B ' + fm(faseBMonto) + (c.fase_b_pagada ? ' ✅' : ' ⏳') + '</span>';
+          }
+          // Admin pay buttons
+          if (isAdmin) {
+            if (!c.fase_a_pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'a\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵 Pagar Fase A</button>';
+            if (!c.fase_b_pagada && faseBMonto > 0) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'b\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵 Pagar Fase B</button>';
+          }
+        } else {
+          // Venta — pago único
+          h += '<span style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;background:' + (c.pagada ? 'var(--green)' : 'var(--gold)') + ';color:#fff">Comisión ' + fm(c.comision_total) + (c.pagada ? ' ✅' : ' ⏳') + '</span>';
+          if (isAdmin && !c.pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'venta\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵 Pagar comisión</button>';
+        }
+
+        // Split detail
+        h += '<span style="font-size:10px;color:var(--sub);margin-left:auto">Captador: ' + fm(comCapt) + ' · Casa: ' + fm(comCasa) + '</span>';
+        h += '</div></div>';
+      });
+    }
+  } catch(e) {
+    console.error('[rMisNegocios]', e);
+    h += '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+
+  el.innerHTML = h;
+};
+
 // --- Mi Cuenta (externo) ---
 window.rCuenta = function() {
   const el = document.getElementById('cuentac'); if (!el) return;

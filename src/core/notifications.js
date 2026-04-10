@@ -228,6 +228,32 @@ const TIPO_CONFIG = {
     prioridad: 'alta',
   },
 
+  // ── CIERRES / NEGOCIOS (FASE 6) ──
+  cierre_registrado: {
+    // Se cerró un inmueble (arriendo o venta) → notifica a admins
+    categoria: 'pago', icono: '🏆', color: '#10b981',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-negocios',
+    prioridad: 'alta',
+  },
+  cierre_fase_a_pagada: {
+    // Se pagó la fase A ($50k) de un arriendo → notifica al captador
+    categoria: 'pago', icono: '💵', color: '#10b981',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-negocios',
+    prioridad: 'normal',
+  },
+  cierre_fase_b_pagada: {
+    // Se pagó la fase B (resto del 10%) de un arriendo → notifica al captador
+    categoria: 'pago', icono: '💰', color: '#10b981',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-negocios',
+    prioridad: 'normal',
+  },
+  cierre_venta_pagada: {
+    // Se pagó la comisión de una venta → notifica al captador
+    categoria: 'pago', icono: '💰', color: '#10b981',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-negocios',
+    prioridad: 'normal',
+  },
+
   // ── REGISTROS / SISTEMA ──
   registro_externo: {
     categoria: 'sistema', icono: '👤', color: '#3b82f6',

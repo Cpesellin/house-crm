@@ -569,11 +569,13 @@ window.addA = async function(id) {
 // ══════════════════════════════════════════════════════════════════
 
 window.chgE = async function(id,e) {
-  if(FINAL_STATES.includes(e)){const ok=await window.cfShow(e==='Arrendado'?'🔑':e==='Vendido'?'💰':'⛔','¿Cambiar a '+e+'?','Genera alertas a todo el equipo');if(!ok)return;}
+  // Arrendado/Vendido → abrir formulario de cierre con comisiones
+  if (e === 'Arrendado' || e === 'Vendido') { window.abrirFormularioCierre(id, e); return; }
+  if(FINAL_STATES.includes(e)){const ok=await window.cfShow('⛔','¿Cambiar a '+e+'?','Genera alertas a todo el equipo');if(!ok)return;}
   const p=findInm(id);const desc=descInm(p);const u=U();const capNom=p?.captador?.nombre||'?';
   await SB().from('inmuebles').update({estado:e,fecha_estado:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
   await SB().from('historial').insert({inmueble_id:id,usuario_id:u.id,accion:'cambio_estado',campo:'estado',valor_nuevo:e});
-  if(FINAL_STATES.includes(e)){const ico=e==='Arrendado'?'🔑':e==='Vendido'?'💰':'⛔';await window.noti('cambio_estado','verde',ico+' Cierre: '+desc+' → '+e,u.nombre+' cerró '+desc+'. Captador: '+capNom,null,'all',id);}
+  if(FINAL_STATES.includes(e)){const ico='⛔';await window.noti('cambio_estado','verde',ico+' Cierre: '+desc+' → '+e,u.nombre+' cerró '+desc+'. Captador: '+capNom,null,'all',id);}
   else await window.noti('cambio_estado','info','🔄 '+desc+' → '+e,u.nombre+' cambió '+desc+' a '+e,null,'all',id);
   window.toast('✅ Estado: '+e);window.load();window.cmForce();
 };
@@ -621,10 +623,11 @@ window.delFoto = async function(fotoId,inmId) {
 
 window.quickMove = async function(id,estado) {
   if(!id||!estado)return;
+  // Arrendado/Vendido → abrir formulario de cierre con comisiones
+  if (estado === 'Arrendado' || estado === 'Vendido') { window.abrirFormularioCierre(id, estado); return; }
   const p=findInm(id);const desc=descInm(p);const u=U();const capNom=p?.captador?.nombre||'?';const capEmail=p?.captador?.usuario||p?.captador?.email||'';
   if(FINAL_STATES.includes(estado)){
-    const ico=estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔';
-    const ok=await window.cfShow(ico,'¿Mover a '+estado+'?','Este inmueble dejará de aparecer en el inventario.\nSe notificará al administrador para revisión.');
+    const ok=await window.cfShow('⛔','¿Mover a '+estado+'?','Este inmueble dejará de aparecer en el inventario.\nSe notificará al administrador para revisión.');
     if(!ok)return;
   }
   await SB().from('inmuebles').update({estado,fecha_estado:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
@@ -632,18 +635,12 @@ window.quickMove = async function(id,estado) {
   if(estado==='Verificar Disponibilidad'){await window.noti('verificar','rojo','🔍 '+u.nombre+' solicita verificar: '+desc,u.nombre+' necesita saber si tu '+desc+' sigue disponible.',capEmail,null,id);}
   else if(estado==='Aún Disponible'){await window.noti('cambio_estado','verde','✅ '+capNom+' confirmó: '+desc+' disponible',capNom+' verificó que '+desc+' está disponible.',null,'all',id);}
   else if(FINAL_STATES.includes(estado)){
-    const ico=estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':'⛔';
-    // Notify everyone about the closure
+    const ico='⛔';
     await window.noti('cambio_estado','verde',ico+' Cierre: '+desc+' → '+estado,u.nombre+' cerró '+desc+'.',null,'all',id);
-    // Specific notification to admin to review/delete
     await window.noti('eliminar_inmueble','rojo','🗑️ Revisar: '+desc+' fue marcado como '+estado,u.nombre+' marcó '+desc+' como '+estado+'. Revisar si se debe eliminar del sistema.','admin',null,id);
   }
   else{await window.noti('cambio_estado','info','🔄 '+desc+' → '+estado,u.nombre+' movió '+desc+' a '+estado,null,'all',id);}
-  // Auto-register comision if Arrendado and has referido
-  if (estado === 'Arrendado' && typeof window.registrarComisionArrendado === 'function') {
-    try { await window.registrarComisionArrendado(id); } catch(e) { console.error('[quickMove] comision referido:', e); }
-  }
-  window.toast(estado==='Arrendado'?'🔑':estado==='Vendido'?'💰':estado==='Retirado'?'⛔':'✅'+' Movido a '+estado+'. Ya no aparecerá en inventario.');window.load();
+  window.toast(estado==='Retirado'?'⛔ Retirado. Ya no aparecerá en inventario.':'✅ Movido a '+estado);window.load();
 };
 
 window.reVal = async function(id) {
@@ -4088,6 +4085,206 @@ window._applyVisitorChrome = function() {
     `;
     invWrap.insertBefore(banner, invWrap.firstChild);
   }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 30. FASE 6 — CIERRES + COMISIONES (split 50/50 captador/casa)
+// ══════════════════════════════════════════════════════════════════
+
+const BONO_FASE_A = 50000;
+const PCT_ARRIENDO = 0.10;
+const PCT_VENTA = 0.03;
+
+window.calcularComision = function(tipo, precioFinal) {
+  const total = tipo === 'venta'
+    ? Math.round(precioFinal * PCT_VENTA)
+    : Math.round(precioFinal * PCT_ARRIENDO);
+  const captador = Math.round(total / 2);
+  const casa = total - captador;
+  const faseA = tipo === 'arriendo' ? Math.min(BONO_FASE_A, total) : 0;
+  const faseB = tipo === 'arriendo' ? Math.max(0, total - BONO_FASE_A) : 0;
+  return { total, captador, casa, faseA, faseB };
+};
+
+window.abrirFormularioCierre = function(inmId, estadoDestino) {
+  const p = findInm(inmId);
+  if (!p) { window.toast('Inmueble no encontrado', 'terr'); return; }
+  const tipo = estadoDestino === 'Vendido' ? 'venta' : 'arriendo';
+  const ico = tipo === 'venta' ? '💰' : '🔑';
+  const precioSugerido = p.precio || 0;
+
+  // Check for green-qualified interests to pre-fill contraparte
+  let interesesVerdesOpts = '';
+  const interesesDiv = document.getElementById('pc-intereses-' + inmId);
+  if (interesesDiv) {
+    try {
+      const intereses = JSON.parse(interesesDiv.textContent || '[]');
+      intereses.filter(i => i.score === 'verde' && i.estado !== 'descartado').forEach(i => {
+        interesesVerdesOpts += `<option value="${i.id}" data-nombre="${i.usuario?.nombre || ''}">${i.usuario?.nombre || 'Sin nombre'}</option>`;
+      });
+    } catch(e) {}
+  }
+
+  const html = `
+    <div class="modal-cierre" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.remove()">
+      <div style="background:#fff;border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+        <div style="padding:20px 20px 0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <span style="font-size:28px">${ico}</span>
+            <div>
+              <div style="font-family:Fraunces,serif;font-size:18px;font-weight:800;color:var(--tx)">Registrar cierre</div>
+              <div style="font-size:12px;color:var(--sub)">${tipo === 'venta' ? 'Venta' : 'Arriendo'} · ${descInm(p)}</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 20px 20px">
+          <label style="display:block;margin-bottom:12px">
+            <span style="font-size:12px;font-weight:700;color:var(--sub)">Precio final ${tipo === 'venta' ? 'de venta' : '(canon mensual)'} *</span>
+            <input id="cierre-precio" type="text" value="${precioSugerido ? fm(precioSugerido) : ''}" oninput="window._cierreCalcPreview('${tipo}')" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:15px;font-family:inherit;margin-top:4px;box-sizing:border-box">
+          </label>
+          <label style="display:block;margin-bottom:12px">
+            <span style="font-size:12px;font-weight:700;color:var(--sub)">Fecha de cierre *</span>
+            <input id="cierre-fecha" type="date" value="${new Date().toISOString().slice(0,10)}" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:14px;font-family:inherit;margin-top:4px;box-sizing:border-box">
+          </label>
+          <label style="display:block;margin-bottom:12px">
+            <span style="font-size:12px;font-weight:700;color:var(--sub)">${tipo === 'venta' ? 'Comprador' : 'Arrendatario'} (nombre)</span>
+            ${interesesVerdesOpts ? `<select id="cierre-interes" onchange="window._cierreFillNombre(this)" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:14px;font-family:inherit;margin-top:4px;margin-bottom:6px;box-sizing:border-box"><option value="">— Seleccionar interesado —</option>${interesesVerdesOpts}</select>` : ''}
+            <input id="cierre-contraparte" type="text" placeholder="Nombre del ${tipo === 'venta' ? 'comprador' : 'arrendatario'}" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:14px;font-family:inherit;margin-top:4px;box-sizing:border-box">
+          </label>
+          ${tipo === 'arriendo' ? `<label style="display:block;margin-bottom:12px"><span style="font-size:12px;font-weight:700;color:var(--sub)">Duración (meses)</span><input id="cierre-duracion" type="number" min="1" value="12" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:14px;font-family:inherit;margin-top:4px;box-sizing:border-box"></label>` : ''}
+          <label style="display:block;margin-bottom:16px">
+            <span style="font-size:12px;font-weight:700;color:var(--sub)">Nota (opcional)</span>
+            <textarea id="cierre-nota" rows="2" placeholder="Observaciones..." style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:14px;font-family:inherit;margin-top:4px;resize:vertical;box-sizing:border-box"></textarea>
+          </label>
+          <div id="cierre-preview" style="background:var(--b50);border-radius:12px;padding:14px;margin-bottom:16px"></div>
+          <div style="display:flex;gap:10px">
+            <button onclick="this.closest('.modal-cierre').remove()" style="flex:1;padding:12px;border:1.5px solid var(--g200);border-radius:10px;background:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--sub)">Cancelar</button>
+            <button onclick="window._guardarCierre('${inmId}','${tipo}')" style="flex:1;padding:12px;border:none;border-radius:10px;background:var(--b600);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">${ico} Registrar cierre</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  window._cierreCalcPreview(tipo);
+};
+
+window._cierreFillNombre = function(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const nombre = opt?.dataset?.nombre || '';
+  const inp = document.getElementById('cierre-contraparte');
+  if (inp && nombre) inp.value = nombre;
+};
+
+window._cierreCalcPreview = function(tipo) {
+  const raw = (document.getElementById('cierre-precio')?.value || '').replace(/[^0-9]/g, '');
+  const precio = parseInt(raw) || 0;
+  const div = document.getElementById('cierre-preview');
+  if (!div) return;
+  if (!precio) { div.innerHTML = '<div style="font-size:13px;color:var(--sub);text-align:center">Ingresa el precio para ver la comisión</div>'; return; }
+  const c = window.calcularComision(tipo, precio);
+  let h = '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:8px">Resumen de comisión</div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--sub)">Comisión total (' + (tipo === 'venta' ? '3%' : '10%') + ')</span><span style="font-weight:700">' + fm(c.total) + '</span></div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--sub)">Captador (50%)</span><span style="font-weight:600;color:var(--green)">' + fm(c.captador) + '</span></div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="color:var(--sub)">Casa (50%)</span><span style="font-weight:600;color:var(--b600)">' + fm(c.casa) + '</span></div>';
+  if (tipo === 'arriendo') {
+    h += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g200)">';
+    h += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--sub)">Fase A (firma contrato)</span><span style="font-weight:600">' + fm(c.faseA) + '</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--sub)">Fase B (al arrendar)</span><span style="font-weight:600">' + fm(c.faseB) + '</span></div>';
+    h += '</div>';
+  }
+  div.innerHTML = h;
+};
+
+window._guardarCierre = async function(inmId, tipo) {
+  const raw = (document.getElementById('cierre-precio')?.value || '').replace(/[^0-9]/g, '');
+  const precio = parseInt(raw) || 0;
+  if (!precio) { window.toast('Ingresa el precio final', 'twarn'); return; }
+  const fecha = document.getElementById('cierre-fecha')?.value;
+  if (!fecha) { window.toast('Selecciona la fecha de cierre', 'twarn'); return; }
+  const contraparte = document.getElementById('cierre-contraparte')?.value?.trim() || null;
+  const duracion = parseInt(document.getElementById('cierre-duracion')?.value) || null;
+  const nota = document.getElementById('cierre-nota')?.value?.trim() || null;
+  const interesId = document.getElementById('cierre-interes')?.value || null;
+  const p = findInm(inmId);
+  const u = U();
+  const c = window.calcularComision(tipo, precio);
+
+  // 1. Insert cierre
+  try {
+    const row = {
+      inmueble_id: inmId,
+      tipo,
+      precio_final: precio,
+      fecha_cierre: fecha,
+      contraparte_nombre: contraparte,
+      duracion_meses: duracion,
+      interes_id: interesId || null,
+      nota,
+      comision_total: c.total,
+      comision_captador: c.captador,
+      comision_casa: c.casa,
+      captador_id: p?.captador_id || u.id,
+      cerrado_por: u.id,
+    };
+    const { error } = await SB().from('cierres').insert(row);
+    if (error) {
+      if (/cierres/i.test(error.message) && /does not exist|relation/i.test(error.message)) {
+        window.toast('⚠️ Falta correr sql/23-cierres.sql en Supabase', 'terr'); return;
+      }
+      throw error;
+    }
+  } catch (e) {
+    console.error('[_guardarCierre] insert error:', e);
+    window.toast('Error al registrar cierre: ' + e.message, 'terr'); return;
+  }
+
+  // 2. Move inmueble to final state
+  const estado = tipo === 'venta' ? 'Vendido' : 'Arrendado';
+  await SB().from('inmuebles').update({ estado, fecha_estado: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', inmId);
+  await SB().from('historial').insert({ inmueble_id: inmId, usuario_id: u.id, accion: 'cambio_estado', campo: 'estado', valor_nuevo: estado });
+
+  // 3. Update interés if linked
+  if (interesId) {
+    await SB().from('intereses_compradores').update({ estado: 'cerrado', updated_at: new Date().toISOString() }).eq('id', interesId);
+  }
+
+  // 4. Auto-register comision referido if Arrendado
+  if (estado === 'Arrendado' && typeof window.registrarComisionArrendado === 'function') {
+    try { await window.registrarComisionArrendado(inmId); } catch(e) { console.error('[cierre] comision referido:', e); }
+  }
+
+  // 5. Notifications
+  const desc = descInm(p);
+  const capNom = p?.captador?.nombre || '?';
+  const ico = tipo === 'venta' ? '💰' : '🔑';
+  await window.noti('cambio_estado', 'verde', ico + ' Cierre: ' + desc + ' → ' + estado, u.nombre + ' cerró ' + desc + '. Comisión: ' + fm(c.total), null, 'all', inmId);
+  await window.noti('cierre_registrado', 'verde', '🏆 Nuevo cierre: ' + desc, u.nombre + ' registró cierre de ' + tipo + '. Total comisión: ' + fm(c.total) + ' (captador: ' + fm(c.captador) + ', casa: ' + fm(c.casa) + ')', null, 'admin', inmId);
+
+  // 6. Close modal + refresh
+  document.querySelector('.modal-cierre')?.remove();
+  window.toast(ico + ' Cierre registrado. Comisión: ' + fm(c.total));
+  window.load();
+  window.cmForce();
+};
+
+// Admin: marcar pago de fase A, B, o venta
+window.marcarPagoCierre = async function(cierreId, fase) {
+  const campo = fase === 'a' ? 'fase_a_pagada' : fase === 'b' ? 'fase_b_pagada' : 'pagada';
+  const campoAt = campo + '_at';
+  const ok = await window.cfShow('💵', '¿Marcar ' + (fase === 'a' ? 'Fase A' : fase === 'b' ? 'Fase B' : 'comisión') + ' como pagada?', 'Esta acción no se puede deshacer fácilmente.');
+  if (!ok) return;
+  const { error } = await SB().from('cierres').update({ [campo]: true, [campoAt]: new Date().toISOString() }).eq('id', cierreId);
+  if (error) { window.toast('Error: ' + error.message, 'terr'); return; }
+
+  // Notify captador
+  const { data: cierre } = await SB().from('cierres').select('captador_id,tipo,comision_captador,comision_total,inmueble_id').eq('id', cierreId).single();
+  if (cierre?.captador_id) {
+    const tipoNoti = fase === 'a' ? 'cierre_fase_a_pagada' : fase === 'b' ? 'cierre_fase_b_pagada' : 'cierre_venta_pagada';
+    const montoFase = fase === 'a' ? Math.min(BONO_FASE_A, cierre.comision_total) / 2 : cierre.comision_captador;
+    await window.noti(tipoNoti, 'verde', '💵 Pago registrado', 'Se te pagó ' + fm(Math.round(montoFase)) + ' por cierre.', null, null, cierre.inmueble_id);
+  }
+  window.toast('💵 Pago registrado');
+  if (typeof window.rMisNegocios === 'function') window.rMisNegocios();
 };
 
 console.log('[functions] ✅ All window functions registered');

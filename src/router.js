@@ -7,7 +7,7 @@
 // Route definitions
 // ---------------------------------------------------------------------------
 // Internal CRM routes
-const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','agenda','citas','users','perfil','papelera'];
+const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','agenda','citas','mis-negocios','users','perfil','papelera'];
 // External user routes
 const ROUTES_CLIENTE = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta'];
 const ROUTES_PROPIETARIO = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta','mis-pub','publicar'];
@@ -31,6 +31,7 @@ const ROUTES = {
   'mis-intereses': { section: 'sec-mis-intereses', label: 'Mis Intereses', icon: '\u{1F499}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
   'mis-citas':     { section: 'sec-mis-citas',     label: 'Mis Citas',     icon: '\u{1F4C5}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
   'citas':         { section: 'sec-citas',         label: 'Citas',          icon: '\u{1F4C5}', auth: true, internal: true },
+  'mis-negocios':  { section: 'sec-mis-negocios',  label: 'Mis Negocios',   icon: '\u{1F3C6}', auth: true, internal: true },
   'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario','pendiente'] },
   'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
   'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
@@ -63,6 +64,7 @@ const ROUTE_RENDERERS = {
   'mis-intereses': 'rMisIntereses',
   'mis-citas': 'rMisCitas',
   'citas':     'rCitasInternal',
+  'mis-negocios': 'rMisNegocios',
   'cuenta':     'rCuenta',
   'mis-pub':    'rMisPub',
   'publicar':   'rPublicar',

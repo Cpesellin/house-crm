@@ -109,6 +109,7 @@ function renderShell(container) {
     <button class="mi" data-s="dash" onclick="go('dash')"><span class="mic">\u{1F4CA}</span>Dashboard</button>
     <button class="mi" data-s="agenda" onclick="go('agenda')" id="magenda" style="display:none"><span class="mic">\u{1F4C5}</span>Agenda<span class="mib" id="magb" style="display:none">0</span></button>
     <button class="mi" data-s="citas" onclick="go('citas')"><span class="mic">\u{1F91D}</span>Citas<span class="mib" id="mcitasb" style="display:none">0</span></button>
+    <button class="mi" data-s="mis-negocios" onclick="go('mis-negocios')"><span class="mic">\u{1F3C6}</span>Mis Negocios<span class="mib" id="mnegb" style="display:none">0</span></button>
 
     <button class="mi" data-s="referir" onclick="go('referir')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>
     <button class="mi" data-s="mis-referidos" onclick="go('mis-referidos')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>
@@ -226,6 +227,7 @@ function renderShell(container) {
 <div class="sec" id="sec-mis-intereses"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinteresesc"></div></div>
 <div class="sec" id="sec-mis-citas"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="miscitasc"></div></div>
 <div class="sec" id="sec-citas"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="citasinternalc"></div></div>
+<div class="sec" id="sec-mis-negocios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misnegociosc"></div></div>
 <div class="sec" id="sec-cuenta"><div class="fsec" id="cuentac"></div></div>
 <div class="sec" id="sec-mis-pub"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="mispubc"></div></div>
 <div class="sec" id="sec-publicar"><div class="fsec" id="publicarc"></div></div>
@@ -392,7 +394,7 @@ function sApp() {
     const estadoInfo = document.getElementById('filterEstadoInfo');
     if (estadoInfo) estadoInfo.style.display = 'none';
     // Hide internal sections from sidebar that shouldn't show
-    ['mis','reg','alertas','portales','dash','citas'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
+    ['mis','reg','alertas','portales','dash','citas','mis-negocios'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
     document.getElementById('murole').textContent = (tipoU === 'vendedor_externo' || tipoU === 'propietario') ? 'Asesor Externo' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';
