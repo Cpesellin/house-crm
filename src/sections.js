@@ -1395,7 +1395,12 @@ window.rCuenta = function() {
   if (u.foto) h += `<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
   else h += `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0]}</div>`;
   h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div>`;
-  h += `<div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${(u.tipo_usuario==='vendedor_externo'||u.tipo_usuario==='propietario')?'Asesor Externo':'Cliente'}</div></div>`;
+  // Dynamic role badges
+  h += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:8px">`;
+  h += `<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:var(--b50);color:var(--b600);border:1px solid var(--b200)">🔍 Comprador</span>`;
+  if (u.puede_publicar) h += `<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:#065f4615;color:#065f46;border:1px solid #065f4630">🏠 Vendedor</span>`;
+  if (u.puede_referir !== false) h += `<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2)">🤝 Comisionista</span>`;
+  h += `</div></div>`;
   h += `<div style="padding:0 16px 16px"><div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Nombre</label><input id="ext_nombre" value="${(u.nombre||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
   h += `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Email</label><input value="${u.email}" disabled style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--sub);background:var(--cd2);font-family:inherit"></div>`;
   h += `<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Teléfono</label><input id="ext_tel" value="${(u.telefono_contacto||'').replace(/"/g,'&quot;')}" placeholder="573001234567" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
@@ -1630,11 +1635,18 @@ window.rUsers = async function() {
       const displayRol = isGestor ? 'Gestor Arriendos' : rol;
       const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='cliente'?'background:var(--b50);color:var(--b500)':(u2.tipo_usuario==='vendedor_externo'||u2.tipo_usuario==='propietario')?'background:#065f4615;color:#065f46':'background:var(--b50);color:var(--b700)';
       const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
-      const externoBadge = u2.tipo_usuario==='cliente'?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">Cliente</span>':(u2.tipo_usuario==='vendedor_externo'||u2.tipo_usuario==='propietario')?' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">Asesor Ext.</span>':'';
+      // Dynamic capability badges for external users
+      const isExt = u2.tipo_usuario === 'cliente' || u2.tipo_usuario === 'vendedor_externo' || u2.tipo_usuario === 'propietario';
+      let capBadges = '';
+      if (isExt) {
+        capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">🔍 Comprador</span>';
+        if (u2.puede_publicar) capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">🏠 Vendedor</span>';
+        if (u2.puede_referir) capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2);font-weight:700">🤝 Comisionista</span>';
+      }
       const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
-      // Admin can upgrade cliente/pendiente to vendedor_externo
-      const upgradeBtn = (u2.tipo_usuario==='cliente'||u2.tipo_usuario==='pendiente') ? `<button onclick="aprobarRegistro('${u2.id}','vendedor_externo')" style="padding:5px 8px;border-radius:14px;font-size:9px;font-weight:700;border:1.5px solid #065f46;background:#065f4615;color:#065f46;cursor:pointer;font-family:inherit;margin-left:4px">🏢 Hacer asesor</button>` : '';
-      return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}${externoBadge}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}${upgradeBtn}</div>`;
+      // Admin can toggle puede_publicar for external users
+      const pubBtn = isExt ? `<button onclick="togglePublicar('${u2.id}',${!u2.puede_publicar})" style="padding:5px 8px;border-radius:14px;font-size:9px;font-weight:700;border:1.5px solid ${u2.puede_publicar?'var(--green)':'var(--gold)'};background:${u2.puede_publicar?'var(--greenbg)':'var(--goldbg)'};color:${u2.puede_publicar?'#065f46':'#92400e'};cursor:pointer;font-family:inherit;margin-left:4px">${u2.puede_publicar?'🏠 Pub. ✅':'🏠 Pub. ❌'}</button>` : '';
+      return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}${capBadges}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}${pubBtn}</div>`;
     }).join('');
   } else if (window._usersTab === 'solicitudes') {
     // Solicitudes tab

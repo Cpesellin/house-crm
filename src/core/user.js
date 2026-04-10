@@ -180,6 +180,15 @@ const userStore = {
     return !_user?.tipo_usuario || _user.tipo_usuario === 'interno';
   },
 
+  // ── Capability checks (Fase 9: roles dinámicos) ──────────────
+  puedePublicar() {
+    return !!_user?.puede_publicar;
+  },
+
+  puedeReferir() {
+    return _user?.puede_referir !== false;
+  },
+
   // ── Permission checks ────────────────────────────────────────
 
   /**

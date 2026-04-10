@@ -399,7 +399,12 @@ function sApp() {
     ['mis','reg','alertas','portales','dash','comando','citas','mis-negocios'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
-    document.getElementById('murole').textContent = (tipoU === 'vendedor_externo' || tipoU === 'propietario') ? 'Asesor Externo' : tipoU === 'pendiente' ? 'Pendiente' : 'Cliente';
+    // Dynamic role label based on capabilities
+    const rolParts = [];
+    rolParts.push('Comprador');
+    if (U.puede_publicar) rolParts.push('Vendedor');
+    if (U.puede_referir !== false) rolParts.push('Comisionista');
+    document.getElementById('murole').textContent = tipoU === 'pendiente' ? 'Pendiente' : rolParts.join(' · ');
 
     // Replace sidebar menu with external options
     const menuDiv = document.querySelector('#mpnl > div:nth-child(2)');
