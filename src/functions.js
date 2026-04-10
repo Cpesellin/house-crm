@@ -1409,17 +1409,10 @@ window.showPublicView = async function(id) {
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
     const neg = pv > 0 && pa > 0 ? 'Venta y Arriendo' : pa > 0 ? 'Arriendo' : 'Venta';
 
-    // Visitor gate: sin login, contactos protegidos
+    // Contacto abierto para todos (visitantes incluidos)
     const _isVisitor = !U();
     const _waUrl = 'https://wa.me/' + capTel + '?text=' + encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id));
     const _telUrl = 'tel:+' + capTel;
-    if (_isVisitor) { window._pendingContactInmuebleId = id; }
-    const _gateCall = `window._pendingContactInmuebleId='${id}';window.showAuthPrompt('contacto',{icono:'📞',titulo:'Contactar al asesor',mensaje:'Crea tu cuenta gratis para acceder a los datos de contacto del asesor.',beneficios:['📱 Número directo del asesor','💬 WhatsApp para consultas rápidas','🔔 Solo te enviamos notificaciones si tú lo autorizas','🔒 Tus datos están protegidos'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'});return false;`;
-    const _waHref = _isVisitor ? 'javascript:void(0)' : _waUrl;
-    const _telHref = _isVisitor ? 'javascript:void(0)' : _telUrl;
-    const _waClick = _isVisitor ? `onclick="${_gateCall}"` : '';
-    const _telClick = _isVisitor ? `onclick="${_gateCall}"` : '';
-    const _waTarget = _isVisitor ? '' : 'target="_blank"';
 
     // Push history state so the browser back button restores the portafolio
     // (showPublicView replaces #app innerHTML, so the SPA route is destroyed —
@@ -1444,7 +1437,7 @@ window.showPublicView = async function(id) {
       <img src="/img/logo.png" style="height:30px">
       <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:800;color:#1e293b;letter-spacing:-.3px">House</span>
       <div style="flex:1"></div>
-      <a href="${_waHref}" ${_waTarget} ${_waClick} style="padding:6px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">${_isVisitor ? '🔒 Contactar' : 'Contactar'}</a>
+      <a href="${_waUrl}" target="_blank" style="padding:6px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">Contactar</a>
     </div>`;
 
     h += '<div style="max-width:560px;margin:0 auto;padding:0 0 80px;background:#fff;min-height:100vh">';
@@ -1536,30 +1529,16 @@ window.showPublicView = async function(id) {
 
     h += `</div>`; // close padding div
 
-    // ── FOOTER CON BOTONES STICKY ──
-    if (_isVisitor) {
-      h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-        <div style="max-width:720px;margin:0 auto">
-          <div style="display:flex;gap:8px;margin-bottom:6px">
-            <a href="javascript:void(0)" ${_waClick} style="flex:1;padding:14px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 WhatsApp</a>
-            <a href="javascript:void(0)" ${_telClick} style="flex:1;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">🔒 Llamar</a>
-          </div>
-          <div style="font-size:10px;color:#64748b;text-align:center;font-weight:600">Crea tu cuenta gratis para contactar al asesor · Solo enviamos notificaciones si las autorizas</div>
+    // ── FOOTER CON BOTONES STICKY (abierto para todos) ──
+    h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
+      <div style="max-width:720px;margin:0 auto">
+        <button onclick="window.abrirInteres('${id}')" style="width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;font-family:inherit">💙 Me interesa este inmueble</button>
+        <div style="display:flex;gap:8px">
+          <a href="${_waUrl}" target="_blank" style="flex:1;padding:12px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
+          <a href="${_telUrl}" style="flex:1;padding:12px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
         </div>
-      </div>`;
-    } else {
-      const _curU = U();
-      const _showInteres = _curU && (_curU.tipo_usuario === 'publico' || !_curU.tipo_usuario);
-      h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
-        <div style="max-width:720px;margin:0 auto">
-          ${_showInteres ? `<button onclick="window.abrirInteres('${id}')" style="width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;font-family:inherit">💙 Me interesa este inmueble</button>` : ''}
-          <div style="display:flex;gap:8px">
-            <a href="${_waUrl}" target="_blank" style="flex:1;padding:12px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
-            <a href="${_telUrl}" style="flex:1;padding:12px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
-          </div>
-        </div>
-      </div>`;
-    }
+      </div>
+    </div>`;
 
     // ── BANNERS CTA ──
     const baseUrl = window.location.origin;

@@ -197,8 +197,8 @@ function render(ls) {
       const _isVisitor = !U;
       const _isCli = _tipoU === 'publico';
       if (_isVisitor) {
-        // Visitante: Ver detalle (abre showPublicView con wa/llamar gateados) + Me interesa gateado
-        actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1" onclick="event.stopPropagation();window.trackPropertyView&&window.trackPropertyView('${p.id}');showPublicView('${p.id}')">Ver detalle →</button><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();window._pendingContactInmuebleId='${p.id}';window.showAuthPrompt('contacto',{icono:'🏠',titulo:'Me interesa · Contactar al asesor',mensaje:'Crea tu cuenta gratis para ponerte en contacto con el asesor de este inmueble.',beneficios:['📱 Contacta directo al asesor','💬 WhatsApp y llamada','🔔 Solo te enviamos notificaciones si tú lo autorizas','🔒 Sin spam — tus datos protegidos'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'})">🔒 Me interesa</button></div>`;
+        // Visitante: Ver detalle + Me interesa (abierto, auth prompt al enviar)
+        actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1" onclick="event.stopPropagation();window.trackPropertyView&&window.trackPropertyView('${p.id}');showPublicView('${p.id}')">Ver detalle →</button><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();abrirInteres('${p.id}')">💙 Me interesa</button></div>`;
       } else if (esInmExterno) {
         // Inmueble de asesor externo → botón Contactar (chat interno)
         actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1;background:var(--b600);color:#fff;border:none" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">💬 Contactar</button><a class="vb" style="flex:1;text-align:center;text-decoration:none" href="${prevUrl2}" target="_blank" onclick="event.stopPropagation()">Ver detalle →</a></div>`;
