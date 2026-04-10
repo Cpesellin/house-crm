@@ -1549,7 +1549,7 @@ window.showPublicView = async function(id) {
       </div>`;
     } else {
       const _curU = U();
-      const _showInteres = _curU && (_curU.tipo_usuario === 'cliente' || !_curU.tipo_usuario || _curU.tipo_usuario === 'vendedor_externo' || _curU.tipo_usuario === 'propietario');
+      const _showInteres = _curU && (_curU.tipo_usuario === 'publico' || !_curU.tipo_usuario);
       h += `<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;padding:10px 16px;box-shadow:0 -2px 10px rgba(0,0,0,.06)">
         <div style="max-width:720px;margin:0 auto">
           ${_showInteres ? `<button onclick="window.abrirInteres('${id}')" style="width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;font-family:inherit">💙 Me interesa este inmueble</button>` : ''}
@@ -1988,12 +1988,12 @@ window.showOnboardingEmail = function() {
       <div style="font-size:40px;margin-bottom:8px">🏠</div>
       <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">Bienvenido a House</div>
       <div style="font-size:13px;color:var(--sub);margin-bottom:20px">¿Cómo vas a usar la plataforma?</div>
-      <button class="onb-opt" onclick="completeEmailReg('cliente')">
+      <button class="onb-opt" onclick="completeEmailReg('comprador')">
         <div class="onb-icon">🔍</div>
         <div class="onb-title">Busco un inmueble</div>
         <div class="onb-sub">Quiero arrendar o comprar una propiedad en Pereira</div>
       </button>
-      <button class="onb-opt" onclick="completeEmailReg('vendedor_externo')">
+      <button class="onb-opt" onclick="completeEmailReg('vendedor')">
         <div class="onb-icon">🏢</div>
         <div class="onb-title">Quiero publicar inmuebles</div>
         <div class="onb-sub">Soy propietario o inmobiliaria y quiero llegar a más clientes</div>
@@ -2012,21 +2012,21 @@ window.completeEmailReg = async function(tipo) {
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
 
   try {
-    // Todos los registros externos crean cliente — vendedor_externo ya no se crea
-    const tipoU = 'cliente';
-    const quierePublicar = tipo === 'vendedor_externo';
+    const quierePublicar = tipo === 'vendedor';
+    const perfiles = quierePublicar ? ['comprador','vendedor'] : ['comprador'];
 
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email: reg.email, nombre: reg.nombre, foto: reg.foto || null,
-      rol: 'cliente', tipo_usuario: tipoU, activo: true,
+      rol: 'asesor', tipo_usuario: 'publico', activo: true,
       usuario: reg.usuario, password_hash: reg.pwd_hash,
       telefono_contacto: reg.tel || null,
-      puede_publicar: false, puede_referir: true
+      puede_publicar: quierePublicar, puede_referir: true,
+      perfiles_publicos: perfiles
     }).select().single();
     if (error) throw error;
 
-    const notiTitulo = quierePublicar ? '👤 Nuevo cliente registrado (interesado en publicar)' : '👤 Nuevo cliente registrado';
-    await window.noti('registro_externo', 'info', notiTitulo, reg.nombre + ' (' + reg.email + ') se registró como cliente' + (quierePublicar ? ' — manifestó interés en publicar inmuebles' : ''), null, 'admin', null);
+    const notiTitulo = quierePublicar ? '👤 Nuevo usuario (quiere publicar)' : '👤 Nuevo usuario registrado';
+    await window.noti('registro_externo', 'info', notiTitulo, reg.nombre + ' (' + reg.email + ') se registró' + (quierePublicar ? ' — quiere publicar inmuebles' : ''), null, 'admin', null);
 
     // Log in
     const userData = {
@@ -2034,7 +2034,8 @@ window.completeEmailReg = async function(tipo) {
       rol: newUser.rol, foto: newUser.foto || '', usuario: newUser.usuario || '',
       telefono_contacto: newUser.telefono_contacto || '', es_gestor_arriendos: false,
       tipo_usuario: newUser.tipo_usuario, token: 'cred:' + newUser.usuario + ':' + reg.pwd_hash,
-      puede_publicar: newUser.puede_publicar || false, puede_referir: newUser.puede_referir !== false
+      puede_publicar: newUser.puede_publicar || false, puede_referir: newUser.puede_referir !== false,
+      perfiles_publicos: newUser.perfiles_publicos || []
     };
     window.userStore.set(userData);
     window._pendingReg = null;
@@ -2065,12 +2066,12 @@ window.showOnboarding = function(googlePayload) {
       <div style="font-size:40px;margin-bottom:8px">🏠</div>
       <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">Bienvenido a House</div>
       <div style="font-size:13px;color:var(--sub);margin-bottom:20px">¿Cómo vas a usar la plataforma?</div>
-      <button class="onb-opt" onclick="selectProfile('cliente','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
+      <button class="onb-opt" onclick="selectProfile('comprador','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
         <div class="onb-icon">🔍</div>
         <div class="onb-title">Busco un inmueble</div>
         <div class="onb-sub">Quiero arrendar o comprar una propiedad en Pereira</div>
       </button>
-      <button class="onb-opt" onclick="selectProfile('vendedor_externo','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
+      <button class="onb-opt" onclick="selectProfile('vendedor','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
         <div class="onb-icon">🏢</div>
         <div class="onb-title">Quiero publicar inmuebles</div>
         <div class="onb-sub">Soy propietario o inmobiliaria y quiero llegar a más clientes</div>
@@ -2085,18 +2086,16 @@ window.showOnboarding = function(googlePayload) {
 window.selectProfile = async function(tipo, email, nombre, foto) {
   const modal = document.getElementById('onbModal');
   if (modal) modal.innerHTML = '<div class="onb-box" style="padding:40px"><div style="font-size:32px;margin-bottom:10px">⏳</div><div style="font-size:13px;color:var(--sub)">Creando tu cuenta...</div></div>';
-  // Todos los registros externos crean cliente — vendedor_externo ya no se crea
-  const tipoU = 'cliente';
-  const quierePublicar = tipo === 'vendedor_externo';
+  const quierePublicar = tipo === 'vendedor';
+  const perfiles = quierePublicar ? ['comprador','vendedor'] : ['comprador'];
   try {
     // Check if user already exists (could be inactive)
     const { data: existingUser } = await SB().from('usuarios').select('*').eq('email', email).single();
     if (existingUser) {
-      // Reactivate existing user (preserve existing tipo_usuario if it was internal/propietario)
-      const keepTipo = (existingUser.tipo_usuario === 'interno' || existingUser.tipo_usuario === 'propietario') ? existingUser.tipo_usuario : tipoU;
+      // Reactivate existing user (preserve interno tipo)
+      const keepTipo = existingUser.tipo_usuario === 'interno' ? 'interno' : 'publico';
       await SB().from('usuarios').update({ activo: true, tipo_usuario: keepTipo, foto: foto || existingUser.foto }).eq('id', existingUser.id);
-      existingUser.activo = true; existingUser.tipo_usuario = keepTipo;
-      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: existingUser.es_gestor_arriendos || false, tipo_usuario: keepTipo, token: 'google:' + email, puede_publicar: existingUser.puede_publicar || false, puede_referir: existingUser.puede_referir !== false };
+      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'asesor', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: existingUser.es_gestor_arriendos || false, tipo_usuario: keepTipo, token: 'google:' + email, puede_publicar: existingUser.puede_publicar || false, puede_referir: existingUser.puede_referir !== false, perfiles_publicos: existingUser.perfiles_publicos || [] };
       window.userStore.set(userData);
       if (modal) modal.remove();
       if (typeof window.sApp === 'function') window.sApp();
@@ -2107,14 +2106,15 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     }
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
-      rol: 'cliente', tipo_usuario: tipoU, activo: true,
+      rol: 'asesor', tipo_usuario: 'publico', activo: true,
       usuario: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,''),
-      puede_publicar: false, puede_referir: true
+      puede_publicar: quierePublicar, puede_referir: true,
+      perfiles_publicos: perfiles
     }).select().single();
     if (error) throw error;
 
-    const notiTitulo = quierePublicar ? '👤 Nuevo cliente registrado (interesado en publicar)' : '👤 Nuevo cliente registrado';
-    await window.noti('registro_externo', 'info', notiTitulo, nombre + ' (' + email + ') se registró como cliente' + (quierePublicar ? ' — manifestó interés en publicar inmuebles' : ''), null, 'admin', null);
+    const notiTitulo = quierePublicar ? '👤 Nuevo usuario (quiere publicar)' : '👤 Nuevo usuario registrado';
+    await window.noti('registro_externo', 'info', notiTitulo, nombre + ' (' + email + ') se registró' + (quierePublicar ? ' — quiere publicar inmuebles' : ''), null, 'admin', null);
 
     // Log in the new user
     const userData = {
@@ -2122,7 +2122,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       rol: newUser.rol, foto: newUser.foto || '', usuario: newUser.usuario || '',
       telefono_contacto: '', es_gestor_arriendos: false,
       tipo_usuario: newUser.tipo_usuario, token: 'google:' + email,
-      puede_publicar: newUser.puede_publicar || false, puede_referir: newUser.puede_referir !== false
+      puede_publicar: newUser.puede_publicar || false, puede_referir: newUser.puede_referir !== false,
+      perfiles_publicos: newUser.perfiles_publicos || []
     };
     window.userStore.set(userData);
     if (modal) modal.remove();
@@ -2198,7 +2199,7 @@ window.requestUpgrade = async function() {
   const desc = prompt('Cuéntanos sobre ti (ej: "Soy propietario con 2 aptos en Pinares" o "Soy inmobiliaria XYZ")');
   if (!desc) return;
   try {
-    await SB().from('registro_solicitudes').insert({ usuario_id: u.id, tipo_solicitado: 'vendedor_externo', estado: 'pendiente', descripcion: desc });
+    await SB().from('registro_solicitudes').insert({ usuario_id: u.id, tipo_solicitado: 'vendedor', estado: 'pendiente', descripcion: desc });
     await window.noti('registro_externo', 'info', '🏠 Solicitud upgrade a asesor externo', u.nombre + ' (' + u.email + ') quiere publicar: "' + desc + '"', null, 'admin', null);
     window.toast('📨 Solicitud enviada. Te notificaremos cuando sea aprobada.');
   } catch(e) { console.error('[requestUpgrade]', e); window.toast('Error: ' + e.message, 'terr'); }
@@ -2314,10 +2315,11 @@ window.ownerPublish = async function() {
 // --- Admin Approval ---
 window.aprobarRegistro = async function(userId, tipo) {
   try {
-    // Set puede_publicar + upgrade tipo if still 'cliente'
+    // Set puede_publicar + add vendedor profile
     const upd = { puede_publicar: true };
-    const { data: usr } = await SB().from('usuarios').select('nombre,email,tipo_usuario').eq('id', userId).single();
-    if (usr?.tipo_usuario === 'cliente' || usr?.tipo_usuario === 'pendiente') upd.tipo_usuario = 'vendedor_externo';
+    const { data: usr } = await SB().from('usuarios').select('nombre,email,tipo_usuario,perfiles_publicos').eq('id', userId).single();
+    const perfiles = usr?.perfiles_publicos || [];
+    if (!perfiles.includes('vendedor')) { perfiles.push('vendedor'); upd.perfiles_publicos = perfiles; }
     await SB().from('usuarios').update(upd).eq('id', userId);
     await SB().from('registro_solicitudes').update({ estado: 'aprobado' }).eq('usuario_id', userId).eq('estado', 'pendiente');
     await window.noti('registro_aprobado', 'verde', '✅ Tu solicitud fue aprobada', 'Ya puedes publicar tus inmuebles en House.', usr?.email, null, null);
@@ -2987,7 +2989,7 @@ window.abrirChat = async function(receptorId, inmuebleId) {
 
 function _renderChatModal(receptor,inmueble,msgs,convId) {
   const u=U();const rNom=receptor?.nombre||'?';const rFoto=receptor?.foto;const rIni=rNom[0].toUpperCase();
-  const rTipo=(receptor?.tipo_usuario==='vendedor_externo'||receptor?.tipo_usuario==='propietario')?'Asesor externo':'Cliente';
+  const rTipo=receptor?.tipo_usuario==='publico'?'Usuario':'Equipo';
   // Inmueble header
   let inmH='';
   if(inmueble){const ft=inmueble.fotos?.length?[...inmueble.fotos].sort((a,b)=>a.orden-b.orden)[0].url_thumb:'';
@@ -3014,7 +3016,7 @@ window.enviarMsg = async function(convId,receptorId,inmuebleId) {
     const p=inmuebleId?findInm(inmuebleId):null;const asunto=p?p.tipo+' en '+p.ciudad:'mensaje directo';
     const textoCorto=texto.length>60?texto.substring(0,60)+'...':texto;
     // If sender is a cliente, attach contact info so the captador (and admin/oficina) can reach out
-    const esCli=u.tipo_usuario==='cliente';
+    const esCli=u.tipo_usuario==='publico';
     let titulo='💬 '+u.nombre+' te escribió';
     let mensajeNoti=u.nombre+': "'+textoCorto+'" — Re: '+asunto;
     if(esCli){
@@ -4006,8 +4008,9 @@ window._registerFromModal = async function(contexto) {
     const hash = await window.hashPwd(pass);
     const { data: newUser, error } = await SB().from('usuarios').insert({
       nombre, email, usuario: email, password_hash: hash,
-      rol: 'asesor', tipo_usuario: 'cliente', activo: true,
+      rol: 'asesor', tipo_usuario: 'publico', activo: true,
       notificaciones_email: optInEmail,
+      perfiles_publicos: ['comprador'], puede_publicar: false, puede_referir: true,
     }).select().single();
     if (error) return showErr(error.message || 'Error al crear cuenta');
     document.getElementById('register-modal')?.remove();
@@ -4300,6 +4303,20 @@ window.marcarPagoCierre = async function(cierreId, fase) {
   }
   window.toast('💵 Pago registrado');
   if (typeof window.rMisNegocios === 'function') window.rMisNegocios();
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 31. PERFILES PÚBLICOS DINÁMICOS
+// ══════════════════════════════════════════════════════════════════
+
+window.activarPerfilPublico = async function(perfil) {
+  const u = U();
+  if (!u || u.tipo_usuario !== 'publico') return;
+  const perfiles = u.perfiles_publicos || [];
+  if (perfiles.includes(perfil)) return;
+  perfiles.push(perfil);
+  await SB().from('usuarios').update({ perfiles_publicos: perfiles }).eq('id', u.id);
+  window.userStore.update({ perfiles_publicos: perfiles });
 };
 
 console.log('[functions] ✅ All window functions registered');

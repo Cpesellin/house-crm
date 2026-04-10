@@ -113,7 +113,7 @@ function render(ls) {
   const SOL = window.SOL || [];
   const _tipoU = U?.tipo_usuario || (U ? 'interno' : 'visitante');
   // Visitantes (sin login) se tratan como externos: sin direccion real, sin asesor, sin portales.
-  const _isExt = !U || _tipoU === 'cliente' || _tipoU === 'vendedor_externo' || _tipoU === 'propietario';
+  const _isExt = !U || _tipoU === 'publico';
 
   // Filter out final states (Arrendado, Vendido, Retirado) from inventory view
   const FINAL = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
@@ -195,7 +195,7 @@ function render(ls) {
     let actBtn;
     if (_isExt) {
       const _isVisitor = !U;
-      const _isCli = _tipoU === 'cliente';
+      const _isCli = _tipoU === 'publico';
       if (_isVisitor) {
         // Visitante: Ver detalle (abre showPublicView con wa/llamar gateados) + Me interesa gateado
         actBtn = `<div style="display:flex;gap:4px"><button class="vb" style="flex:1" onclick="event.stopPropagation();window.trackPropertyView&&window.trackPropertyView('${p.id}');showPublicView('${p.id}')">Ver detalle →</button><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();window._pendingContactInmuebleId='${p.id}';window.showAuthPrompt('contacto',{icono:'🏠',titulo:'Me interesa · Contactar al asesor',mensaje:'Crea tu cuenta gratis para ponerte en contacto con el asesor de este inmueble.',beneficios:['📱 Contacta directo al asesor','💬 WhatsApp y llamada','🔔 Solo te enviamos notificaciones si tú lo autorizas','🔒 Sin spam — tus datos protegidos'],cta:'Crear cuenta gratis',ctaSecundario:'Ahora no'})">🔒 Me interesa</button></div>`;
@@ -289,21 +289,9 @@ export async function load() {
     return;
   }
 
-  // Auto-upgrade pendiente to vendedor_externo (no approval needed)
-  const tipoU = U.tipo_usuario || 'interno';
-  if (tipoU === 'pendiente') {
-    try {
-      await getSupabaseClient().from('usuarios').update({ tipo_usuario: 'vendedor_externo' }).eq('id', U.id);
-      window.userStore.update({ tipo_usuario: 'vendedor_externo' });
-      // Force full reload to rebuild menu and route correctly
-      location.reload();
-      return;
-    } catch(e) { console.error('[load] auto-upgrade failed:', e); }
-  }
-
-  // External users: load public data into window.D so CRM UI works
+  // Public users: load public data into window.D so CRM UI works
   const tipoU2 = U.tipo_usuario || 'interno';
-  if (tipoU2 === 'cliente' || tipoU2 === 'vendedor_externo' || tipoU2 === 'propietario' || tipoU2 === 'pendiente') {
+  if (tipoU2 === 'publico') {
     const pubData = await loadPublic();
     // Feed public data into the same window.D used by CRM render/filters
     window.D = pubData || [];

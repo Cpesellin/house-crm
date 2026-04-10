@@ -346,7 +346,7 @@ function sApp() {
   if (!U) return;
 
   const tipoU = U.tipo_usuario || 'interno';
-  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'propietario' || tipoU === 'pendiente';
+  const isExterno = tipoU === 'publico';
 
   document.getElementById('lov').style.display = 'none';
   document.getElementById('mhdr').style.display = 'block';
@@ -377,11 +377,11 @@ function sApp() {
     // Replace "Mostrar mis inmuebles" with "Mis favoritos"
     const myTgl = document.getElementById('myToggle');
     if (myTgl) {
-      if (tipoU === 'cliente') {
+      if (tipoU === 'publico') {
         myTgl.textContent = '♥ Mis favoritos';
         myTgl.setAttribute('onclick', 'toggleFavFilter()');
       } else {
-        // vendedor_externo: keep original toggle but also add favoritos
+        // publico: keep original toggle but also add favoritos
         myTgl.textContent = '♥ Mis favoritos';
         myTgl.setAttribute('onclick', 'toggleFavFilter()');
       }
@@ -400,34 +400,25 @@ function sApp() {
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
     // Dynamic role label based on capabilities
-    const rolParts = [];
-    rolParts.push('Comprador');
+    const rolParts = ['Comprador'];
     if (U.puede_publicar) rolParts.push('Vendedor');
     if (U.puede_referir !== false) rolParts.push('Comisionista');
-    document.getElementById('murole').textContent = tipoU === 'pendiente' ? 'Pendiente' : rolParts.join(' · ');
+    document.getElementById('murole').textContent = rolParts.join(' · ');
 
-    // Replace sidebar menu with external options
+    // Replace sidebar menu with public user options
     const menuDiv = document.querySelector('#mpnl > div:nth-child(2)');
     if (menuDiv) {
       let menuH = '';
-      if (tipoU === 'pendiente') {
-        menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
-        menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
-        menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
-        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
-      } else {
-        // CLIENTE + VENDEDOR EXTERNO: same menu (clients can now publish too)
-        menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
-        menuH += '<button class="mi" data-s="mis-inm" onclick="go(\'mis-inm\')"><span class="mic">\u{1F3E0}</span>Mis inmuebles<span class="mib" id="misinmBadge" style="display:none">0</span></button>';
-        menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar inmueble</button>';
-        menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
-        menuH += '<button class="mi" data-s="mis-intereses" onclick="go(\'mis-intereses\')"><span class="mic">\u{1F499}</span>Mis intereses<span class="mib" id="misinteresesBadge" style="display:none">0</span></button>';
-        menuH += '<button class="mi" data-s="mis-citas" onclick="go(\'mis-citas\')"><span class="mic">\u{1F4C5}</span>Mis citas<span class="mib" id="miscitasBadge" style="display:none">0</span></button>';
-        menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
-        menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
-        menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
-        menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
-      }
+      menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F50D}</span>Explorar</button>';
+      menuH += '<button class="mi" data-s="mis-inm" onclick="go(\'mis-inm\')"><span class="mic">\u{1F3E0}</span>Mis inmuebles<span class="mib" id="misinmBadge" style="display:none">0</span></button>';
+      menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u2795</span>Publicar inmueble</button>';
+      menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>';
+      menuH += '<button class="mi" data-s="mis-intereses" onclick="go(\'mis-intereses\')"><span class="mic">\u{1F499}</span>Mis intereses<span class="mib" id="misinteresesBadge" style="display:none">0</span></button>';
+      menuH += '<button class="mi" data-s="mis-citas" onclick="go(\'mis-citas\')"><span class="mic">\u{1F4C5}</span>Mis citas<span class="mib" id="miscitasBadge" style="display:none">0</span></button>';
+      menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
+      menuH += '<button class="mi" data-s="referir" onclick="go(\'referir\')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>';
+      menuH += '<button class="mi" data-s="mis-referidos" onclick="go(\'mis-referidos\')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>';
+      menuH += '<button class="mi" data-s="cuenta" onclick="go(\'cuenta\')"><span class="mic">\u2699\uFE0F</span>Mi cuenta</button>';
       menuDiv.innerHTML = menuH;
     }
   } else {
@@ -488,7 +479,7 @@ export async function initApp(container) {
         // Navigate to correct default route and show the section
         const u2 = window.userStore?.get();
         const t2 = u2?.tipo_usuario || 'interno';
-        const isExt2 = t2 === 'cliente' || t2 === 'vendedor_externo' || t2 === 'propietario';
+        const isExt2 = t2 === 'publico';
         // Use go() to activate the right section immediately
         const currentHash = location.hash.replace(/^#\/?/, '');
         if (typeof window.go === 'function') {

@@ -105,7 +105,7 @@ const TIPO_CONFIG = {
     accion_tipo: 'abrir_inmueble', prioridad: 'alta',
   },
   inmueble_cambios_solicitados: {
-    // Admin pidió cambios a un inmueble externo → notifica al propietario
+    // Admin pidió cambios a un inmueble externo → notifica al usuario público
     categoria: 'inmueble', icono: '📝', color: '#f59e0b',
     accion_tipo: 'abrir_seccion', accion_seccion: 'mis-inm',
     prioridad: 'alta',

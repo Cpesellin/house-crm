@@ -69,7 +69,7 @@ const userStore = {
    * @param {string} [data.usuario]   - Username para login con credenciales
    * @param {string} [data.telefono_contacto] - WhatsApp
    * @param {boolean} [data.es_gestor_arriendos] - Flag de gestor
-   * @param {string} [data.tipo_usuario] - 'interno' | 'cliente' | 'vendedor_externo' | 'pendiente'
+   * @param {string} [data.tipo_usuario] - 'interno' | 'publico'
    * @param {string} [data.token]     - Token interno (no JWT real)
    */
   set(data) {
@@ -91,6 +91,7 @@ const userStore = {
       token: data.token || '',
       puede_publicar: data.puede_publicar || false,
       puede_referir: data.puede_referir !== false,
+      perfiles_publicos: data.perfiles_publicos || [],
     };
 
     _persist();
@@ -162,33 +163,24 @@ const userStore = {
   },
 
   isExterno() {
-    const t = _user?.tipo_usuario;
-    return t === 'cliente' || t === 'vendedor_externo' || t === 'propietario' || t === 'pendiente';
-  },
-
-  isCliente() {
-    return _user?.tipo_usuario === 'cliente';
-  },
-
-  isPropietario() {
-    return _user?.tipo_usuario === 'vendedor_externo' || _user?.tipo_usuario === 'propietario';
-  },
-
-  isPendiente() {
-    return _user?.tipo_usuario === 'pendiente';
+    return _user?.tipo_usuario === 'publico';
   },
 
   isInterno() {
     return !_user?.tipo_usuario || _user.tipo_usuario === 'interno';
   },
 
-  // ── Capability checks (Fase 9: roles dinámicos) ──────────────
+  // ── Capability checks (roles dinámicos) ──────────────
   puedePublicar() {
     return !!_user?.puede_publicar;
   },
 
   puedeReferir() {
     return _user?.puede_referir !== false;
+  },
+
+  tienePerfilPublico(perfil) {
+    return !!(_user?.perfiles_publicos || []).includes(perfil);
   },
 
   // ── Permission checks ────────────────────────────────────────
@@ -260,6 +252,15 @@ if (typeof window !== 'undefined') {
   });
 
   window.userStore = userStore;
+
+  // Global role helpers
+  window.esInterno = () => userStore.isInterno();
+  window.esPublico = () => userStore.isExterno();
+  window.esAdmin = () => userStore.isAdmin();
+  window.esOficina = () => userStore.isOficina();
+  window.esAdminOOficina = () => userStore.isAdminOrOficina();
+  window.esGestorArriendos = () => userStore.isGestorArriendos();
+  window.tienePerfilPublico = (p) => userStore.tienePerfilPublico(p);
 }
 
 export { userStore };

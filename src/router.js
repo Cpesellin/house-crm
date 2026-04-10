@@ -8,10 +8,8 @@
 // ---------------------------------------------------------------------------
 // Internal CRM routes
 const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','comando','agenda','citas','mis-negocios','users','perfil','papelera'];
-// External user routes
-const ROUTES_CLIENTE = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta'];
-const ROUTES_PROPIETARIO = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta','mis-pub','publicar'];
-const ROUTES_PENDIENTE = ['espera'];
+// Public user routes (tipo_usuario === 'publico')
+const ROUTES_PUBLICO = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta','mis-pub','publicar'];
 
 const ROUTES = {
   'inv':      { section: 'sec-inv',      label: 'Inventario',     icon: '\u{1F3E0}', auth: true, internal: true },
@@ -28,17 +26,17 @@ const ROUTES = {
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true },
-  'mis-intereses': { section: 'sec-mis-intereses', label: 'Mis Intereses', icon: '\u{1F499}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
-  'mis-citas':     { section: 'sec-mis-citas',     label: 'Mis Citas',     icon: '\u{1F4C5}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
+  'mis-intereses': { section: 'sec-mis-intereses', label: 'Mis Intereses', icon: '\u{1F499}', auth: true, tipos: ['publico'] },
+  'mis-citas':     { section: 'sec-mis-citas',     label: 'Mis Citas',     icon: '\u{1F4C5}', auth: true, tipos: ['publico'] },
   'citas':         { section: 'sec-citas',         label: 'Citas',          icon: '\u{1F4C5}', auth: true, internal: true },
   'comando':       { section: 'sec-comando',        label: 'Centro Comando', icon: '\u{1F3AF}', auth: true, internal: true, roles: ['admin'] },
   'mis-negocios':  { section: 'sec-mis-negocios',  label: 'Mis Negocios',   icon: '\u{1F3C6}', auth: true, internal: true },
-  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['cliente','vendedor_externo','propietario','pendiente'] },
-  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
-  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
-  'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
-  'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['cliente','vendedor_externo','propietario'] },
-  'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['pendiente'] },
+  'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['publico'] },
+  'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['publico'] },
+  'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['publico'] },
+  'mensajes':   { section: 'sec-mensajes',   label: 'Mensajes',        icon: '\u{1F4AC}', auth: true, tipos: ['publico'] },
+  'mis-inm':    { section: 'sec-mis-inm',    label: 'Mis Inmuebles',   icon: '\u{1F3E0}', auth: true, tipos: ['publico'] },
+  'espera':     { section: 'sec-espera',     label: 'En Espera',       icon: '\u23F3',    auth: true, tipos: ['publico'] },
   'propietarios': { section: 'sec-propietarios', label: 'Propietarios', icon: '\u{1F3E0}', auth: false },
   'referidos-landing': { section: 'sec-referidos-landing', label: 'Programa Referidos', icon: '\u{1F4B0}', auth: false },
   'metodo-pago':  { section: 'sec-metodo-pago', label: 'M\u00E9todo de pago', icon: '\u{1F4B3}', auth: true },
@@ -97,8 +95,7 @@ function getCurrentRoute() {
   // Default based on user type
   const user = window.userStore?.get();
   const tipo = user?.tipo_usuario || 'interno';
-  if (tipo === 'pendiente') return 'espera';
-  if (tipo === 'cliente' || tipo === 'vendedor_externo' || tipo === 'propietario') return 'portafolio';
+  if (tipo === 'publico') return 'portafolio';
   return 'inv';
 }
 
@@ -124,8 +121,8 @@ function navigateTo(route) {
   let routeCfg = ROUTES[route];
   const user = window.userStore?.get();
   const tipoU = user?.tipo_usuario || 'interno';
-  const isExterno = tipoU === 'cliente' || tipoU === 'vendedor_externo' || tipoU === 'propietario' || tipoU === 'pendiente';
-  const defaultRoute = isExterno ? (tipoU === 'pendiente' ? 'espera' : 'portafolio') : 'inv';
+  const isExterno = tipoU === 'publico';
+  const defaultRoute = isExterno ? 'portafolio' : 'inv';
 
   // --- Auth guard ---
   if (routeCfg.auth && !user) {

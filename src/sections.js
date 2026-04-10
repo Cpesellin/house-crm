@@ -1408,7 +1408,7 @@ window.rCuenta = function() {
   h += `</div>`;
 
   // Publish CTA for external users
-  if (u.tipo_usuario === 'cliente' || u.tipo_usuario === 'vendedor_externo' || u.tipo_usuario === 'propietario') {
+  if (u.tipo_usuario === 'publico') {
     h += `<div style="margin:0 16px 16px;padding:14px;border-radius:12px;background:var(--b50);border:1.5px solid var(--b200);display:flex;align-items:center;gap:12px;cursor:pointer" onclick="go('publicar')"><div style="font-size:24px">🏠</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--b700)">Publicar inmueble</div><div style="font-size:11px;color:var(--sub)">Publica hasta 3 inmuebles gratis</div></div><span style="color:var(--sub)">→</span></div>`;
   }
 
@@ -1633,10 +1633,10 @@ window.rUsers = async function() {
       const act=u2.activo, rol=u2.rol||'asesor';
       const isGestor = u2.es_gestor_arriendos === true;
       const displayRol = isGestor ? 'Gestor Arriendos' : rol;
-      const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='cliente'?'background:var(--b50);color:var(--b500)':(u2.tipo_usuario==='vendedor_externo'||u2.tipo_usuario==='propietario')?'background:#065f4615;color:#065f46':'background:var(--b50);color:var(--b700)';
+      const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='publico'?'background:var(--b50);color:var(--b500)':'background:var(--b50);color:var(--b700)';
       const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
       // Dynamic capability badges for external users
-      const isExt = u2.tipo_usuario === 'cliente' || u2.tipo_usuario === 'vendedor_externo' || u2.tipo_usuario === 'propietario';
+      const isExt = u2.tipo_usuario === 'publico';
       let capBadges = '';
       if (isExt) {
         capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">🔍 Comprador</span>';

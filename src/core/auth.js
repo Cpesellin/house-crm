@@ -186,6 +186,7 @@ async function _handleGoogleCredential(response) {
       token: 'google:' + email,
       puede_publicar: usr.puede_publicar || false,
       puede_referir: usr.puede_referir !== false,
+      perfiles_publicos: usr.perfiles_publicos || [],
     };
 
     // Update profile photo if changed
@@ -256,6 +257,7 @@ export async function loginWithCredentials(username, password) {
       token: 'cred:' + user.usuario + ':' + h,
       puede_publicar: user.puede_publicar || false,
       puede_referir: user.puede_referir !== false,
+      perfiles_publicos: user.perfiles_publicos || [],
     };
 
     userStore.set(userData);
