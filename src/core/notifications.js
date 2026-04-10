@@ -104,6 +104,13 @@ const TIPO_CONFIG = {
     categoria: 'inmueble', icono: '❌', color: '#ef4444',
     accion_tipo: 'abrir_inmueble', prioridad: 'alta',
   },
+  inmueble_cambios_solicitados: {
+    // Admin pidió cambios a un inmueble externo → notifica al propietario
+    categoria: 'inmueble', icono: '📝', color: '#f59e0b',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'mis-inm',
+    prioridad: 'alta',
+    escalable: true, horas_para_escalar: 48,
+  },
   eliminar_inmueble: {
     categoria: 'inmueble', icono: '🗑️', color: '#ef4444',
     accion_tipo: 'abrir_inmueble', prioridad: 'normal',
@@ -266,6 +273,14 @@ const TIPO_CONFIG = {
   registro_rechazado: {
     categoria: 'sistema', icono: '❌', color: '#ef4444',
     accion_tipo: 'abrir_seccion', prioridad: 'normal',
+  },
+
+  // ── SISTEMA ──
+  sistema_escalamiento: {
+    // Notificación escalada automáticamente al admin por falta de respuesta
+    categoria: 'sistema', icono: '⚠️', color: '#ef4444',
+    accion_tipo: 'abrir_seccion', accion_seccion: 'comando',
+    prioridad: 'critica',
   },
 };
 
