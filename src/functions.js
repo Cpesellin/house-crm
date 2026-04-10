@@ -2020,7 +2020,8 @@ window.completeEmailReg = async function(tipo) {
       email: reg.email, nombre: reg.nombre, foto: reg.foto || null,
       rol: 'cliente', tipo_usuario: tipoU, activo: true,
       usuario: reg.usuario, password_hash: reg.pwd_hash,
-      telefono_contacto: reg.tel || null
+      telefono_contacto: reg.tel || null,
+      puede_publicar: false, puede_referir: true
     }).select().single();
     if (error) throw error;
 
@@ -2032,7 +2033,8 @@ window.completeEmailReg = async function(tipo) {
       id: newUser.id, email: newUser.email, nombre: newUser.nombre,
       rol: newUser.rol, foto: newUser.foto || '', usuario: newUser.usuario || '',
       telefono_contacto: newUser.telefono_contacto || '', es_gestor_arriendos: false,
-      tipo_usuario: newUser.tipo_usuario, token: 'cred:' + newUser.usuario + ':' + reg.pwd_hash
+      tipo_usuario: newUser.tipo_usuario, token: 'cred:' + newUser.usuario + ':' + reg.pwd_hash,
+      puede_publicar: newUser.puede_publicar || false, puede_referir: newUser.puede_referir !== false
     };
     window.userStore.set(userData);
     window._pendingReg = null;
@@ -2094,7 +2096,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       const keepTipo = (existingUser.tipo_usuario === 'interno' || existingUser.tipo_usuario === 'propietario') ? existingUser.tipo_usuario : tipoU;
       await SB().from('usuarios').update({ activo: true, tipo_usuario: keepTipo, foto: foto || existingUser.foto }).eq('id', existingUser.id);
       existingUser.activo = true; existingUser.tipo_usuario = keepTipo;
-      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: false, tipo_usuario: keepTipo, token: 'google:' + email };
+      const userData = { id: existingUser.id, email, nombre: existingUser.nombre, rol: existingUser.rol || 'cliente', foto: foto || existingUser.foto || '', usuario: existingUser.usuario || '', telefono_contacto: existingUser.telefono_contacto || '', es_gestor_arriendos: existingUser.es_gestor_arriendos || false, tipo_usuario: keepTipo, token: 'google:' + email, puede_publicar: existingUser.puede_publicar || false, puede_referir: existingUser.puede_referir !== false };
       window.userStore.set(userData);
       if (modal) modal.remove();
       if (typeof window.sApp === 'function') window.sApp();
@@ -2106,7 +2108,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
     const { data: newUser, error } = await SB().from('usuarios').insert({
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
       rol: 'cliente', tipo_usuario: tipoU, activo: true,
-      usuario: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'')
+      usuario: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,''),
+      puede_publicar: false, puede_referir: true
     }).select().single();
     if (error) throw error;
 
@@ -2118,7 +2121,8 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       id: newUser.id, email: newUser.email, nombre: newUser.nombre,
       rol: newUser.rol, foto: newUser.foto || '', usuario: newUser.usuario || '',
       telefono_contacto: '', es_gestor_arriendos: false,
-      tipo_usuario: newUser.tipo_usuario, token: 'google:' + email
+      tipo_usuario: newUser.tipo_usuario, token: 'google:' + email,
+      puede_publicar: newUser.puede_publicar || false, puede_referir: newUser.puede_referir !== false
     };
     window.userStore.set(userData);
     if (modal) modal.remove();

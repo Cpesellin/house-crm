@@ -184,6 +184,8 @@ async function _handleGoogleCredential(response) {
       es_gestor_arriendos: usr.es_gestor_arriendos || false,
       tipo_usuario: usr.tipo_usuario || 'interno',
       token: 'google:' + email,
+      puede_publicar: usr.puede_publicar || false,
+      puede_referir: usr.puede_referir !== false,
     };
 
     // Update profile photo if changed
@@ -252,6 +254,8 @@ export async function loginWithCredentials(username, password) {
       es_gestor_arriendos: user.es_gestor_arriendos || false,
       tipo_usuario: user.tipo_usuario || 'interno',
       token: 'cred:' + user.usuario + ':' + h,
+      puede_publicar: user.puede_publicar || false,
+      puede_referir: user.puede_referir !== false,
     };
 
     userStore.set(userData);

@@ -89,6 +89,8 @@ const userStore = {
       es_gestor_arriendos: data.es_gestor_arriendos || false,
       tipo_usuario: data.tipo_usuario || 'interno',
       token: data.token || '',
+      puede_publicar: data.puede_publicar || false,
+      puede_referir: data.puede_referir !== false,
     };
 
     _persist();
