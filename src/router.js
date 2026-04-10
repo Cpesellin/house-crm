@@ -9,7 +9,7 @@
 // Internal CRM routes
 const ROUTES_INTERNAL = ['inv','mis','reg','alertas','portales','dash','comando','agenda','citas','mis-negocios','users','perfil','papelera'];
 // Public user routes (tipo_usuario === 'publico')
-const ROUTES_PUBLICO = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta','mis-pub','publicar'];
+const ROUTES_PUBLICO = ['portafolio','favoritos','mis-intereses','mis-citas','cuenta','mis-pub','publicar','mis-negocios','mis-inm','mensajes','referir','mis-referidos'];
 
 const ROUTES = {
   'inv':      { section: 'sec-inv',      label: 'Inventario',     icon: '\u{1F3E0}', auth: true, internal: true },
@@ -30,7 +30,7 @@ const ROUTES = {
   'mis-citas':     { section: 'sec-mis-citas',     label: 'Mis Citas',     icon: '\u{1F4C5}', auth: true, tipos: ['publico'] },
   'citas':         { section: 'sec-citas',         label: 'Citas',          icon: '\u{1F4C5}', auth: true, internal: true },
   'comando':       { section: 'sec-comando',        label: 'Centro Comando', icon: '\u{1F3AF}', auth: true, internal: true, roles: ['admin'] },
-  'mis-negocios':  { section: 'sec-mis-negocios',  label: 'Mis Negocios',   icon: '\u{1F3C6}', auth: true, internal: true },
+  'mis-negocios':  { section: 'sec-mis-negocios',  label: 'Mis Negocios',   icon: '\u{1F3C6}', auth: true },
   'cuenta':     { section: 'sec-cuenta',     label: 'Mi Cuenta',       icon: '\u2699\uFE0F', auth: true, tipos: ['publico'] },
   'mis-pub':    { section: 'sec-mis-pub',    label: 'Mis Publicaciones', icon: '\u{1F3E0}', auth: true, tipos: ['publico'] },
   'publicar':   { section: 'sec-publicar',   label: 'Publicar',        icon: '\u2795',    auth: true, tipos: ['publico'] },

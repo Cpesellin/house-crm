@@ -794,40 +794,82 @@ window.rPortafolio = function() {
   if (el) el.innerHTML = '';
 };
 
-// --- Favoritos ---
+// --- Favoritos (con tabs: ⭐ Favoritos + ❤️ Me interesa) ---
 window.rFavoritos = async function() {
   const el = document.getElementById('favoritosc'); if (!el) return;
   const u = U(); if (!u) return;
-  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="lds"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div></div>';
+  const tab = window._favTab || 'favoritos';
 
-  try {
-    const { data: favs } = await SB().from('favoritos').select('inmueble_id,inmueble:inmuebles(id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,codigo_house,captador:usuarios!captador_id(nombre,telefono_contacto),fotos(url,url_thumb,orden))').eq('usuario_id', u.id);
-    if (!favs || !favs.length) {
-      el.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">💔</div><h3 style="font-size:16px;font-weight:800">Aún no tienes favoritos</h3><p style="font-size:13px;color:var(--sub);margin-top:6px">Explora inmuebles y guarda los que te gusten</p><a href="#/portafolio" style="display:inline-block;margin-top:14px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">🔍 Explorar</a></div>';
-      return;
-    }
-    let h = '<div style="padding:14px"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:14px">❤️ Mis Favoritos</div></div>';
-    h += '<div class="pub-grid">';
-    favs.forEach(fav => {
-      const p = fav.inmueble; if (!p) return;
-      const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
-      const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
-      const capTel = HOUSE_PHONE;
-      const capNom = p.captador?.nombre || 'House';
-      const cod = p.codigo_house || '';
-      const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
-      h += `<div class="pub-card">`;
-      if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
-      h += `<button class="pub-fav-btn active" onclick="event.stopPropagation();toggleFavorito('${p.id}')">❤️</button>`;
-      h += `<div class="pub-card-body"><div class="pub-card-tipo">${p.tipo||''} · ${p.negociacion||''}</div><div class="pub-card-title">${p.direccion_publica||p.barrio||''}</div><div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
-      if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}/mes</div>`;
-      if (pv > 0) h += `<div class="pub-card-price" style="font-size:14px">${fm(pv)}</div>`;
-      h += `</div><div class="pub-card-actions"><a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado: '+url)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="pub-card-det" href="${url}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a></div></div>`;
-    });
-    h += '</div>';
-    el.innerHTML = h;
-  } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>'; }
+  let h = '<div style="padding:14px 14px 0"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:800;margin-bottom:14px">Favoritos</div>';
+  h += '<div style="display:flex;gap:8px;margin-bottom:16px">';
+  h += '<button onclick="window._favTab=\'favoritos\';rFavoritos()" style="flex:1;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;background:' + (tab === 'favoritos' ? 'linear-gradient(135deg,#122d4f,#1a4f8b)' : '#f0eeeb') + ';color:' + (tab === 'favoritos' ? '#fff' : '#5a5550') + '">⭐ Favoritos</button>';
+  h += '<button onclick="window._favTab=\'intereses\';rFavoritos()" style="flex:1;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;background:' + (tab === 'intereses' ? 'linear-gradient(135deg,#122d4f,#1a4f8b)' : '#f0eeeb') + ';color:' + (tab === 'intereses' ? '#fff' : '#5a5550') + '">❤️ Me interesa</button>';
+  h += '</div></div>';
+
+  if (tab === 'favoritos') {
+    try {
+      const { data: favs } = await SB().from('favoritos').select('inmueble_id,inmueble:inmuebles(id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,codigo_house,captador:usuarios!captador_id(nombre,telefono_contacto),fotos(url,url_thumb,orden))').eq('usuario_id', u.id);
+      if (!favs || !favs.length) {
+        h += '<div style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:10px">💔</div><p style="font-size:13px;color:var(--sub)">Aún no tienes favoritos. Explora y guarda los que te gusten.</p><a href="#/portafolio" style="display:inline-block;margin-top:10px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">🏠 Explorar</a></div>';
+      } else {
+        h += '<div class="pub-grid">';
+        favs.forEach(fav => {
+          const p = fav.inmueble; if (!p) return;
+          const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+          const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+          const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
+          const capTel = HOUSE_PHONE;
+          const capNom = p.captador?.nombre || 'House';
+          const cod = p.codigo_house || '';
+          const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
+          h += `<div class="pub-card">`;
+          if (thumb) h += `<img class="pub-card-img" src="${thumb}" onerror="this.style.display='none'" loading="lazy">`;
+          h += `<button class="pub-fav-btn active" onclick="event.stopPropagation();toggleFavorito('${p.id}')">❤️</button>`;
+          h += `<div class="pub-card-body"><div class="pub-card-tipo">${p.tipo||''} · ${p.negociacion||''}</div><div class="pub-card-title">${p.direccion_publica||p.barrio||''}</div><div class="pub-card-loc">📍 ${p.ciudad||''}</div>`;
+          if (pa > 0) h += `<div class="pub-card-price">${fm(pa)}/mes</div>`;
+          if (pv > 0) h += `<div class="pub-card-price" style="font-size:14px">${fm(pv)}</div>`;
+          h += `</div><div class="pub-card-actions"><a class="pub-card-wa" href="https://wa.me/${capTel}?text=${encodeURIComponent('Hola '+capNom+', estoy interesado: '+url)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><a class="pub-card-det" href="${url}" target="_blank" onclick="event.stopPropagation()">Ver detalle</a></div></div>`;
+        });
+        h += '</div>';
+      }
+    } catch(e) { h += '<div style="text-align:center;padding:30px;color:var(--red)">Error: ' + e.message + '</div>'; }
+  } else {
+    // Tab: Me interesa (contenido de rMisIntereses)
+    try {
+      const { data: ints, error } = await SB().from('intereses_compradores')
+        .select('*,inmueble:inmuebles(id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,codigo_house,fotos(url,url_thumb,orden))')
+        .eq('usuario_id', u.id).order('created_at', { ascending: false });
+      if (error && /intereses_compradores/i.test(error.message || '')) {
+        h += '<div style="text-align:center;padding:30px;color:var(--sub)">⚠️ Tabla de intereses no disponible</div>';
+      } else if (!ints || !ints.length) {
+        h += '<div style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:10px">💙</div><p style="font-size:13px;color:var(--sub);max-width:320px;margin:0 auto">Cuando un inmueble te llame la atención, dale a "💙 Me interesa" y nuestro asesor te contactará.</p><a href="#/portafolio" style="display:inline-block;margin-top:10px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;background:var(--b600);color:#fff;text-decoration:none">🏠 Explorar</a></div>';
+      } else {
+        const _estCfg = { nuevo: { label:'En revisión',bg:'var(--goldbg)',fg:'#92400e',bd:'var(--gold)',icon:'⏳' }, calificado: { label:'En contacto',bg:'var(--greenbg)',fg:'#065f46',bd:'var(--green)',icon:'✅' }, descartado: { label:'No disponible',bg:'var(--cd2)',fg:'var(--sub)',bd:'var(--brd)',icon:'➖' }, convertido_cita: { label:'Cita agendada',bg:'var(--b50)',fg:'var(--b700)',bd:'var(--b500)',icon:'📅' } };
+        h += '<div class="pub-grid">';
+        ints.forEach(it => {
+          const p = it.inmueble;
+          if (!p) { h += '<div class="pub-card" style="opacity:.6"><div class="pub-card-body"><div style="font-size:13px;color:var(--sub)">⚠️ Ya no disponible</div></div></div>'; return; }
+          const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
+          const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+          const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
+          const cod = p.codigo_house || '';
+          const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
+          const est = _estCfg[it.estado] || _estCfg.nuevo;
+          h += '<div class="pub-card">';
+          if (thumb) h += '<img class="pub-card-img" src="' + thumb + '" onerror="this.style.display=\'none\'" loading="lazy">';
+          h += '<div style="position:absolute;top:8px;left:8px;z-index:2;padding:4px 9px;border-radius:6px;background:' + est.bg + ';color:' + est.fg + ';border:1px solid ' + est.bd + ';font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase">' + est.icon + ' ' + est.label + '</div>';
+          h += '<div class="pub-card-body"><div class="pub-card-tipo">' + (p.tipo||'') + '</div><div class="pub-card-title">' + (p.direccion_publica||p.barrio||'') + '</div><div class="pub-card-loc">📍 ' + (p.ciudad||'') + '</div>';
+          if (pa > 0) h += '<div class="pub-card-price">' + fm(pa) + '/mes</div>';
+          else if (pv > 0) h += '<div class="pub-card-price">' + fm(pv) + '</div>';
+          if (it.presupuesto_max || it.mensaje) { h += '<div style="margin-top:6px;padding:6px 8px;background:var(--cd2);border-radius:6px;font-size:11px">'; if (it.presupuesto_max) h += '💰 ' + fm(it.presupuesto_max) + ' '; if (it.mensaje) h += '<span style="color:var(--sub)">"' + (it.mensaje||'').replace(/</g,'&lt;').slice(0,60) + '"</span>'; h += '</div>'; }
+          h += '</div><div class="pub-card-actions"><button class="pub-card-wa" style="background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="abrirInteres(\'' + p.id + '\')">✏️ Editar</button><a class="pub-card-det" href="' + url + '" target="_blank" onclick="event.stopPropagation()">Ver detalle</a></div></div>';
+        });
+        h += '</div>';
+      }
+    } catch(e) { h += '<div style="text-align:center;padding:30px;color:var(--red)">Error: ' + e.message + '</div>'; }
+  }
+
+  el.innerHTML = h;
 };
 
 // --- Mis Intereses (FASE 3) ---
@@ -1875,9 +1917,34 @@ window.renderReferralForm = function() {
   h += window.renderReferralStrategies();
   h += '<div style="border-top:2px solid var(--brd);margin:8px 0 20px;position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--cd);padding:0 12px;font-size:12px;font-weight:700;color:var(--b600)">📝 Registrar referido</div></div>';
   h += '<div id="sec-referir-wizard"></div>';
+  // Mis referidos inline (below the form)
+  h += '<div style="border-top:2px solid var(--brd);margin:28px 0 20px;position:relative"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--cd);padding:0 12px;font-size:12px;font-weight:700;color:var(--b600)">📋 Mis referidos</div></div>';
+  h += '<div id="sec-referir-misrefs"></div>';
   el.innerHTML = h;
   _renderRefWizard();
+  // Load referidos list below
+  _renderMisReferidosInline();
 };
+
+async function _renderMisReferidosInline() {
+  const el = document.getElementById('sec-referir-misrefs'); if (!el) return;
+  const u = U(); if (!u) return;
+  try {
+    const { data: refs } = await SB().from('referidos').select('*,referidor:usuarios!referidor_id(id,nombre,telefono_contacto,usuario,email,foto)').eq('referidor_id', u.id).order('created_at', { ascending: false }).limit(20);
+    if (!refs || !refs.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--sub);font-size:13px">Aún no has referido a nadie. ¡Envía tu primer referido arriba!</div>'; return; }
+    let h = '';
+    refs.forEach(r => {
+      const estCfg = { registrado: { l:'Registrado',c:'var(--b600)',bg:'var(--b50)' }, verificando: { l:'Verificando',c:'#92400e',bg:'var(--goldbg)' }, aprobado: { l:'Aprobado',c:'#065f46',bg:'var(--greenbg)' }, publicado: { l:'Publicado',c:'var(--b700)',bg:'var(--b50)' }, contrato_firmado: { l:'Contrato firmado',c:'#065f46',bg:'var(--greenbg)' }, arrendado: { l:'Arrendado',c:'var(--green)',bg:'var(--greenbg)' }, rechazado: { l:'No aprobado',c:'var(--red)',bg:'var(--redbg)' } };
+      const est = estCfg[r.estado] || estCfg.registrado;
+      h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (r.propietario_nombre || '?') + '</div>';
+      h += '<div style="font-size:11px;color:var(--sub)">' + (r.tipo || 'Inmueble') + ' · ' + (r.barrio || r.ciudad || '') + '</div></div>';
+      h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:' + est.bg + ';color:' + est.c + '">' + est.l + '</span>';
+      h += '</div>';
+    });
+    el.innerHTML = h;
+  } catch(e) { el.innerHTML = '<div style="color:var(--red);font-size:12px">Error: ' + e.message + '</div>'; }
+}
 
 // The actual wizard form
 function _renderRefWizard() {
