@@ -1437,12 +1437,25 @@ window.rCuenta = function() {
   if (u.foto) h += `<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
   else h += `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0]}</div>`;
   h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div>`;
-  // Dynamic role badges
-  h += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:8px">`;
-  h += `<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:var(--b50);color:var(--b600);border:1px solid var(--b200)">🔍 Comprador</span>`;
-  if (u.puede_publicar) h += `<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:#065f4615;color:#065f46;border:1px solid #065f4630">🏠 Vendedor</span>`;
-  if (u.puede_referir !== false) h += `<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2)">🤝 Comisionista</span>`;
-  h += `</div></div>`;
+  h += `</div>`;
+
+  // Activity role cards (async counts)
+  h += `<div id="perfil-roles" style="margin:16px 16px 0;display:flex;flex-direction:column;gap:10px"></div>`;
+  h += `</div>`;
+  // Load counts async after render
+  setTimeout(async () => {
+    const rEl = document.getElementById('perfil-roles'); if (!rEl) return;
+    let intCount = 0, pubCount = 0, comCount = 0;
+    try { const { count } = await SB().from('intereses_compradores').select('id', { count: 'exact', head: true }).eq('usuario_id', u.id); intCount = count || 0; } catch(e) {}
+    try { const { count } = await SB().from('inmuebles').select('id', { count: 'exact', head: true }).eq('captador_id', u.id).eq('origen', 'externo'); pubCount = count || 0; } catch(e) {}
+    try { const { count } = await SB().from('referidos').select('id', { count: 'exact', head: true }).eq('referidor_id', u.id); comCount = count || 0; } catch(e) {}
+    const roles = [
+      { emoji: '🙋', label: 'Comprador', color: '#3b82f6', desc: 'Inmuebles donde mostraste interés', count: intCount },
+      { emoji: '🏡', label: 'Propietario', color: '#10b981', desc: 'Inmuebles propios que publicaste', count: pubCount },
+      { emoji: '🤝', label: 'Comisionista', color: '#f59e0b', desc: 'Inmuebles que referiste o publicaste de terceros', count: comCount },
+    ];
+    rEl.innerHTML = roles.map(r => '<div style="background:' + (r.count > 0 ? '#fff' : '#f5f3f0') + ';border-radius:16px;padding:16px;border:2px solid ' + (r.count > 0 ? r.color + '30' : '#e0ddd8') + ';opacity:' + (r.count > 0 ? '1' : '0.5') + '"><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:12px;align-items:center"><div style="font-size:28px">' + r.emoji + '</div><div><div style="font-size:15px;font-weight:800;color:' + (r.count > 0 ? r.color : '#999') + '">' + r.label + '</div><div style="font-size:13px;color:#5a5550">' + r.desc + '</div></div></div><div style="width:36px;height:36px;border-radius:10px;background:' + (r.count > 0 ? r.color : '#e0ddd8') + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">' + r.count + '</div></div></div>').join('');
+  }, 100);
   h += `<div style="padding:0 16px 16px"><div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Nombre</label><input id="ext_nombre" value="${(u.nombre||'').replace(/"/g,'&quot;')}" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;
   h += `<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Email</label><input value="${u.email}" disabled style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--sub);background:var(--cd2);font-family:inherit"></div>`;
   h += `<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:var(--sub);display:block;margin-bottom:4px">Teléfono</label><input id="ext_tel" value="${(u.telefono_contacto||'').replace(/"/g,'&quot;')}" placeholder="573001234567" style="width:100%;padding:8px;border:1.5px solid var(--brd);border-radius:6px;font-size:13px;color:var(--tx);background:var(--cd);font-family:inherit"></div>`;

@@ -1983,26 +1983,8 @@ window.registerExternal = async function() {
 
 // Onboarding for email registration (uses _pendingReg data)
 window.showOnboardingEmail = function() {
-  const html = `<div class="onb-modal" id="onbModal">
-    <div class="onb-box">
-      <div style="font-size:40px;margin-bottom:8px">🏠</div>
-      <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">Bienvenido a House</div>
-      <div style="font-size:13px;color:var(--sub);margin-bottom:20px">¿Cómo vas a usar la plataforma?</div>
-      <button class="onb-opt" onclick="completeEmailReg('comprador')">
-        <div class="onb-icon">🔍</div>
-        <div class="onb-title">Busco un inmueble</div>
-        <div class="onb-sub">Quiero arrendar o comprar una propiedad en Pereira</div>
-      </button>
-      <button class="onb-opt" onclick="completeEmailReg('vendedor')">
-        <div class="onb-icon">🏢</div>
-        <div class="onb-title">Quiero publicar inmuebles</div>
-        <div class="onb-sub">Soy propietario o inmobiliaria y quiero llegar a más clientes</div>
-        <div style="font-size:10px;color:#065f46;margin-top:4px;font-weight:600">✓ 3 publicaciones gratis</div>
-      </button>
-      <div style="margin-top:14px;font-size:10px;color:var(--g400)">Gratis. Sin spam. Cancela cuando quieras.</div>
-    </div>
-  </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
+  // Sin pregunta de rol — crear directo como comprador
+  completeEmailReg('comprador');
 };
 
 window.completeEmailReg = async function(tipo) {
@@ -2060,27 +2042,9 @@ window.completeEmailReg = async function(tipo) {
 
 // --- Onboarding modal (called from auth.js when new Google user) ---
 window.showOnboarding = function(googlePayload) {
+  // Sin pregunta de rol — crear directo como comprador
   const { email, nombre, foto } = googlePayload;
-  const html = `<div class="onb-modal" id="onbModal">
-    <div class="onb-box">
-      <div style="font-size:40px;margin-bottom:8px">🏠</div>
-      <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;margin-bottom:4px">Bienvenido a House</div>
-      <div style="font-size:13px;color:var(--sub);margin-bottom:20px">¿Cómo vas a usar la plataforma?</div>
-      <button class="onb-opt" onclick="selectProfile('comprador','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
-        <div class="onb-icon">🔍</div>
-        <div class="onb-title">Busco un inmueble</div>
-        <div class="onb-sub">Quiero arrendar o comprar una propiedad en Pereira</div>
-      </button>
-      <button class="onb-opt" onclick="selectProfile('vendedor','${email.replace(/'/g,"\\'")}','${(nombre||'').replace(/'/g,"\\'")}','${(foto||'').replace(/'/g,"\\'")}')">
-        <div class="onb-icon">🏢</div>
-        <div class="onb-title">Quiero publicar inmuebles</div>
-        <div class="onb-sub">Soy propietario o inmobiliaria y quiero llegar a más clientes</div>
-        <div style="font-size:10px;color:#065f46;margin-top:4px;font-weight:600">✓ 3 publicaciones gratis</div>
-      </button>
-      <div style="margin-top:14px;font-size:10px;color:var(--g400)">Gratis. Sin spam. Cancela cuando quieras.</div>
-    </div>
-  </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
+  selectProfile('comprador', email, nombre, foto);
 };
 
 window.selectProfile = async function(tipo, email, nombre, foto) {
@@ -2476,6 +2440,45 @@ window.abrirInteres = async function(inmId) {
     return;
   }
 
+  // Momento 2: preguntar para quién es (solo públicos, no internos)
+  if (u.tipo_usuario === 'publico') {
+    const { data: p } = await SB().from('inmuebles').select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,codigo_house').eq('id', inmId).single();
+    if (!p) { window.toast('Inmueble no encontrado', 'terr'); return; }
+    const precio = (p.negociacion === 'Arriendo' ? fm(p.precio_arriendo || 0) + '/mes' : fm(p.precio_venta || 0));
+    const html = `
+    <div id="ciRolDlg" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" onclick="if(event.target===this)this.remove()">
+      <div style="max-width:480px;width:100%;max-height:90vh;overflow:auto;background:#faf9f7;border-radius:20px;padding:20px" onclick="event.stopPropagation()">
+        <div style="background:#fff;border-radius:14px;padding:14px;border:1px solid #e0ddd8;margin-bottom:20px;display:flex;gap:12px">
+          <div style="width:64px;height:64px;border-radius:10px;background:#e8e5e0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${p.tipo === 'Apartamento' ? '🏢' : p.tipo === 'Casa' ? '🏡' : p.tipo === 'Local' ? '🏪' : '🏠'}</div>
+          <div><div style="font-size:15px;font-weight:700;color:#1a1a1a">${p.tipo||''} en ${p.barrio||p.ciudad||''}</div><div style="font-size:13px;color:#5a5550">${p.ciudad||''} · ${precio}</div><div style="font-size:12px;color:#1a4f8b;font-weight:700;margin-top:2px">${p.codigo_house||''}</div></div>
+        </div>
+        <div style="font-size:26px;font-weight:800;color:#122d4f;line-height:1.2;margin-bottom:8px">¿Para quién es este inmueble?</div>
+        <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:24px">Esto nos ayuda a darte el mejor servicio.</div>
+        <div id="opt-para-mi" onclick="document.getElementById('ciRolDlg').remove();window._interesTipo='comprador';window._abrirInteresDirecto('${inmId}')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s">
+          <div style="font-size:48px;margin-bottom:12px">🙋</div>
+          <div style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:6px">Para mí</div>
+          <div style="font-size:15px;color:#5a5550;line-height:1.6">Estoy buscando un inmueble para comprar o arrendar para mí.</div>
+        </div>
+        <div id="opt-para-otro" onclick="document.getElementById('ciRolDlg').remove();window._interesTipo='comisionista';window._abrirInteresComisionista('${inmId}')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s">
+          <div style="font-size:48px;margin-bottom:12px">👥</div>
+          <div style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:6px">Para alguien que conozco</div>
+          <div style="font-size:15px;color:#5a5550;line-height:1.6">Tengo un cliente, amigo o familiar que busca algo así. Si se cierra, gano comisión.</div>
+        </div>
+      </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    return;
+  }
+
+  // Internos: ir directo al formulario de comprador
+  window._interesTipo = 'comprador';
+  window._abrirInteresDirecto(inmId);
+};
+
+// Formulario comprador (el formulario original de abrirInteres)
+window._abrirInteresDirecto = async function(inmId) {
+  const u = U(); if (!u) return;
+
   // Cargar inmueble + interés previo (si existe)
   const { data: p } = await SB().from('inmuebles')
     .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo')
@@ -2571,12 +2574,20 @@ window.guardarInteres = async function(inmId) {
       if (error) throw error;
       window.toast('💾 Interés actualizado');
     } else {
-      const { error } = await SB().from('intereses_compradores').insert({
+      const row = {
         inmueble_id: inmId, usuario_id: u.id,
         presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje,
-        estado: 'nuevo',
-      });
-      if (error) throw error;
+        estado: 'nuevo', interes_tipo: window._interesTipo || 'comprador',
+      };
+      const { error } = await SB().from('intereses_compradores').insert(row);
+      if (error && /interes_tipo/i.test(error.message)) {
+        // Graceful: column doesn't exist yet
+        delete row.interes_tipo;
+        const { error: e2 } = await SB().from('intereses_compradores').insert(row);
+        if (e2) throw e2;
+      } else if (error) throw error;
+      // Activate comprador profile
+      if (typeof window.activarPerfilPublico === 'function') window.activarPerfilPublico('comprador');
       window.toast('💙 ¡Interés enviado!');
     }
 
@@ -2603,6 +2614,63 @@ window.guardarInteres = async function(inmId) {
     } else {
       window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
     }
+  }
+};
+
+// Formulario comisionista: datos de la otra persona
+window._abrirInteresComisionista = async function(inmId) {
+  const u = U(); if (!u) return;
+  const { data: p } = await SB().from('inmuebles').select('id,tipo,ciudad,barrio,codigo_house').eq('id', inmId).single();
+  const html = `
+  <div id="ciDlg" class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)">
+    <div class="card" style="max-width:480px;width:100%;max-height:90vh;overflow:auto;border-radius:14px">
+      <div class="cdh"><div class="chl"><div class="chi">👥</div><div><div class="cht">Referir interesado</div><div style="font-size:11px;color:var(--sub);margin-top:2px">${p?.tipo||''} · ${p?.barrio||p?.ciudad||''}</div></div></div>
+        <button onclick="document.getElementById('ciDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+      <div class="cdb" style="padding:18px">
+        <div style="text-align:center;margin-bottom:16px"><div style="font-size:48px;margin-bottom:8px">👥</div><div style="font-size:16px;color:#5a5550;line-height:1.6">Contanos un poco sobre la persona interesada para que podamos atenderla mejor.</div></div>
+        <div class="ff" style="margin-bottom:12px"><label class="ffl">Nombre de la persona *</label><input id="ci_ref_nombre" class="ffi" placeholder="Ej: Carlos Mejía"></div>
+        <div class="ff" style="margin-bottom:12px"><label class="ffl">Teléfono de contacto *</label><input id="ci_ref_tel" class="ffi" type="tel" placeholder="Ej: 310 555 1234"></div>
+        <div class="ff" style="margin-bottom:12px"><label class="ffl">¿Sabés si tiene crédito aprobado?</label>
+          <div style="display:flex;gap:8px"><button onclick="document.getElementById('ci_ref_cred').value='si';this.style.background='#8b5cf6';this.style.color='#fff'" style="flex:1;padding:14px;border-radius:12px;border:2px solid #e0ddd8;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✅ Sí</button><button onclick="document.getElementById('ci_ref_cred').value='no';this.style.background='#8b5cf6';this.style.color='#fff'" style="flex:1;padding:14px;border-radius:12px;border:2px solid #e0ddd8;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">❌ No</button><button onclick="document.getElementById('ci_ref_cred').value='nosabe';this.style.background='#8b5cf6';this.style.color='#fff'" style="flex:1;padding:14px;border-radius:12px;border:2px solid #e0ddd8;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤷 No sé</button></div>
+          <input type="hidden" id="ci_ref_cred" value="">
+        </div>
+        <div class="ff" style="margin-bottom:14px"><label class="ffl">¿Algo más?</label><textarea id="ci_ref_msg" class="ffi" style="min-height:60px;resize:vertical" placeholder="Ej: Busca algo de 3 habitaciones..."></textarea></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('ciDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cancelar</button>
+          <button onclick="window._guardarInteresComisionista('${inmId}')" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:#8b5cf6;color:#fff;cursor:pointer;font-family:inherit">📤 Enviar referencia</button>
+        </div>
+        <div style="text-align:center;margin-top:12px"><div style="font-size:14px;font-weight:700;color:#8b5cf6">Si se cierra, ganás comisión 50/50</div><div style="font-size:13px;color:#5a5550;margin-top:2px">🔒 Solo el equipo de House contacta a esta persona</div></div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window._guardarInteresComisionista = async function(inmId) {
+  const u = U(); if (!u) return;
+  const nombre = document.getElementById('ci_ref_nombre')?.value?.trim();
+  const tel = document.getElementById('ci_ref_tel')?.value?.trim();
+  if (!nombre || !tel) { window.toast('Necesitamos nombre y teléfono', 'twarn'); return; }
+  const cred = document.getElementById('ci_ref_cred')?.value || null;
+  const msg = document.getElementById('ci_ref_msg')?.value?.trim() || null;
+  try {
+    const row = { inmueble_id: inmId, usuario_id: u.id, estado: 'nuevo', interes_tipo: 'comisionista', referido_nombre: nombre, referido_telefono: tel, mensaje: msg + (cred ? ' [Crédito: ' + cred + ']' : '') };
+    const { error } = await SB().from('intereses_compradores').insert(row);
+    if (error && /interes_tipo|referido_nombre|referido_telefono/i.test(error.message)) {
+      delete row.interes_tipo; delete row.referido_nombre; delete row.referido_telefono;
+      row.mensaje = 'COMISIONISTA: ' + nombre + ' (' + tel + ')' + (msg ? ' - ' + msg : '') + (cred ? ' [Crédito: ' + cred + ']' : '');
+      const { error: e2 } = await SB().from('intereses_compradores').insert(row);
+      if (e2) throw e2;
+    } else if (error) throw error;
+    await window.activarPerfilPublico('comisionista');
+    const { data: inm } = await SB().from('inmuebles').select('tipo,barrio').eq('id', inmId).single();
+    await window.noti('interes_nuevo', 'amarillo', '👥 Referencia de comisionista', u.nombre + ' refiere a ' + nombre + ' para ' + (inm?.tipo || '') + ' en ' + (inm?.barrio || ''), null, 'admin', inmId);
+    document.getElementById('ciDlg')?.remove();
+    window.toast('✅ ¡Referencia enviada! Te contactaremos si se concreta.');
+  } catch(e) {
+    console.error('[guardarInteresComisionista]', e);
+    window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
   }
 };
 
@@ -4306,7 +4374,82 @@ window.marcarPagoCierre = async function(cierreId, fase) {
 };
 
 // ══════════════════════════════════════════════════════════════════
-// 31. PERFILES PÚBLICOS DINÁMICOS
+// 31. IDENTIFICACIÓN DINÁMICA DE ROLES POR ACCIÓN
+// ══════════════════════════════════════════════════════════════════
+
+// ── MOMENTO 1: Al publicar un inmueble ──
+window.interceptarPublicacion = function() {
+  const u = U();
+  if (!u) { window.showAuthPrompt('publicar', { icono: '📝', titulo: 'Publicar inmueble', mensaje: 'Crea tu cuenta gratis para publicar.', beneficios: ['📝 Publica gratis hasta 3 inmuebles', '🔍 Nosotros buscamos compradores', '🔒 Datos protegidos'], cta: 'Crear cuenta gratis', ctaSecundario: 'Ahora no' }); return; }
+  if (u.tipo_usuario === 'interno' || !u.tipo_usuario) { window.go('reg'); return; }
+  _mostrarPreguntaPublicacion();
+};
+
+function _mostrarPreguntaPublicacion() {
+  const el = document.getElementById('publicarc'); if (!el) return;
+  el.innerHTML = `
+    <div style="padding:24px 20px;max-width:480px;margin:0 auto">
+      <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#1a4f8b;text-transform:uppercase;margin-bottom:8px">Publicar inmueble</div>
+      <div style="font-size:26px;font-weight:800;color:#122d4f;line-height:1.2;margin-bottom:8px">¿De quién es el inmueble?</div>
+      <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:28px">Solo necesitamos saber esto para darte la mejor experiencia.</div>
+      <div id="opt-propietario" onclick="window._seleccionarTipoPublicacion('vendedor')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s cubic-bezier(.16,1,.3,1)">
+        <div style="font-size:48px;margin-bottom:12px">🏡</div>
+        <div style="font-size:20px;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:6px">Es mi propiedad</div>
+        <div style="font-size:15px;color:#5a5550;line-height:1.6">Soy el dueño y quiero vender o arrendar mi inmueble.</div>
+      </div>
+      <div id="opt-comisionista" onclick="window._seleccionarTipoPublicacion('comisionista')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s cubic-bezier(.16,1,.3,1)">
+        <div style="font-size:48px;margin-bottom:12px">🤝</div>
+        <div style="font-size:20px;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:6px">Es de otra persona</div>
+        <div style="font-size:15px;color:#5a5550;line-height:1.6">Conozco al dueño y quiero ayudarle. Si se cierra el negocio, gano comisión.</div>
+      </div>
+      <div style="background:#f0f7ff;border-radius:14px;padding:14px 16px;border:1px solid rgba(26,79,139,.08)">
+        <div style="font-size:14px;color:#122d4f;line-height:1.6">🔒 En ambos casos, protegemos la dirección exacta y los datos del propietario.</div>
+      </div>
+    </div>`;
+}
+
+window._seleccionarTipoPublicacion = async function(tipo) {
+  window._publicacionTipo = tipo;
+  await window.activarPerfilPublico(tipo);
+  const optId = tipo === 'vendedor' ? 'opt-propietario' : 'opt-comisionista';
+  const color = tipo === 'vendedor' ? '#10b981' : '#f59e0b';
+  const el = document.getElementById(optId);
+  if (el) { el.style.background = color; el.style.borderColor = color; el.style.transform = 'scale(1.02)'; el.style.boxShadow = '0 8px 24px ' + color + '30'; el.querySelectorAll('div').forEach(d => { if (d.style.color === '#1a1a1a' || d.style.color === 'rgb(26, 26, 26)') d.style.color = '#fff'; if (d.style.color === '#5a5550' || d.style.color === 'rgb(90, 85, 80)') d.style.color = '#ffffffcc'; }); }
+  setTimeout(() => _mostrarConfirmacionPublicacion(tipo), 600);
+};
+
+function _mostrarConfirmacionPublicacion(tipo) {
+  const esProp = tipo === 'vendedor';
+  const color = esProp ? '#10b981' : '#f59e0b';
+  const emoji = esProp ? '🏡' : '🤝';
+  const titulo = esProp ? '¡Perfecto!' : '¡Excelente!';
+  const sub = esProp ? 'Vas a publicar tu inmueble como propietario. Nuestro equipo lo revisa y lo publica en menos de 12 horas.' : 'Vas a publicar un inmueble como comisionista. Nosotros conseguimos el comprador y partimos la comisión 50/50.';
+  const pasos = esProp
+    ? [{ e:'📝',t:'Llenás el formulario con fotos y precio' },{ e:'🔍',t:'Nosotros verificamos que todo esté seguro' },{ e:'✅',t:'Te avisamos cuando esté publicado' },{ e:'👤',t:'Solo te contactamos con compradores calificados' }]
+    : [{ e:'📝',t:'Llenás el formulario con lo que sepas del inmueble' },{ e:'🔍',t:'Nosotros verificamos y buscamos compradores' },{ e:'📞',t:'Coordinamos todo con el propietario' },{ e:'💰',t:'Si se cierra, te transferimos tu 50%' }];
+
+  const el = document.getElementById('publicarc'); if (!el) return;
+  el.innerHTML = `
+    <div style="padding:24px 20px;max-width:480px;margin:0 auto">
+      <button onclick="_mostrarPreguntaPublicacion()" style="font-size:14px;color:#1a4f8b;font-weight:700;cursor:pointer;background:none;border:none;padding:0;font-family:inherit">← Cambiar</button>
+      <div style="text-align:center;margin-top:16px">
+        <div style="font-size:56px;margin-bottom:8px">${emoji}</div>
+        <div style="font-size:22px;font-weight:800;color:${color}">${titulo}</div>
+        <div style="font-size:16px;color:#5a5550;margin-top:8px;line-height:1.6">${sub}</div>
+      </div>
+      <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px">
+        ${pasos.map(p => '<div style="display:flex;gap:12px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:' + color + '12;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + p.e + '</div><div style="font-size:15px;color:#1a1a1a;line-height:1.5">' + p.t + '</div></div>').join('')}
+      </div>
+      <button onclick="window._ownerStep=1;window._ownerData={};rPublicar()" style="width:100%;padding:18px;border-radius:16px;border:none;background:${color};color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px ${color}30;margin-top:20px;font-family:inherit">📝 Comenzar a publicar</button>
+      <div style="text-align:center;margin-top:12px;font-size:14px;color:#5a5550">${esProp ? 'Comisión: 3% solo si se cierra el negocio' : 'Tu comisión: 50% del 3% del valor'}</div>
+    </div>`;
+}
+
+// ── MOMENTO 2: Al mostrar interés en un inmueble ──
+// (Se integra dentro de abrirInteres — ver modificación abajo)
+
+// ══════════════════════════════════════════════════════════════════
+// 31b. PERFILES PÚBLICOS DINÁMICOS
 // ══════════════════════════════════════════════════════════════════
 
 window.activarPerfilPublico = async function(perfil) {

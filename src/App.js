@@ -410,7 +410,7 @@ function sApp() {
     if (menuDiv) {
       let menuH = '';
       menuH = '<button class="mi act" data-s="portafolio" onclick="go(\'portafolio\')"><span class="mic">\u{1F3E0}</span>Explorar inmuebles</button>';
-      menuH += '<button class="mi" data-s="publicar" onclick="go(\'publicar\')"><span class="mic">\u{1F4DD}</span>Publicar inmueble</button>';
+      menuH += '<button class="mi" data-s="publicar" onclick="interceptarPublicacion()"><span class="mic">\u{1F4DD}</span>Publicar inmueble</button>';
       menuH += '<button class="mi" data-s="favoritos" onclick="go(\'favoritos\')"><span class="mic">\u2B50</span>Favoritos</button>';
       menuH += '<button class="mi" data-s="mensajes" onclick="go(\'mensajes\')"><span class="mic">\u{1F4AC}</span>Mensajes<span class="mib" id="msgBadge" style="display:none">0</span></button>';
       menuH += '<button class="mi" data-s="mis-citas" onclick="go(\'mis-citas\')"><span class="mic">\u{1F4C5}</span>Citas<span class="mib" id="miscitasBadge" style="display:none">0</span></button>';
