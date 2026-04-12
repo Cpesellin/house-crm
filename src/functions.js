@@ -2287,6 +2287,7 @@ window.ownerPublish = async function() {
     // Auto-moderación PII (Fase 1): analiza la descripción antes de guardar.
     const _modReport = analyzeContent(d.descripcion_cliente || '');
 
+    const pubTipo = window._publicacionTipo || 'vendedor';
     const _basePayload = {
       tipo: d.tipo, negociacion: d.negociacion, ciudad: d.ciudad,
       direccion: d.direccion, barrio: d.barrio, direccion_publica: d.barrio + ', ' + d.ciudad,
@@ -2297,15 +2298,26 @@ window.ownerPublish = async function() {
       captador_id: u.id, origen: 'externo', estado_revision: 'en_revision',
       estado: 'Disponible', codigo_house: code, eliminado: false
     };
+    // Graceful: add publicado_por_tipo + comisionista_id if columns exist
+    try { _basePayload.publicado_por_tipo = pubTipo; } catch(e) {}
+    if (pubTipo === 'comisionista') { try { _basePayload.comisionista_id = u.id; } catch(e) {} }
     let { data: newInm, error } = await SB().from('inmuebles')
       .insert({ ..._basePayload, alertas_moderacion: _modReport })
       .select('id').single();
     // Si la migración SQL #19 aún no corrió, la columna no existe →
     // reintentamos sin ella para no romper el flujo de publicación.
     if (error && /alertas_moderacion/i.test(error.message || '')) {
-      console.warn('[ownerPublish] columna alertas_moderacion no existe — corre sql/19-moderacion-pii.sql');
+      console.warn('[ownerPublish] columna alertas_moderacion no existe');
       ({ data: newInm, error } = await SB().from('inmuebles')
         .insert(_basePayload).select('id').single());
+    }
+    if (error && /publicado_por_tipo|comisionista_id/i.test(error.message || '')) {
+      delete _basePayload.publicado_por_tipo; delete _basePayload.comisionista_id;
+      ({ data: newInm, error } = await SB().from('inmuebles')
+        .insert({ ..._basePayload, alertas_moderacion: _modReport }).select('id').single());
+      if (error && /alertas_moderacion/i.test(error.message || '')) {
+        ({ data: newInm, error } = await SB().from('inmuebles').insert(_basePayload).select('id').single());
+      }
     }
     if (error) throw error;
 
