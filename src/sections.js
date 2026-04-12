@@ -1326,7 +1326,7 @@ window.rMisNegocios = async function() {
 
   try {
     // Admin sees all, captador sees own
-    let query = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,direccion,precio,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre,foto), cerrador:usuarios!cerrado_por(id,nombre)').eq('estado', 'activo').order('created_at', { ascending: false });
+    let query = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,direccion,precio,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre,foto), cerrador:usuarios!cerrado_por(id,nombre), participantes:participantes_comision(id,rol_comision,nombre_externo,porcentaje,monto,pago_estado,usuario_id)').eq('estado', 'activo').order('created_at', { ascending: false });
     if (!isAdmin) query = query.eq('captador_id', u.id);
     const { data: cierres, error } = await query;
 
@@ -1393,30 +1393,26 @@ window.rMisNegocios = async function() {
         h += '<div style="margin-top:6px;font-size:13px"><span style="font-weight:700">Precio: ' + fm(c.precio_final) + '</span> · Comisión: <span style="color:var(--green);font-weight:700">' + fm(c.comision_total) + '</span></div>';
         h += '</div></div>';
 
-        // Payment status
-        h += '<div style="padding:0 14px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
-        if (c.tipo === 'arriendo') {
-          const faseAMonto = Math.min(50000, c.comision_total);
-          const faseBMonto = Math.max(0, c.comision_total - 50000);
-          // Fase A
-          h += '<span style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;background:' + (c.fase_a_pagada ? 'var(--green)' : 'var(--gold)') + ';color:#fff">Fase A ' + fm(faseAMonto) + (c.fase_a_pagada ? ' ✅' : ' ⏳') + '</span>';
-          // Fase B
-          if (faseBMonto > 0) {
-            h += '<span style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;background:' + (c.fase_b_pagada ? 'var(--green)' : 'var(--gold)') + ';color:#fff">Fase B ' + fm(faseBMonto) + (c.fase_b_pagada ? ' ✅' : ' ⏳') + '</span>';
-          }
-          // Admin pay buttons
-          if (isAdmin) {
-            if (!c.fase_a_pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'a\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵 Pagar Fase A</button>';
-            if (!c.fase_b_pagada && faseBMonto > 0) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'b\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵 Pagar Fase B</button>';
-          }
+        // Per-participant payment status
+        h += '<div style="padding:0 14px 14px">';
+        const cParts = c.participantes || [];
+        if (cParts.length) {
+          cParts.forEach(pt => {
+            const isPaid = pt.pago_estado === 'pagado';
+            const rolLabel = { house:'🏢 House', comisionista_inmueble:'🤝 Com. inmueble', comisionista_comprador:'🤝 Com. comprador', asesor_captador:'👤 Captador', referidor:'🎁 Referidor', otro:'📋 Otro' }[pt.rol_comision] || pt.rol_comision;
+            h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+            h += '<span style="font-size:11px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + rolLabel + (pt.nombre_externo ? ' · ' + pt.nombre_externo : '') + '</span>';
+            h += '<span style="font-size:11px;font-weight:700;color:var(--green)">' + fm(pt.monto) + ' (' + pt.porcentaje + '%)</span>';
+            h += '<span style="font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;background:' + (isPaid ? 'var(--green)' : 'var(--gold)') + ';color:#fff">' + (isPaid ? '✅' : '⏳') + '</span>';
+            if (isAdmin && !isPaid && pt.rol_comision !== 'house') h += '<button onclick="marcarPagoParticipante(\'' + pt.id + '\')" style="font-size:10px;padding:3px 8px;border:none;border-radius:6px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵</button>';
+            h += '</div>';
+          });
         } else {
-          // Venta — pago único
-          h += '<span style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;background:' + (c.pagada ? 'var(--green)' : 'var(--gold)') + ';color:#fff">Comisión ' + fm(c.comision_total) + (c.pagada ? ' ✅' : ' ⏳') + '</span>';
-          if (isAdmin && !c.pagada) h += '<button onclick="marcarPagoCierre(\'' + c.id + '\',\'venta\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵 Pagar comisión</button>';
+          // Backward compat: old cierres without participantes
+          h += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
+          h += '<span style="font-size:10px;color:var(--sub)">Captador: ' + fm(comCapt) + ' · Casa: ' + fm(comCasa) + '</span>';
+          h += '</div>';
         }
-
-        // Split detail
-        h += '<span style="font-size:10px;color:var(--sub);margin-left:auto">Captador: ' + fm(comCapt) + ' · Casa: ' + fm(comCasa) + '</span>';
         h += '</div></div>';
       });
     }
