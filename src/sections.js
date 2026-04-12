@@ -1031,7 +1031,7 @@ window.rMisCitas = async function() {
       if (cap.foto) h += `<img src="${cap.foto}" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`;
       else h += `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800">${(cap.nombre||'?')[0]}</div>`;
       h += `<div style="flex:1;font-size:11px"><div style="font-weight:700">${cap.nombre || 'Asesor'}</div><div style="color:var(--sub)">Asesor House</div></div>`;
-      if (cap.telefono_contacto) h += `<a href="https://wa.me/${cap.telefono_contacto}" target="_blank" style="padding:5px 10px;background:#25d366;color:#fff;border-radius:4px;font-size:10px;font-weight:700;text-decoration:none">💬 WhatsApp</a>`;
+      h += `<a href="https://wa.me/${HOUSE_PHONE}" target="_blank" style="padding:5px 10px;background:#25d366;color:#fff;border-radius:4px;font-size:10px;font-weight:700;text-decoration:none">💬 WhatsApp</a>`;
       h += `</div>`;
 
       // Motivo cancelación
