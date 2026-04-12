@@ -66,6 +66,7 @@ function renderShell(container) {
 
     <div style="margin-top:12px;text-align:center">
       <a href="#/portafolio" onclick="document.getElementById('lov').style.display='none'" style="color:#94a3b8;font-size:12px;text-decoration:underline;cursor:pointer">\u{1F50D} Explorar inmuebles sin cuenta</a>
+      <div style="margin-top:8px"><a href="#/registro" onclick="document.getElementById('lov').style.display='none'" style="color:#60a5fa;font-size:12px;text-decoration:underline;cursor:pointer;font-weight:700">\u{1F3E0} Soy comprador, vendedor o comisionista</a></div>
     </div>
   </div>
 </div>
@@ -239,6 +240,7 @@ function renderShell(container) {
 <div class="sec" id="sec-admin-pagos"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="adminPagosContent"></div></div>
 <div class="sec" id="sec-propietarios"><div style="max-width:600px;margin:0 auto;padding:0 0 60px" id="propietariosc"></div></div>
 <div class="sec" id="sec-referidos-landing"><div style="max-width:600px;margin:0 auto;padding:0 0 60px" id="referidosLandingC"></div></div>
+<div class="sec" id="sec-landing-roles"><div style="max-width:500px;margin:0 auto;padding:0 0 60px" id="landingRolesC"></div></div>
 <div class="sec" id="sec-referir"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F91D}</div><div><div class="cht">Referir Inmueble</div><div class="chsb">Gana hasta 10% del canon</div></div></div></div><div class="cdb" id="sec-referir-content"></div></div></div></div>
 <div class="sec" id="sec-misref"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="sec-misref-content"></div></div>
 <div class="sec" id="sec-mis-inm"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinmc"></div></div>

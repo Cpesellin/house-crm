@@ -1697,6 +1697,7 @@ window.rUsers = async function() {
         capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">🔍 Comprador</span>';
         if (u2.puede_publicar) capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">🏠 Vendedor</span>';
         if (u2.puede_referir) capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2);font-weight:700">🤝 Comisionista</span>';
+        if (u2.intencion_registro) { const _ic = { comprador:'🔍',vendedor:'🏠',comisionista:'🤝',arriendo_admin:'🏡',arriendo_pub:'📢' }; capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-weight:700">' + (_ic[u2.intencion_registro]||'📋') + ' ' + u2.intencion_registro + '</span>'; }
       }
       const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
       // Admin can toggle puede_publicar for external users
@@ -2342,6 +2343,98 @@ window.propCalcUpdate = function() {
 // ══════════════════════════════════════════════════════════════════
 // LANDING PAGE: /referidos-landing — Landing pública del programa de referidos
 // ══════════════════════════════════════════════════════════════════
+
+// --- Landing Roles: registro con intención pre-seleccionada ---
+window.renderLandingRoles = function() {
+  const el = document.getElementById('landingRolesC'); if (!el) return;
+  const intencion = window._landingIntencion || null;
+
+  // If intencion is set, show registration form with context
+  if (intencion) {
+    _renderRegistroConRol(el, intencion);
+    return;
+  }
+
+  // Landing: 5 CTAs
+  const roles = [
+    { key: 'comprador', emoji: '👤', titulo: 'Comprador', color: '#3b82f6', desc: 'Quiero comprar o arrendar un inmueble', badge: 'Busca inmueble' },
+    { key: 'vendedor', emoji: '🏠', titulo: 'Vendedor', color: '#10b981', desc: 'Quiero vender mi inmueble propio', badge: 'Tiene inmueble' },
+    { key: 'comisionista', emoji: '🤝', titulo: 'Comisionista', color: '#f59e0b', desc: 'Publico inmuebles de terceros por comisión', badge: 'Comisión compartida' },
+    { key: 'arriendo_admin', emoji: '🏡', titulo: 'Administración de arriendo', color: '#122d4f', desc: 'Quiero que House administre mi arriendo', badge: '10% mensual' },
+    { key: 'arriendo_pub', emoji: '📢', titulo: 'Publicación en portales', color: '#d97706', desc: 'Quiero publicar en 4 portales', badge: '$100K/mes' },
+  ];
+
+  let h = '<div style="padding:24px 20px">';
+  h += '<div style="text-align:center;margin-bottom:24px"><div style="font-size:40px;margin-bottom:8px">🏠</div>';
+  h += '<div style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:#122d4f">Inmobiliaria House</div>';
+  h += '<div style="font-size:15px;color:#5a5550;margin-top:6px;line-height:1.6">¿Qué te trae a House?</div></div>';
+
+  roles.forEach(r => {
+    h += '<div onclick="window._landingIntencion=\'' + r.key + '\';renderLandingRoles()" style="display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;border:2px solid ' + r.color + '20;cursor:pointer;transition:all .2s">';
+    h += '<div style="width:48px;height:48px;border-radius:12px;background:' + r.color + '12;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">' + r.emoji + '</div>';
+    h += '<div style="flex:1"><div style="font-size:15px;font-weight:700;color:#1a1a1a">' + r.titulo + '</div><div style="font-size:13px;color:#5a5550">' + r.desc + '</div></div>';
+    h += '<div style="background:' + r.color + '15;color:' + r.color + ';padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;flex-shrink:0">' + r.badge + '</div>';
+    h += '</div>';
+  });
+
+  h += '<div style="margin-top:16px;text-align:center"><a href="#/portafolio" style="font-size:14px;color:#1a4f8b;font-weight:700;text-decoration:underline">🔍 Solo quiero explorar inmuebles</a></div>';
+  h += '</div>';
+  el.innerHTML = h;
+};
+
+function _renderRegistroConRol(el, intencion) {
+  const roles = {
+    comprador: { emoji: '👤', titulo: 'Comprador', color: '#3b82f6', msg: 'Al registrarte podrás mostrar interés en inmuebles y te conectaremos con prospectos calificados.' },
+    vendedor: { emoji: '🏠', titulo: 'Vendedor', color: '#10b981', msg: 'Al registrarte podrás publicar tu inmueble. Nuestro equipo lo revisa en menos de 12 horas.' },
+    comisionista: { emoji: '🤝', titulo: 'Comisionista', color: '#f59e0b', msg: 'Al registrarte podrás publicar inmuebles de terceros. Comisión compartida al cierre.' },
+    arriendo_admin: { emoji: '🏡', titulo: 'Administración', color: '#122d4f', msg: 'Un asesor de House te contacta para explicarte el plan de administración completo.' },
+    arriendo_pub: { emoji: '📢', titulo: 'Publicación', color: '#d97706', msg: 'Podrás publicar tu inmueble en 4 portales por $100.000/mes.' },
+  };
+  const r = roles[intencion] || roles.comprador;
+
+  let h = '<div style="padding:24px 20px">';
+  h += '<button onclick="window._landingIntencion=null;renderLandingRoles()" style="font-size:14px;color:#1a4f8b;font-weight:700;cursor:pointer;background:none;border:none;padding:0;font-family:inherit">← Cambiar</button>';
+
+  // Role header
+  h += '<div style="text-align:center;margin-top:16px;margin-bottom:20px">';
+  h += '<div style="font-size:40px;margin-bottom:6px">' + r.emoji + '</div>';
+  h += '<div style="font-size:20px;font-weight:800;color:' + r.color + '">' + r.titulo + '</div>';
+  h += '<div style="font-size:14px;color:#5a5550;margin-top:4px">Crea tu cuenta gratis en 30 segundos</div></div>';
+
+  // Google button
+  h += '<div id="g_id_signin_landing" style="margin-bottom:12px;display:flex;justify-content:center"></div>';
+
+  h += '<div style="text-align:center;font-size:13px;color:#999;margin:8px 0">— o con tus datos —</div>';
+
+  // Form fields
+  h += '<div style="display:flex;flex-direction:column;gap:12px">';
+  h += '<div><label style="font-size:14px;font-weight:700;display:block;margin-bottom:4px">Nombre completo</label><input id="lr_nombre" type="text" placeholder="Ej: Carlos Mejía" style="width:100%;padding:14px;border-radius:12px;border:2px solid #e0ddd8;font-size:15px;box-sizing:border-box;font-family:inherit"></div>';
+  h += '<div><label style="font-size:14px;font-weight:700;display:block;margin-bottom:4px">Teléfono (WhatsApp)</label><input id="lr_tel" type="tel" placeholder="Ej: 310 555 1234" style="width:100%;padding:14px;border-radius:12px;border:2px solid #e0ddd8;font-size:15px;box-sizing:border-box;font-family:inherit"></div>';
+  h += '<div><label style="font-size:14px;font-weight:700;display:block;margin-bottom:4px">Correo electrónico</label><input id="lr_email" type="email" placeholder="Ej: carlos@email.com" style="width:100%;padding:14px;border-radius:12px;border:2px solid #e0ddd8;font-size:15px;box-sizing:border-box;font-family:inherit"></div>';
+  h += '<div><label style="font-size:14px;font-weight:700;display:block;margin-bottom:4px">Contraseña</label><input id="lr_pwd" type="password" placeholder="Crea una contraseña" style="width:100%;padding:14px;border-radius:12px;border:2px solid #e0ddd8;font-size:15px;box-sizing:border-box;font-family:inherit"></div>';
+  h += '</div>';
+
+  // Context note
+  h += '<div style="padding:12px;background:' + r.color + '08;border-radius:12px;border:1.5px solid ' + r.color + '20;margin-top:14px"><div style="font-size:13px;color:' + r.color + ';font-weight:700">✅ ' + r.msg + '</div></div>';
+
+  // CTA
+  h += '<button onclick="window._registrarConIntencion(\'' + intencion + '\')" style="width:100%;padding:18px;border-radius:16px;border:none;background:' + r.color + ';color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px ' + r.color + '30;margin-top:16px;font-family:inherit">Crear mi cuenta gratis</button>';
+  h += '<div id="lr_err" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ef4444;text-align:center"></div>';
+  h += '<div style="text-align:center;margin-top:12px;font-size:12px;color:#999">🔒 Tu información es confidencial</div>';
+  h += '<div style="text-align:center;margin-top:8px"><a href="#/portafolio" onclick="document.getElementById(\'lov\')&&(document.getElementById(\'lov\').style.display=\'none\')" style="font-size:13px;color:#1a4f8b;text-decoration:underline">¿Ya tienes cuenta? Inicia sesión</a></div>';
+  h += '</div>';
+  el.innerHTML = h;
+
+  // Render Google button in the landing form
+  if (typeof google !== 'undefined' && google.accounts) {
+    setTimeout(() => {
+      const gEl = document.getElementById('g_id_signin_landing');
+      if (gEl) google.accounts.id.renderButton(gEl, { theme: 'outline', size: 'large', width: 300, text: 'signup_with', shape: 'pill' });
+    }, 200);
+  }
+};
+
+window.renderLandingRoles = window.renderLandingRoles;
 
 window.renderReferidosLanding = async function() {
   const el = document.getElementById('referidosLandingC'); if (!el) return;

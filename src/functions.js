@@ -1966,6 +1966,75 @@ window.showOnboardingEmail = function() {
   completeEmailReg('comprador');
 };
 
+// Registration from landing roles page (with intención pre-selected)
+window._registrarConIntencion = async function(intencion) {
+  const nombre = (document.getElementById('lr_nombre')?.value || '').trim();
+  const email = (document.getElementById('lr_email')?.value || '').trim();
+  const pwd = (document.getElementById('lr_pwd')?.value || '').trim();
+  const tel = (document.getElementById('lr_tel')?.value || '').trim();
+  const errEl = document.getElementById('lr_err');
+  const show = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
+
+  if (!nombre || !email || !pwd) { show('Nombre, email y contraseña son obligatorios'); return; }
+  if (pwd.length < 4) { show('La contraseña debe tener al menos 4 caracteres'); return; }
+  if (!email.includes('@')) { show('Ingresa un email válido'); return; }
+
+  if (errEl) errEl.style.display = 'none';
+
+  try {
+    const { data: existing } = await SB().from('usuarios').select('id,activo').eq('email', email).maybeSingle();
+    if (existing?.activo) { show('Este email ya está registrado. Inicia sesión.'); return; }
+
+    const h2 = await window.hashPwd(pwd);
+    const usuario = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const perfilesMap = { comprador: ['comprador'], vendedor: ['vendedor'], comisionista: ['comisionista'], arriendo_admin: ['vendedor'], arriendo_pub: ['vendedor'] };
+    const perfiles = perfilesMap[intencion] || ['comprador'];
+    const puedePublicar = intencion !== 'comprador';
+
+    if (existing && !existing.activo) {
+      await SB().from('usuarios').update({ activo: true, nombre, password_hash: h2, telefono_contacto: tel || null, perfiles_publicos: perfiles, intencion_registro: intencion, puede_publicar: puedePublicar }).eq('id', existing.id);
+      const userData = { id: existing.id, email, nombre, rol: 'asesor', foto: '', usuario, telefono_contacto: tel || '', es_gestor_arriendos: false, tipo_usuario: 'publico', token: 'cred:' + usuario + ':' + h2, puede_publicar: puedePublicar, puede_referir: true, perfiles_publicos: perfiles };
+      window.userStore.set(userData);
+    } else {
+      const { data: newUser, error } = await SB().from('usuarios').insert({
+        email, nombre, foto: null, rol: 'asesor', tipo_usuario: 'publico', activo: true,
+        usuario, password_hash: h2, telefono_contacto: tel || null,
+        puede_publicar: puedePublicar, puede_referir: true,
+        perfiles_publicos: perfiles, intencion_registro: intencion
+      }).select().single();
+      if (error) {
+        if (/intencion_registro/i.test(error.message)) {
+          // Column doesn't exist yet — retry without it
+          const { data: newUser2, error: e2 } = await SB().from('usuarios').insert({
+            email, nombre, foto: null, rol: 'asesor', tipo_usuario: 'publico', activo: true,
+            usuario, password_hash: h2, telefono_contacto: tel || null,
+            puede_publicar: puedePublicar, puede_referir: true, perfiles_publicos: perfiles
+          }).select().single();
+          if (e2) throw e2;
+          const userData = { id: newUser2.id, email, nombre, rol: 'asesor', foto: '', usuario, telefono_contacto: tel || '', es_gestor_arriendos: false, tipo_usuario: 'publico', token: 'cred:' + usuario + ':' + h2, puede_publicar: puedePublicar, puede_referir: true, perfiles_publicos: perfiles };
+          window.userStore.set(userData);
+        } else throw error;
+      } else {
+        const userData = { id: newUser.id, email, nombre, rol: 'asesor', foto: '', usuario, telefono_contacto: tel || '', es_gestor_arriendos: false, tipo_usuario: 'publico', token: 'cred:' + usuario + ':' + h2, puede_publicar: puedePublicar, puede_referir: true, perfiles_publicos: perfiles };
+        window.userStore.set(userData);
+      }
+    }
+
+    // Notify admin with clear intention
+    const descMap = { comprador: 'Busca inmueble para comprar o arrendar.', vendedor: 'Quiere vender su inmueble propio.', comisionista: 'Comisionista. Va a publicar inmuebles de terceros.', arriendo_admin: 'Quiere administración completa de arriendo. Contactar para visita.', arriendo_pub: 'Quiere publicación en portales ($100K/mes). Contactar para fotos.' };
+    await window.noti('registro_externo', 'info', '👤 ' + nombre + ' — ' + (intencion || 'comprador'), (descMap[intencion] || '') + ' Tel: ' + (tel || 'sin tel'), null, 'admin', null);
+
+    window._landingIntencion = null;
+    if (typeof window.sApp === 'function') window.sApp();
+    window.go('portafolio');
+    if (typeof window.load === 'function') window.load();
+    window.toast('✅ ¡Cuenta creada! Bienvenido a House.');
+  } catch(e) {
+    console.error('[_registrarConIntencion]', e);
+    show('Error: ' + (e.message || 'No se pudo crear la cuenta'));
+  }
+};
+
 window.completeEmailReg = async function(tipo) {
   const reg = window._pendingReg;
   if (!reg) return;
