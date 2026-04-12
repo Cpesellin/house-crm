@@ -1225,9 +1225,11 @@ window.rComando = async function() {
       const usr = i.usuario || {};
       h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid ' + (esc ? '#c2410c' : 'var(--b600)') + ';display:flex;align-items:center;gap:10px">';
       h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (usr.nombre || 'Sin nombre') + ' → ' + (inm.tipo || '') + ' ' + (inm.barrio || inm.ciudad || '') + '</div>';
+      const _sc = typeof window.calcScoreInteres === 'function' ? window.calcScoreInteres(i, inm) : 0;
+      const _scl = typeof window.getScoreLabel === 'function' ? window.getScoreLabel(_sc) : { emoji:'⚪' };
       h += '<div style="font-size:11px;color:var(--sub)">';
       if (i.presupuesto_max) h += 'Presup: ' + fm(i.presupuesto_max) + ' · ';
-      h += hrs + 'h</div></div>';
+      h += _scl.emoji + ' ' + _sc + 'pts · ' + hrs + 'h</div></div>';
       if (esc) h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;background:#c2410c;color:#fff">🔥 ' + hrs + 'h</span>';
       h += '<button onclick="calificarInteresRapido(\'' + i.id + '\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--green);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">🟢</button>';
       h += '<button onclick="abrirCalificarInteres(\'' + i.id + '\',\'amarillo\')" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:var(--gold);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">🟡</button>';
@@ -1891,8 +1893,10 @@ window.rUsers = async function() {
         if (inm.captador?.nombre) h += `<div style="font-size:10px;color:var(--sub);margin-top:4px">👤 Captador: ${inm.captador.nombre}</div>`;
         h += `</div>`;
 
-        // Datos declarados por el comprador
-        h += `<div style="font-size:11px;font-weight:800;color:var(--sub);margin-bottom:4px;letter-spacing:.5px">DATOS DEL COMPRADOR</div>`;
+        // Auto-score de compatibilidad
+        const _autoScore = typeof window.calcScoreInteres === 'function' ? window.calcScoreInteres(it, inm) : 0;
+        const _sl = typeof window.getScoreLabel === 'function' ? window.getScoreLabel(_autoScore) : { label:'?', color:'var(--sub)', bg:'var(--cd2)', emoji:'⚪' };
+        h += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:11px;font-weight:800;color:var(--sub);letter-spacing:.5px">DATOS DEL COMPRADOR</span><span style="font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;background:${_sl.bg};color:${_sl.color}">${_sl.emoji} ${_autoScore}pts · ${_sl.label}</span></div>`;
         h += `<div style="font-size:12px;line-height:1.6;margin-bottom:10px">`;
         if (it.presupuesto_max) h += `<div>💰 Presupuesto: <b>${fm(it.presupuesto_max)}</b></div>`;
         else h += `<div style="color:var(--sub)">💰 Presupuesto: <i>no declarado</i></div>`;

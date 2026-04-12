@@ -2602,6 +2602,37 @@ window._abrirInteresDirecto = async function(inmId) {
   document.body.insertAdjacentHTML('beforeend', html);
 };
 
+// Score automático de compatibilidad comprador
+window.calcScoreInteres = function(interes, inmueble) {
+  let score = 0;
+  // Presupuesto cubre precio (+30)
+  if (interes.presupuesto_max && inmueble) {
+    const precio = interes.modalidad === 'arriendo' ? (inmueble.precio_arriendo || 0) : (inmueble.precio_venta || 0);
+    if (precio > 0 && interes.presupuesto_max >= precio) score += 30;
+    else if (precio > 0 && interes.presupuesto_max >= precio * 0.8) score += 15;
+  }
+  // Fecha ideal definida (+20, +10 extra si es dentro de 30 días)
+  if (interes.fecha_ideal) {
+    score += 10;
+    const dias = (new Date(interes.fecha_ideal) - new Date()) / 86400000;
+    if (dias <= 30 && dias >= 0) score += 10;
+  }
+  // Mensaje detallado (+10)
+  if (interes.mensaje && interes.mensaje.length > 20) score += 10;
+  // Presupuesto declarado (+20)
+  if (interes.presupuesto_max && interes.presupuesto_max > 0) score += 20;
+  // Modalidad definida (+10)
+  if (interes.modalidad) score += 10;
+  // Cap at 100
+  return Math.min(score, 100);
+};
+
+window.getScoreLabel = function(score) {
+  if (score >= 70) return { label: 'Alta', color: 'var(--green)', bg: 'var(--greenbg)', emoji: '🟢' };
+  if (score >= 40) return { label: 'Media', color: 'var(--gold)', bg: 'var(--goldbg)', emoji: '🟡' };
+  return { label: 'Baja', color: 'var(--red)', bg: 'var(--redbg)', emoji: '🔴' };
+};
+
 window.guardarInteres = async function(inmId) {
   const u = U(); if (!u) return;
   const dlg = document.getElementById('ciDlg'); if (!dlg) return;
