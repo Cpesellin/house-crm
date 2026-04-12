@@ -2597,9 +2597,33 @@ window._abrirInteresDirecto = async function(inmId) {
           <input id="ci_fecha" type="date" value="${fechaVal}" class="ffi">
         </div>
 
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">¿Tenés crédito hipotecario aprobado?</label>
+          <div style="display:flex;gap:6px" id="ci_credito_wrap">
+            ${['si','no','en_tramite','no_sabe'].map(v => { const labels = { si:'✅ Sí', no:'❌ No', en_tramite:'⏳ En trámite', no_sabe:'🤷 No sé' }; const sel = (prev?.credito_aprobado||'') === v; return '<button type="button" onclick="document.getElementById(\'ci_credito\').value=\'' + v + '\';document.querySelectorAll(\'#ci_credito_wrap button\').forEach(b=>{b.style.background=\'#fff\';b.style.borderColor=\'var(--brd)\';b.style.color=\'var(--tx)\'});this.style.background=\'var(--b600)\';this.style.borderColor=\'var(--b600)\';this.style.color=\'#fff\'" style="flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid ' + (sel ? 'var(--b600)' : 'var(--brd)') + ';background:' + (sel ? 'var(--b600)' : '#fff') + ';color:' + (sel ? '#fff' : 'var(--tx)') + ';font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">' + labels[v] + '</button>'; }).join('')}
+          </div>
+          <input type="hidden" id="ci_credito" value="${prev?.credito_aprobado||''}">
+        </div>
+
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">¿Cómo planeas pagar?</label>
+          <div style="display:flex;gap:6px" id="ci_pago_wrap">
+            ${['credito','efectivo','mixto'].map(v => { const labels = { credito:'💳 Crédito', efectivo:'💵 Efectivo', mixto:'🔄 Mixto' }; const sel = (prev?.tipo_pago||'') === v; return '<button type="button" onclick="document.getElementById(\'ci_pago\').value=\'' + v + '\';document.querySelectorAll(\'#ci_pago_wrap button\').forEach(b=>{b.style.background=\'#fff\';b.style.borderColor=\'var(--brd)\';b.style.color=\'var(--tx)\'});this.style.background=\'var(--b600)\';this.style.borderColor=\'var(--b600)\';this.style.color=\'#fff\'" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid ' + (sel ? 'var(--b600)' : 'var(--brd)') + ';background:' + (sel ? 'var(--b600)' : '#fff') + ';color:' + (sel ? '#fff' : 'var(--tx)') + ';font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">' + labels[v] + '</button>'; }).join('')}
+          </div>
+          <input type="hidden" id="ci_pago" value="${prev?.tipo_pago||''}">
+        </div>
+
+        <div class="ff" style="margin-bottom:12px">
+          <label class="ffl">¿Para qué es?</label>
+          <div style="display:flex;gap:6px" id="ci_prop_wrap">
+            ${['vivienda','inversion','comercial'].map(v => { const labels = { vivienda:'🏡 Vivienda', inversion:'📈 Inversión', comercial:'🏢 Comercial' }; const sel = (prev?.proposito||'') === v; return '<button type="button" onclick="document.getElementById(\'ci_prop\').value=\'' + v + '\';document.querySelectorAll(\'#ci_prop_wrap button\').forEach(b=>{b.style.background=\'#fff\';b.style.borderColor=\'var(--brd)\';b.style.color=\'var(--tx)\'});this.style.background=\'var(--b600)\';this.style.borderColor=\'var(--b600)\';this.style.color=\'#fff\'" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid ' + (sel ? 'var(--b600)' : 'var(--brd)') + ';background:' + (sel ? 'var(--b600)' : '#fff') + ';color:' + (sel ? '#fff' : 'var(--tx)') + ';font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">' + labels[v] + '</button>'; }).join('')}
+          </div>
+          <input type="hidden" id="ci_prop" value="${prev?.proposito||''}">
+        </div>
+
         <div class="ff" style="margin-bottom:14px">
           <label class="ffl">Mensaje al asesor (opcional)</label>
-          <textarea id="ci_msg" placeholder="Ej: Lo quiero ver el sábado, tengo fiador, necesito 3 habitaciones..." style="width:100%;min-height:80px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd)">${msgVal}</textarea>
+          <textarea id="ci_msg" placeholder="Ej: Lo quiero ver el sábado, tengo fiador, necesito 3 habitaciones..." style="width:100%;min-height:60px;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;color:var(--tx);background:var(--cd)">${msgVal}</textarea>
         </div>
 
         ${isUpdate ? `<div style="font-size:11px;color:var(--b700);background:var(--b50);border:1px solid var(--b200);padding:8px 10px;border-radius:6px;margin-bottom:12px">📝 Ya habías expresado interés en este inmueble. Estás actualizando los datos.</div>` : ''}
@@ -2614,28 +2638,28 @@ window._abrirInteresDirecto = async function(inmId) {
   document.body.insertAdjacentHTML('beforeend', html);
 };
 
-// Score automático de compatibilidad comprador
+// Score automático de compatibilidad comprador (0-100)
 window.calcScoreInteres = function(interes, inmueble) {
   let score = 0;
+  // Crédito aprobado (+30)
+  if (interes.credito_aprobado === 'si') score += 30;
+  else if (interes.credito_aprobado === 'en_tramite') score += 15;
   // Presupuesto cubre precio (+30)
   if (interes.presupuesto_max && inmueble) {
     const precio = interes.modalidad === 'arriendo' ? (inmueble.precio_arriendo || 0) : (inmueble.precio_venta || 0);
     if (precio > 0 && interes.presupuesto_max >= precio) score += 30;
     else if (precio > 0 && interes.presupuesto_max >= precio * 0.8) score += 15;
   }
-  // Fecha ideal definida (+20, +10 extra si es dentro de 30 días)
+  // Plazo inmediato (+20)
   if (interes.fecha_ideal) {
-    score += 10;
     const dias = (new Date(interes.fecha_ideal) - new Date()) / 86400000;
-    if (dias <= 30 && dias >= 0) score += 10;
+    if (dias <= 30 && dias >= 0) score += 20;
+    else if (dias <= 90 && dias > 30) score += 10;
   }
-  // Mensaje detallado (+10)
-  if (interes.mensaje && interes.mensaje.length > 20) score += 10;
-  // Presupuesto declarado (+20)
-  if (interes.presupuesto_max && interes.presupuesto_max > 0) score += 20;
-  // Modalidad definida (+10)
-  if (interes.modalidad) score += 10;
-  // Cap at 100
+  // Propósito definido (+10)
+  if (interes.proposito) score += 10;
+  // Tipo de pago definido (+10)
+  if (interes.tipo_pago) score += 10;
   return Math.min(score, 100);
 };
 
@@ -2652,6 +2676,14 @@ window.guardarInteres = async function(inmId) {
   const fecha = document.getElementById('ci_fecha')?.value || null;
   const modalidad = document.getElementById('ci_modalidad')?.value || 'compra';
   const mensaje = (document.getElementById('ci_msg')?.value || '').trim() || null;
+  const credito = document.getElementById('ci_credito')?.value || null;
+  const tipoPago = document.getElementById('ci_pago')?.value || null;
+  const proposito = document.getElementById('ci_prop')?.value || null;
+
+  // Calc auto-score
+  const { data: _inm } = await SB().from('inmuebles').select('precio_venta,precio_arriendo').eq('id', inmId).single();
+  const _scoreData = { presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje, credito_aprobado: credito, tipo_pago: tipoPago, proposito };
+  const scoreAuto = window.calcScoreInteres(_scoreData, _inm);
 
   try {
     // Verificar si ya existe (UPDATE vs INSERT)
@@ -2659,11 +2691,12 @@ window.guardarInteres = async function(inmId) {
       .select('id').eq('usuario_id', u.id).eq('inmueble_id', inmId).maybeSingle();
 
     if (prev) {
-      const { error } = await SB().from('intereses_compradores').update({
-        presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje,
-        estado: 'nuevo',  // re-encolar para que admin lo revise de nuevo
-        updated_at: new Date().toISOString(),
-      }).eq('id', prev.id);
+      const upd = { presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje, estado: 'nuevo', updated_at: new Date().toISOString(), credito_aprobado: credito, tipo_pago: tipoPago, proposito, score_auto: scoreAuto };
+      let { error } = await SB().from('intereses_compradores').update(upd).eq('id', prev.id);
+      if (error && /credito_aprobado|tipo_pago|proposito|score_auto/i.test(error.message)) {
+        delete upd.credito_aprobado; delete upd.tipo_pago; delete upd.proposito; delete upd.score_auto;
+        ({ error } = await SB().from('intereses_compradores').update(upd).eq('id', prev.id));
+      }
       if (error) throw error;
       window.toast('💾 Interés actualizado');
     } else {
@@ -2671,14 +2704,15 @@ window.guardarInteres = async function(inmId) {
         inmueble_id: inmId, usuario_id: u.id,
         presupuesto_max: presup, fecha_ideal: fecha, modalidad, mensaje,
         estado: 'nuevo', interes_tipo: window._interesTipo || 'comprador',
+        credito_aprobado: credito, tipo_pago: tipoPago, proposito, score_auto: scoreAuto,
       };
-      const { error } = await SB().from('intereses_compradores').insert(row);
-      if (error && /interes_tipo/i.test(error.message)) {
-        // Graceful: column doesn't exist yet
-        delete row.interes_tipo;
-        const { error: e2 } = await SB().from('intereses_compradores').insert(row);
-        if (e2) throw e2;
-      } else if (error) throw error;
+      let { error } = await SB().from('intereses_compradores').insert(row);
+      if (error && /interes_tipo|credito_aprobado|tipo_pago|proposito|score_auto/i.test(error.message)) {
+        // Graceful: columns don't exist yet — strip and retry
+        delete row.interes_tipo; delete row.credito_aprobado; delete row.tipo_pago; delete row.proposito; delete row.score_auto;
+        ({ error } = await SB().from('intereses_compradores').insert(row));
+      }
+      if (error) throw error;
       // Activate comprador profile
       if (typeof window.activarPerfilPublico === 'function') window.activarPerfilPublico('comprador');
       window.toast('💙 ¡Interés enviado!');
