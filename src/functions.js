@@ -2666,29 +2666,35 @@ window.guardarInteres = async function(inmId) {
 };
 
 // Formulario comisionista: datos de la otra persona
+// Comisionista "sin confianza": NUNCA se piden datos del cliente/propietario.
+// Solo confirmación simple + comentario opcional. HOUSE llama al comisionista.
 window._abrirInteresComisionista = async function(inmId) {
   const u = U(); if (!u) return;
   const { data: p } = await SB().from('inmuebles').select('id,tipo,ciudad,barrio,codigo_house').eq('id', inmId).single();
+  const desc = (p?.tipo || 'Inmueble') + ' en ' + (p?.barrio || p?.ciudad || '');
   const html = `
-  <div id="ciDlg" class="modal-overlay" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)">
-    <div class="card" style="max-width:480px;width:100%;max-height:90vh;overflow:auto;border-radius:14px">
-      <div class="cdh"><div class="chl"><div class="chi">👥</div><div><div class="cht">Referir interesado</div><div style="font-size:11px;color:var(--sub);margin-top:2px">${p?.tipo||''} · ${p?.barrio||p?.ciudad||''}</div></div></div>
-        <button onclick="document.getElementById('ciDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
+  <div id="ciDlg" style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)" onclick="if(event.target===this)this.remove()">
+    <div style="max-width:480px;width:100%;background:#fff;border-radius:20px;overflow:auto;max-height:90vh" onclick="event.stopPropagation()">
+      <div style="padding:24px 20px;text-align:center">
+        <div style="font-size:56px;margin-bottom:12px">🤝</div>
+        <div style="font-size:20px;font-weight:800;color:#8b5cf6;margin-bottom:6px">Tengo a alguien interesado</div>
+        <div style="font-size:15px;color:#5a5550;line-height:1.6;margin-bottom:4px">${desc}</div>
+        <div style="font-size:12px;color:#1a4f8b;font-weight:700">${p?.codigo_house || ''}</div>
       </div>
-      <div class="cdb" style="padding:18px">
-        <div style="text-align:center;margin-bottom:16px"><div style="font-size:48px;margin-bottom:8px">👥</div><div style="font-size:16px;color:#5a5550;line-height:1.6">Contanos un poco sobre la persona interesada para que podamos atenderla mejor.</div></div>
-        <div class="ff" style="margin-bottom:12px"><label class="ffl">Nombre de la persona *</label><input id="ci_ref_nombre" class="ffi" placeholder="Ej: Carlos Mejía"></div>
-        <div class="ff" style="margin-bottom:12px"><label class="ffl">Teléfono de contacto *</label><input id="ci_ref_tel" class="ffi" type="tel" placeholder="Ej: 310 555 1234"></div>
-        <div class="ff" style="margin-bottom:12px"><label class="ffl">¿Sabés si tiene crédito aprobado?</label>
-          <div style="display:flex;gap:8px"><button onclick="document.getElementById('ci_ref_cred').value='si';this.style.background='#8b5cf6';this.style.color='#fff'" style="flex:1;padding:14px;border-radius:12px;border:2px solid #e0ddd8;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✅ Sí</button><button onclick="document.getElementById('ci_ref_cred').value='no';this.style.background='#8b5cf6';this.style.color='#fff'" style="flex:1;padding:14px;border-radius:12px;border:2px solid #e0ddd8;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">❌ No</button><button onclick="document.getElementById('ci_ref_cred').value='nosabe';this.style.background='#8b5cf6';this.style.color='#fff'" style="flex:1;padding:14px;border-radius:12px;border:2px solid #e0ddd8;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🤷 No sé</button></div>
-          <input type="hidden" id="ci_ref_cred" value="">
+      <div style="padding:0 20px 24px">
+        <div style="background:#f5f3ff;border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #8b5cf620">
+          <div style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:10px">Al confirmar, nuestro equipo te contactará por WhatsApp para coordinar la visita con tu cliente.</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">🔒</div><div style="font-size:13px;color:#5a5550"><b>No necesitás compartir datos</b> de tu cliente. Nosotros te llamamos a vos.</div></div>
+            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">📞</div><div style="font-size:13px;color:#5a5550">Vos coordinás con tu contacto. Nosotros coordinamos con vos.</div></div>
+            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">💰</div><div style="font-size:13px;color:#5a5550">Si se cierra el negocio, <b>comisión compartida</b>.</div></div>
+          </div>
         </div>
-        <div class="ff" style="margin-bottom:14px"><label class="ffl">¿Algo más?</label><textarea id="ci_ref_msg" class="ffi" style="min-height:60px;resize:vertical" placeholder="Ej: Busca algo de 3 habitaciones..."></textarea></div>
-        <div style="display:flex;gap:8px">
-          <button onclick="document.getElementById('ciDlg').remove()" style="flex:1;padding:12px;border:1.5px solid var(--brd);border-radius:10px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);cursor:pointer;font-family:inherit">Cancelar</button>
-          <button onclick="window._guardarInteresComisionista('${inmId}')" style="flex:2;padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:800;background:#8b5cf6;color:#fff;cursor:pointer;font-family:inherit">📤 Enviar referencia</button>
+        <div style="margin-bottom:16px"><label style="font-size:14px;font-weight:700;display:block;margin-bottom:6px">Comentario (opcional)</label><textarea id="ci_ref_msg" rows="2" placeholder="Ej: Mi cliente busca algo de 3 habitaciones, tiene presupuesto..." style="width:100%;padding:12px;border-radius:12px;border:2px solid #e0ddd8;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea></div>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('ciDlg').remove()" style="flex:1;padding:14px;border:1.5px solid var(--g200);border-radius:12px;background:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--sub)">Cancelar</button>
+          <button onclick="window._guardarInteresComisionista('${inmId}')" style="flex:2;padding:14px;border:none;border-radius:12px;background:#8b5cf6;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">🤝 Confirmar interés</button>
         </div>
-        <div style="text-align:center;margin-top:12px"><div style="font-size:14px;font-weight:700;color:#8b5cf6">Si se cierra, ganás comisión 50/50</div><div style="font-size:13px;color:#5a5550;margin-top:2px">🔒 Solo el equipo de House contacta a esta persona</div></div>
       </div>
     </div>
   </div>`;
@@ -2697,25 +2703,21 @@ window._abrirInteresComisionista = async function(inmId) {
 
 window._guardarInteresComisionista = async function(inmId) {
   const u = U(); if (!u) return;
-  const nombre = document.getElementById('ci_ref_nombre')?.value?.trim();
-  const tel = document.getElementById('ci_ref_tel')?.value?.trim();
-  if (!nombre || !tel) { window.toast('Necesitamos nombre y teléfono', 'twarn'); return; }
-  const cred = document.getElementById('ci_ref_cred')?.value || null;
   const msg = document.getElementById('ci_ref_msg')?.value?.trim() || null;
   try {
-    const row = { inmueble_id: inmId, usuario_id: u.id, estado: 'nuevo', interes_tipo: 'comisionista', referido_nombre: nombre, referido_telefono: tel, mensaje: msg + (cred ? ' [Crédito: ' + cred + ']' : '') };
+    const row = { inmueble_id: inmId, usuario_id: u.id, estado: 'nuevo', interes_tipo: 'comisionista', mensaje: msg };
     const { error } = await SB().from('intereses_compradores').insert(row);
-    if (error && /interes_tipo|referido_nombre|referido_telefono/i.test(error.message)) {
-      delete row.interes_tipo; delete row.referido_nombre; delete row.referido_telefono;
-      row.mensaje = 'COMISIONISTA: ' + nombre + ' (' + tel + ')' + (msg ? ' - ' + msg : '') + (cred ? ' [Crédito: ' + cred + ']' : '');
+    if (error && /interes_tipo/i.test(error.message)) {
+      delete row.interes_tipo;
+      row.mensaje = '[COMISIONISTA] ' + (msg || 'Sin comentario');
       const { error: e2 } = await SB().from('intereses_compradores').insert(row);
       if (e2) throw e2;
     } else if (error) throw error;
     await window.activarPerfilPublico('comisionista');
     const { data: inm } = await SB().from('inmuebles').select('tipo,barrio').eq('id', inmId).single();
-    await window.noti('interes_nuevo', 'amarillo', '👥 Referencia de comisionista', u.nombre + ' refiere a ' + nombre + ' para ' + (inm?.tipo || '') + ' en ' + (inm?.barrio || ''), null, 'admin', inmId);
+    await window.noti('interes_nuevo', 'amarillo', '🤝 Comisionista interesado', u.nombre + ' tiene un cliente para ' + (inm?.tipo || '') + ' en ' + (inm?.barrio || '') + '. Contactar al comisionista.', null, 'admin', inmId);
     document.getElementById('ciDlg')?.remove();
-    window.toast('✅ ¡Referencia enviada! Te contactaremos si se concreta.');
+    window.toast('✅ ¡Confirmado! Te contactaremos por WhatsApp para coordinar.');
   } catch(e) {
     console.error('[guardarInteresComisionista]', e);
     window.toast('Error: ' + (e.message || 'desconocido'), 'terr');
