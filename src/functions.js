@@ -2527,8 +2527,8 @@ window.abrirInteres = async function(inmId) {
           <div style="font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:6px">Para alguien que conozco</div>
           <div style="font-size:15px;color:#5a5550;line-height:1.6">Tengo un cliente, amigo o familiar que busca algo así.</div>
           <div style="margin-top:10px;padding:10px 12px;background:#8b5cf612;border-radius:10px">
-            <div style="font-size:14px;font-weight:800;color:#6d28d9">💰 Ganá hasta 1.5% del valor de venta</div>
-            <div style="font-size:12px;color:#5a5550;margin-top:4px;line-height:1.5">Si se cierra el negocio, te transferimos tu comisión. Ejemplo: inmueble de $300M → hasta $4.500.000 para vos.</div>
+            <div style="font-size:14px;font-weight:800;color:#6d28d9">💰 Gana hasta 1.5% del valor de venta</div>
+            <div style="font-size:12px;color:#5a5550;margin-top:4px;line-height:1.5">Si se cierra el negocio, te transferimos tu comisión. Ejemplo: inmueble de $300M → hasta $4.500.000 para ti.</div>
           </div>
         </div>
       </div>
@@ -2770,13 +2770,13 @@ window._abrirInteresComisionista = async function(inmId) {
           <div style="font-size:13px;font-weight:700;color:#6d28d9;margin-bottom:4px">💰 TU COMISIÓN</div>
           <div style="font-size:28px;font-weight:900;color:#8b5cf6">Hasta 1.5%</div>
           <div style="font-size:14px;color:#5a5550;margin-top:4px;line-height:1.5">Del valor de venta. Si otro comisionista publicó el inmueble, la comisión se divide entre los participantes.</div>
-          <div style="font-size:13px;color:#6d28d9;font-weight:700;margin-top:6px">Ejemplo: $300M → hasta $4.500.000 para vos</div>
+          <div style="font-size:13px;color:#6d28d9;font-weight:700;margin-top:6px">Ejemplo: $300M → hasta $4.500.000 para ti</div>
         </div>
         <div style="background:#f5f3ff;border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #8b5cf620">
           <div style="font-size:14px;color:#1a1a1a;line-height:1.6;margin-bottom:10px">Al confirmar, nuestro equipo te contacta por WhatsApp para coordinar.</div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">🔒</div><div style="font-size:13px;color:#5a5550"><b>No necesitás compartir datos</b> de tu cliente. Te llamamos a vos.</div></div>
-            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">📞</div><div style="font-size:13px;color:#5a5550">Vos coordinás con tu contacto. Nosotros con vos.</div></div>
+            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">🔒</div><div style="font-size:13px;color:#5a5550"><b>No necesitas compartir datos</b> de tu cliente. Te llamamos a ti.</div></div>
+            <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">📞</div><div style="font-size:13px;color:#5a5550">Tú coordinas con tu contacto. Nosotros contigo.</div></div>
             <div style="display:flex;gap:8px;align-items:center"><div style="font-size:18px">🤝</div><div style="font-size:13px;color:#5a5550">Si se cierra, <b>te transferimos tu parte</b>. Sin letra chica.</div></div>
           </div>
         </div>
@@ -4577,7 +4577,7 @@ window._mostrarPreguntaPublicacion = function() {
     <div style="padding:24px 20px;max-width:480px;margin:0 auto">
       <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#1a4f8b;text-transform:uppercase;margin-bottom:8px">Publicar inmueble</div>
       <div style="font-size:26px;font-weight:800;color:#122d4f;line-height:1.2;margin-bottom:8px">¿De quién es el inmueble?</div>
-      <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:28px">Nosotros le conseguimos el comprador. Vos solo publicás.</div>
+      <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:28px">Nosotros le conseguimos el comprador. Tú solo publicas.</div>
       <div id="opt-propietario" onclick="window._seleccionarTipoPublicacion('vendedor')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s cubic-bezier(.16,1,.3,1)">
         <div style="font-size:48px;margin-bottom:12px">🏡</div>
         <div style="font-size:20px;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:6px">Es mi propiedad</div>
@@ -4611,10 +4611,10 @@ function _mostrarConfirmacionPublicacion(tipo) {
   const color = esProp ? '#10b981' : '#f59e0b';
   const emoji = esProp ? '🏡' : '🤝';
   const titulo = esProp ? '¡Perfecto!' : '¡Excelente!';
-  const sub = esProp ? 'Nosotros le conseguimos el comprador calificado. Nuestro equipo revisa y publica tu inmueble en menos de 12 horas.' : 'Nosotros conseguimos el comprador calificado y coordinamos todo. Vos solo publicás el inmueble.';
+  const sub = esProp ? 'Nosotros le conseguimos el comprador calificado. Nuestro equipo revisa y publica tu inmueble en menos de 12 horas.' : 'Nosotros conseguimos el comprador calificado y coordinamos todo. Tú solo publicas el inmueble.';
   const pasos = esProp
-    ? [{ e:'📝',t:'Llenás el formulario con fotos y precio' },{ e:'🔍',t:'Nosotros verificamos que todo esté seguro' },{ e:'✅',t:'Te avisamos cuando esté publicado' },{ e:'👤',t:'Solo te contactamos con compradores calificados' }]
-    : [{ e:'📝',t:'Llenás el formulario con lo que sepas del inmueble' },{ e:'🔍',t:'Nosotros verificamos y buscamos compradores' },{ e:'📞',t:'Coordinamos todo con el propietario' },{ e:'💰',t:'Si se cierra, te transferimos tu parte' }];
+    ? [{ e:'📝',t:'Llenas el formulario con fotos y precio' },{ e:'🔍',t:'Nosotros verificamos que todo esté seguro' },{ e:'✅',t:'Te avisamos cuando esté publicado' },{ e:'👤',t:'Solo te contactamos con compradores calificados' }]
+    : [{ e:'📝',t:'Llenas el formulario con lo que sepas del inmueble' },{ e:'🔍',t:'Nosotros verificamos y buscamos compradores' },{ e:'📞',t:'Coordinamos todo con el propietario' },{ e:'💰',t:'Si se cierra, te transferimos tu parte' }];
 
   const el = document.getElementById('publicarc'); if (!el) return;
   el.innerHTML = `
@@ -4632,7 +4632,7 @@ function _mostrarConfirmacionPublicacion(tipo) {
         <div style="font-size:13px;font-weight:700;color:${esProp ? '#065f46' : '#92400e'};margin-bottom:4px">${esProp ? '💰 COMISIÓN TRANSPARENTE' : '💰 TU COMISIÓN'}</div>
         <div style="font-size:28px;font-weight:900;color:${color}">${esProp ? '3%' : '1.5%'}</div>
         <div style="font-size:14px;color:#5a5550;margin-top:4px;line-height:1.5">${esProp ? 'Solo si se cierra el negocio. Si no se vende, no pagas nada.' : 'Del valor de venta. Si hay otro comisionista que trae el comprador, la comisión se divide entre los participantes.'}</div>
-        ${!esProp ? '<div style="font-size:13px;color:#92400e;font-weight:700;margin-top:6px">Ejemplo: inmueble de $300M → hasta $4.500.000 para vos</div>' : ''}
+        ${!esProp ? '<div style="font-size:13px;color:#92400e;font-weight:700;margin-top:6px">Ejemplo: inmueble de $300M → hasta $4.500.000 para ti</div>' : ''}
       </div>
       <button onclick="window._ownerStep=1;window._ownerData={};rPublicar()" style="width:100%;padding:18px;border-radius:16px;border:none;background:${color};color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px ${color}30;margin-top:16px;font-family:inherit">📝 Comenzar a publicar</button>
     </div>`;
