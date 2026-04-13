@@ -2382,10 +2382,11 @@ window.rechazarRegistro = async function(userId) {
 window.aprobarInmuebleExterno = async function(inmId) {
   try {
     await SB().from('inmuebles').update({ estado_revision: 'aprobado' }).eq('id', inmId);
-    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
+    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador_id,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
     const capEmail = inm?.captador?.email || '';
     await window.noti('inmueble_aprobado', 'verde', '✅ Tu inmueble fue aprobado', 'Tu ' + (inm?.tipo||'inmueble') + ' en ' + (inm?.ciudad||'') + ' ya está publicado.', capEmail, null, inmId);
     await window.noti('inmueble_aprobado', 'verde', '✅ Inmueble externo aprobado', (inm?.captador?.nombre||'Propietario') + ': ' + (inm?.tipo||'') + ' en ' + (inm?.ciudad||''), null, 'admin', inmId);
+    if (inm?.captador_id) await window.mensajeDeNegocio({ inmuebleId: inmId, clienteId: inm.captador_id, contextoTipo: 'moderacion', tipoMensaje: 'sistema', texto: '✅ Tu ' + (inm?.tipo||'inmueble') + ' en ' + (inm?.ciudad||'') + ' fue aprobado y ya está publicado.' });
     window.toast('✅ Inmueble aprobado y publicado');
     if (typeof window.rUsers === 'function') window.rUsers();
   } catch(e) { console.error('[aprobarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
@@ -2396,8 +2397,9 @@ window.rechazarInmuebleExterno = async function(inmId) {
   if (!motivo) return;
   try {
     await SB().from('inmuebles').update({ estado_revision: 'rechazado' }).eq('id', inmId);
-    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
+    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador_id,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
     await window.noti('inmueble_rechazado', 'rojo', '❌ Tu inmueble fue rechazado', 'Tu ' + (inm?.tipo||'') + ' en ' + (inm?.ciudad||'') + '. Motivo: ' + motivo, inm?.captador?.email, null, inmId);
+    if (inm?.captador_id) await window.mensajeDeNegocio({ inmuebleId: inmId, clienteId: inm.captador_id, contextoTipo: 'moderacion', tipoMensaje: 'declinacion', texto: 'Tu ' + (inm?.tipo||'inmueble') + ' en ' + (inm?.ciudad||'') + ' no fue aprobado. Motivo: ' + motivo });
     window.toast('❌ Inmueble rechazado');
     if (typeof window.rUsers === 'function') window.rUsers();
   } catch(e) { console.error('[rechazarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
@@ -2466,12 +2468,13 @@ window.pedirCambiosInmuebleExterno = async function(inmId) {
       motivo_cambios: motivo,
       cambios_solicitados_at: new Date().toISOString(),
     }).eq('id', inmId);
-    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
+    const { data: inm } = await SB().from('inmuebles').select('tipo,ciudad,captador_id,captador:usuarios!captador_id(nombre,email)').eq('id', inmId).single();
     const capEmail = inm?.captador?.email || '';
     await window.noti('inmueble_cambios_solicitados', 'amarillo',
       '📝 Pedimos ajustes en tu inmueble',
       'Tu ' + (inm?.tipo || 'inmueble') + ' en ' + (inm?.ciudad || '') + ' necesita correcciones antes de publicarse:\n\n' + motivo,
       capEmail, null, inmId);
+    if (inm?.captador_id) await window.mensajeDeNegocio({ inmuebleId: inmId, clienteId: inm.captador_id, contextoTipo: 'moderacion', tipoMensaje: 'sistema', texto: '⚠️ Tu ' + (inm?.tipo||'inmueble') + ' necesita ajustes antes de publicarse:\n\n' + motivo });
     window.toast('📨 Cambios solicitados al propietario');
     dlg.remove();
     if (typeof window.rUsers === 'function') window.rUsers();
@@ -2894,32 +2897,22 @@ window._aplicarCalificacionInteres = async function(intId, score, motivo) {
                            (it.mensaje ? '\n💬 ' + it.mensaje : '');
 
     if (score === 'verde') {
-      // Notificar captador del inmueble
       if (captadorEmail) {
-        await window.noti('interes_calificado', 'verde',
-          '🟢 Cliente calificado para tu ' + (inm.tipo || 'inmueble'),
-          compradorNom + ' fue calificado por el admin como buen prospecto para tu ' +
-          (inm.tipo || 'inmueble') + ' en ' + ubicacion + '.' + detalleInteres,
-          captadorEmail, null, inm.id);
+        await window.noti('interes_calificado', 'verde', '🟢 Cliente calificado para tu ' + (inm.tipo || 'inmueble'), compradorNom + ' fue calificado como buen prospecto para tu ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + '.' + detalleInteres, captadorEmail, null, inm.id);
       }
-      window.toast('🟢 Cliente calificado y notificado al captador');
+      if (it.comprador?.id) await window.mensajeDeNegocio({ inmuebleId: inm.id, clienteId: it.comprador.id, contextoTipo: 'interes', tipoMensaje: 'sistema', texto: '✅ Tu interés en ' + (inm.tipo||'') + ' en ' + ubicacion + ' fue aprobado. Un asesor te contactará pronto.' });
+      window.toast('🟢 Cliente calificado y notificado');
     } else if (score === 'amarillo') {
-      // Notificar comprador para que complete su interés
       if (compradorEmail) {
-        await window.noti('interes_pedir_info', 'amarillo',
-          '🟡 Necesitamos más información',
-          'Sobre tu interés en ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + ':\n\n' + motivo,
-          compradorEmail, null, inm.id);
+        await window.noti('interes_pedir_info', 'amarillo', '🟡 Necesitamos más información', 'Sobre tu interés en ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + ':\n\n' + motivo, compradorEmail, null, inm.id);
       }
+      if (it.comprador?.id) await window.mensajeDeNegocio({ inmuebleId: inm.id, clienteId: it.comprador.id, contextoTipo: 'interes', tipoMensaje: 'sistema', texto: '🟡 Necesitamos más información sobre tu interés en ' + (inm.tipo||'') + ' en ' + ubicacion + ': ' + motivo });
       window.toast('🟡 Solicitud enviada al cliente');
     } else if (score === 'rojo') {
-      // Notificar comprador del descarte
       if (compradorEmail) {
-        await window.noti('interes_descartado', 'rojo',
-          '🔴 Tu interés fue revisado',
-          'Sobre tu interés en ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + ':\n\n' + motivo,
-          compradorEmail, null, inm.id);
+        await window.noti('interes_descartado', 'rojo', '🔴 Tu interés fue revisado', 'Sobre tu interés en ' + (inm.tipo || 'inmueble') + ' en ' + ubicacion + ':\n\n' + motivo, compradorEmail, null, inm.id);
       }
+      if (it.comprador?.id) await window.mensajeDeNegocio({ inmuebleId: inm.id, clienteId: it.comprador.id, contextoTipo: 'interes', tipoMensaje: 'declinacion', texto: motivo });
       window.toast('🔴 Interés descartado');
     }
 
@@ -4525,12 +4518,18 @@ window._guardarCierre = async function(inmId, tipo) {
   const desc = descInm(p);
   const ico = tipo === 'venta' ? '💰' : '🔑';
   await window.noti('cambio_estado', 'verde', ico + ' Cierre: ' + desc + ' → ' + estado, u.nombre + ' cerró ' + desc + '. Comisión: ' + fm(total), null, 'all', inmId);
-  // Notify each participant with their monto
+  // Notify each participant with their monto + send message
   for (const pt of parts) {
     if (pt.usuario_id && pt.rol !== 'house') {
       const monto = Math.round(total * pt.porcentaje / 100);
       await window.noti('cierre_registrado', 'verde', '🏆 Negocio cerrado: ' + desc, 'Tu parte: ' + fm(monto) + ' (' + pt.porcentaje + '% de ' + fm(total) + ')', null, null, inmId);
+      await window.mensajeDeNegocio({ inmuebleId: inmId, clienteId: pt.usuario_id, contextoTipo: 'negocio', tipoMensaje: 'sistema', texto: '🎉 ¡Negocio cerrado! ' + desc + '. Tu comisión: ' + fm(monto) + ' (' + pt.porcentaje + '%). Te contactaremos para coordinar el pago.' });
     }
+  }
+  // Notify captador (propietario) if different
+  const captId = p?.captador_id;
+  if (captId && !parts.some(pt => pt.usuario_id === captId)) {
+    await window.mensajeDeNegocio({ inmuebleId: inmId, clienteId: captId, contextoTipo: 'negocio', tipoMensaje: 'sistema', texto: '🎉 ¡Tu ' + desc + ' se ' + (tipo === 'venta' ? 'vendió' : 'arrendó') + '! ' + (contraparte ? 'Con ' + contraparte + '. ' : '') + 'Te contactaremos para los siguientes pasos.' });
   }
   await window.noti('cierre_registrado', 'verde', '🏆 Cierre: ' + desc, u.nombre + ' registró cierre. Comisión total: ' + fm(total) + ' (' + Math.round(pct * 100) + '%). ' + parts.length + ' participantes.', null, 'admin', inmId);
 
@@ -4545,9 +4544,10 @@ window.marcarPagoParticipante = async function(participanteId) {
   if (!ok) return;
   const { error } = await SB().from('participantes_comision').update({ pago_estado: 'pagado', pago_fecha: new Date().toISOString() }).eq('id', participanteId);
   if (error) { window.toast('Error: ' + error.message, 'terr'); return; }
-  const { data: pt } = await SB().from('participantes_comision').select('usuario_id,monto,cierre_id').eq('id', participanteId).single();
+  const { data: pt } = await SB().from('participantes_comision').select('usuario_id,monto,cierre_id,cierre:cierres(inmueble_id)').eq('id', participanteId).single();
   if (pt?.usuario_id) {
-    await window.noti('cierre_venta_pagada', 'verde', '💵 Pago registrado', 'Se te pagó ' + fm(pt.monto || 0) + ' por cierre.', null, null, null);
+    await window.noti('cierre_venta_pagada', 'verde', '💵 Pago registrado', 'Se te pagó ' + fm(pt.monto || 0) + ' por cierre.', null, null, pt?.cierre?.inmueble_id || null);
+    await window.mensajeDeNegocio({ inmuebleId: pt?.cierre?.inmueble_id, clienteId: pt.usuario_id, contextoTipo: 'negocio', tipoMensaje: 'sistema', texto: '✅ Tu comisión de ' + fm(pt.monto || 0) + ' fue pagada. ¡Gracias por confiar en House!' });
   }
   window.toast('💵 Pago registrado');
   if (typeof window.rMisNegocios === 'function') window.rMisNegocios();
@@ -4646,7 +4646,48 @@ function _mostrarConfirmacionPublicacion(tipo) {
 // (Se integra dentro de abrirInteres — ver modificación abajo)
 
 // ══════════════════════════════════════════════════════════════════
-// 31b. PERFILES PÚBLICOS DINÁMICOS
+// 31b. MENSAJES VINCULADOS A NEGOCIOS
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Envía un mensaje vinculado a un negocio/inmueble con contexto.
+ * Se llama desde cada acción admin (aprobar, rechazar, calificar, declinar, cita, cerrar, pagar).
+ *
+ * @param {Object} opts
+ * @param {string} opts.inmuebleId - UUID del inmueble
+ * @param {string} opts.clienteId - UUID del receptor (cliente público)
+ * @param {string} opts.contextoTipo - 'moderacion'|'interes'|'cita'|'negocio'
+ * @param {string} opts.tipoMensaje - 'sistema'|'declinacion'|'texto'
+ * @param {string} opts.texto - Contenido del mensaje
+ */
+window.mensajeDeNegocio = async function(opts) {
+  const u = U(); if (!u) return;
+  const { inmuebleId, clienteId, contextoTipo, tipoMensaje, texto } = opts;
+  if (!clienteId || !texto) return;
+  const convId = [u.id, clienteId].sort().join('_') + (inmuebleId ? '_' + inmuebleId : '');
+  try {
+    const row = {
+      conversacion_id: convId,
+      emisor_id: u.id,
+      receptor_id: clienteId,
+      inmueble_id: inmuebleId || null,
+      texto,
+      contexto_tipo: contextoTipo || null,
+      contexto_id: inmuebleId || null,
+      tipo_mensaje: tipoMensaje || 'texto',
+    };
+    const { error } = await SB().from('mensajes').insert(row);
+    if (error && /contexto_tipo|contexto_id|tipo_mensaje/i.test(error.message)) {
+      // Graceful: columns don't exist yet
+      delete row.contexto_tipo; delete row.contexto_id; delete row.tipo_mensaje;
+      await SB().from('mensajes').insert(row);
+    } else if (error) {
+      console.warn('[mensajeDeNegocio]', error.message);
+    }
+  } catch(e) { console.error('[mensajeDeNegocio]', e); }
+};
+
+// 31c. PERFILES PÚBLICOS DINÁMICOS
 // ══════════════════════════════════════════════════════════════════
 
 window.activarPerfilPublico = async function(perfil) {
