@@ -4566,16 +4566,18 @@ window._mostrarPreguntaPublicacion = function() {
     <div style="padding:24px 20px;max-width:480px;margin:0 auto">
       <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#1a4f8b;text-transform:uppercase;margin-bottom:8px">Publicar inmueble</div>
       <div style="font-size:26px;font-weight:800;color:#122d4f;line-height:1.2;margin-bottom:8px">¿De quién es el inmueble?</div>
-      <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:28px">Solo necesitamos saber esto para darte la mejor experiencia.</div>
+      <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:28px">Nosotros le conseguimos el comprador. Vos solo publicás.</div>
       <div id="opt-propietario" onclick="window._seleccionarTipoPublicacion('vendedor')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s cubic-bezier(.16,1,.3,1)">
         <div style="font-size:48px;margin-bottom:12px">🏡</div>
         <div style="font-size:20px;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:6px">Es mi propiedad</div>
         <div style="font-size:15px;color:#5a5550;line-height:1.6">Soy el dueño y quiero vender o arrendar mi inmueble.</div>
+        <div style="margin-top:10px;padding:8px 12px;background:#10b98112;border-radius:10px;font-size:14px;font-weight:700;color:#065f46">💰 Comisión: 3% solo si se cierra el negocio</div>
       </div>
       <div id="opt-comisionista" onclick="window._seleccionarTipoPublicacion('comisionista')" style="background:#fff;border:2.5px solid #e0ddd8;border-radius:20px;padding:28px 24px;cursor:pointer;margin-bottom:16px;transition:all .25s cubic-bezier(.16,1,.3,1)">
         <div style="font-size:48px;margin-bottom:12px">🤝</div>
         <div style="font-size:20px;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:6px">Es de otra persona</div>
-        <div style="font-size:15px;color:#5a5550;line-height:1.6">Conozco al dueño y quiero ayudarle. Si se cierra el negocio, gano comisión.</div>
+        <div style="font-size:15px;color:#5a5550;line-height:1.6">Conozco al dueño y quiero ayudarle a vender o arrendar.</div>
+        <div style="margin-top:10px;padding:8px 12px;background:#f59e0b12;border-radius:10px;font-size:14px;font-weight:700;color:#92400e">💰 Tu comisión: 1.5% del valor de venta (50% del 3%)</div>
       </div>
       <div style="background:#f0f7ff;border-radius:14px;padding:14px 16px;border:1px solid rgba(26,79,139,.08)">
         <div style="font-size:14px;color:#122d4f;line-height:1.6">🔒 En ambos casos, protegemos la dirección exacta y los datos del propietario.</div>
@@ -4598,10 +4600,10 @@ function _mostrarConfirmacionPublicacion(tipo) {
   const color = esProp ? '#10b981' : '#f59e0b';
   const emoji = esProp ? '🏡' : '🤝';
   const titulo = esProp ? '¡Perfecto!' : '¡Excelente!';
-  const sub = esProp ? 'Vas a publicar tu inmueble como propietario. Nuestro equipo lo revisa y lo publica en menos de 12 horas.' : 'Vas a publicar un inmueble como comisionista. Nosotros conseguimos el comprador y partimos la comisión 50/50.';
+  const sub = esProp ? 'Nosotros le conseguimos el comprador calificado. Nuestro equipo revisa y publica tu inmueble en menos de 12 horas.' : 'Nosotros conseguimos el comprador calificado y coordinamos todo. Vos solo publicás el inmueble.';
   const pasos = esProp
     ? [{ e:'📝',t:'Llenás el formulario con fotos y precio' },{ e:'🔍',t:'Nosotros verificamos que todo esté seguro' },{ e:'✅',t:'Te avisamos cuando esté publicado' },{ e:'👤',t:'Solo te contactamos con compradores calificados' }]
-    : [{ e:'📝',t:'Llenás el formulario con lo que sepas del inmueble' },{ e:'🔍',t:'Nosotros verificamos y buscamos compradores' },{ e:'📞',t:'Coordinamos todo con el propietario' },{ e:'💰',t:'Si se cierra, te transferimos tu 50%' }];
+    : [{ e:'📝',t:'Llenás el formulario con lo que sepas del inmueble' },{ e:'🔍',t:'Nosotros verificamos y buscamos compradores' },{ e:'📞',t:'Coordinamos todo con el propietario' },{ e:'💰',t:'Si se cierra, te transferimos tu parte' }];
 
   const el = document.getElementById('publicarc'); if (!el) return;
   el.innerHTML = `
@@ -4615,8 +4617,13 @@ function _mostrarConfirmacionPublicacion(tipo) {
       <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px">
         ${pasos.map(p => '<div style="display:flex;gap:12px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:' + color + '12;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + p.e + '</div><div style="font-size:15px;color:#1a1a1a;line-height:1.5">' + p.t + '</div></div>').join('')}
       </div>
-      <button onclick="window._ownerStep=1;window._ownerData={};rPublicar()" style="width:100%;padding:18px;border-radius:16px;border:none;background:${color};color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px ${color}30;margin-top:20px;font-family:inherit">📝 Comenzar a publicar</button>
-      <div style="text-align:center;margin-top:12px;font-size:14px;color:#5a5550">${esProp ? 'Comisión: 3% solo si se cierra el negocio' : 'Tu comisión: 50% del 3% del valor'}</div>
+      <div style="margin-top:20px;padding:16px;border-radius:14px;background:${color}12;border:2px solid ${color}30;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:${esProp ? '#065f46' : '#92400e'};margin-bottom:4px">${esProp ? '💰 COMISIÓN TRANSPARENTE' : '💰 TU COMISIÓN'}</div>
+        <div style="font-size:28px;font-weight:900;color:${color}">${esProp ? '3%' : '1.5%'}</div>
+        <div style="font-size:14px;color:#5a5550;margin-top:4px;line-height:1.5">${esProp ? 'Solo si se cierra el negocio. Si no se vende, no pagas nada.' : 'Del valor de venta (50% del 3% total). Solo si se cierra.'}</div>
+        ${!esProp ? '<div style="font-size:13px;color:#92400e;font-weight:700;margin-top:6px">Ejemplo: inmueble de $300M → tu parte: $4.500.000</div>' : ''}
+      </div>
+      <button onclick="window._ownerStep=1;window._ownerData={};rPublicar()" style="width:100%;padding:18px;border-radius:16px;border:none;background:${color};color:#fff;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px ${color}30;margin-top:16px;font-family:inherit">📝 Comenzar a publicar</button>
     </div>`;
 }
 
