@@ -1598,7 +1598,8 @@ window.rPublicar = async function() {
     h += `<div class="wiz-field"><div class="wiz-label">BAÑOS</div><input id="ow_ban" type="number" class="wiz-input" value="${d.banos||''}"></div>`;
     h += `<div class="wiz-field"><div class="wiz-label">PARQUEADEROS</div><input id="ow_parq" type="number" class="wiz-input" value="${d.parqueaderos||''}"></div>`;
     h += `</div>`;
-    h += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div class="wiz-field"><div class="wiz-label">ÁREA CONSTRUIDA m²</div><input id="ow_area" type="number" class="wiz-input" placeholder="120" value="${d.area_construida||''}"></div><div class="wiz-field"><div class="wiz-label">ÁREA TOTAL m²</div><input id="ow_areatot" type="number" class="wiz-input" placeholder="200" value="${d.area_total||''}"></div><div class="wiz-field"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">—</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div></div>`;
+    h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"><div class="wiz-field"><div class="wiz-label">ÁREA CONSTRUIDA m²</div><input id="ow_area" type="number" class="wiz-input" placeholder="120" value="${d.area_construida||''}"></div><div class="wiz-field"><div class="wiz-label">ÁREA TOTAL m²</div><input id="ow_areatot" type="number" class="wiz-input" placeholder="200" value="${d.area_total||''}"></div></div>`;
+    h += `<div class="wiz-field" style="margin-bottom:12px"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">— Selecciona —</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div>`;
     h += `<div class="wiz-field"><div class="wiz-label">AMENIDADES <span style="font-weight:400;font-size:10px;color:var(--sub)">(selecciona las que apliquen)</span></div>`;
     const _amGroups = [
       { label: 'Zonas comunes', items: [
@@ -1621,13 +1622,25 @@ window.rPublicar = async function() {
       ]},
     ];
     const _selAm = d._amenidades || [];
-    _amGroups.forEach(g => {
-      h += `<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px">${g.label}</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
-      g.items.forEach(a => {
-        const sel = _selAm.includes(a.id);
-        h += `<button type="button" onclick="window._ownerData._amenidades=window._ownerData._amenidades||[];const i=window._ownerData._amenidades.indexOf('${a.id}');if(i>-1)window._ownerData._amenidades.splice(i,1);else window._ownerData._amenidades.push('${a.id}');rPublicar()" style="padding:7px 12px;border-radius:20px;border:1.5px solid ${sel?'var(--b600)':'#e0ddd8'};background:${sel?'var(--b600)':'#faf9f7'};color:${sel?'#fff':'#1a1a1a'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s"><span style="font-size:14px">${a.i}</span>${a.l}</button>`;
-      });
-      h += `</div></div>`;
+    const _openAmGroups = window._openAmGroups || {};
+    _amGroups.forEach((g, gi) => {
+      const selCount = g.items.filter(a => _selAm.includes(a.id)).length;
+      const isOpen = _openAmGroups[gi];
+      h += `<div style="margin-bottom:6px;border:1px solid #e0ddd8;border-radius:12px;overflow:hidden">`;
+      h += `<button type="button" onclick="window._openAmGroups=window._openAmGroups||{};window._openAmGroups[${gi}]=!window._openAmGroups[${gi}];rPublicar()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:none;background:${isOpen?'#f0f7ff':'#faf9f7'};cursor:pointer;font-family:inherit">`;
+      h += `<span style="font-size:13px;font-weight:700;color:#1a1a1a">${g.label}</span>`;
+      h += `<span style="display:flex;align-items:center;gap:6px">`;
+      if (selCount > 0) h += `<span style="background:var(--b600);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px">${selCount}</span>`;
+      h += `<span style="font-size:12px;color:var(--sub);transition:transform .2s;display:inline-block;transform:rotate(${isOpen?'180':'0'}deg)">▼</span></span></button>`;
+      if (isOpen) {
+        h += `<div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px">`;
+        g.items.forEach(a => {
+          const sel = _selAm.includes(a.id);
+          h += `<button type="button" onclick="window._ownerData._amenidades=window._ownerData._amenidades||[];const i=window._ownerData._amenidades.indexOf('${a.id}');if(i>-1)window._ownerData._amenidades.splice(i,1);else window._ownerData._amenidades.push('${a.id}');rPublicar()" style="padding:7px 12px;border-radius:20px;border:1.5px solid ${sel?'var(--b600)':'#e0ddd8'};background:${sel?'var(--b600)':'#fff'};color:${sel?'#fff':'#1a1a1a'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s"><span style="font-size:14px">${a.i}</span>${a.l}</button>`;
+        });
+        h += `</div>`;
+      }
+      h += `</div>`;
     });
     h += `</div>`;
     h += `<div class="wiz-field"><div class="wiz-label">DESCRIPCIÓN (lo que verá el público)</div><textarea id="ow_desc" class="wiz-input" style="min-height:80px;resize:vertical" placeholder="Describe tu inmueble...">${d.descripcion_cliente||''}</textarea></div>`;
