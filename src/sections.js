@@ -1994,29 +1994,86 @@ window.rUsers = async function() {
   h += `</div>`;
 
   if (window._usersTab === 'equipo') {
-    // Original users list
     const { data } = await SB().from('usuarios').select('*').order('nombre');
     if (!data) { el.innerHTML = h + '<div class="emp"><span class="emp-i">❌</span></div>'; return; }
-    h += data.map(u2 => {
-      const act=u2.activo, rol=u2.rol||'asesor';
-      const isGestor = u2.es_gestor_arriendos === true;
-      const displayRol = isGestor ? 'Gestor Arriendos' : rol;
-      const rolColor = rol==='admin' ? 'background:rgba(139,92,246,.1);color:var(--purple)' : rol==='oficina' ? 'background:var(--goldbg);color:#92400e' : isGestor ? 'background:#065f4615;color:#065f46' : u2.tipo_usuario==='publico'?'background:var(--b50);color:var(--b500)':'background:var(--b50);color:var(--b700)';
-      const gestorBadge = isGestor ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700;margin-left:4px">🔑 Gestor</span>' : '';
-      // Dynamic capability badges for external users
-      const isExt = u2.tipo_usuario === 'publico';
-      let capBadges = '';
-      if (isExt) {
-        capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b500);border:1px solid var(--b200);font-weight:700">🔍 Comprador</span>';
-        if (u2.puede_publicar) capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#065f4615;color:#065f46;border:1px solid #065f4630;font-weight:700">🏠 Vendedor</span>';
-        if (u2.puede_referir) capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(139,92,246,.1);color:var(--purple);border:1px solid rgba(139,92,246,.2);font-weight:700">🤝 Comisionista</span>';
-        if (u2.intencion_registro) { const _ic = { comprador:'🔍',vendedor:'🏠',comisionista:'🤝',arriendo_admin:'🏡',arriendo_pub:'📢' }; capBadges += ' <span style="font-size:8px;padding:1px 5px;border-radius:4px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-weight:700">' + (_ic[u2.intencion_registro]||'📋') + ' ' + u2.intencion_registro + '</span>'; }
+    const _RM = { admin:{badge:'🔴 Admin',color:'#DC2626',nivel:1}, oficina:{badge:'🟠 Oficina',color:'#EA580C',nivel:2}, gestor:{badge:'🟢 Gestor',color:'#059669',nivel:3}, asesor:{badge:'🔵 Asesor',color:'#2563EB',nivel:3}, publico:{badge:'⚫ Público',color:'#6B7280',nivel:4} };
+    const _EST = { activo:{l:'✅ Activo',c:'#10b981'}, inactivo:{l:'⚪ Inactivo',c:'#999'}, suspendido:{l:'🔴 Suspendido',c:'#ef4444'}, pendiente:{l:'⏳ Pendiente',c:'#f59e0b'} };
+    const _getBadge = u2 => { if (u2.tipo_usuario==='publico') { const p=u2.perfiles_publicos||[]; if(p.includes('comisionista')) return {badge:'🟡 Comisionista',color:'#D97706'}; if(p.includes('vendedor')) return {badge:'⚫ Vendedor',color:'#6B7280'}; return {badge:'⚫ Comprador',color:'#6B7280'}; } if(u2.es_gestor_arriendos) return _RM.gestor; return _RM[u2.rol]||{badge:u2.rol,color:'#999'}; };
+
+    // KPIs
+    const admins=data.filter(x=>x.rol==='admin'&&x.tipo_usuario!=='publico').length;
+    const oficinas=data.filter(x=>x.rol==='oficina').length;
+    const asesores=data.filter(x=>(x.rol==='asesor'&&x.tipo_usuario!=='publico')||x.es_gestor_arriendos).length;
+    const publicos=data.filter(x=>x.tipo_usuario==='publico').length;
+    h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px">';
+    [{l:'Total',c:data.length,cl:'#122d4f'},{l:'Admin',c:admins,cl:'#DC2626'},{l:'Oficina',c:oficinas,cl:'#EA580C'},{l:'Asesores',c:asesores,cl:'#2563EB'},{l:'Públicos',c:publicos,cl:'#6B7280'}].forEach(k => {
+      h += '<div style="background:'+k.cl+'10;border-radius:10px;padding:8px 4px;text-align:center"><div style="font-size:18px;font-weight:900;color:'+k.cl+'">'+k.c+'</div><div style="font-size:9px;color:var(--sub)">'+k.l+'</div></div>';
+    });
+    h += '</div>';
+
+    // Search
+    h += '<input type="text" id="usrSearch" placeholder="🔍 Buscar nombre, email, teléfono..." value="'+(window._usrSearch||'')+'" oninput="window._usrSearch=this.value;clearTimeout(window._usrDebounce);window._usrDebounce=setTimeout(()=>rUsers(),300)" style="width:100%;padding:12px;border-radius:12px;border:2px solid var(--brd);font-size:14px;margin-bottom:10px;box-sizing:border-box;font-family:inherit;background:var(--cd);color:var(--tx)">';
+
+    // Filter pills
+    const filt = window._usrFilter || 'todos';
+    h += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px">';
+    [{id:'todos',l:'Todos'},{id:'admin',l:'🔴 Admin'},{id:'oficina',l:'🟠 Oficina'},{id:'asesor',l:'🔵 Asesor'},{id:'gestor',l:'🟢 Gestor'},{id:'publico',l:'⚫ Público'},{id:'otros',l:'⚪ Otros'}].forEach(f => {
+      h += '<button onclick="window._usrFilter=\''+f.id+'\';rUsers()" style="padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(filt===f.id?'2px solid #122d4f':'2px solid transparent')+';background:'+(filt===f.id?'#122d4f10':'var(--cd2)')+';color:'+(filt===f.id?'#122d4f':'var(--sub)')+'">'+f.l+'</button>';
+    });
+    h += '</div>';
+
+    // Filter data
+    let list = data;
+    const sq = (window._usrSearch||'').toLowerCase();
+    if (sq) list = list.filter(x => (x.nombre||'').toLowerCase().includes(sq)||(x.email||'').toLowerCase().includes(sq)||(x.telefono_contacto||'').includes(sq)||(x.usuario||'').toLowerCase().includes(sq));
+    if (filt==='admin') list=list.filter(x=>x.rol==='admin'&&x.tipo_usuario!=='publico');
+    else if (filt==='oficina') list=list.filter(x=>x.rol==='oficina');
+    else if (filt==='asesor') list=list.filter(x=>x.rol==='asesor'&&x.tipo_usuario!=='publico'&&!x.es_gestor_arriendos);
+    else if (filt==='gestor') list=list.filter(x=>x.es_gestor_arriendos);
+    else if (filt==='publico') list=list.filter(x=>x.tipo_usuario==='publico'&&x.activo);
+    else if (filt==='otros') list=list.filter(x=>!x.activo);
+
+    // Cards
+    if (!list.length) h += '<div style="text-align:center;padding:30px;color:var(--sub)">Sin resultados</div>';
+    list.forEach(u2 => {
+      const b = _getBadge(u2);
+      const est = _EST[u2.estado_usuario||'activo']||_EST[u2.activo?'activo':'inactivo'];
+      const isOpen = window._usrExpanded === u2.id;
+
+      h += '<div onclick="window._usrExpanded='+(isOpen?'null':"'"+u2.id+"'")+';rUsers()" style="background:var(--cd);border-radius:14px;margin-bottom:8px;overflow:hidden;border:2px solid '+(isOpen?b.color+'40':'var(--brd)')+';cursor:pointer;transition:all .2s">';
+      h += '<div style="padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div>';
+      h += '<div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:wrap">';
+      h += '<span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:'+b.color+'15;color:'+b.color+'">'+b.badge+'</span>';
+      h += '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:'+est.c+'15;color:'+est.c+'">'+est.l+'</span>';
+      h += '</div>';
+      h += '<div style="font-size:15px;font-weight:800;color:var(--tx)">'+u2.nombre+'</div>';
+      h += '<div style="font-size:11px;color:var(--sub);margin-top:2px">'+(u2.email||'')+(u2.telefono_contacto?' · '+u2.telefono_contacto:'')+'</div>';
+      h += '</div>';
+      if (u2.foto) h += '<img src="'+u2.foto+'" onerror="this.style.display=\'none\'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0">';
+      else h += '<div style="width:36px;height:36px;border-radius:50%;background:'+b.color+'15;display:flex;align-items:center;justify-content:center;font-size:14px;color:'+b.color+';font-weight:800;flex-shrink:0">'+(u2.nombre||'?')[0].toUpperCase()+'</div>';
+      h += '</div>';
+      // Meta
+      h += '<div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--sub)">';
+      if (u2.intencion_registro) h += '<span>Intención: '+u2.intencion_registro+'</span>';
+      h += '<span>Creado: '+(u2.created_at?new Date(u2.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}):'?')+'</span>';
+      h += '</div></div>';
+
+      // Expanded
+      if (isOpen) {
+        h += '<div style="padding:0 14px 14px;border-top:1px solid var(--brd)">';
+        if (u2.notas_admin) h += '<div style="background:var(--goldbg);borderRadius:8px;padding:8px;margin-top:10px;margin-bottom:8px;font-size:11px;color:#92400e">📝 '+u2.notas_admin+'</div>';
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">';
+        h += '<button onclick="event.stopPropagation();abrirCambiarRol(\''+u2.id+'\',\'upgrade\')" style="padding:10px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:#10b98110;color:#10b981">⬆️ Upgrade</button>';
+        h += '<button onclick="event.stopPropagation();abrirCambiarRol(\''+u2.id+'\',\'downgrade\')" style="padding:10px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:#ef444410;color:#ef4444">⬇️ Downgrade</button>';
+        h += '<button onclick="event.stopPropagation();tUsr(\''+u2.id+'\','+u2.activo+')" style="padding:10px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:'+(u2.activo?'#ef444410':'#10b98110')+';color:'+(u2.activo?'#ef4444':'#10b981')+'">'+(u2.activo?'🔒 Desactivar':'✅ Activar')+'</button>';
+        h += '<button onclick="event.stopPropagation();abrirChat&&abrirChat(\''+u2.id+'\',\'\')" style="padding:10px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:#122d4f10;color:#122d4f">💬 Mensaje</button>';
+        h += '</div></div>';
       }
-      const toggleBtn = rol!=='admin' ? `<button onclick="tUsr('${u2.id}',${act})" style="padding:5px 12px;border-radius:14px;font-size:10px;font-weight:700;border:1.5px solid ${act?'var(--green)':'var(--red)'};background:${act?'var(--greenbg)':'var(--redbg)'};color:${act?'#065f46':'var(--red)'};cursor:pointer;font-family:inherit">${act?'✅ Activo':'🔒 Bloqueado'}</button>` : '';
-      // Admin can toggle puede_publicar for external users
-      const pubBtn = isExt ? `<button onclick="togglePublicar('${u2.id}',${!u2.puede_publicar})" style="padding:5px 8px;border-radius:14px;font-size:9px;font-weight:700;border:1.5px solid ${u2.puede_publicar?'var(--green)':'var(--gold)'};background:${u2.puede_publicar?'var(--greenbg)':'var(--goldbg)'};color:${u2.puede_publicar?'#065f46':'#92400e'};cursor:pointer;font-family:inherit;margin-left:4px">${u2.puede_publicar?'🏠 Pub. ✅':'🏠 Pub. ❌'}</button>` : '';
-      return `<div class="uc"><img src="${u2.foto||''}" onerror="this.style.display='none'" style="width:36px;height:36px;border-radius:50%;object-fit:cover"><div class="ui"><div class="uinm">${u2.nombre}${gestorBadge}${capBadges}</div><div class="uiem">${u2.usuario||u2.email||''}</div></div><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px;${rolColor}">${displayRol}</span>${toggleBtn}${pubBtn}</div>`;
-    }).join('');
+      h += '</div>';
+    });
+
+    // Create button
+    h += '<button onclick="abrirCrearUsuario()" style="width:100%;padding:14px;border-radius:14px;border:2px dashed var(--brd);background:transparent;color:var(--b600);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px">+ Crear usuario nuevo</button>';
   } else if (window._usersTab === 'solicitudes') {
     // Solicitudes tab
     // Pending registrations
