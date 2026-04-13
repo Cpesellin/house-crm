@@ -1184,7 +1184,7 @@ window.doSearch = function() {
     list = list.filter(p => {
       const c = (p.ciudad || '').toLowerCase(), t = (p.tipo || '').toLowerCase();
       const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
-      if (F.neg.size > 0) { let ok = false; if (F.neg.has('venta') && eV(p)) ok = true; if (F.neg.has('arriendo') && eA(p)) ok = true; if (F.neg.has('ambas') && eA2(p)) ok = true; if (!ok) return false; }
+      if (F.neg.size > 0) { let ok = false; if (F.neg.has('venta') && eV(p) && !eA2(p)) ok = true; if (F.neg.has('arriendo') && eA(p) && !eA2(p)) ok = true; if (F.neg.has('ambas') && eA2(p)) ok = true; if (F.neg.has('venta') && F.neg.has('arriendo') && eA2(p)) ok = true; if (!ok) return false; }
       if (F.ciu.size > 0 && !Array.from(F.ciu).some(x => c.includes(x.toLowerCase()))) return false;
       if (F.tipo.size > 0 && !Array.from(F.tipo).some(x => t.includes(x.toLowerCase()))) return false;
       if (arMin > 0 && (pa <= 0 || pa < arMin)) return false;
