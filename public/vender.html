@@ -231,7 +231,7 @@ function updateCalc() {
   var res = document.getElementById('calc-result');
   var label = _calcTipo === 'arriendo' ? 'Tu comisión como captador (pago único)' : _calcPct===100 ? 'Tu ganancia total' : _calcPct===0 ? 'House cobra 3% al cierre' : 'Tu parte de la comisión';
   var detail = _calcTipo === 'arriendo' ? '10% del primer canon de '+fm(valorReal)+' · Pago único al captar' : 'Comisión total: '+fmFull(comisionTotal)+' (3% del valor)'+(_calcPct>0&&_calcPct<100?' · House: '+fmFull(comisionTotal-tuParte):'');
-  res.innerHTML = '<div style="font-size:13px;opacity:.8;margin-bottom:4px">'+label+'</div><div style="font-size:42px;font-weight:900">'+fmFull(tuParte)+'</div><div style="font-size:12px;opacity:.7;margin-top:6px">'+detail+'</div>';
+  res.innerHTML = '<div style="font-size:13px;opacity:.8;margin-bottom:4px">'+label+'</div><div style="font-size:clamp(24px,7vw,38px);font-weight:900;word-break:break-all">'+fmFull(tuParte)+'</div><div style="font-size:12px;opacity:.7;margin-top:6px;word-break:break-word">'+detail+'</div>';
   var info = document.getElementById('calc-arriendo-info');
   if (_calcTipo === 'arriendo') {
     info.style.display = 'block';
