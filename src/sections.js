@@ -1549,6 +1549,11 @@ window.rMisPub = async function() {
 window.rPublicar = async function() {
   const el = document.getElementById('publicarc'); if (!el) return;
   const u = U(); if (!u) return;
+  // Usuarios públicos: si no han elegido tipo de publicación, mostrar pregunta primero
+  if (u.tipo_usuario === 'publico' && !window._publicacionTipo) {
+    if (typeof window._mostrarPreguntaPublicacion === 'function') window._mostrarPreguntaPublicacion();
+    return;
+  }
   const step = window._ownerStep || 1;
   const d = window._ownerData || {};
   const tipos = ['Apartamento','Apartaestudio','Casa','Finca','Local','Lote','Oficina','Bodega','Penthouse'];

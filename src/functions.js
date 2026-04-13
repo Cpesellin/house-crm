@@ -4556,10 +4556,11 @@ window.interceptarPublicacion = function() {
   const u = U();
   if (!u) { window.showAuthPrompt('publicar', { icono: '📝', titulo: 'Publicar inmueble', mensaje: 'Crea tu cuenta gratis para publicar.', beneficios: ['📝 Publica gratis hasta 3 inmuebles', '🔍 Nosotros buscamos compradores', '🔒 Datos protegidos'], cta: 'Crear cuenta gratis', ctaSecundario: 'Ahora no' }); return; }
   if (u.tipo_usuario === 'interno' || !u.tipo_usuario) { window.go('reg'); return; }
-  _mostrarPreguntaPublicacion();
+  // Navegar a publicar — rPublicar detecta que no hay _publicacionTipo y muestra la pregunta
+  window.go('publicar');
 };
 
-function _mostrarPreguntaPublicacion() {
+window._mostrarPreguntaPublicacion = function() {
   const el = document.getElementById('publicarc'); if (!el) return;
   el.innerHTML = `
     <div style="padding:24px 20px;max-width:480px;margin:0 auto">
