@@ -4764,4 +4764,15 @@ window.activarPerfilPublico = async function(perfil) {
   window.userStore.update({ perfiles_publicos: perfiles });
 };
 
+// Share link for arriendos category
+window.compartirArriendos = function() {
+  const url = 'https://inmobiliariahouse.com.co/arriendos';
+  const texto = '🔑 Inmuebles en arriendo en Pereira y el Eje Cafetero\n\n🏠 Apartamentos, casas y locales verificados por Inmobiliaria House.\n✅ Sin intermediarios — te acompañamos hasta el cierre.\n\n👉 ' + url;
+  if (navigator.share) {
+    navigator.share({ title: '🔑 Arriendos · Inmobiliaria House', text: texto, url: url }).catch(() => {});
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+  }
+};
+
 console.log('[functions] ✅ All window functions registered');

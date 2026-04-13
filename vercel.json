@@ -5,6 +5,11 @@
       "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
       "destination": "https://keasjfgcjkskvdcudoml.supabase.co/functions/v1/ver?ref=:ref"
     },
+    {
+      "source": "/arriendos",
+      "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
+      "destination": "/arriendos.html"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

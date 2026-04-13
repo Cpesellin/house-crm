@@ -96,6 +96,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // Check for /arriendos direct URL → pre-filter to arriendo
+  const arrPath = window.location.pathname.match(/^\/arriendos\/?$/i);
+  if (arrPath) {
+    window._preFilterArriendo = true;
+    // Set hash to portafolio so the router shows inventory
+    if (!location.hash || location.hash === '#/') location.hash = '#/portafolio';
+  }
+
   // Normal app flow
   const appContainer = document.getElementById('app');
   if (!appContainer) {
@@ -105,4 +113,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await initApp(appContainer);
   initRouter();
+
+  // Apply pre-filter if /arriendos URL
+  if (window._preFilterArriendo) {
+    window._preFilterArriendo = false;
+    // Wait for filters to be available
+    const waitF = () => {
+      if (window.F && window.pillToggle && window.doSearch) {
+        window.F.neg.clear();
+        window.F.neg.add('arriendo');
+        if (typeof window.updatePills === 'function') window.updatePills();
+        if (typeof window.renderSel === 'function') window.renderSel();
+        window.doSearch();
+      } else {
+        setTimeout(waitF, 200);
+      }
+    };
+    setTimeout(waitF, 500);
+  }
 });
