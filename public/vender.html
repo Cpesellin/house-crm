@@ -114,13 +114,13 @@
         <div style="display:flex;justify-content:space-between;font-size:11px;color:#bbb;margin-top:4px"><span id="calc-min">$150M</span><span id="calc-max">$2.000M</span></div>
       </div>
       <div id="calc-pct-section" style="margin-bottom:24px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#999">Tu porcentaje de la comisión</span><span style="font-size:16px;font-weight:900;color:#1a6b4a" id="calc-pct-display">50%</span></div>
-        <input type="range" id="calc-pct" min="0" max="100" step="1" value="50" oninput="updateCalc()">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:700;color:#999">Tu comisión (% del valor de venta)</span><span style="font-size:16px;font-weight:900;color:#1a6b4a" id="calc-pct-display">1.5%</span></div>
+        <input type="range" id="calc-pct" min="0" max="150" step="1" value="150" oninput="updateCalc()">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#bbb;margin-top:4px"><span>0%</span><span>Máximo 1.5%</span></div>
         <div style="display:flex;gap:6px;margin-top:10px">
-          <button onclick="setPct(0)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#f5f2ec;color:#999"><div>Propietario</div><div style="font-size:8px;opacity:.7;margin-top:1px">House cobra 3%</div></button>
-          <button onclick="setPct(50)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#1a6b4a;color:#fff"><div>50/50</div><div style="font-size:8px;opacity:.7;margin-top:1px">Lo más común</div></button>
-          <button onclick="setPct(60)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#f5f2ec;color:#999"><div>60/40</div><div style="font-size:8px;opacity:.7;margin-top:1px">Tú 60%</div></button>
-          <button onclick="setPct(33)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#f5f2ec;color:#999"><div>33%</div><div style="font-size:8px;opacity:.7;margin-top:1px">3 participantes</div></button>
+          <button onclick="setPct(150)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#1a6b4a;color:#fff"><div>1.5%</div><div style="font-size:8px;opacity:.7;margin-top:1px">50/50 · Lo más común</div></button>
+          <button onclick="setPct(100)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#f5f2ec;color:#999"><div>1%</div><div style="font-size:8px;opacity:.7;margin-top:1px">3 participantes</div></button>
+          <button onclick="setPct(75)" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;border:none;background:#f5f2ec;color:#999"><div>0.75%</div><div style="font-size:8px;opacity:.7;margin-top:1px">Varios comisionistas</div></button>
         </div>
       </div>
       <div id="calc-result" style="background:linear-gradient(135deg,#1a6b4a,#22875e);border-radius:18px;padding:24px;text-align:center;color:#fff"></div>
@@ -166,7 +166,7 @@
 var _rol = 'vendedor';
 var _calcTipo = 'venta';
 var _calcValor = 280;
-var _calcPct = 50;
+var _calcPct = 150; // centésimas: 150 = 1.5%
 
 function fm(n) { if(n>=1e6) return '$'+(n/1e6).toFixed(n%1e6===0?0:1)+'M'; if(n>=1000) return '$'+Math.round(n/1000)+'K'; return '$'+n.toLocaleString('es-CO'); }
 function fmFull(n) { return '$'+Math.round(n).toLocaleString('es-CO'); }
@@ -223,15 +223,28 @@ function updateCalc() {
   _calcValor = Number(document.getElementById('calc-valor').value);
   if (_calcTipo === 'venta') _calcPct = Number(document.getElementById('calc-pct').value);
   var valorReal = _calcTipo === 'venta' ? _calcValor * 1e6 : _calcValor * 1000;
-  var pctBase = _calcTipo === 'venta' ? 3 : 10;
-  var comisionTotal = valorReal * pctBase / 100;
-  var tuParte = _calcTipo === 'arriendo' ? comisionTotal : comisionTotal * _calcPct / 100;
-  document.getElementById('calc-valor-display').textContent = fm(valorReal);
-  if (_calcTipo === 'venta') document.getElementById('calc-pct-display').textContent = _calcPct + '%';
-  var res = document.getElementById('calc-result');
-  var label = _calcTipo === 'arriendo' ? 'Tu comisión como captador (pago único)' : _calcPct===100 ? 'Tu ganancia total' : _calcPct===0 ? 'House cobra 3% al cierre' : 'Tu parte de la comisión';
-  var detail = _calcTipo === 'arriendo' ? '10% del primer canon de '+fm(valorReal)+' · Pago único al captar' : 'Comisión total: '+fmFull(comisionTotal)+' (3% del valor)'+(_calcPct>0&&_calcPct<100?' · House: '+fmFull(comisionTotal-tuParte):'');
-  res.innerHTML = '<div style="font-size:13px;opacity:.8;margin-bottom:4px">'+label+'</div><div style="font-size:clamp(24px,7vw,38px);font-weight:900;word-break:break-all">'+fmFull(tuParte)+'</div><div style="font-size:12px;opacity:.7;margin-top:6px;word-break:break-word">'+detail+'</div>';
+
+  if (_calcTipo === 'venta') {
+    // Venta: comisión total 3%, slider es tu % del valor (max 1.5% = 150 centésimas)
+    var tuPctReal = _calcPct / 100; // slider 150 → 1.5%
+    var tuParte = Math.round(valorReal * tuPctReal / 100);
+    var comisionTotal = Math.round(valorReal * 3 / 100);
+    var houseParte = comisionTotal - tuParte;
+    document.getElementById('calc-valor-display').textContent = fm(valorReal);
+    document.getElementById('calc-pct-display').textContent = tuPctReal.toFixed(tuPctReal%1===0?0:1) + '%';
+    var res = document.getElementById('calc-result');
+    var label = tuPctReal === 0 ? 'Eres propietario — House cobra 3% al cierre' : 'Tu comisión como comisionista';
+    var detail = 'Comisión total: ' + fmFull(comisionTotal) + ' (3% de ' + fm(valorReal) + ')';
+    if (tuPctReal > 0) detail += ' · House: ' + fmFull(houseParte) + ' · Tú: ' + fmFull(tuParte);
+    res.innerHTML = '<div style="font-size:13px;opacity:.8;margin-bottom:4px">' + label + '</div><div style="font-size:clamp(26px,8vw,36px);font-weight:900">' + fmFull(tuParte) + '</div><div style="font-size:11px;opacity:.7;margin-top:6px">' + detail + '</div>';
+  } else {
+    // Arriendo: 10% del primer canon, pago único completo para el captador
+    var comisionTotal = Math.round(valorReal * 10 / 100);
+    var tuParte = comisionTotal;
+    document.getElementById('calc-valor-display').textContent = fm(valorReal);
+    var res = document.getElementById('calc-result');
+    res.innerHTML = '<div style="font-size:13px;opacity:.8;margin-bottom:4px">Tu comisión como captador (pago único)</div><div style="font-size:clamp(26px,8vw,36px);font-weight:900">' + fmFull(tuParte) + '</div><div style="font-size:11px;opacity:.7;margin-top:6px">10% del primer canon de ' + fm(valorReal) + ' · Pago único al captar</div>';
+  }
   var info = document.getElementById('calc-arriendo-info');
   if (_calcTipo === 'arriendo') {
     info.style.display = 'block';
