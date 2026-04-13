@@ -1,0 +1,91 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#faf9f7"/>
+      <stop offset="100%" stop-color="#f0eeeb"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#122d4f"/>
+      <stop offset="100%" stop-color="#1a4f8b"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1a6b4a"/>
+      <stop offset="100%" stop-color="#22875e"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Subtle pattern -->
+  <rect x="0" y="0" width="1200" height="6" fill="url(#accent)"/>
+  
+  <!-- Decorative circle -->
+  <circle cx="1050" cy="120" r="200" fill="#122d4f" opacity="0.03"/>
+  <circle cx="150" cy="500" r="150" fill="#1a6b4a" opacity="0.04"/>
+  
+  <!-- Logo House -->
+  <g transform="translate(80, 50)">
+    <!-- House icon -->
+    <rect x="0" y="12" width="44" height="36" rx="4" fill="#122d4f"/>
+    <polygon points="22,2 44,20 0,20" fill="#1a4f8b"/>
+    <rect x="16" y="28" width="12" height="16" rx="2" fill="#faf9f7"/>
+    <!-- House text -->
+    <text x="56" y="42" font-family="Georgia, serif" font-size="32" font-weight="700" fill="#122d4f">House</text>
+  </g>
+  
+  <!-- Pereira tag -->
+  <rect x="240" y="58" width="160" height="30" rx="15" fill="#122d4f" opacity="0.08"/>
+  <text x="320" y="78" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#122d4f">Pereira, Risaralda</text>
+  
+  <!-- Main title -->
+  <text x="80" y="180" font-family="Georgia, serif" font-size="52" font-weight="700" fill="#122d4f">Publica tu inmueble</text>
+  <text x="80" y="245" font-family="Georgia, serif" font-size="52" font-weight="700" fill="#1a6b4a">gratis.</text>
+  
+  <!-- Subtitle -->
+  <text x="80" y="300" font-family="Arial, sans-serif" font-size="22" fill="#5a5550">Verificamos compradores, acompañamos visitas</text>
+  <text x="80" y="332" font-family="Arial, sans-serif" font-size="22" fill="#5a5550">y cerramos el negocio. Tú solo publicas.</text>
+  
+  <!-- Stats bar -->
+  <rect x="80" y="380" width="1040" height="100" rx="16" fill="#ffffff"/>
+  <rect x="80" y="380" width="1040" height="100" rx="16" fill="none" stroke="#e8e5e0" stroke-width="1.5"/>
+  
+  <!-- Stat 1 -->
+  <text x="210" y="420" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#122d4f">132</text>
+  <text x="210" y="452" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#5a5550">inmuebles activos</text>
+  
+  <!-- Divider -->
+  <line x1="370" y1="400" x2="370" y2="460" stroke="#e8e5e0" stroke-width="1.5"/>
+  
+  <!-- Stat 2 -->
+  <text x="500" y="420" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#1a6b4a">3%</text>
+  <text x="500" y="452" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#5a5550">comisión en venta</text>
+  
+  <!-- Divider -->
+  <line x1="630" y1="400" x2="630" y2="460" stroke="#e8e5e0" stroke-width="1.5"/>
+  
+  <!-- Stat 3 -->
+  <text x="760" y="420" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#1a6b4a">10%</text>
+  <text x="760" y="452" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#5a5550">captación arriendo</text>
+  
+  <!-- Divider -->
+  <line x1="890" y1="400" x2="890" y2="460" stroke="#e8e5e0" stroke-width="1.5"/>
+  
+  <!-- Stat 4 -->
+  <text x="1000" y="420" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="#122d4f">$0</text>
+  <text x="1000" y="452" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#5a5550">costo de publicar</text>
+  
+  <!-- CTA button -->
+  <rect x="80" y="520" width="320" height="60" rx="14" fill="url(#green)"/>
+  <text x="240" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff">Publica tu inmueble →</text>
+  
+  <!-- WhatsApp badge -->
+  <rect x="430" y="520" width="220" height="60" rx="14" fill="#25D366"/>
+  <text x="540" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff">WhatsApp</text>
+  
+  <!-- Trust badge -->
+  <text x="700" y="555" font-family="Arial, sans-serif" font-size="15" fill="#999">🔒 Tu información es confidencial</text>
+  
+  <!-- Bottom accent line -->
+  <rect x="0" y="624" width="1200" height="6" fill="url(#green)"/>
+</svg>

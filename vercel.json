@@ -10,6 +10,10 @@
       "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
       "destination": "/arriendos.html"
     },
+    {
+      "source": "/vender",
+      "destination": "/vender.html"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
