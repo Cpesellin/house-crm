@@ -1598,7 +1598,21 @@ window.rPublicar = async function() {
     h += `<div class="wiz-field"><div class="wiz-label">BAÑOS</div><input id="ow_ban" type="number" class="wiz-input" value="${d.banos||''}"></div>`;
     h += `<div class="wiz-field"><div class="wiz-label">PARQUEADEROS</div><input id="ow_parq" type="number" class="wiz-input" value="${d.parqueaderos||''}"></div>`;
     h += `</div>`;
-    h += `<div style="display:flex;gap:8px;margin-bottom:12px"><div class="wiz-field" style="flex:1"><div class="wiz-label">ÁREA (m²)</div><input id="ow_area" type="number" class="wiz-input" value="${d.area_construida||''}"></div><div class="wiz-field" style="flex:1"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">—</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div></div>`;
+    h += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div class="wiz-field"><div class="wiz-label">ÁREA CONSTRUIDA m²</div><input id="ow_area" type="number" class="wiz-input" placeholder="120" value="${d.area_construida||''}"></div><div class="wiz-field"><div class="wiz-label">ÁREA TOTAL m²</div><input id="ow_areatot" type="number" class="wiz-input" placeholder="200" value="${d.area_total||''}"></div><div class="wiz-field"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">—</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div></div>`;
+    h += `<div class="wiz-field"><div class="wiz-label">AMENIDADES</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
+    const _amenidades = [
+      {id:'piscina',l:'Piscina',i:'🏊'},{id:'gimnasio',l:'Gimnasio',i:'🏋️'},{id:'ascensor',l:'Ascensor',i:'🛗'},
+      {id:'zonas_verdes',l:'Zonas verdes',i:'🌿'},{id:'seguridad',l:'Vigilancia',i:'🛡️'},{id:'salon_comunal',l:'Salón comunal',i:'🎉'},
+      {id:'terraza',l:'Terraza',i:'☀️'},{id:'bbq',l:'BBQ',i:'🔥'},{id:'juegos_ninos',l:'Juegos niños',i:'🎠'},
+      {id:'pet_friendly',l:'Pet friendly',i:'🐕'},{id:'sauna',l:'Sauna',i:'🧖'},{id:'coworking',l:'Coworking',i:'💻'},
+      {id:'lavanderia',l:'Lavandería',i:'🧺'},{id:'deposito',l:'Depósito',i:'🗄️'},{id:'cancha',l:'Cancha',i:'⚽'}
+    ];
+    const _selAm = d._amenidades || [];
+    _amenidades.forEach(a => {
+      const sel = _selAm.includes(a.id);
+      h += `<button type="button" onclick="window._ownerData._amenidades=window._ownerData._amenidades||[];const i=window._ownerData._amenidades.indexOf('${a.id}');if(i>-1)window._ownerData._amenidades.splice(i,1);else window._ownerData._amenidades.push('${a.id}');rPublicar()" style="padding:8px 12px;border-radius:10px;border:1.5px solid ${sel?'var(--b600)':'var(--brd)'};background:${sel?'var(--b600)':'#fff'};color:${sel?'#fff':'var(--tx)'};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><span>${a.i}</span>${a.l}</button>`;
+    });
+    h += `</div></div>`;
     h += `<div class="wiz-field"><div class="wiz-label">DESCRIPCIÓN (lo que verá el público)</div><textarea id="ow_desc" class="wiz-input" style="min-height:80px;resize:vertical" placeholder="Describe tu inmueble...">${d.descripcion_cliente||''}</textarea></div>`;
     // Photo upload
     h += `<div class="wiz-field"><div class="wiz-label">FOTOS (hasta 10)</div><div id="ow_fotos_zone"></div></div>`;
@@ -1621,9 +1635,11 @@ window.rPublicar = async function() {
     const sp = [];
     if (d.habitaciones) sp.push('🛏️ '+d.habitaciones+' hab');
     if (d.banos) sp.push('🚿 '+d.banos+' baños');
-    if (d.area_construida) sp.push('📐 '+d.area_construida+'m²');
+    if (d.area_construida) sp.push('📐 '+d.area_construida+'m² constr.');
+    if (d.area_total) sp.push('📏 '+d.area_total+'m² total');
     if (d.estrato) sp.push('E'+d.estrato);
     if (sp.length) h += `<div style="margin-top:6px;font-size:12px;color:var(--sub)">${sp.join(' · ')}</div>`;
+    if (d._amenidades && d._amenidades.length) h += `<div style="margin-top:6px;font-size:12px;color:var(--b700)">✨ ${d._amenidades.join(', ')}</div>`;
     if (d.descripcion_cliente) h += `<div style="margin-top:8px;font-size:12px;color:var(--tx);line-height:1.5">"${d.descripcion_cliente}"</div>`;
     h += `</div>`;
     h += `<div style="font-size:11px;color:var(--sub);margin-bottom:14px;text-align:center">Tu inmueble será revisado por nuestro equipo antes de ser publicado.</div>`;

@@ -2244,9 +2244,11 @@ window.ownerSaveStep = function(step) {
     d.habitaciones = parseInt(document.getElementById('ow_hab')?.value) || 0;
     d.banos = parseInt(document.getElementById('ow_ban')?.value) || 0;
     d.area_construida = parseFloat(document.getElementById('ow_area')?.value) || 0;
+    d.area_total = parseFloat(document.getElementById('ow_areatot')?.value) || 0;
     d.estrato = parseInt(document.getElementById('ow_est')?.value) || 0;
     d.parqueaderos = parseInt(document.getElementById('ow_parq')?.value) || 0;
     d.descripcion_cliente = document.getElementById('ow_desc')?.value || '';
+    // amenidades already saved in d._amenidades via onclick
   }
   return true;
 };
@@ -2293,8 +2295,10 @@ window.ownerPublish = async function() {
       direccion: d.direccion, barrio: d.barrio, direccion_publica: d.barrio + ', ' + d.ciudad,
       precio_venta: d.precio_venta || 0, precio_arriendo: d.precio_arriendo || 0,
       habitaciones: d.habitaciones || 0, banos: d.banos || 0,
-      area_construida: d.area_construida || 0, estrato: d.estrato || 0,
+      area_construida: d.area_construida || 0, area_total: d.area_total || 0,
+      estrato: d.estrato || 0,
       parqueaderos: d.parqueaderos || 0, descripcion_cliente: d.descripcion_cliente || '',
+      caracteristicas: (d._amenidades || []).join(', '),
       captador_id: u.id, origen: 'externo', estado_revision: 'en_revision',
       estado: 'Disponible', codigo_house: code, eliminado: false
     };
