@@ -40,8 +40,26 @@ function renderShell(container) {
         <button id="lin_btn" type="button">Ingresar</button>
       </div>
       <div id="lerr" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>
-      <div style="margin-top:16px;text-align:center">
+      <div style="margin-top:16px;text-align:center;display:flex;flex-direction:column;gap:8px">
         <button onclick="toggleRegForm()" style="background:none;border:none;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:inherit">\u{1F4DD} Crear cuenta gratis</button>
+        <button onclick="toggleResetForm()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">\u{1F512} \u00BFOlvidaste tu contrase\u00F1a?</button>
+      </div>
+    </div>
+
+    <!-- PANEL RESET PASSWORD (hidden by default) -->
+    <div id="lov_reset" style="display:none">
+      <div style="font-size:15px;font-weight:800;text-align:center;color:#fff;margin-bottom:4px">\u{1F512} Recuperar contrase\u00F1a</div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:14px">Ingresa tu email y crea una nueva contrase\u00F1a</div>
+      <div class="lfrm">
+        <input id="rst_email" type="email" placeholder="Tu email registrado" autocomplete="email" style="margin-bottom:8px">
+        <input id="rst_pwd" type="password" placeholder="Nueva contrase\u00F1a" autocomplete="new-password" style="margin-bottom:8px">
+        <input id="rst_pwd2" type="password" placeholder="Confirmar contrase\u00F1a" autocomplete="new-password" style="margin-bottom:10px">
+        <button type="button" onclick="resetPassword()" id="rst_btn" style="background:#f59e0b;color:#fff;font-weight:700">\u{1F512} Cambiar contrase\u00F1a</button>
+      </div>
+      <div id="rst_err" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>
+      <div id="rst_ok" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);border-radius:8px;font-size:11px;color:#6ee7b7;text-align:center"></div>
+      <div style="text-align:center;margin-top:12px">
+        <button onclick="toggleResetForm()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit">\u2190 Volver a iniciar sesi\u00F3n</button>
       </div>
     </div>
 

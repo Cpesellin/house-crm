@@ -1895,6 +1895,68 @@ window.toggleRegForm = function() {
   if (regErr) regErr.style.display = 'none';
 };
 
+window.toggleResetForm = function() {
+  const loginPanel = document.getElementById('lov_login');
+  const regPanel = document.getElementById('lov_register');
+  const resetPanel = document.getElementById('lov_reset');
+  if (!loginPanel || !resetPanel) return;
+  const showingReset = resetPanel.style.display !== 'none';
+  loginPanel.style.display = showingReset ? '' : 'none';
+  if (regPanel) regPanel.style.display = 'none';
+  resetPanel.style.display = showingReset ? 'none' : '';
+  // Clear fields
+  const rstErr = document.getElementById('rst_err');
+  const rstOk = document.getElementById('rst_ok');
+  if (rstErr) rstErr.style.display = 'none';
+  if (rstOk) rstOk.style.display = 'none';
+};
+
+window.resetPassword = async function() {
+  const email = (document.getElementById('rst_email')?.value || '').trim();
+  const pwd = (document.getElementById('rst_pwd')?.value || '').trim();
+  const pwd2 = (document.getElementById('rst_pwd2')?.value || '').trim();
+  const errEl = document.getElementById('rst_err');
+  const okEl = document.getElementById('rst_ok');
+  const btn = document.getElementById('rst_btn');
+  const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } if (okEl) okEl.style.display = 'none'; };
+
+  if (!email || !email.includes('@')) { showErr('Ingresa un email válido'); return; }
+  if (!pwd || pwd.length < 4) { showErr('La contraseña debe tener al menos 4 caracteres'); return; }
+  if (pwd !== pwd2) { showErr('Las contraseñas no coinciden'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+  if (errEl) errEl.style.display = 'none';
+
+  try {
+    // Find user by email
+    const { data: usr, error: findErr } = await SB().from('usuarios').select('id,email,activo').eq('email', email).maybeSingle();
+    if (findErr) throw findErr;
+    if (!usr) { showErr('No encontramos una cuenta con ese email'); if (btn) { btn.disabled = false; btn.textContent = '🔒 Cambiar contraseña'; } return; }
+    if (!usr.activo) { showErr('Esta cuenta está desactivada. Contacta a House.'); if (btn) { btn.disabled = false; btn.textContent = '🔒 Cambiar contraseña'; } return; }
+
+    // Hash new password
+    const hash = await window.hashPwd(pwd);
+
+    // Update password
+    const { error: updErr } = await SB().from('usuarios').update({ password_hash: hash }).eq('id', usr.id);
+    if (updErr) throw updErr;
+
+    // Success
+    if (okEl) { okEl.textContent = '✅ Contraseña actualizada. Ya puedes iniciar sesión.'; okEl.style.display = 'block'; }
+    if (errEl) errEl.style.display = 'none';
+    // Clear fields
+    if (document.getElementById('rst_email')) document.getElementById('rst_email').value = '';
+    if (document.getElementById('rst_pwd')) document.getElementById('rst_pwd').value = '';
+    if (document.getElementById('rst_pwd2')) document.getElementById('rst_pwd2').value = '';
+    // Auto-switch to login after 2s
+    setTimeout(() => { window.toggleResetForm(); }, 2500);
+  } catch(e) {
+    console.error('[resetPassword]', e);
+    showErr('Error: ' + (e.message || 'No se pudo actualizar'));
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '🔒 Cambiar contraseña'; }
+};
+
 window.registerExternal = async function() {
   const nombre = (document.getElementById('reg_nombre')?.value || '').trim();
   const email = (document.getElementById('reg_email')?.value || '').trim();
