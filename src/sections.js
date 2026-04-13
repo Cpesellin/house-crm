@@ -2540,7 +2540,7 @@ window.renderPropietariosLanding = function() {
     { icon: '📄', title: 'Contrato notariado y blindado', desc: 'Elaboramos contrato de arrendamiento con cláusulas de protección: seguro de arrendamiento, póliza de daños, procedimiento claro de desalojo, e inventario fotográfico detallado al momento de la entrega.', color: '#7c3aed' },
     { icon: '🏠', title: 'Administración integral', desc: 'Nos encargamos de TODO: publicación profesional con fotografías, visitas guiadas, estudio del candidato, contrato, cobros mensuales, gestión de mantenimiento y reclamos del inquilino. Usted no hace nada.', color: '#0891b2' },
     { icon: '📢', title: 'Exposición masiva en 4 canales', desc: 'Su inmueble se publica simultáneamente en nuestro portal oficial inmobiliariahouse.com.co, Metrocuadrado, Fincaraíz y Facebook Marketplace, con fotografía profesional, descripción completa y contacto directo. Miles de personas buscando arriendo lo verán.', color: '#ea580c' },
-    { icon: '💵', title: 'Comisión justa: solo 10% del canon', desc: 'Cobramos el 10% del canon mensual. Usted recibe el 90% todos los meses sin mover un dedo. No hay comisiones ocultas, ni cobros de mantenimiento, ni gastos administrativos adicionales.', color: '#059669' },
+    { icon: '💵', title: 'Comisión justa: 10% + IVA del canon', desc: 'Cobramos el 10% del canon mensual más IVA (19% sobre la comisión, aplica para Colombia). Usted recibe el resto todos los meses sin mover un dedo. No hay cobros ocultos ni gastos adicionales.', color: '#059669' },
     { icon: '🆓', title: 'Sin costo inicial', desc: 'Usted no paga absolutamente nada para empezar. Ni por publicación, ni por estudio, ni por contrato. La comisión solo se aplica cuando el inmueble YA está arrendado y generando ingresos.', color: '#d97706' },
     { icon: '🛡️', title: 'Tranquilidad total', desc: 'Si hay problemas con el inquilino — no paga, daña el inmueble, quiere irse antes de tiempo, subarrienda sin permiso — nosotros lo manejamos. Notificación, cobro, proceso jurídico si es necesario. Usted no tiene que lidiar con nada.', color: '#dc2626' }
   ];
@@ -2562,7 +2562,7 @@ window.renderPropietariosLanding = function() {
     { n: '2', t: 'Visitamos su inmueble', d: 'Nuestro equipo visita el inmueble, toma fotografías profesionales y evalúa las condiciones.' },
     { n: '3', t: 'Firmamos contrato de administración', d: 'Un contrato claro y transparente. Usted nos entrega las llaves y nosotros nos hacemos cargo de todo.' },
     { n: '4', t: 'Publicamos y buscamos inquilino', d: 'Publicación en 4 canales (inmobiliariahouse.com.co + Metrocuadrado + Fincaraíz + Facebook) y red de asesores buscando activamente. Promedio de arriendo: menos de 30 días.' },
-    { n: '5', t: 'Usted recibe su plata cada mes', d: 'Cada 10 del mes, transferimos el 90% del canon a su cuenta. Sin excusas, sin demoras.' }
+    { n: '5', t: 'Usted recibe su plata cada mes', d: 'Le transferimos a su cuenta sin falta. Si el corte es del 1 al 30, le pagamos el 10. Si es del 15 al 14, le pagamos el 25. Sin excusas, sin demoras.' }
   ];
   steps.forEach(s => {
     h += '<div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start">';
@@ -2646,12 +2646,15 @@ window.propCalcUpdate = function() {
   const canon = parseFloat(input.value) || 0;
   if (canon <= 0) { box.innerHTML = ''; return; }
   const comision = Math.round(canon * 0.10);
-  const ustedRecibe = canon - comision;
+  const iva = Math.round(comision * 0.19);
+  const totalDeduccion = comision + iva;
+  const ustedRecibe = canon - totalDeduccion;
   box.innerHTML = '<div style="background:var(--cd);border:2px solid var(--b300);border-radius:16px;padding:20px;max-width:320px;margin:0 auto">' +
     '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:var(--sub)">Canon mensual</span><span style="font-size:14px;font-weight:700">' + fm(canon) + '</span></div>' +
-    '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:var(--sub)">Comisión House (10%)</span><span style="font-size:14px;font-weight:700;color:var(--red)">-' + fm(comision) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px;color:var(--sub)">Administración House (10%)</span><span style="font-size:14px;font-weight:700;color:var(--red)">-' + fm(comision) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:var(--sub)">IVA (19% sobre comisión)</span><span style="font-size:14px;font-weight:700;color:var(--red)">-' + fm(iva) + '</span></div>' +
     '<div style="border-top:2px solid var(--brd);padding-top:8px;display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:800;color:var(--tx)">Usted recibe</span><span style="font-family:Fraunces,serif;font-size:24px;font-weight:800;color:#065f46">' + fm(ustedRecibe) + '</span></div>' +
-    '<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px">Cada mes, sin falta, el día 10</div>' +
+    '<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px">Pago el <b>10</b> de cada mes (corte 1-30) o el <b>25</b> (corte 15-14)</div>' +
     '</div>';
 };
 
