@@ -290,7 +290,11 @@ function tTh() {
 }
 
 function iTh() {
-  // Default: SIEMPRE claro. Solo oscuro si el usuario lo eligió manualmente.
+  // One-time reset: force light mode for all existing users (v2 migration)
+  if (!localStorage.getItem('ht_v2')) {
+    localStorage.removeItem('ht');
+    localStorage.setItem('ht_v2', '1');
+  }
   const saved = localStorage.getItem('ht');
   if (saved === 'd') {
     document.body.classList.add('dark');
