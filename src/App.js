@@ -290,10 +290,17 @@ function tTh() {
 }
 
 function iTh() {
-  if (localStorage.getItem('ht') === 'd') {
+  const saved = localStorage.getItem('ht');
+  // If user has saved preference, use it. Otherwise detect system preference.
+  const isDark = saved === 'd' || (!saved && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+  if (isDark) {
     document.body.classList.add('dark');
     const btn = document.getElementById('tbtn');
     if (btn) btn.textContent = '\u{1F319}';
+  } else {
+    document.body.classList.remove('dark');
+    const btn = document.getElementById('tbtn');
+    if (btn) btn.textContent = '\u2600\uFE0F';
   }
 }
 
