@@ -136,6 +136,7 @@ function renderShell(container) {
     <button class="mi" data-s="admin-pagos" onclick="go('admin-pagos')" id="madminpagos" style="display:none"><span class="mic">\u{1F4B3}</span>Pagos referidos</button>
     <button class="mi" data-s="negocios-admin" onclick="go('negocios-admin')" id="mnegocios" style="display:none"><span class="mic">\u{1F4BC}</span>Negocios</button>
     <button class="mi" data-s="arriendos-admin" onclick="go('arriendos-admin')" id="marriendos" style="display:none"><span class="mic">\u{1F511}</span>Arriendos</button>
+    <button class="mi" data-s="config-usuarios" onclick="go('config-usuarios')" id="mconfigusrs" style="display:none"><span class="mic">\u2699\uFE0F</span>Config Usuarios</button>
     <button class="mi" data-s="users" onclick="go('users')" id="musrs" style="display:none"><span class="mic">\u{1F465}</span>Usuarios</button>
     <button class="mi" data-s="perfil" onclick="go('perfil')"><span class="mic">\u2699\uFE0F</span>Mi Perfil</button>
     <button class="mi" data-s="papelera" onclick="go('papelera')" id="mpap" style="display:none"><span class="mic">\u{1F5D1}\uFE0F</span>Papelera</button>
@@ -252,6 +253,7 @@ function renderShell(container) {
 <div class="sec" id="sec-comando"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="comandoc"></div></div>
 <div class="sec" id="sec-negocios-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="negociosadminc"></div></div>
 <div class="sec" id="sec-arriendos-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="arriendosadminc"></div></div>
+<div class="sec" id="sec-config-usuarios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="configusuariosc"></div></div>
 <div class="sec" id="sec-mis-negocios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misnegociosc"></div></div>
 <div class="sec" id="sec-cuenta"><div class="fsec" id="cuentac"></div></div>
 <div class="sec" id="sec-mis-pub"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="mispubc"></div></div>
@@ -479,6 +481,8 @@ function sApp() {
       if (negEl) negEl.style.display = 'flex';
       const arrEl = document.getElementById('marriendos');
       if (arrEl) arrEl.style.display = 'flex';
+      const cfgEl = document.getElementById('mconfigusrs');
+      if (cfgEl) cfgEl.style.display = 'flex';
     }
   }
 

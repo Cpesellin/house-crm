@@ -1417,6 +1417,109 @@ window.rNegociosAdmin = async function() {
 };
 
 // --- Admin: Sección Arriendos (Administrados + Buscando + Publicaciones) ---
+// --- Admin: Configuración de Usuarios (tabla interactiva de permisos por rol) ---
+window.rConfigUsuarios = async function() {
+  const el = document.getElementById('configusuariosc'); if (!el) return;
+  const u = U(); if (!u || u.rol !== 'admin') { el.innerHTML = ''; return; }
+
+  let h = '<div style="margin-bottom:16px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx)">⚙️ Configuración de Usuarios</div><div style="font-size:13px;color:var(--sub)">Activa o desactiva permisos por rol. Los cambios aplican de inmediato.</div></div>';
+
+  try {
+    const { data: permisos, error } = await SB().from('permisos_rol').select('*').order('categoria').order('nombre');
+    if (error) throw error;
+    if (!permisos || !permisos.length) { el.innerHTML = h + '<div style="padding:30px;text-align:center;color:var(--sub)">⚠️ Corre sql/33-permisos-rol.sql en Supabase</div>'; return; }
+
+    const roles = [
+      { key: 'admin', label: '🔴 Admin', color: '#DC2626' },
+      { key: 'oficina', label: '🟠 Oficina', color: '#EA580C' },
+      { key: 'gestor', label: '🟢 Gestor', color: '#059669' },
+      { key: 'asesor', label: '🔵 Asesor', color: '#2563EB' },
+      { key: 'publico', label: '⚫ Público', color: '#6B7280' },
+    ];
+
+    const catLabels = {
+      ver_inmuebles: '👁️ Ver inmuebles',
+      editar_inmuebles: '✏️ Editar inmuebles',
+      publicar: '📝 Publicar',
+      moderacion: '🛡️ Moderación',
+      pipeline: '📊 Pipeline / Embudo',
+      agenda: '📅 Agenda / Citas',
+      solicitudes: '📩 Solicitudes',
+      admin: '🔒 Secciones Admin',
+      comun: '🏠 Común a todos',
+      contacto: '📞 Contacto',
+    };
+
+    // Group by category
+    const groups = {};
+    permisos.forEach(p => { if (!groups[p.categoria]) groups[p.categoria] = []; groups[p.categoria].push(p); });
+
+    // Header row
+    h += '<div style="overflow-x:auto;margin-bottom:20px">';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:600px">';
+    h += '<thead><tr style="background:var(--cd2)">';
+    h += '<th style="text-align:left;padding:10px 12px;font-weight:800;color:var(--tx);border-bottom:2px solid var(--brd);min-width:200px">Permiso</th>';
+    roles.forEach(r => {
+      h += '<th style="text-align:center;padding:10px 8px;font-weight:800;color:' + r.color + ';border-bottom:2px solid var(--brd);min-width:70px">' + r.label + '</th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    Object.entries(groups).forEach(([cat, items]) => {
+      // Category header row
+      h += '<tr><td colspan="6" style="padding:12px 12px 6px;font-weight:800;font-size:14px;color:var(--tx);background:var(--cd);border-bottom:1px solid var(--brd)">' + (catLabels[cat] || cat) + '</td></tr>';
+
+      items.forEach(p => {
+        h += '<tr style="border-bottom:1px solid var(--brd)">';
+        h += '<td style="padding:8px 12px;color:var(--tx)"><div style="font-weight:700;font-size:13px">' + p.nombre + '</div>';
+        if (p.descripcion) h += '<div style="font-size:11px;color:var(--sub);margin-top:2px">' + p.descripcion + '</div>';
+        h += '</td>';
+
+        roles.forEach(r => {
+          const isOn = p[r.key];
+          const isSistema = p.es_sistema;
+          h += '<td style="text-align:center;padding:8px 4px">';
+          if (isSistema) {
+            // System permission — can't be toggled
+            h += '<span style="font-size:16px;opacity:.5">' + (isOn ? '✅' : '❌') + '</span>';
+          } else {
+            h += '<button onclick="window._togglePermiso(\'' + p.id + '\',\'' + r.key + '\',' + !isOn + ')" style="width:36px;height:36px;border-radius:10px;border:2px solid ' + (isOn ? r.color : 'var(--brd)') + ';background:' + (isOn ? r.color + '15' : 'var(--cd)') + ';cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;margin:0 auto">' + (isOn ? '✅' : '❌') + '</button>';
+          }
+          h += '</td>';
+        });
+
+        h += '</tr>';
+      });
+    });
+
+    h += '</tbody></table></div>';
+
+    // Legend
+    h += '<div style="background:var(--cd2);border-radius:12px;padding:14px;font-size:12px;color:var(--sub)">';
+    h += '<div style="font-weight:700;color:var(--tx);margin-bottom:6px">Leyenda</div>';
+    h += '<div>✅ = Permiso activo · ❌ = Permiso desactivado · Los permisos del sistema (opacidad baja) no se pueden cambiar.</div>';
+    h += '<div style="margin-top:6px">Los cambios se guardan inmediatamente al tocar cada botón.</div>';
+    h += '</div>';
+
+  } catch(e) {
+    console.error('[rConfigUsuarios]', e);
+    h += '<div style="padding:20px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+
+  el.innerHTML = h;
+};
+
+window._togglePermiso = async function(permisoId, rolKey, nuevoValor) {
+  try {
+    const { error } = await SB().from('permisos_rol').update({ [rolKey]: nuevoValor, updated_at: new Date().toISOString() }).eq('id', permisoId);
+    if (error) throw error;
+    window.toast((nuevoValor ? '✅' : '❌') + ' Permiso actualizado');
+    if (typeof window.rConfigUsuarios === 'function') window.rConfigUsuarios();
+  } catch(e) {
+    console.error('[_togglePermiso]', e);
+    window.toast('Error: ' + e.message, 'terr');
+  }
+};
+
 window.rArriendosAdmin = async function() {
   const el = document.getElementById('arriendosadminc'); if (!el) return;
   const u = U(); if (!u || (u.rol !== 'admin' && u.rol !== 'oficina')) { el.innerHTML = ''; return; }
