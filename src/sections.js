@@ -1319,6 +1319,167 @@ function _cmdQueueHeader(title, count, linkRoute, linkLabel) {
 }
 
 // --- Mis Negocios (interno — Fase 6) ---
+// --- Admin: Sección Negocios (Pipeline + Citas + Pagos + Declinados) ---
+window.rNegociosAdmin = async function() {
+  const el = document.getElementById('negociosadminc'); if (!el) return;
+  const u = U(); if (!u || (u.rol !== 'admin' && u.rol !== 'oficina')) { el.innerHTML = ''; return; }
+  const tab = window._negAdminTab || 'pipeline';
+
+  let h = '<div style="margin-bottom:16px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx)">💼 Negocios</div><div style="font-size:13px;color:var(--sub)">Pipeline de negocios, citas, pagos y declinados</div></div>';
+
+  // Tabs
+  h += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">';
+  [{ id: 'pipeline', l: '📊 Pipeline' }, { id: 'citas', l: '📅 Citas' }, { id: 'pagos', l: '💰 Pagos' }, { id: 'declinados', l: '⚠️ Declinados' }].forEach(t => {
+    h += '<button onclick="window._negAdminTab=\'' + t.id + '\';rNegociosAdmin()" style="padding:10px 16px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:' + (tab === t.id ? 'var(--b600)' : '#f0eeeb') + ';color:' + (tab === t.id ? '#fff' : '#5a5550') + '">' + t.l + '</button>';
+  });
+  h += '</div>';
+
+  try {
+    if (tab === 'pipeline') {
+      // All active cierres + inmuebles with interests
+      const { data: cierres } = await SB().from('cierres').select('*,inmueble:inmuebles(tipo,ciudad,barrio,codigo_house),captador:usuarios!captador_id(nombre),participantes:participantes_comision(rol_comision,porcentaje,nombre_externo,pago_estado)').eq('estado', 'activo').order('created_at', { ascending: false });
+      const { data: intereses } = await SB().from('intereses_compradores').select('*,inmueble:inmuebles(tipo,barrio,ciudad,codigo_house,precio_venta),comprador:usuarios!usuario_id(nombre,telefono_contacto)').eq('estado', 'nuevo').order('created_at', { ascending: true }).limit(30);
+
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px">Intereses pendientes de calificar (' + (intereses || []).length + ')</div>';
+      if (!(intereses || []).length) h += '<div style="padding:16px;background:#fff;border-radius:12px;color:var(--sub);font-size:13px;text-align:center;margin-bottom:16px">Sin intereses pendientes</div>';
+      else {
+        (intereses || []).forEach(i => {
+          const inm = i.inmueble || {};
+          const comp = i.comprador || {};
+          const hrs = Math.round((Date.now() - new Date(i.created_at).getTime()) / 3600000);
+          h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+          h += '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">' + (comp.nombre || '?') + ' → ' + (inm.tipo || '') + ' ' + (inm.barrio || '') + '</div>';
+          h += '<div style="font-size:11px;color:var(--sub)">' + (inm.codigo_house || '') + ' · ' + hrs + 'h · ' + (i.interes_tipo || 'comprador') + '</div></div>';
+          h += '<button onclick="calificarInteresRapido(\'' + i.id + '\')" style="padding:5px 10px;border:none;border-radius:8px;background:var(--green);color:#fff;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit">🟢</button>';
+          h += '<button onclick="abrirCalificarInteres(\'' + i.id + '\',\'rojo\')" style="padding:5px 10px;border:none;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit">🔴</button>';
+          h += '</div>';
+        });
+      }
+
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-top:16px;margin-bottom:10px">Cierres activos (' + (cierres || []).length + ')</div>';
+      (cierres || []).forEach(c => {
+        const inm = c.inmueble || {};
+        const parts = c.participantes || [];
+        h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);margin-bottom:8px">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700;font-size:13px">' + (inm.tipo || '') + ' en ' + (inm.barrio || '') + '</div><div style="font-size:11px;color:var(--sub)">' + (inm.codigo_house || '') + ' · ' + c.tipo + ' · ' + fm(c.comision_total) + '</div></div>';
+        h += '<div style="display:flex;gap:4px">' + parts.map(p => '<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:' + (p.pago_estado === 'pagado' ? 'var(--green)' : 'var(--gold)') + ';color:#fff;font-weight:700">' + p.porcentaje + '% ' + (p.pago_estado === 'pagado' ? '✅' : '⏳') + '</span>').join('') + '</div></div></div>';
+      });
+
+    } else if (tab === 'citas') {
+      const { data: citas } = await SB().from('agenda').select('*,inmueble:inmuebles(tipo,barrio,codigo_house),usuario:usuarios!usuario_id(nombre)').in('tipo_evento', ['visita']).order('fecha', { ascending: true }).limit(30);
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px">Citas programadas (' + (citas || []).length + ')</div>';
+      if (!(citas || []).length) h += '<div style="padding:20px;background:#fff;border-radius:12px;color:var(--sub);text-align:center">Sin citas programadas</div>';
+      else {
+        (citas || []).forEach(c => {
+          const inm = c.inmueble || {};
+          const fechaTxt = c.fecha ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+          h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+          h += '<div style="width:44px;height:44px;border-radius:10px;background:#8b5cf612;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div>';
+          h += '<div style="flex:1"><div style="font-weight:700;font-size:13px">' + (inm.tipo || '') + ' ' + (inm.barrio || '') + ' · ' + (inm.codigo_house || '') + '</div>';
+          h += '<div style="font-size:12px;color:var(--sub)">' + fechaTxt + ' ' + (c.hora_inicio || '') + ' · ' + (c.estado || '') + '</div></div></div>';
+        });
+      }
+
+    } else if (tab === 'pagos') {
+      const { data: pendientes } = await SB().from('participantes_comision').select('*,cierre:cierres(inmueble_id,tipo,precio_final,inmueble:inmuebles(tipo,barrio,codigo_house))').eq('pago_estado', 'pendiente').neq('rol_comision', 'house').order('created_at', { ascending: true });
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px">Pagos pendientes (' + (pendientes || []).length + ')</div>';
+      if (!(pendientes || []).length) h += '<div style="padding:20px;background:#fff;border-radius:12px;color:var(--sub);text-align:center">✅ Sin pagos pendientes</div>';
+      else {
+        (pendientes || []).forEach(p => {
+          const inm = p.cierre?.inmueble || {};
+          h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+          h += '<div style="flex:1"><div style="font-weight:700;font-size:13px">' + (p.nombre_externo || p.rol_comision) + '</div>';
+          h += '<div style="font-size:11px;color:var(--sub)">' + (inm.tipo || '') + ' ' + (inm.barrio || '') + ' · ' + p.porcentaje + '% · ' + fm(p.monto) + '</div></div>';
+          h += '<button onclick="marcarPagoParticipante(\'' + p.id + '\')" style="padding:8px 14px;border:none;border-radius:8px;background:var(--b600);color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">💵 Pagar</button>';
+          h += '</div>';
+        });
+      }
+
+    } else if (tab === 'declinados') {
+      const { data: decl } = await SB().from('intereses_compradores').select('*,inmueble:inmuebles(tipo,barrio,codigo_house),comprador:usuarios!usuario_id(nombre)').eq('estado', 'descartado').order('updated_at', { ascending: false }).limit(20);
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px">Intereses declinados (' + (decl || []).length + ')</div>';
+      if (!(decl || []).length) h += '<div style="padding:20px;background:#fff;border-radius:12px;color:var(--sub);text-align:center">Sin declinados</div>';
+      else {
+        (decl || []).forEach(d => {
+          const inm = d.inmueble || {};
+          h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);border-left:4px solid var(--red);margin-bottom:8px">';
+          h += '<div style="font-weight:700;font-size:13px">' + (d.comprador?.nombre || '?') + ' → ' + (inm.tipo || '') + ' ' + (inm.barrio || '') + '</div>';
+          h += '<div style="font-size:11px;color:var(--sub)">' + (inm.codigo_house || '') + ' · Motivo: ' + (d.motivo_score || 'Sin motivo') + '</div></div>';
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[rNegociosAdmin]', e);
+    h += '<div style="padding:20px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+
+  el.innerHTML = h;
+};
+
+// --- Admin: Sección Arriendos (Administrados + Buscando + Publicaciones) ---
+window.rArriendosAdmin = async function() {
+  const el = document.getElementById('arriendosadminc'); if (!el) return;
+  const u = U(); if (!u || (u.rol !== 'admin' && u.rol !== 'oficina')) { el.innerHTML = ''; return; }
+  const tab = window._arrAdminTab || 'administrados';
+
+  let h = '<div style="margin-bottom:16px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx)">🔑 Arriendos</div><div style="font-size:13px;color:var(--sub)">Administración, búsqueda de inquilinos y publicaciones pagas</div></div>';
+
+  h += '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">';
+  [{ id: 'administrados', l: '🏡 Administrados' }, { id: 'buscando', l: '🔍 Buscando' }, { id: 'publicaciones', l: '📢 Publicaciones' }].forEach(t => {
+    h += '<button onclick="window._arrAdminTab=\'' + t.id + '\';rArriendosAdmin()" style="padding:10px 16px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:' + (tab === t.id ? 'var(--b600)' : '#f0eeeb') + ';color:' + (tab === t.id ? '#fff' : '#5a5550') + '">' + t.l + '</button>';
+  });
+  h += '</div>';
+
+  try {
+    if (tab === 'administrados') {
+      // Inmuebles arrendados con administración House
+      const { data: adm } = await SB().from('inmuebles').select('id,tipo,barrio,ciudad,codigo_house,precio_arriendo,captador:usuarios!captador_id(nombre,telefono_contacto)').eq('estado', 'Arrendado').eq('eliminado', false).order('updated_at', { ascending: false });
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px">En administración (' + (adm || []).length + ')</div>';
+      if (!(adm || []).length) h += '<div style="padding:20px;background:#fff;border-radius:12px;color:var(--sub);text-align:center">Sin inmuebles en administración</div>';
+      else {
+        (adm || []).forEach(p => {
+          const canon = p.precio_arriendo || 0;
+          const comision = Math.round(canon * 0.10);
+          const neto = canon - comision;
+          h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);margin-bottom:8px">';
+          h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:700;font-size:14px">' + (p.tipo || '') + ' en ' + (p.barrio || p.ciudad || '') + '</div><div style="font-size:12px;color:var(--b600);font-weight:700">' + (p.codigo_house || '') + '</div></div>';
+          h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px">';
+          h += '<div style="background:var(--cd2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:14px;font-weight:800">' + fm(canon) + '</div><div style="font-size:10px;color:var(--sub)">Canon</div></div>';
+          h += '<div style="background:var(--cd2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:14px;font-weight:800;color:var(--green)">' + fm(comision) + '</div><div style="font-size:10px;color:var(--sub)">House 10%</div></div>';
+          h += '<div style="background:var(--cd2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:14px;font-weight:800">' + fm(neto) + '</div><div style="font-size:10px;color:var(--sub)">Propietario</div></div>';
+          h += '</div>';
+          if (p.captador?.nombre) h += '<div style="font-size:11px;color:var(--sub)">Propietario: ' + p.captador.nombre + (p.captador.telefono_contacto ? ' · ' + p.captador.telefono_contacto : '') + '</div>';
+          h += '</div>';
+        });
+      }
+
+    } else if (tab === 'buscando') {
+      // Inmuebles en arriendo buscando inquilino (estado Disponible + negociacion Arriendo)
+      const { data: busc } = await SB().from('inmuebles').select('id,tipo,barrio,ciudad,codigo_house,precio_arriendo,created_at,captador:usuarios!captador_id(nombre)').eq('eliminado', false).in('estado', ['Disponible', 'Aún Disponible']).ilike('negociacion', '%Arriendo%').order('created_at', { ascending: false }).limit(30);
+      h += '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px">Buscando inquilino (' + (busc || []).length + ')</div>';
+      if (!(busc || []).length) h += '<div style="padding:20px;background:#fff;border-radius:12px;color:var(--sub);text-align:center">Sin inmuebles buscando inquilino</div>';
+      else {
+        (busc || []).forEach(p => {
+          const dias = Math.round((Date.now() - new Date(p.created_at).getTime()) / 86400000);
+          h += '<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid var(--g100);margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+          h += '<div style="flex:1"><div style="font-weight:700;font-size:13px">' + (p.tipo || '') + ' en ' + (p.barrio || p.ciudad || '') + '</div>';
+          h += '<div style="font-size:11px;color:var(--sub)">' + (p.codigo_house || '') + ' · ' + fm(p.precio_arriendo) + '/mes · ' + dias + ' días</div></div>';
+          h += '<span style="font-size:10px;padding:3px 8px;border-radius:6px;background:' + (dias > 30 ? 'var(--red)' : dias > 15 ? 'var(--gold)' : 'var(--green)') + ';color:#fff;font-weight:700">' + dias + 'd</span>';
+          h += '</div>';
+        });
+      }
+
+    } else if (tab === 'publicaciones') {
+      h += '<div style="padding:20px;background:#fff;border-radius:12px;color:var(--sub);text-align:center"><div style="font-size:32px;margin-bottom:8px">📢</div><div style="font-size:14px;font-weight:700">Publicaciones pagas ($100K/mes)</div><div style="font-size:13px;margin-top:6px">Próximamente: seguimiento de suscripciones de publicación en portales.</div></div>';
+    }
+  } catch (e) {
+    console.error('[rArriendosAdmin]', e);
+    h += '<div style="padding:20px;color:var(--red)">Error: ' + e.message + '</div>';
+  }
+
+  el.innerHTML = h;
+};
+
 // --- Mis Negocios: pipeline completo con KPIs, tabs, sub-filtros, tarjetas expandibles ---
 const _NEST = {
   pendiente_revision:{label:'⏳ En revisión',color:'#f59e0b',bg:'#fef3c7',desc:'Tu publicación está siendo revisada por House'},
