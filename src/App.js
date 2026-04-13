@@ -290,10 +290,9 @@ function tTh() {
 }
 
 function iTh() {
+  // Default: SIEMPRE claro. Solo oscuro si el usuario lo eligió manualmente.
   const saved = localStorage.getItem('ht');
-  // If user has saved preference, use it. Otherwise detect system preference.
-  const isDark = saved === 'd' || (!saved && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
-  if (isDark) {
+  if (saved === 'd') {
     document.body.classList.add('dark');
     const btn = document.getElementById('tbtn');
     if (btn) btn.textContent = '\u{1F319}';

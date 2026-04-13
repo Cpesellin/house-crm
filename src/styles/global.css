@@ -545,10 +545,7 @@ body.dark .stb{background:var(--cd);border-color:rgba(255,255,255,.06)}
 .vis-price-alert{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin:8px 0;display:flex;align-items:center;gap:10px}
 body.dark .vis-price-alert{background:rgba(253,230,138,.08);border-color:rgba(253,230,138,.25)}
 
-/* ═══ AUTO-DETECT SYSTEM PREFERENCE ═══ */
-@media(prefers-color-scheme:dark){
-  body:not(.light-forced){--g50:#1a1b1f;--g100:#1c1d21;--g200:#2a2b30;--g300:#3d3e44;--g400:#6b6a68;--g500:#8a8680;--g600:#c4c0b8;--g700:#ddd9d2;--g800:#eae8e4;--g900:#f5f3ef;--b50:#1e1d17;--b100:#2a2618;--b200:#3d3520;--b300:#9e8c5a;--b400:#c9a84c;--b500:#d4a853;--b600:#c9a84c;--b700:#d4a853;--b800:#c9a84c;--b900:#b8963f;--green:#5bb98c;--greenbg:rgba(91,185,140,.08);--red:#ef5350;--redbg:rgba(239,83,80,.08);--goldbg:rgba(201,168,76,.08);--purple:#a78bfa;--bg:#121316;--cd:#1c1d21;--cd2:#18191d;--brd:rgba(255,255,255,.06);--tx:#eae8e4;--sub:#8a8680;--hdr:rgba(18,19,22,.85);--inp:#18191d}
-}
+/* Dark mode: solo se activa con body.dark (toggle manual del usuario) */
 
 /* ═══ DARK MODE INLINE STYLE OVERRIDES ═══ */
 /* These override hardcoded inline colors that can't use CSS variables */
