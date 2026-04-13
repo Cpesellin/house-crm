@@ -1319,106 +1319,209 @@ function _cmdQueueHeader(title, count, linkRoute, linkLabel) {
 }
 
 // --- Mis Negocios (interno — Fase 6) ---
+// --- Mis Negocios: pipeline completo con KPIs, tabs, sub-filtros, tarjetas expandibles ---
+const _NEST = {
+  pendiente_revision:{label:'⏳ En revisión',color:'#f59e0b',bg:'#fef3c7',desc:'Tu publicación está siendo revisada por House'},
+  publicado:{label:'✅ Publicado',color:'#10b981',bg:'#d1fae5',desc:'Visible al público, esperando interesados'},
+  hay_interesados:{label:'👤 Hay interesados',color:'#3b82f6',bg:'#dbeafe',desc:'Compradores han mostrado interés'},
+  comprador_calificado:{label:'✅ Calificado',color:'#10b981',bg:'#d1fae5',desc:'Comprador verificado con crédito'},
+  cita_agendada:{label:'📅 Cita agendada',color:'#8b5cf6',bg:'#ede9fe',desc:'Visita programada con acompañamiento'},
+  en_negociacion:{label:'🤝 En negociación',color:'#f59e0b',bg:'#fef3c7',desc:'Las partes están negociando'},
+  buscando_inquilino:{label:'🔍 Buscando inquilino',color:'#3b82f6',bg:'#dbeafe',desc:'House está buscando inquilino calificado'},
+  administrando:{label:'🏡 En administración',color:'#10b981',bg:'#d1fae5',desc:'House administra tu inmueble'},
+  cerrado:{label:'🎉 Cerrado',color:'#10b981',bg:'#d1fae5',desc:'Negocio cerrado exitosamente'},
+  declinado:{label:'⚠️ Declinado',color:'#ef4444',bg:'#fee2e2',desc:'No se concretó. Revisa los mensajes.'},
+};
+const _NROLES = {vendedor:{l:'🏡 Propietario',c:'#10b981'},comisionista:{l:'💼 Comisionista',c:'#f59e0b'},comprador:{l:'👤 Comprador',c:'#3b82f6'},referenciador:{l:'📢 Referenciador',c:'#8b5cf6'}};
+const _NPART = {house:{e:'🏢',c:'#122d4f'},comisionista_inmueble:{e:'🤝',c:'#f59e0b'},comisionista_comprador:{e:'👥',c:'#8b5cf6'},asesor_captador:{e:'👔',c:'#3b82f6'},referidor:{e:'🎁',c:'#8b5cf6'},otro:{e:'📋',c:'#6b7280'}};
+const _NACTIVE = ['pendiente_revision','publicado','hay_interesados','comprador_calificado','cita_agendada','en_negociacion','buscando_inquilino','administrando'];
+
 window.rMisNegocios = async function() {
   const el = document.getElementById('misnegociosc'); if (!el) return;
   const u = U(); if (!u) { el.innerHTML = ''; return; }
   const isAdmin = u.rol === 'admin' || u.rol === 'oficina';
-
-  let h = '<div style="margin-bottom:20px"><div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:var(--tx)">Mis Negocios</div><div style="font-size:13px;color:var(--sub)">Cierres registrados y estado de comisiones</div></div>';
+  let h = '';
 
   try {
-    // Admin sees all, captador sees own
-    let query = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,direccion,precio,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre,foto), cerrador:usuarios!cerrado_por(id,nombre), participantes:participantes_comision(id,rol_comision,nombre_externo,porcentaje,monto,pago_estado,usuario_id)').eq('estado', 'activo').order('created_at', { ascending: false });
-    if (!isAdmin) query = query.eq('captador_id', u.id);
-    const { data: cierres, error } = await query;
+    // Load cierres + participantes
+    let qC = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,precio,codigo_house,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre), participantes:participantes_comision(id,rol_comision,nombre_externo,porcentaje,monto,pago_estado,usuario_id)').order('created_at', { ascending: false });
+    if (!isAdmin) qC = qC.or('captador_id.eq.' + u.id);
+    const { data: cierres } = await qC;
 
-    if (error) {
-      if (/cierres/i.test(error.message) && /does not exist|relation/i.test(error.message)) {
-        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">⚠️ Falta correr <b>sql/23-cierres.sql</b> en Supabase SQL Editor</div>';
-        return;
-      }
-      throw error;
-    }
+    // Load inmuebles published by user (active, not yet closed)
+    let qI = SB().from('inmuebles').select('id,tipo,ciudad,barrio,precio_venta,precio_arriendo,codigo_house,estado,estado_revision,publicado_por_tipo,comisionista_id,fotos:fotos(url)').eq('eliminado', false).eq('captador_id', u.id).eq('origen', 'externo');
+    const { data: misInm } = await qI;
 
-    const all = cierres || [];
+    // Load interests where I'm the comprador
+    const { data: misInt } = await SB().from('intereses_compradores').select('id,inmueble_id,estado,interes_tipo,score').eq('usuario_id', u.id);
 
-    // Stats
-    const totalCom = all.reduce((s, c) => s + (c.comision_total || 0), 0);
-    const totalCaptador = all.reduce((s, c) => s + (c.comision_captador || 0), 0);
-    const totalCasa = all.reduce((s, c) => s + (c.comision_casa || 0), 0);
-    const arriendos = all.filter(c => c.tipo === 'arriendo');
-    const ventas = all.filter(c => c.tipo === 'venta');
+    // Load messages for context
+    const { data: misMsgs } = await SB().from('mensajes').select('id,inmueble_id,emisor_id,texto,created_at,tipo_mensaje,contexto_tipo').or('emisor_id.eq.' + u.id + ',receptor_id.eq.' + u.id).not('contexto_tipo', 'is', null).order('created_at', { ascending: true }).limit(100);
 
-    // Pending payments count
-    const pendientes = all.filter(c => {
-      if (c.tipo === 'arriendo') return !c.fase_a_pagada || !c.fase_b_pagada;
-      return !c.pagada;
-    }).length;
+    // Build unified negocio list
+    const negocios = [];
+    // From cierres (closed deals)
+    (cierres || []).forEach(c => {
+      const inm = c.inmueble || {};
+      const myPart = (c.participantes || []).find(p => p.usuario_id === u.id);
+      const rol = myPart ? (myPart.rol_comision === 'comisionista_inmueble' || myPart.rol_comision === 'comisionista_comprador' ? 'comisionista' : 'vendedor') : (c.captador_id === u.id ? 'vendedor' : 'comprador');
+      const msgs = (misMsgs || []).filter(m => m.inmueble_id === inm.id);
+      negocios.push({ id: c.id, cat: c.tipo, tipo: inm.tipo, barrio: inm.barrio || inm.ciudad, codigo: inm.codigo_house, precio: c.precio_final, rol, estado: 'cerrado', participantes: c.participantes, comision: myPart?.monto || 0, pago: myPart?.pago_estado || null, msgs, inm, cierre: c });
+    });
+    // From active inmuebles (not yet closed)
+    (misInm || []).forEach(p => {
+      if (negocios.some(n => n.inm?.id === p.id)) return; // already in cierres
+      const cat = (p.precio_arriendo > 0 && !p.precio_venta) ? 'arriendo' : 'venta';
+      const rol = p.publicado_por_tipo === 'comisionista' ? 'comisionista' : 'vendedor';
+      const ints = (misInt || []).filter(i => i.inmueble_id === p.id);
+      const msgs = (misMsgs || []).filter(m => m.inmueble_id === p.id);
+      let estado = p.estado_revision === 'en_revision' ? 'pendiente_revision' : p.estado_revision === 'cambios_solicitados' ? 'pendiente_revision' : 'publicado';
+      if (ints.some(i => i.estado === 'calificado')) estado = 'comprador_calificado';
+      else if (ints.length > 0) estado = 'hay_interesados';
+      negocios.push({ id: p.id, cat, tipo: p.tipo, barrio: p.barrio || p.ciudad, codigo: p.codigo_house, precio: p.precio_venta || p.precio_arriendo, rol, estado, participantes: null, comision: 0, pago: null, msgs, inm: p, interesados: ints.length });
+    });
+    // From interests as comprador
+    (misInt || []).forEach(i => {
+      if (negocios.some(n => n.inm?.id === i.inmueble_id)) return;
+      const msgs = (misMsgs || []).filter(m => m.inmueble_id === i.inmueble_id);
+      const rol = i.interes_tipo === 'comisionista' ? 'comisionista' : 'comprador';
+      negocios.push({ id: i.id, cat: 'venta', tipo: '', barrio: '', codigo: '', precio: 0, rol, estado: i.estado === 'calificado' ? 'comprador_calificado' : i.estado === 'descartado' ? 'declinado' : 'hay_interesados', participantes: null, comision: 0, pago: null, msgs, inm: null });
+    });
 
-    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">';
-    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:var(--tx)">' + all.length + '</div><div style="font-size:11px;color:var(--sub)">Cierres totales</div></div>';
-    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:var(--green)">' + fm(totalCom) + '</div><div style="font-size:11px;color:var(--sub)">Comisión total</div></div>';
-    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:var(--b600)">' + fm(isAdmin ? totalCasa : totalCaptador) + '</div><div style="font-size:11px;color:var(--sub)">' + (isAdmin ? 'Para la casa' : 'Mi parte (50%)') + '</div></div>';
-    h += '<div style="background:#fff;border-radius:12px;padding:14px;border:1px solid var(--g100);text-align:center"><div style="font-size:22px;font-weight:800;color:' + (pendientes ? 'var(--gold)' : 'var(--green)') + '">' + pendientes + '</div><div style="font-size:11px;color:var(--sub)">Pagos pendientes</div></div>';
+    const tab = window._negociosTab || 'todos';
+    const sub = window._negociosSub || 'todos';
+    const porTab = tab === 'todos' ? negocios : negocios.filter(n => n.cat === tab);
+    const activos = porTab.filter(n => _NACTIVE.includes(n.estado));
+    const cerrados = porTab.filter(n => n.estado === 'cerrado');
+    const declinados = porTab.filter(n => n.estado === 'declinado');
+    const lista = sub === 'activos' ? activos : sub === 'cerrados' ? cerrados : sub === 'declinados' ? declinados : porTab;
+
+    // My commissions
+    const pagados = negocios.filter(n => n.pago === 'pagado' && n.comision > 0).reduce((s, n) => s + n.comision, 0);
+    const pendMonto = negocios.filter(n => n.pago === 'pendiente' && n.comision > 0).reduce((s, n) => s + n.comision, 0);
+    const numPend = negocios.filter(n => n.pago === 'pendiente').length;
+
+    // KPIs
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+    h += '<div style="background:linear-gradient(135deg,#122d4f,#1a4f8b);border-radius:14px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:900;color:#fff">' + activos.length + '</div><div style="font-size:11px;color:#ffffff90">Activos</div></div>';
+    h += '<div style="background:linear-gradient(135deg,#065f46,#10b981);border-radius:14px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:900;color:#fff">' + cerrados.length + '</div><div style="font-size:11px;color:#ffffff90">Cerrados</div></div>';
+    h += '<div style="background:linear-gradient(135deg,#065f46,#10b981);border-radius:14px;padding:14px;text-align:center"><div style="font-size:16px;font-weight:900;color:#fff">' + fm(pagados) + '</div><div style="font-size:11px;color:#ffffff90">✅ Cobradas</div></div>';
+    h += '<div style="background:' + (numPend > 0 ? 'linear-gradient(135deg,#92400e,#f59e0b)' : '#d1fae5') + ';border-radius:14px;padding:14px;text-align:center"><div style="font-size:16px;font-weight:900;color:' + (numPend > 0 ? '#fff' : '#065f46') + '">' + (numPend > 0 ? fm(pendMonto) : '✅') + '</div><div style="font-size:11px;color:' + (numPend > 0 ? '#ffffff90' : '#5a5550') + '">' + (numPend > 0 ? '⏳ ' + numPend + ' pendiente(s)' : 'Sin pendientes') + '</div></div>';
     h += '</div>';
 
-    // Tabs: Todos | Arriendos | Ventas
-    h += '<div style="display:flex;gap:8px;margin-bottom:16px">';
-    h += '<button class="pill ' + (!window._negociosTab || window._negociosTab === 'todos' ? '' : 'pill-off') + '" onclick="window._negociosTab=\'todos\';rMisNegocios()">Todos (' + all.length + ')</button>';
-    h += '<button class="pill ' + (window._negociosTab === 'arriendos' ? '' : 'pill-off') + '" onclick="window._negociosTab=\'arriendos\';rMisNegocios()">🔑 Arriendos (' + arriendos.length + ')</button>';
-    h += '<button class="pill ' + (window._negociosTab === 'ventas' ? '' : 'pill-off') + '" onclick="window._negociosTab=\'ventas\';rMisNegocios()">💰 Ventas (' + ventas.length + ')</button>';
+    // Tabs
+    h += '<div style="display:flex;gap:6px;margin-bottom:10px">';
+    [{ id: 'todos', l: 'Todos', c: negocios.length }, { id: 'venta', l: '🏷️ Venta', c: negocios.filter(n => n.cat === 'venta').length }, { id: 'arriendo', l: '🔑 Arriendo', c: negocios.filter(n => n.cat === 'arriendo').length }].forEach(t => {
+      h += '<button onclick="window._negociosTab=\'' + t.id + '\';window._negociosSub=\'todos\';rMisNegocios()" style="flex:1;padding:11px 6px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:' + (tab === t.id ? 'linear-gradient(135deg,#122d4f,#1a4f8b)' : '#f0eeeb') + ';color:' + (tab === t.id ? '#fff' : '#5a5550') + '">' + t.l + ' (' + t.c + ')</button>';
+    });
     h += '</div>';
 
-    const filtered = window._negociosTab === 'arriendos' ? arriendos : window._negociosTab === 'ventas' ? ventas : all;
+    // Sub-filters
+    h += '<div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto">';
+    [{ id: 'todos', l: 'Todos', c: porTab.length, cl: '#5a5550', bg: '#f0eeeb' }, { id: 'activos', l: '🟢 Activos', c: activos.length, cl: '#065f46', bg: '#d1fae5' }, { id: 'cerrados', l: '✅ Cerrados', c: cerrados.length, cl: '#122d4f', bg: '#dbeafe' }, { id: 'declinados', l: '⚠️ Declinados', c: declinados.length, cl: '#991b1b', bg: '#fee2e2' }].forEach(s => {
+      h += '<button onclick="window._negociosSub=\'' + s.id + '\';rMisNegocios()" style="padding:7px 12px;border-radius:10px;border:' + (sub === s.id ? '2px solid ' + s.cl : '2px solid transparent') + ';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;background:' + (sub === s.id ? s.bg : '#f5f3f0') + ';color:' + (sub === s.id ? s.cl : '#999') + '">' + s.l + ' <b>' + s.c + '</b></button>';
+    });
+    h += '</div>';
 
-    if (!filtered.length) {
-      h += '<div style="text-align:center;padding:40px;color:var(--sub)">No hay cierres registrados' + (window._negociosTab && window._negociosTab !== 'todos' ? ' en esta categoría' : '') + '</div>';
+    // List
+    if (!lista.length) {
+      h += '<div style="text-align:center;padding:40px;color:var(--sub)">Sin negocios en esta categoría</div>';
     } else {
-      filtered.forEach(c => {
-        const inm = c.inmueble || {};
-        const foto = inm.fotos?.[0]?.url || '';
-        const inmDesc = (inm.tipo || 'Inmueble') + ' en ' + (inm.barrio || inm.ciudad || '?');
-        const fechaTxt = c.fecha_cierre ? new Date(c.fecha_cierre + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-        const comCapt = c.comision_captador || 0;
-        const comCasa = c.comision_casa || 0;
+      lista.forEach(n => {
+        const est = _NEST[n.estado] || { label: n.estado, color: '#999', bg: '#f3f4f6', desc: '' };
+        const rol = _NROLES[n.rol] || { l: n.rol, c: '#999' };
+        const isOpen = window._negocioOpen === n.id;
+        const msgs = n.msgs || [];
 
-        h += '<div style="background:#fff;border-radius:14px;border:1px solid var(--g100);margin-bottom:12px;overflow:hidden">';
-        h += '<div style="display:flex;gap:12px;padding:14px">';
-        if (foto) h += '<img src="' + foto + '" style="width:70px;height:70px;border-radius:10px;object-fit:cover;flex-shrink:0">';
-        else h += '<div style="width:70px;height:70px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">' + (c.tipo === 'venta' ? '💰' : '🔑') + '</div>';
+        h += '<div onclick="window._negocioOpen=' + (isOpen ? 'null' : "'" + n.id + "'") + ';rMisNegocios()" style="background:#fff;border-radius:16px;margin-bottom:10px;overflow:hidden;border:2px solid ' + (isOpen ? est.color + '40' : '#e8e5e0') + ';cursor:pointer;box-shadow:' + (isOpen ? '0 8px 24px ' + est.color + '15' : 'none') + ';transition:all .25s">';
 
-        h += '<div style="flex:1;min-width:0">';
-        h += '<div style="font-weight:700;font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + inmDesc + '</div>';
-        h += '<div style="font-size:12px;color:var(--sub);margin-top:2px">' + (c.tipo === 'venta' ? 'Venta' : 'Arriendo') + ' · ' + fechaTxt + '</div>';
-        if (c.contraparte_nombre) h += '<div style="font-size:12px;color:var(--sub)">' + (c.tipo === 'venta' ? 'Comprador' : 'Arrendatario') + ': ' + c.contraparte_nombre + '</div>';
-        if (isAdmin && c.captador) h += '<div style="font-size:12px;color:var(--sub)">Captador: ' + c.captador.nombre + '</div>';
-        h += '<div style="margin-top:6px;font-size:13px"><span style="font-weight:700">Precio: ' + fm(c.precio_final) + '</span> · Comisión: <span style="color:var(--green);font-weight:700">' + fm(c.comision_total) + '</span></div>';
-        h += '</div></div>';
+        // Header
+        h += '<div style="padding:14px 16px">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div>';
+        h += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px"><span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;background:' + (n.cat === 'venta' ? '#122d4f10' : '#10b98110') + ';color:' + (n.cat === 'venta' ? '#122d4f' : '#10b981') + ';text-transform:uppercase;letter-spacing:1px">' + n.cat + '</span><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:' + rol.c + '15;color:' + rol.c + '">' + rol.l + '</span></div>';
+        h += '<div style="font-size:16px;font-weight:800">' + (n.tipo || 'Inmueble') + ' en ' + (n.barrio || '?') + '</div>';
+        if (n.codigo) h += '<div style="font-size:12px;color:#5a5550;margin-top:2px">' + n.codigo + '</div>';
+        h += '</div><div style="font-size:16px;font-weight:800;color:#122d4f;flex-shrink:0">' + fm(n.precio) + '</div></div>';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+        h += '<span style="font-size:13px;font-weight:700;color:' + est.color + ';background:' + est.bg + ';padding:4px 12px;border-radius:8px">' + est.label + '</span>';
+        h += '<div style="display:flex;gap:6px">';
+        if ((n.interesados || 0) > 0) h += '<span style="font-size:11px;color:#3b82f6;font-weight:700">❤️' + n.interesados + '</span>';
+        if (msgs.length > 0) h += '<span style="font-size:11px;color:#122d4f;font-weight:700">💬' + msgs.length + '</span>';
+        if (n.pago === 'pagado') h += '<span style="font-size:11px;color:#10b981;font-weight:700">💰✓</span>';
+        if (n.pago === 'pendiente') h += '<span style="font-size:11px;color:#f59e0b;font-weight:700">💰⏳</span>';
+        h += '</div></div></div>';
 
-        // Per-participant payment status
-        h += '<div style="padding:0 14px 14px">';
-        const cParts = c.participantes || [];
-        if (cParts.length) {
-          cParts.forEach(pt => {
-            const isPaid = pt.pago_estado === 'pagado';
-            const rolLabel = { house:'🏢 House', comisionista_inmueble:'🤝 Com. inmueble', comisionista_comprador:'🤝 Com. comprador', asesor_captador:'👤 Captador', referidor:'🎁 Referidor', otro:'📋 Otro' }[pt.rol_comision] || pt.rol_comision;
-            h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-            h += '<span style="font-size:11px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + rolLabel + (pt.nombre_externo ? ' · ' + pt.nombre_externo : '') + '</span>';
-            h += '<span style="font-size:11px;font-weight:700;color:var(--green)">' + fm(pt.monto) + ' (' + pt.porcentaje + '%)</span>';
-            h += '<span style="font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;background:' + (isPaid ? 'var(--green)' : 'var(--gold)') + ';color:#fff">' + (isPaid ? '✅' : '⏳') + '</span>';
-            if (isAdmin && !isPaid && pt.rol_comision !== 'house') h += '<button onclick="marcarPagoParticipante(\'' + pt.id + '\')" style="font-size:10px;padding:3px 8px;border:none;border-radius:6px;background:var(--b600);color:#fff;font-weight:700;cursor:pointer;font-family:inherit">💵</button>';
-            h += '</div>';
+        // Expanded
+        if (isOpen) {
+          h += '<div style="padding:0 16px 16px;border-top:1px solid #f0eeeb">';
+          h += '<div style="font-size:13px;color:#5a5550;line-height:1.6;margin:12px 0 14px">' + est.desc + '</div>';
+
+          // Timeline
+          const steps = n.cat === 'venta'
+            ? [{ l: 'Publicado', d: n.estado !== 'pendiente_revision' }, { l: 'Interesados', d: (n.interesados || 0) > 0 || ['comprador_calificado', 'cita_agendada', 'en_negociacion', 'cerrado'].includes(n.estado) }, { l: 'Calificado', d: ['comprador_calificado', 'cita_agendada', 'en_negociacion', 'cerrado'].includes(n.estado) }, { l: 'Cita', d: ['cita_agendada', 'en_negociacion', 'cerrado'].includes(n.estado) }, { l: 'Negociación', d: ['en_negociacion', 'cerrado'].includes(n.estado) }, { l: 'Cerrado', d: n.estado === 'cerrado' }]
+            : [{ l: 'Publicado', d: n.estado !== 'pendiente_revision' }, { l: 'Buscando', d: ['buscando_inquilino', 'administrando', 'cerrado'].includes(n.estado) }, { l: 'Calificado', d: ['administrando', 'cerrado'].includes(n.estado) }, { l: 'Contrato', d: ['administrando', 'cerrado'].includes(n.estado) }, { l: 'Cerrado', d: n.estado === 'cerrado' || n.estado === 'administrando' }];
+          h += '<div style="display:flex;margin-bottom:14px">';
+          steps.forEach((s, i) => {
+            h += '<div style="flex:1;text-align:center;position:relative"><div style="width:20px;height:20px;border-radius:50%;margin:0 auto 4px;background:' + (s.d ? '#10b981' : '#e0ddd8') + ';display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:800">' + (s.d ? '✓' : '') + '</div>';
+            if (i < steps.length - 1) h += '<div style="position:absolute;top:9px;left:50%;width:100%;height:2px;background:' + (s.d ? '#10b981' : '#e0ddd8') + ';z-index:0"></div>';
+            h += '<div style="font-size:9px;color:' + (s.d ? '#065f46' : '#999') + ';font-weight:600">' + s.l + '</div></div>';
           });
-        } else {
-          // Backward compat: old cierres without participantes
-          h += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
-          h += '<span style="font-size:10px;color:var(--sub)">Captador: ' + fm(comCapt) + ' · Casa: ' + fm(comCasa) + '</span>';
+          h += '</div>';
+
+          // Participantes
+          const parts = n.participantes || [];
+          if (parts.length > 0) {
+            h += '<div style="background:#f5f3f0;border-radius:12px;padding:14px;margin-bottom:12px">';
+            h += '<div style="font-size:12px;font-weight:700;color:#122d4f;margin-bottom:10px;display:flex;justify-content:space-between"><span>Distribución de comisión</span><span style="font-size:11px;color:#5a5550">' + parts.length + ' participantes</span></div>';
+            parts.forEach(p => {
+              const pc = _NPART[p.rol_comision] || _NPART.otro;
+              const esMio = p.usuario_id === u.id;
+              h += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:' + (esMio ? pc.c + '12' : '#fff') + ';border:' + (esMio ? '2px solid ' + pc.c + '30' : '1px solid #e8e5e0') + '">';
+              h += '<span style="font-size:16px">' + pc.e + '</span>';
+              h += '<div style="flex:1;font-size:13px;font-weight:' + (esMio ? '800' : '600') + ';color:' + (esMio ? pc.c : '#1a1a1a') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (p.nombre_externo || (p.rol_comision === 'house' ? 'Inmobiliaria House' : 'Participante')) + '</div>';
+              h += '<div style="font-size:15px;font-weight:900;color:' + pc.c + ';min-width:40px;text-align:right">' + p.porcentaje + '%</div>';
+              if (p.monto) h += '<div style="font-size:12px;font-weight:700;color:#5a5550;min-width:65px;text-align:right">' + fm(p.monto) + '</div>';
+              if (p.pago_estado) h += '<span style="font-size:12px">' + (p.pago_estado === 'pagado' ? '✅' : '⏳') + '</span>';
+              h += '</div>';
+            });
+            h += '</div>';
+          }
+
+          // Pago prominente
+          if (n.estado === 'cerrado' && n.pago && n.comision > 0) {
+            h += '<div style="padding:14px 16px;border-radius:12px;text-align:center;margin-bottom:12px;background:' + (n.pago === 'pagado' ? 'linear-gradient(135deg,#065f46,#10b981)' : 'linear-gradient(135deg,#92400e,#f59e0b)') + ';color:#fff">';
+            h += '<div style="font-size:15px;font-weight:800">' + (n.pago === 'pagado' ? '✅ Comisión pagada' : '⏳ Comisión pendiente') + '</div>';
+            h += '<div style="font-size:22px;font-weight:900;margin-top:4px">' + fm(n.comision) + '</div>';
+            h += '<div style="font-size:11px;margin-top:4px;opacity:.8">' + (n.pago === 'pagado' ? 'Transferido a tu cuenta' : 'Te contactaremos para coordinar el pago') + '</div></div>';
+          }
+
+          // Messages
+          if (msgs.length > 0) {
+            h += '<div><div style="font-size:12px;font-weight:700;color:#122d4f;margin-bottom:8px;display:flex;align-items:center;gap:6px">💬 Mensajes <span style="font-size:11px;color:#999">(' + msgs.length + ')</span></div>';
+            h += '<div style="background:#f5f3f0;border-radius:14px;padding:12px;max-height:180px;overflow-y:auto">';
+            msgs.forEach((m, i) => {
+              const esMio = m.emisor_id === u.id;
+              const isDecl = m.tipo_mensaje === 'declinacion';
+              const isSys = m.tipo_mensaje === 'sistema';
+              const fecha = m.created_at ? new Date(m.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : '';
+              h += '<div style="display:flex;flex-direction:column;align-items:' + (esMio ? 'flex-end' : 'flex-start') + ';margin-bottom:' + (i < msgs.length - 1 ? '8' : '0') + 'px">';
+              h += '<div style="max-width:85%;padding:10px 14px;border-radius:14px;background:' + (isDecl ? '#fee2e2' : isSys ? '#dbeafe' : esMio ? '#122d4f' : '#fff') + ';color:' + (esMio && !isDecl && !isSys ? '#fff' : isDecl ? '#991b1b' : '#1a1a1a') + ';' + (!esMio && !isDecl && !isSys ? 'border:1px solid #e0ddd8;' : '') + 'font-size:13px;line-height:1.5">';
+              if (isDecl) h += '<div style="font-size:11px;font-weight:800;margin-bottom:4px">⚠️ MOTIVO DE DECLINACIÓN</div>';
+              if (isSys) h += '<div style="font-size:11px;font-weight:800;color:#1a4f8b;margin-bottom:4px">🔔 Notificación</div>';
+              if (!esMio && !isDecl && !isSys) h += '<div style="font-size:11px;font-weight:700;color:#1a4f8b;margin-bottom:2px">Inmobiliaria House</div>';
+              h += (m.texto || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
+              h += '</div><div style="font-size:10px;color:#999;margin-top:2px;padding:0 4px">' + fecha + '</div></div>';
+            });
+            h += '</div></div>';
+          }
+
           h += '</div>';
         }
-        h += '</div></div>';
+
+        h += '</div>';
       });
     }
-  } catch(e) {
+  } catch (e) {
     console.error('[rMisNegocios]', e);
     h += '<div style="text-align:center;padding:40px;color:var(--red)">Error: ' + e.message + '</div>';
   }
