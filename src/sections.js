@@ -1599,20 +1599,37 @@ window.rPublicar = async function() {
     h += `<div class="wiz-field"><div class="wiz-label">PARQUEADEROS</div><input id="ow_parq" type="number" class="wiz-input" value="${d.parqueaderos||''}"></div>`;
     h += `</div>`;
     h += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div class="wiz-field"><div class="wiz-label">ÁREA CONSTRUIDA m²</div><input id="ow_area" type="number" class="wiz-input" placeholder="120" value="${d.area_construida||''}"></div><div class="wiz-field"><div class="wiz-label">ÁREA TOTAL m²</div><input id="ow_areatot" type="number" class="wiz-input" placeholder="200" value="${d.area_total||''}"></div><div class="wiz-field"><div class="wiz-label">ESTRATO</div><select id="ow_est" class="wiz-input"><option value="">—</option>${[1,2,3,4,5,6].map(e=>`<option${d.estrato==e?' selected':''}>${e}</option>`).join('')}</select></div></div>`;
-    h += `<div class="wiz-field"><div class="wiz-label">AMENIDADES</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
-    const _amenidades = [
-      {id:'piscina',l:'Piscina',i:'🏊'},{id:'gimnasio',l:'Gimnasio',i:'🏋️'},{id:'ascensor',l:'Ascensor',i:'🛗'},
-      {id:'zonas_verdes',l:'Zonas verdes',i:'🌿'},{id:'seguridad',l:'Vigilancia',i:'🛡️'},{id:'salon_comunal',l:'Salón comunal',i:'🎉'},
-      {id:'terraza',l:'Terraza',i:'☀️'},{id:'bbq',l:'BBQ',i:'🔥'},{id:'juegos_ninos',l:'Juegos niños',i:'🎠'},
-      {id:'pet_friendly',l:'Pet friendly',i:'🐕'},{id:'sauna',l:'Sauna',i:'🧖'},{id:'coworking',l:'Coworking',i:'💻'},
-      {id:'lavanderia',l:'Lavandería',i:'🧺'},{id:'deposito',l:'Depósito',i:'🗄️'},{id:'cancha',l:'Cancha',i:'⚽'}
+    h += `<div class="wiz-field"><div class="wiz-label">AMENIDADES <span style="font-weight:400;font-size:10px;color:var(--sub)">(selecciona las que apliquen)</span></div>`;
+    const _amGroups = [
+      { label: 'Zonas comunes', items: [
+        {id:'piscina',l:'Piscina',i:'🏊'},{id:'gimnasio',l:'Gimnasio',i:'🏋️'},{id:'salon_comunal',l:'Salón comunal',i:'🎉'},
+        {id:'bbq',l:'Zona BBQ',i:'🔥'},{id:'juegos_ninos',l:'Juegos niños',i:'🎠'},{id:'cancha',l:'Cancha deportiva',i:'⚽'},
+        {id:'sauna',l:'Sauna / Turco',i:'🧖'},{id:'coworking',l:'Coworking',i:'💻'},{id:'zona_social',l:'Zona social',i:'🎶'},
+      ]},
+      { label: 'Comodidades', items: [
+        {id:'ascensor',l:'Ascensor',i:'🛗'},{id:'terraza',l:'Terraza',i:'☀️'},{id:'balcon',l:'Balcón',i:'🌇'},
+        {id:'lavanderia',l:'Zona de lavado',i:'🧺'},{id:'deposito',l:'Depósito / Útil',i:'🗄️'},{id:'parqueadero_v',l:'Parq. visitantes',i:'🅿️'},
+        {id:'cuarto_servicio',l:'Cuarto de servicio',i:'🛏️'},{id:'closets',l:'Closets',i:'👔'},
+      ]},
+      { label: 'Exteriores y seguridad', items: [
+        {id:'zonas_verdes',l:'Zonas verdes',i:'🌿'},{id:'seguridad',l:'Vigilancia 24h',i:'🛡️'},{id:'citofono',l:'Citófono',i:'📞'},
+        {id:'circuito_cerrado',l:'Cámaras',i:'📹'},{id:'pet_friendly',l:'Pet friendly',i:'🐕'},{id:'sendero',l:'Sendero / Caminos',i:'🚶'},
+      ]},
+      { label: 'Servicios', items: [
+        {id:'gas_natural',l:'Gas natural',i:'🔵'},{id:'agua_caliente',l:'Agua caliente',i:'🚿'},{id:'internet',l:'Internet / Fibra',i:'📡'},
+        {id:'amoblado',l:'Amoblado',i:'🛋️'},{id:'vista_panoramica',l:'Vista panorámica',i:'🏔️'},
+      ]},
     ];
     const _selAm = d._amenidades || [];
-    _amenidades.forEach(a => {
-      const sel = _selAm.includes(a.id);
-      h += `<button type="button" onclick="window._ownerData._amenidades=window._ownerData._amenidades||[];const i=window._ownerData._amenidades.indexOf('${a.id}');if(i>-1)window._ownerData._amenidades.splice(i,1);else window._ownerData._amenidades.push('${a.id}');rPublicar()" style="padding:8px 12px;border-radius:10px;border:1.5px solid ${sel?'var(--b600)':'var(--brd)'};background:${sel?'var(--b600)':'#fff'};color:${sel?'#fff':'var(--tx)'};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><span>${a.i}</span>${a.l}</button>`;
+    _amGroups.forEach(g => {
+      h += `<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px">${g.label}</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
+      g.items.forEach(a => {
+        const sel = _selAm.includes(a.id);
+        h += `<button type="button" onclick="window._ownerData._amenidades=window._ownerData._amenidades||[];const i=window._ownerData._amenidades.indexOf('${a.id}');if(i>-1)window._ownerData._amenidades.splice(i,1);else window._ownerData._amenidades.push('${a.id}');rPublicar()" style="padding:7px 12px;border-radius:20px;border:1.5px solid ${sel?'var(--b600)':'#e0ddd8'};background:${sel?'var(--b600)':'#faf9f7'};color:${sel?'#fff':'#1a1a1a'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s"><span style="font-size:14px">${a.i}</span>${a.l}</button>`;
+      });
+      h += `</div></div>`;
     });
-    h += `</div></div>`;
+    h += `</div>`;
     h += `<div class="wiz-field"><div class="wiz-label">DESCRIPCIÓN (lo que verá el público)</div><textarea id="ow_desc" class="wiz-input" style="min-height:80px;resize:vertical" placeholder="Describe tu inmueble...">${d.descripcion_cliente||''}</textarea></div>`;
     // Photo upload
     h += `<div class="wiz-field"><div class="wiz-label">FOTOS (hasta 10)</div><div id="ow_fotos_zone"></div></div>`;
