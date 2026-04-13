@@ -117,18 +117,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Apply pre-filter if /arriendos URL
   if (window._preFilterArriendo) {
     window._preFilterArriendo = false;
-    // Wait for filters to be available
+    // Wait for data + filters to be available, then apply arriendo filter
     const waitF = () => {
-      if (window.F && window.pillToggle && window.doSearch) {
+      const D = window.D || [];
+      if (D.length > 0 && window.F && window.doSearch) {
         window.F.neg.clear();
         window.F.neg.add('arriendo');
         if (typeof window.updatePills === 'function') window.updatePills();
         if (typeof window.renderSel === 'function') window.renderSel();
         window.doSearch();
       } else {
-        setTimeout(waitF, 200);
+        setTimeout(waitF, 300);
       }
     };
-    setTimeout(waitF, 500);
+    setTimeout(waitF, 800);
   }
 });
