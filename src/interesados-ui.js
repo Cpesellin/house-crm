@@ -285,12 +285,22 @@ window.rInteresados = async function() {
           const urgent = dias > 3 ? '🔴' : dias > 1 ? '🟡' : '🟢';
           const canal = _CAN()[l.canal_origen] || {};
           const otrasTips = Object.values(_TIP()).filter(t => t.id !== l.tipificacion).sort((a,b)=>a.orden-b.orden);
+          const fotoK = _fotoInm(l.inmueble_id);
+          const emoK = _emoInm(inm.tipo);
+          const thumbK = fotoK
+            ? `<div style="width:48px;height:48px;border-radius:8px;background-image:url('${fotoK}');background-size:cover;background-position:center;flex-shrink:0"></div>`
+            : `<div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${emoK}</div>`;
           h += `<div class="kcard" draggable="true" ondragstart="onDragStartLead(event,'${l.id}')"
               onclick="abrirDetalleInteresado('${l.id}')"
-              style="padding:12px;background:#fff;border:1px solid var(--brd);border-radius:10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-            <div style="font-size:13px;font-weight:700;color:var(--tx);line-height:1.3">${(l.nombre_completo || 'Sin nombre').slice(0,40)}</div>
-            ${inm.codigo_house ? `<div style="font-size:11px;color:var(--b600);font-weight:700;margin-top:3px">${inm.codigo_house}</div>` : ''}
-            <div style="font-size:11px;color:var(--sub);margin-top:3px">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>
+              style="padding:10px;background:#fff;border:1px solid var(--brd);border-radius:10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              ${thumbK}
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700;color:var(--tx);line-height:1.25">${(l.nombre_completo || 'Sin nombre').slice(0,40)}</div>
+                ${inm.codigo_house ? `<div style="font-size:10.5px;color:var(--b600);font-weight:700;margin-top:2px">${inm.codigo_house}</div>` : ''}
+                <div style="font-size:10.5px;color:var(--sub);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>
+              </div>
+            </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
               <div style="font-size:11px;color:var(--sub)">${canal.emoji || '📱'} ${l.telefono || '—'}</div>
               <div style="font-size:11px;font-weight:700">${urgent} ${dias}d</div>
@@ -447,6 +457,28 @@ window.attachMentionAutocomplete = function(el) {
 // VISTA: POR INMUEBLE (agrupada)
 // ============================================================
 
+// Helper: obtener foto thumb del inmueble desde window.D (ya cargado)
+function _fotoInm(inmuebleId) {
+  const p = (window.D || []).find(x => x.id === inmuebleId);
+  if (!p || !p.fotos || !p.fotos.length) return null;
+  const sorted = [...p.fotos].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  return sorted[0].url_thumb || sorted[0].url || null;
+}
+
+// Emoji de fallback según tipo
+function _emoInm(tipo) {
+  if (typeof window.emo === 'function') return window.emo(tipo);
+  const t = (tipo || '').toLowerCase();
+  if (t.includes('apto') || t.includes('apartamento')) return '🏢';
+  if (t.includes('casa')) return '🏡';
+  if (t.includes('lote')) return '🌳';
+  if (t.includes('local')) return '🏪';
+  if (t.includes('oficina')) return '💼';
+  if (t.includes('bodega')) return '🏭';
+  if (t.includes('finca')) return '🌾';
+  return '🏠';
+}
+
 function _renderVistaPorInmueble(leads, porTip) {
   if (!leads.length) {
     return `<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">📭</span><h3>Sin interesados aún</h3><p>Crea el primero desde cualquier tarjeta de inmueble.</p></div></div></div>`;
@@ -480,9 +512,17 @@ function _renderVistaPorInmueble(leads, porTip) {
     Object.keys(_TIP()).forEach(k => countsTip[k] = 0);
     g.leads.forEach(l => { countsTip[l.tipificacion] = (countsTip[l.tipificacion] || 0) + 1; });
 
+    // Foto del inmueble (desde window.D)
+    const foto = _fotoInm(g.id);
+    const emoFallback = _emoInm(inm.tipo);
+    const thumbHtml = foto
+      ? `<div style="width:72px;height:72px;border-radius:10px;background-image:url('${foto}');background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15)"></div>`
+      : `<div style="width:72px;height:72px;border-radius:10px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">${emoFallback}</div>`;
+
     // Header del inmueble (click toggle)
     h += `<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-      <div onclick="toggleInmExp('${g.id}')" style="padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(90deg,#eff6ff,transparent);border-left:4px solid #3b82f6">
+      <div onclick="toggleInmExp('${g.id}')" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#eff6ff,transparent);border-left:4px solid #3b82f6">
+        ${thumbHtml}
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span style="font-size:15px;font-weight:800;color:var(--tx)">${inm.codigo_house || '(sin código)'}</span>
@@ -492,9 +532,9 @@ function _renderVistaPorInmueble(leads, porTip) {
             ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).filter(t => countsTip[t.id] > 0).map(t => `<span style="font-size:10px;font-weight:800;background:${t.color}22;color:${t.color};padding:2px 8px;border-radius:10px">${t.emoji} ${countsTip[t.id]}</span>`).join('')}
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-          <button onclick="event.stopPropagation();abrirCrearInteresado('${g.id}')" style="padding:6px 12px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Nuevo</button>
-          <div style="background:#3b82f6;color:#fff;font-weight:800;font-size:13px;padding:4px 12px;border-radius:12px">${g.count}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <button onclick="event.stopPropagation();abrirCrearInteresado('${g.id}')" style="padding:6px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Nuevo</button>
+          <div style="background:#3b82f6;color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:12px">${g.count}</div>
           <div style="font-size:16px;color:var(--sub);transform:rotate(${expandido?'0':'-90'}deg);transition:transform .2s">▼</div>
         </div>
       </div>`;
@@ -780,11 +820,20 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
       <button onclick="document.getElementById('detLeadOv').remove()" style="background:none;border:none;font-size:24px;color:var(--sub);cursor:pointer">×</button>
     </div>
 
-    <div style="padding:14px 20px;background:var(--b50);border-bottom:1px solid var(--brd)">
-      <div style="font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏠 Inmueble principal</div>
-      <div style="font-size:13px;color:var(--tx);font-weight:700">${inm.codigo_house ? inm.codigo_house + ' · ' : ''}${inm.tipo || 'Inmueble'}${inm.barrio ? ' en ' + inm.barrio : inm.ciudad ? ' en ' + inm.ciudad : ''}</div>
-      ${inmsAdic.length ? `<div style="font-size:11px;color:var(--sub);margin-top:6px">⭐ También interesado en: ${inmsAdic.map(x => x.inmueble?.codigo_house || '').filter(Boolean).join(', ')}</div>` : ''}
-      ${asignado.nombre ? `<div style="font-size:11px;color:var(--sub);margin-top:4px">👤 Asignado a: ${asignado.nombre}${asignado.id !== creador.id && creador.nombre ? ' · Creado por: ' + creador.nombre : ''}</div>` : ''}
+    <div style="padding:14px 20px;background:var(--b50);border-bottom:1px solid var(--brd);display:flex;gap:12px;align-items:flex-start">
+      ${(() => {
+        const f = _fotoInm(inm.id);
+        const e = _emoInm(inm.tipo);
+        return f
+          ? `<div style="width:64px;height:64px;border-radius:10px;background-image:url('${f}');background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)"></div>`
+          : `<div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${e}</div>`;
+      })()}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏠 Inmueble principal</div>
+        <div style="font-size:13px;color:var(--tx);font-weight:700">${inm.codigo_house ? inm.codigo_house + ' · ' : ''}${inm.tipo || 'Inmueble'}${inm.barrio ? ' en ' + inm.barrio : inm.ciudad ? ' en ' + inm.ciudad : ''}</div>
+        ${inmsAdic.length ? `<div style="font-size:11px;color:var(--sub);margin-top:6px">⭐ También interesado en: ${inmsAdic.map(x => x.inmueble?.codigo_house || '').filter(Boolean).join(', ')}</div>` : ''}
+        ${asignado.nombre ? `<div style="font-size:11px;color:var(--sub);margin-top:4px">👤 Asignado a: ${asignado.nombre}${asignado.id !== creador.id && creador.nombre ? ' · Creado por: ' + creador.nombre : ''}</div>` : ''}
+      </div>
     </div>
 
     <div style="padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap">
