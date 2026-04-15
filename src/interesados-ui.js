@@ -47,6 +47,18 @@ window._intState = window._intState || {
   filtroInmueble: null,
   filtroUrgencia: null,
   cargando: false,
+  view: 'pipeline', // 'pipeline' | 'por_inmueble'
+  inmueblesExpandidos: {}, // { inmueble_id: true/false }
+};
+
+window.setIntView = function(v) {
+  window._intState.view = v;
+  window.rInteresados();
+};
+
+window.toggleInmExp = function(inmId) {
+  window._intState.inmueblesExpandidos[inmId] = !window._intState.inmueblesExpandidos[inmId];
+  window.rInteresados();
 };
 
 // ============================================================
@@ -75,15 +87,29 @@ window.rInteresados = async function() {
     });
 
     let h = '';
+    const vistaActual = window._intState.view || 'pipeline';
 
     // Header
     h += `<div class="card" style="margin-bottom:12px"><div class="cdh">
       <div class="chl"><div class="chi">👤</div><div>
         <div class="cht">Interesados / Leads</div>
-        <div class="chsb">${leads.length} leads ${esAdmin ? 'totales' : 'míos'} · Pipeline con drag & drop</div>
+        <div class="chsb">${leads.length} leads ${esAdmin ? 'totales' : 'míos'}${vistaActual === 'pipeline' ? ' · Pipeline con drag & drop' : ' · Agrupados por inmueble'}</div>
       </div></div>
       <button onclick="abrirCrearInteresadoLibre()" style="padding:8px 14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer">+ Nuevo Lead</button>
     </div></div>`;
+
+    // Toggle vista
+    h += `<div style="display:flex;gap:6px;margin-bottom:12px;padding:4px;background:var(--cd);border:1.5px solid var(--brd);border-radius:10px;max-width:360px">
+      <button onclick="setIntView('pipeline')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;background:${vistaActual==='pipeline'?'#3b82f6':'transparent'};color:${vistaActual==='pipeline'?'#fff':'var(--tx)'}">📋 Pipeline</button>
+      <button onclick="setIntView('por_inmueble')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;background:${vistaActual==='por_inmueble'?'#3b82f6':'transparent'};color:${vistaActual==='por_inmueble'?'#fff':'var(--tx)'}">🏠 Por Inmueble</button>
+    </div>`;
+
+    // Dispatcher de vista
+    if (vistaActual === 'por_inmueble') {
+      h += _renderVistaPorInmueble(leads, porTip);
+      el.innerHTML = h;
+      return;
+    }
 
     // KPIs compactos
     h += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px">`;
@@ -147,6 +173,104 @@ window.rInteresados = async function() {
     el.innerHTML = `<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">⚠️</span><h3>Error al cargar interesados</h3><p style="font-size:12px;color:var(--sub);max-width:520px;margin:0 auto">${msg}</p><p style="font-size:10px;color:var(--sub);margin-top:10px">Si persiste, comparte este mensaje con soporte</p></div></div></div>`;
   }
 };
+
+// ============================================================
+// VISTA: POR INMUEBLE (agrupada)
+// ============================================================
+
+function _renderVistaPorInmueble(leads, porTip) {
+  if (!leads.length) {
+    return `<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">📭</span><h3>Sin interesados aún</h3><p>Crea el primero desde cualquier tarjeta de inmueble.</p></div></div></div>`;
+  }
+
+  // Agrupar por inmueble_id
+  const porInm = {};
+  leads.forEach(l => {
+    const k = l.inmueble_id;
+    if (!porInm[k]) porInm[k] = { inmueble: l.inmueble || {}, leads: [] };
+    porInm[k].leads.push(l);
+  });
+
+  // Ordenar inmuebles por cantidad de leads descendente
+  const grupos = Object.entries(porInm)
+    .map(([id, g]) => ({ id, ...g, count: g.leads.length }))
+    .sort((a, b) => b.count - a.count);
+
+  const expandidos = window._intState.inmueblesExpandidos || {};
+  // Por defecto expandidos los top 3
+  grupos.slice(0, 3).forEach(g => { if (expandidos[g.id] === undefined) expandidos[g.id] = true; });
+
+  let h = `<div style="display:flex;flex-direction:column;gap:10px">`;
+
+  grupos.forEach(g => {
+    const inm = g.inmueble;
+    const expandido = expandidos[g.id] !== false; // true por defecto si no está explícitamente colapsado
+
+    // Conteo por tipificación dentro del inmueble
+    const countsTip = {};
+    Object.keys(_TIP()).forEach(k => countsTip[k] = 0);
+    g.leads.forEach(l => { countsTip[l.tipificacion] = (countsTip[l.tipificacion] || 0) + 1; });
+
+    // Header del inmueble (click toggle)
+    h += `<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+      <div onclick="toggleInmExp('${g.id}')" style="padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(90deg,#eff6ff,transparent);border-left:4px solid #3b82f6">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:15px;font-weight:800;color:var(--tx)">${inm.codigo_house || '(sin código)'}</span>
+            <span style="font-size:12px;color:var(--sub);font-weight:600">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</span>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+            ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).filter(t => countsTip[t.id] > 0).map(t => `<span style="font-size:10px;font-weight:800;background:${t.color}22;color:${t.color};padding:2px 8px;border-radius:10px">${t.emoji} ${countsTip[t.id]}</span>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <button onclick="event.stopPropagation();abrirCrearInteresado('${g.id}')" style="padding:6px 12px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Nuevo</button>
+          <div style="background:#3b82f6;color:#fff;font-weight:800;font-size:13px;padding:4px 12px;border-radius:12px">${g.count}</div>
+          <div style="font-size:16px;color:var(--sub);transform:rotate(${expandido?'0':'-90'}deg);transition:transform .2s">▼</div>
+        </div>
+      </div>`;
+
+    if (expandido) {
+      // Agrupar sus leads por tipificación
+      const tipsConLeads = Object.values(_TIP()).sort((a,b)=>a.orden-b.orden)
+        .filter(t => countsTip[t.id] > 0);
+
+      h += `<div style="padding:10px 14px 14px">`;
+      tipsConLeads.forEach(t => {
+        const leadsTip = g.leads.filter(l => l.tipificacion === t.id);
+        h += `<div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:800;color:${t.color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-left:4px;border-left:3px solid ${t.color}">${t.emoji} ${t.label} (${leadsTip.length})</div>
+          <div style="display:flex;flex-direction:column;gap:5px">`;
+        leadsTip.forEach(l => {
+          const canal = _CAN()[l.canal_origen] || {};
+          const dias = Math.floor((Date.now() - new Date(l.fecha_ultima_actividad).getTime()) / 864e5);
+          const urgent = dias > 3 ? '🔴' : dias > 1 ? '🟡' : '🟢';
+          const otrasTips = Object.values(_TIP()).filter(tt => tt.id !== l.tipificacion).sort((a,b)=>a.orden-b.orden);
+          h += `<div onclick="abrirDetalleInteresado('${l.id}')" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--brd);border-left:3px solid ${t.color};border-radius:8px;cursor:pointer">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;color:var(--tx)">${(l.nombre_completo || 'Sin nombre').slice(0,60)}</div>
+              <div style="font-size:11px;color:var(--sub);margin-top:2px">${canal.emoji || '📱'} ${l.telefono || '—'}${l.asignado?.nombre ? ' · ' + l.asignado.nombre : ''}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <span style="font-size:11px">${urgent} ${dias}d</span>
+              <select onclick="event.stopPropagation()" onchange="moverLeadDesdeTarjeta('${l.id}',this.value,event);this.value=''" style="padding:5px 6px;border:1px solid var(--brd);border-radius:5px;font-size:10px;background:var(--cd);color:var(--tx);cursor:pointer">
+                <option value="">⇄</option>
+                ${otrasTips.map(tt => `<option value="${tt.id}">${tt.emoji} ${tt.label}</option>`).join('')}
+              </select>
+            </div>
+          </div>`;
+        });
+        h += `</div></div>`;
+      });
+      h += `</div>`;
+    }
+
+    h += `</div>`;
+  });
+
+  h += `</div>`;
+  return h;
+}
 
 // ============================================================
 // DRAG & DROP
