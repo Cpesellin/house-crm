@@ -98,13 +98,38 @@ export async function crearInteresado(data) {
   if (!data.telefono || data.telefono.trim().length < 7) throw new Error('telefono_invalido');
 
   // Privado por defecto cuando el creador es admin (proteger contacto)
-  // El admin siempre ve todos los leads, pero otros solo ven los privados propios.
   const esPrivado = (data.privado !== undefined) ? !!data.privado : (u.rol === 'admin');
+
+  // Cargar info del inmueble ANTES del insert para decidir asignación
+  const { data: inmPre } = await SB().from('inmuebles')
+    .select('id, negociacion, captador_id, tipo, ciudad, barrio, codigo_house')
+    .eq('id', data.inmueble_id).maybeSingle();
+  const esArriendo = ((inmPre?.negociacion) || '').toLowerCase().includes('arriendo');
+
+  // Auto-asignación: si es arriendo → gestor (johan.m o cualquier gestor activo)
+  let asignadoId = data.asesor_asignado_id || null;
+  if (!asignadoId && esArriendo) {
+    try {
+      // Prioridad 1: usuario con username 'johan.m'
+      const { data: jm } = await SB().from('usuarios')
+        .select('id').eq('usuario', 'johan.m').eq('activo', true).maybeSingle();
+      if (jm?.id) asignadoId = jm.id;
+      else {
+        // Prioridad 2: cualquier gestor activo
+        const { data: gestor } = await SB().from('usuarios')
+          .select('id').eq('es_gestor_arriendos', true).eq('activo', true)
+          .order('created_at', { ascending: true }).limit(1).maybeSingle();
+        if (gestor?.id) asignadoId = gestor.id;
+      }
+    } catch (e) { console.warn('[crearInteresado auto-asignar]', e); }
+  }
+  // Fallback final: el creador
+  if (!asignadoId) asignadoId = u.id;
 
   const row = {
     inmueble_id: data.inmueble_id,
     asesor_creador_id: u.id,
-    asesor_asignado_id: data.asesor_asignado_id || u.id,
+    asesor_asignado_id: asignadoId,
     nombre_completo: data.nombre_completo.trim(),
     telefono: data.telefono.trim(),
     email: data.email?.trim() || null,
@@ -113,7 +138,7 @@ export async function crearInteresado(data) {
     presupuesto_max: data.presupuesto_max || null,
     urgencia: URGENCIA.includes(data.urgencia) ? data.urgencia : null,
     motivo_busqueda: MOTIVO.includes(data.motivo_busqueda) ? data.motivo_busqueda : null,
-    modalidad: data.modalidad || null,
+    modalidad: data.modalidad || esArriendo ? 'arriendo' : (data.modalidad || null),
     nota_inicial: data.nota_inicial?.trim() || null,
     tipificacion: 'nuevo',
     estado: 'activo',
@@ -130,27 +155,32 @@ export async function crearInteresado(data) {
   if (r.error) throw r.error;
   const created = r.data;
 
-  // Historial: creación
+  // Historial: creación (+ auto-asignación si aplica)
+  const asignadoAutoTxt = (esArriendo && asignadoId !== u.id)
+    ? ` · Auto-asignado al gestor de arriendos`
+    : '';
   await SB().from('interesados_historial').insert({
     interesado_id: created.id,
     asesor_id: u.id,
     tipo_actividad: 'creacion',
-    descripcion: `Lead creado${data.canal_origen ? ' (canal: ' + data.canal_origen + ')' : ''}` + (data.nota_inicial ? '. Nota: ' + data.nota_inicial : ''),
+    descripcion: `Lead creado${data.canal_origen ? ' (canal: ' + data.canal_origen + ')' : ''}${asignadoAutoTxt}` + (data.nota_inicial ? '. Nota: ' + data.nota_inicial : ''),
   });
 
-  // Notificar al captador + gestores si es arriendo + admins si es privado
+  // Notificar al captador + gestor/es si es arriendo + admins si es privado
   try {
-    const { data: inm } = await SB().from('inmuebles')
-      .select('captador_id, tipo, ciudad, barrio, codigo_house, negociacion').eq('id', data.inmueble_id).maybeSingle();
+    const inm = inmPre; // ya cargado arriba
     if (inm && typeof window.notificar === 'function') {
       const destinatarios = new Set();
       // Captador del inmueble (si no es el mismo creador)
       if (inm.captador_id && inm.captador_id !== u.id) destinatarios.add(inm.captador_id);
-      // Si es arriendo → notificar a gestores
-      const esArriendo = (inm.negociacion || '').toLowerCase().includes('arriendo');
-      if (esArriendo && typeof window.getGestorArriendosIds === 'function') {
-        const gestores = await window.getGestorArriendosIds();
-        gestores.forEach(gid => { if (gid !== u.id) destinatarios.add(gid); });
+      // Si es arriendo → notificar al gestor asignado (prioridad)
+      if (esArriendo) {
+        if (asignadoId && asignadoId !== u.id) destinatarios.add(asignadoId);
+        // Además notificar a otros gestores activos (por si Johan no responde)
+        if (typeof window.getGestorArriendosIds === 'function') {
+          const gestores = await window.getGestorArriendosIds();
+          gestores.forEach(gid => { if (gid !== u.id) destinatarios.add(gid); });
+        }
       }
       // Si el lead es privado (admin creándolo), solo los admins se enteran
       if (esPrivado && typeof window.getAdminIds === 'function') {
@@ -523,7 +553,7 @@ export async function listarInteresados(filtros = {}) {
 export async function obtenerInteresado(id) {
   const u = U(); if (!u) throw new Error('no_auth');
   const { data, error } = await SB().from('interesados')
-    .select('*, inmueble:inmuebles!interesados_inmueble_id_fkey(id,codigo_house,tipo,ciudad,barrio,direccion,captador_id), creador:usuarios!asesor_creador_id(id,nombre,foto), asignado:usuarios!asesor_asignado_id(id,nombre,foto)')
+    .select('*, inmueble:inmuebles!interesados_inmueble_id_fkey(id,codigo_house,tipo,ciudad,barrio,direccion,captador_id,negociacion), creador:usuarios!asesor_creador_id(id,nombre,foto,telefono_contacto), asignado:usuarios!asesor_asignado_id(id,nombre,foto,telefono_contacto,usuario,es_gestor_arriendos)')
     .eq('id', id).maybeSingle();
   if (error || !data) return null;
   if (!puedeVerLead(data, u)) throw new Error('sin_permiso');

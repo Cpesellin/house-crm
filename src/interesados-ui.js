@@ -831,10 +831,36 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏠 Inmueble principal</div>
         <div style="font-size:13px;color:var(--tx);font-weight:700">${inm.codigo_house ? inm.codigo_house + ' · ' : ''}${inm.tipo || 'Inmueble'}${inm.barrio ? ' en ' + inm.barrio : inm.ciudad ? ' en ' + inm.ciudad : ''}</div>
+        ${inm.negociacion ? `<div style="font-size:10px;color:var(--sub);margin-top:2px">${inm.negociacion}</div>` : ''}
         ${inmsAdic.length ? `<div style="font-size:11px;color:var(--sub);margin-top:6px">⭐ También interesado en: ${inmsAdic.map(x => x.inmueble?.codigo_house || '').filter(Boolean).join(', ')}</div>` : ''}
         ${asignado.nombre ? `<div style="font-size:11px;color:var(--sub);margin-top:4px">👤 Asignado a: ${asignado.nombre}${asignado.id !== creador.id && creador.nombre ? ' · Creado por: ' + creador.nombre : ''}</div>` : ''}
       </div>
     </div>
+
+    ${(() => {
+      // Banner de contacto del gestor cuando el inmueble es arriendo
+      const esArr = (inm.negociacion || '').toLowerCase().includes('arriendo');
+      if (!esArr) return '';
+      const tel = asignado.telefono_contacto;
+      const nom = asignado.nombre || 'Gestor de arriendos';
+      if (!tel) {
+        return `<div style="padding:10px 20px;background:#fef3c7;border-bottom:1px solid #fcd34d;font-size:11px;color:#92400e;display:flex;align-items:center;gap:8px">
+          🔑 <strong>Arriendo</strong> — Asignado a <strong>${nom}</strong> (sin teléfono registrado)
+        </div>`;
+      }
+      const telClean = tel.replace(/\D/g,'');
+      const waUrl = 'https://wa.me/' + (telClean.startsWith('57') ? telClean : '57' + telClean);
+      const telUrl = 'tel:+' + (telClean.startsWith('57') ? telClean : '57' + telClean);
+      return `<div style="padding:12px 20px;background:linear-gradient(90deg,#fef3c7,#fde68a);border-bottom:1px solid #fcd34d;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px">
+          <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px">🔑 Arriendo — Redirige a gestor</div>
+          <div style="font-size:13px;font-weight:700;color:#78350f;margin-top:2px">${nom}</div>
+          <div style="font-size:12px;color:#92400e;margin-top:1px">📱 ${tel}</div>
+        </div>
+        <a href="${waUrl}" target="_blank" onclick="event.stopPropagation()" style="padding:8px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">💬 WhatsApp</a>
+        <a href="${telUrl}" onclick="event.stopPropagation()" style="padding:8px 14px;background:#2563eb;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📞 Llamar</a>
+      </div>`;
+    })()}
 
     <div style="padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap">
       <select id="lead_chg_tip" onchange="onCambiarTipUI('${lead.id}',this.value)" style="padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);min-height:42px;flex:1;min-width:140px">
