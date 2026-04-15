@@ -272,7 +272,7 @@ export async function agregarNotaHistorial(interesadoId, tipo, descripcion) {
   // Notificar a usuarios mencionados
   if (menciones.usuarios.length && typeof window.notificar === 'function') {
     const { data: lead } = await SB().from('interesados')
-      .select('nombre_completo, inmueble:inmuebles(codigo_house,tipo,ciudad)')
+      .select('nombre_completo, inmueble:inmuebles!interesados_inmueble_id_fkey(codigo_house,tipo,ciudad)')
       .eq('id', interesadoId).maybeSingle();
     const desc = lead?.inmueble ? `${lead.inmueble.codigo_house || lead.inmueble.tipo} — ${lead.nombre_completo}` : (lead?.nombre_completo || 'lead');
     await window.notificar({
@@ -438,7 +438,7 @@ export async function cambiarEstadoVisita(visitaId, nuevoEstado, notas=null) {
 export async function listarInteresados(filtros = {}) {
   const u = U();
   let q = SB().from('interesados')
-    .select('*, inmueble:inmuebles(id,codigo_house,tipo,ciudad,barrio,captador_id), creador:usuarios!asesor_creador_id(id,nombre), asignado:usuarios!asesor_asignado_id(id,nombre)')
+    .select('*, inmueble:inmuebles!interesados_inmueble_id_fkey(id,codigo_house,tipo,ciudad,barrio,captador_id), creador:usuarios!asesor_creador_id(id,nombre), asignado:usuarios!asesor_asignado_id(id,nombre)')
     .order('fecha_ultima_actividad', { ascending: false });
 
   if (filtros.asesor_id)    q = q.or(`asesor_asignado_id.eq.${filtros.asesor_id},asesor_creador_id.eq.${filtros.asesor_id}`);
@@ -456,7 +456,7 @@ export async function listarInteresados(filtros = {}) {
   if (error && /privado/i.test(error.message || '')) {
     // Fallback si columna privado no existe aún
     let q2 = SB().from('interesados')
-      .select('*, inmueble:inmuebles(id,codigo_house,tipo,ciudad,barrio,captador_id), creador:usuarios!asesor_creador_id(id,nombre), asignado:usuarios!asesor_asignado_id(id,nombre)')
+      .select('*, inmueble:inmuebles!interesados_inmueble_id_fkey(id,codigo_house,tipo,ciudad,barrio,captador_id), creador:usuarios!asesor_creador_id(id,nombre), asignado:usuarios!asesor_asignado_id(id,nombre)')
       .order('fecha_ultima_actividad', { ascending: false });
     if (filtros.asesor_id)    q2 = q2.or(`asesor_asignado_id.eq.${filtros.asesor_id},asesor_creador_id.eq.${filtros.asesor_id}`);
     if (filtros.inmueble_id)  q2 = q2.eq('inmueble_id', filtros.inmueble_id);
@@ -475,7 +475,7 @@ export async function listarInteresados(filtros = {}) {
 export async function obtenerInteresado(id) {
   const u = U(); if (!u) throw new Error('no_auth');
   const { data, error } = await SB().from('interesados')
-    .select('*, inmueble:inmuebles(id,codigo_house,tipo,ciudad,barrio,direccion,captador_id), creador:usuarios!asesor_creador_id(id,nombre,foto), asignado:usuarios!asesor_asignado_id(id,nombre,foto)')
+    .select('*, inmueble:inmuebles!interesados_inmueble_id_fkey(id,codigo_house,tipo,ciudad,barrio,direccion,captador_id), creador:usuarios!asesor_creador_id(id,nombre,foto), asignado:usuarios!asesor_asignado_id(id,nombre,foto)')
     .eq('id', id).maybeSingle();
   if (error || !data) return null;
   if (!puedeVerLead(data, u)) throw new Error('sin_permiso');
