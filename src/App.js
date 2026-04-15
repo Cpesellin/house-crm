@@ -121,6 +121,7 @@ function renderShell(container) {
   <div style="padding:6px 0">
     <button class="mi act" data-s="inv" onclick="go('inv')"><span class="mic">\u{1F3E0}</span>Inventario</button>
     <button class="mi" data-s="mis" onclick="go('mis')"><span class="mic">\u{1F500}</span>Mis Inmuebles</button>
+    <button class="mi" data-s="interesados" onclick="go('interesados')" id="minteresados" style="display:none"><span class="mic">\u{1F464}</span>Interesados<span class="mib" id="mintb" style="display:none">0</span></button>
     <button class="mi" data-s="favoritos" onclick="go('favoritos')"><span class="mic">\u2764\uFE0F</span>Favoritos</button>
     <button class="mi" data-s="reg" onclick="go('reg')"><span class="mic">\u2795</span>Registrar</button>
     <button class="mi" data-s="alertas" onclick="go('alertas')"><span class="mic">\u{1F514}</span>Alertas<span class="mib" id="malb" style="display:none">0</span></button>
@@ -133,7 +134,6 @@ function renderShell(container) {
 
     <button class="mi" data-s="referir" onclick="go('referir')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>
     <button class="mi" data-s="mis-referidos" onclick="go('mis-referidos')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>
-    <button class="mi" data-s="interesados" onclick="go('interesados')" id="minteresados" style="display:none"><span class="mic">\u{1F464}</span>Interesados<span class="mib" id="mintb" style="display:none">0</span></button>
     <button class="mi" data-s="admin-pagos" onclick="go('admin-pagos')" id="madminpagos" style="display:none"><span class="mic">\u{1F4B3}</span>Pagos referidos</button>
     <button class="mi" data-s="negocios-admin" onclick="go('negocios-admin')" id="mnegocios" style="display:none"><span class="mic">\u{1F4BC}</span>Negocios</button>
     <button class="mi" data-s="arriendos-admin" onclick="go('arriendos-admin')" id="marriendos" style="display:none"><span class="mic">\u{1F511}</span>Arriendos</button>

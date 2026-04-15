@@ -44,6 +44,11 @@ const MOTIVO = ['inversion','vivienda','arriendo','otro'];
 const SB = () => getSupabaseClient();
 const U  = () => window.userStore?.get();
 
+function esInterno(usuario) {
+  if (!usuario) return false;
+  return !usuario.tipo_usuario || usuario.tipo_usuario === 'interno';
+}
+
 function esAdminONivelSuperior(usuario) {
   if (!usuario) return false;
   return ['admin','oficina','gestor'].includes(usuario.rol);
@@ -51,7 +56,13 @@ function esAdminONivelSuperior(usuario) {
 
 function puedeVerLead(lead, usuario) {
   if (!usuario) return false;
+  // Admin ve TODO siempre (supervisor total)
+  if (usuario.rol === 'admin') return true;
+  // Lead privado: solo el creador lo ve (proteger contacto)
+  if (lead.privado && lead.asesor_creador_id !== usuario.id) return false;
+  // Oficina y gestor ven todo lo NO privado
   if (esAdminONivelSuperior(usuario)) return true;
+  // Asesor: solo sus propios leads (creador, asignado) o si él es el usuario_id del lead
   return lead.asesor_creador_id === usuario.id
       || lead.asesor_asignado_id === usuario.id
       || lead.usuario_id === usuario.id;
@@ -61,6 +72,12 @@ function puedeEditarLead(lead, usuario) {
   if (!usuario) return false;
   if (usuario.rol === 'admin' || usuario.rol === 'oficina') return true;
   return lead.asesor_asignado_id === usuario.id || lead.asesor_creador_id === usuario.id;
+}
+
+// Cualquier interno (admin, oficina, gestor, asesor) puede dejar nota.
+// Solo se bloquea a usuarios públicos.
+function puedeAgregarNota(usuario) {
+  return esInterno(usuario);
 }
 
 // ============================================================
@@ -80,6 +97,10 @@ export async function crearInteresado(data) {
   if (!data.nombre_completo || data.nombre_completo.trim().length < 3) throw new Error('nombre_invalido');
   if (!data.telefono || data.telefono.trim().length < 7) throw new Error('telefono_invalido');
 
+  // Privado por defecto cuando el creador es admin (proteger contacto)
+  // El admin siempre ve todos los leads, pero otros solo ven los privados propios.
+  const esPrivado = (data.privado !== undefined) ? !!data.privado : (u.rol === 'admin');
+
   const row = {
     inmueble_id: data.inmueble_id,
     asesor_creador_id: u.id,
@@ -96,11 +117,18 @@ export async function crearInteresado(data) {
     nota_inicial: data.nota_inicial?.trim() || null,
     tipificacion: 'nuevo',
     estado: 'activo',
+    privado: esPrivado,
     fecha_ultima_actividad: new Date().toISOString(),
   };
 
-  const { data: created, error } = await SB().from('interesados').insert(row).select('*').single();
-  if (error) throw error;
+  let r = await SB().from('interesados').insert(row).select('*').single();
+  if (r.error && /privado/i.test(r.error.message || '')) {
+    // Migración #37 aún no aplicada: reintentar sin el campo privado
+    const { privado, ...rowSinPriv } = row;
+    r = await SB().from('interesados').insert(rowSinPriv).select('*').single();
+  }
+  if (r.error) throw r.error;
+  const created = r.data;
 
   // Historial: creación
   await SB().from('interesados_historial').insert({
@@ -218,6 +246,7 @@ export async function cambiarTipificacion(id, nuevaTipificacion, motivo = null) 
  */
 export async function agregarNotaHistorial(interesadoId, tipo, descripcion) {
   const u = U(); if (!u) throw new Error('no_auth');
+  if (!puedeAgregarNota(u)) throw new Error('solo_internos_pueden_notar');
   if (!descripcion || !descripcion.trim()) throw new Error('descripcion_requerida');
 
   // Parsear menciones
@@ -407,6 +436,7 @@ export async function cambiarEstadoVisita(visitaId, nuevoEstado, notas=null) {
 // ============================================================
 
 export async function listarInteresados(filtros = {}) {
+  const u = U();
   let q = SB().from('interesados')
     .select('*, inmueble:inmuebles(id,codigo_house,tipo,ciudad,barrio,captador_id), creador:usuarios!asesor_creador_id(id,nombre), asignado:usuarios!asesor_asignado_id(id,nombre)')
     .order('fecha_ultima_actividad', { ascending: false });
@@ -417,8 +447,28 @@ export async function listarInteresados(filtros = {}) {
   if (filtros.estado)       q = q.eq('estado', filtros.estado);
   else                      q = q.neq('estado', 'descartado');
 
-  const { data, error } = await q.limit(filtros.limit || 500);
-  if (error) throw error;
+  // Privacidad: admin ve todo, otros solo ven los NO privados o los creados por ellos
+  if (u && u.rol !== 'admin') {
+    q = q.or(`privado.eq.false,privado.is.null,asesor_creador_id.eq.${u.id}`);
+  }
+
+  let { data, error } = await q.limit(filtros.limit || 500);
+  if (error && /privado/i.test(error.message || '')) {
+    // Fallback si columna privado no existe aún
+    let q2 = SB().from('interesados')
+      .select('*, inmueble:inmuebles(id,codigo_house,tipo,ciudad,barrio,captador_id), creador:usuarios!asesor_creador_id(id,nombre), asignado:usuarios!asesor_asignado_id(id,nombre)')
+      .order('fecha_ultima_actividad', { ascending: false });
+    if (filtros.asesor_id)    q2 = q2.or(`asesor_asignado_id.eq.${filtros.asesor_id},asesor_creador_id.eq.${filtros.asesor_id}`);
+    if (filtros.inmueble_id)  q2 = q2.eq('inmueble_id', filtros.inmueble_id);
+    if (filtros.tipificacion) q2 = q2.eq('tipificacion', filtros.tipificacion);
+    if (filtros.estado)       q2 = q2.eq('estado', filtros.estado);
+    else                      q2 = q2.neq('estado', 'descartado');
+    const r2 = await q2.limit(filtros.limit || 500);
+    if (r2.error) throw r2.error;
+    data = r2.data;
+  } else if (error) {
+    throw error;
+  }
   return data || [];
 }
 
@@ -465,11 +515,29 @@ export async function obtenerVisitas(filtros = {}) {
 }
 
 // Count por inmueble (para badge en tarjeta)
+// Cuenta leads "abiertos": estado != descartado Y tipificación no sea cierre_*
+// Respeta privacidad: usuarios no-admin solo cuentan los que pueden ver.
 export async function contarInteresadosPorInmueble(inmuebleId) {
-  const { count } = await SB().from('interesados')
+  const u = U();
+  let q = SB().from('interesados')
     .select('id', { count: 'exact', head: true })
     .eq('inmueble_id', inmuebleId)
-    .eq('estado', 'activo');
+    .neq('estado', 'descartado')
+    .not('tipificacion', 'in', '(cierre_ganado,cierre_perdido)');
+
+  if (u && u.rol !== 'admin') {
+    q = q.or(`privado.eq.false,privado.is.null,asesor_creador_id.eq.${u.id}`);
+  }
+
+  let { count, error } = await q;
+  if (error && /privado/i.test(error.message || '')) {
+    const r = await SB().from('interesados')
+      .select('id', { count: 'exact', head: true })
+      .eq('inmueble_id', inmuebleId)
+      .neq('estado', 'descartado')
+      .not('tipificacion', 'in', '(cierre_ganado,cierre_perdido)');
+    count = r.count;
+  }
   return count || 0;
 }
 

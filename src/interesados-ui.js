@@ -108,8 +108,9 @@ window.rInteresados = async function() {
 
     el.innerHTML = h;
   } catch (e) {
-    console.error('[rInteresados]', e);
-    el.innerHTML = '<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">⚠️</span><h3>Error</h3><p>' + (e.message || e) + '</p></div></div></div>';
+    console.error('[rInteresados] Error:', e, 'message:', e?.message, 'code:', e?.code, 'details:', e?.details);
+    const msg = e?.message || e?.error_description || JSON.stringify(e) || 'desconocido';
+    el.innerHTML = `<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">⚠️</span><h3>Error al cargar interesados</h3><p style="font-size:12px;color:var(--sub);max-width:520px;margin:0 auto">${msg}</p><p style="font-size:10px;color:var(--sub);margin-top:10px">Si persiste, comparte este mensaje con soporte</p></div></div></div>`;
   }
 };
 
@@ -547,20 +548,23 @@ window.marcarVisita = async function(visitaId, nuevoEstado) {
  */
 window.badgeInteresadosInmueble = function(inmuebleId) {
   const id = 'badgeInt-' + inmuebleId;
-  // Carga async del count
   setTimeout(async () => {
     try {
       const n = await window.contarInteresadosPorInmueble(inmuebleId);
       const el = document.getElementById(id);
       if (el) {
         el.querySelector('.int-count').textContent = n;
-        if (n > 0) el.style.background = '#3b82f622';
+        if (n > 0) {
+          el.style.background = '#3b82f6';
+          el.style.color = '#fff';
+          el.style.borderColor = '#3b82f6';
+        }
       }
     } catch {}
   }, 50);
   return `<button id="${id}" onclick="event.stopPropagation();abrirCrearInteresado('${inmuebleId}')"
-    title="Agregar interesado"
-    style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--brd);background:var(--cd);border-radius:6px;font-size:10px;font-weight:700;color:var(--tx);cursor:pointer">
-    👤 <span class="int-count">·</span> +
+    title="Ver/agregar interesados"
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1.5px solid #3b82f6;background:#eff6ff;border-radius:8px;font-size:13px;font-weight:800;color:#1d4ed8;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(59,130,246,.08)">
+    👤 <span class="int-count">0</span>
   </button>`;
 };
