@@ -9,6 +9,68 @@
  *   - badgeInteresadosInmueble(inmuebleId) para tarjetas
  */
 
+// ============================================================
+// BADGE DE ALERTAS en menú (leads sin actividad > 72h)
+// ============================================================
+
+window.actualizarBadgeInteresados = async function() {
+  try {
+    const u = window.userStore?.get();
+    if (!u || u.tipo_usuario === 'publico') return;
+    if (typeof window.leadsSinActividad !== 'function') return;
+    const esAdmin = ['admin','oficina','gestor'].includes(u.rol);
+    // Para admin: todos los leads sin actividad; para asesor: solo los suyos
+    const stale = await window.leadsSinActividad(72, esAdmin ? null : u.id);
+    const n = (stale || []).length;
+    const el = document.getElementById('mintb');
+    if (el) {
+      if (n > 0) {
+        el.textContent = n;
+        el.style.display = 'inline-flex';
+        el.style.background = '#ef4444';
+        el.style.color = '#fff';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    // Escalamiento silencioso: leads >7 días sin actividad → notificar a admin/gestor una vez
+    if (esAdmin && n > 0) {
+      const escalables = stale.filter(l => {
+        const h = (Date.now() - new Date(l.fecha_ultima_actividad).getTime()) / 3600000;
+        return h >= 168; // 7 días
+      });
+      if (escalables.length && typeof window.notificar === 'function') {
+        // Evita spam: solo notifica si no se ha hecho en las últimas 24h para este admin
+        const key = 'int_escal_' + u.id;
+        const last = parseInt(localStorage.getItem(key) || '0');
+        if (Date.now() - last > 24 * 3600000) {
+          const admins = typeof window.getAdminIds === 'function' ? await window.getAdminIds() : [];
+          await window.notificar({
+            tipo: 'sistema_escalamiento',
+            categoria: 'sistema',
+            titulo: `⚠️ ${escalables.length} lead${escalables.length>1?'s':''} sin actividad >7 días`,
+            mensaje: 'Requieren atención urgente o deben descartarse.',
+            icono: '⚠️', color: '#ef4444', prioridad: 'critica',
+            accion_tipo: 'abrir_seccion', accion_seccion: 'interesados',
+            destinatarios: admins,
+          });
+          localStorage.setItem(key, String(Date.now()));
+        }
+      }
+    }
+  } catch (e) { console.warn('[badge interesados]', e); }
+};
+
+// Se auto-ejecuta cada vez que carga data
+if (typeof window !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => window.actualizarBadgeInteresados?.(), 3000);
+  });
+  // Re-ejecuta cada 5 min
+  setInterval(() => { try { window.actualizarBadgeInteresados?.(); } catch {} }, 5 * 60000);
+}
+
 // Inyectar CSS responsive una sola vez
 if (typeof document !== 'undefined' && !document.getElementById('int-mobile-css')) {
   const s = document.createElement('style');
@@ -45,10 +107,31 @@ const _CAN = () => window.CANAL_ORIGEN_LEAD || {};
 window._intState = window._intState || {
   filtroAsesor: 'todos',
   filtroInmueble: null,
-  filtroUrgencia: null,
+  filtroUrgencia: '',
+  filtroCanal: '',
+  search: '',
   cargando: false,
   view: 'pipeline', // 'pipeline' | 'por_inmueble'
   inmueblesExpandidos: {}, // { inmueble_id: true/false }
+};
+
+window.setIntFiltro = function(k, v) {
+  window._intState[k] = v || '';
+  window.rInteresados();
+};
+
+window.setIntSearch = function(v) {
+  window._intState.search = (v || '').trim().toLowerCase();
+  clearTimeout(window._intSrchT);
+  window._intSrchT = setTimeout(() => window.rInteresados(), 250);
+};
+
+window.limpiarFiltrosInt = function() {
+  window._intState.search = '';
+  window._intState.filtroUrgencia = '';
+  window._intState.filtroCanal = '';
+  window._intState.filtroAsesor = 'todos';
+  window.rInteresados();
 };
 
 window.setIntView = function(v) {
@@ -75,16 +158,47 @@ window.rInteresados = async function() {
 
   try {
     const esAdmin = ['admin','oficina','gestor'].includes(u.rol);
-    const filtros = esAdmin ? {} : { asesor_id: u.id };
-    const leads = await window.listarInteresados(filtros);
+    const F = window._intState;
+    const filtrosQ = esAdmin ? {} : { asesor_id: u.id };
+    // Si admin filtra por asesor específico
+    if (esAdmin && F.filtroAsesor && F.filtroAsesor !== 'todos') filtrosQ.asesor_id = F.filtroAsesor;
+    const leadsAll = await window.listarInteresados(filtrosQ);
 
-    // KPIs por tipificación
+    // Filtros cliente (búsqueda + urgencia + canal)
+    const leads = leadsAll.filter(l => {
+      if (F.filtroUrgencia && l.urgencia !== F.filtroUrgencia) return false;
+      if (F.filtroCanal && l.canal_origen !== F.filtroCanal) return false;
+      if (F.search) {
+        const q = F.search;
+        const hay = (
+          (l.nombre_completo || '').toLowerCase() +
+          ' ' + (l.telefono || '') +
+          ' ' + (l.email || '').toLowerCase() +
+          ' ' + (l.inmueble?.codigo_house || '').toLowerCase() +
+          ' ' + (l.inmueble?.barrio || '').toLowerCase()
+        );
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    // KPIs por tipificación (basado en filtrado)
     const porTip = {};
     Object.keys(_TIP()).forEach(k => porTip[k] = []);
     leads.forEach(l => {
       if (!porTip[l.tipificacion]) porTip[l.tipificacion] = [];
       porTip[l.tipificacion].push(l);
     });
+
+    // Lista de asesores únicos (para filtro admin)
+    let asesoresUnicos = [];
+    if (esAdmin) {
+      const map = {};
+      leadsAll.forEach(l => {
+        if (l.asignado?.id && !map[l.asignado.id]) map[l.asignado.id] = l.asignado.nombre || l.asignado.id;
+      });
+      asesoresUnicos = Object.entries(map).map(([id, nombre]) => ({ id, nombre }));
+    }
 
     let h = '';
     const vistaActual = window._intState.view || 'pipeline';
@@ -99,9 +213,35 @@ window.rInteresados = async function() {
     </div></div>`;
 
     // Toggle vista
-    h += `<div style="display:flex;gap:6px;margin-bottom:12px;padding:4px;background:var(--cd);border:1.5px solid var(--brd);border-radius:10px;max-width:360px">
+    h += `<div style="display:flex;gap:6px;margin-bottom:10px;padding:4px;background:var(--cd);border:1.5px solid var(--brd);border-radius:10px;max-width:360px">
       <button onclick="setIntView('pipeline')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;background:${vistaActual==='pipeline'?'#3b82f6':'transparent'};color:${vistaActual==='pipeline'?'#fff':'var(--tx)'}">📋 Pipeline</button>
       <button onclick="setIntView('por_inmueble')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;background:${vistaActual==='por_inmueble'?'#3b82f6':'transparent'};color:${vistaActual==='por_inmueble'?'#fff':'var(--tx)'}">🏠 Por Inmueble</button>
+    </div>`;
+
+    // Barra de búsqueda + filtros
+    const hayFiltros = !!(F.search || F.filtroUrgencia || F.filtroCanal || (F.filtroAsesor && F.filtroAsesor !== 'todos'));
+    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+      <div style="position:relative;flex:1;min-width:200px">
+        <input id="int_search" type="search" placeholder="🔍 Buscar nombre, teléfono, código, barrio…"
+          oninput="setIntSearch(this.value)" value="${(F.search || '').replace(/"/g,'&quot;')}"
+          style="width:100%;padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;background:var(--cd);color:var(--tx)">
+      </div>
+      <select onchange="setIntFiltro('filtroUrgencia',this.value)" style="padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;background:var(--cd);color:var(--tx);font-weight:600">
+        <option value="">⚡ Urgencia</option>
+        <option value="inmediata" ${F.filtroUrgencia==='inmediata'?'selected':''}>🔴 Inmediata</option>
+        <option value="1-3_meses" ${F.filtroUrgencia==='1-3_meses'?'selected':''}>🟡 1-3 meses</option>
+        <option value="6+_meses" ${F.filtroUrgencia==='6+_meses'?'selected':''}>🟢 6+ meses</option>
+      </select>
+      <select onchange="setIntFiltro('filtroCanal',this.value)" style="padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;background:var(--cd);color:var(--tx);font-weight:600">
+        <option value="">📱 Canal</option>
+        ${Object.entries(_CAN()).map(([k,v]) => `<option value="${k}" ${F.filtroCanal===k?'selected':''}>${v.emoji} ${v.label}</option>`).join('')}
+      </select>
+      ${esAdmin && asesoresUnicos.length ? `<select onchange="setIntFiltro('filtroAsesor',this.value||'todos')" style="padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;background:var(--cd);color:var(--tx);font-weight:600">
+        <option value="todos">👥 Todos los asesores</option>
+        ${asesoresUnicos.map(a => `<option value="${a.id}" ${F.filtroAsesor===a.id?'selected':''}>${a.nombre}</option>`).join('')}
+      </select>` : ''}
+      ${hayFiltros ? `<button onclick="limpiarFiltrosInt()" style="padding:8px 12px;background:var(--cd);border:1px solid var(--brd);border-radius:8px;font-size:11px;font-weight:700;color:var(--b600);cursor:pointer">✕ Limpiar</button>` : ''}
+      ${hayFiltros ? `<div style="font-size:11px;color:var(--sub);padding:8px 6px;font-weight:600">${leads.length} / ${leadsAll.length}</div>` : ''}
     </div>`;
 
     // Dispatcher de vista
@@ -172,6 +312,135 @@ window.rInteresados = async function() {
     const msg = e?.message || e?.error_description || JSON.stringify(e) || 'desconocido';
     el.innerHTML = `<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">⚠️</span><h3>Error al cargar interesados</h3><p style="font-size:12px;color:var(--sub);max-width:520px;margin:0 auto">${msg}</p><p style="font-size:10px;color:var(--sub);margin-top:10px">Si persiste, comparte este mensaje con soporte</p></div></div></div>`;
   }
+};
+
+// ============================================================
+// AUTOCOMPLETE @ para menciones
+// ============================================================
+
+window._mentionCache = window._mentionCache || { users: null, inmuebles: null, ts: 0 };
+
+async function _cargarDatosMenciones() {
+  const cache = window._mentionCache;
+  if (cache.users && cache.inmuebles && (Date.now() - cache.ts < 60000)) return cache;
+  try {
+    const SB = window.SB || null;
+    // Fetch desde módulo supabase
+    const mod = await import('./config/supabase.js');
+    const SBc = mod.getSupabaseClient();
+    const [rUsers, rInms] = await Promise.all([
+      SBc.from('usuarios').select('id,nombre,usuario,foto').eq('activo', true).neq('tipo_usuario', 'publico').limit(100),
+      SBc.from('inmuebles').select('id,codigo_house,tipo,ciudad,barrio').not('codigo_house', 'is', null).limit(300),
+    ]);
+    cache.users = rUsers.data || [];
+    cache.inmuebles = rInms.data || [];
+    cache.ts = Date.now();
+  } catch (e) { console.warn('[mention cache]', e); }
+  return cache;
+}
+
+/**
+ * Adjunta autocomplete a un <textarea> o <input>.
+ * Detecta "@algo" en la posición del cursor y muestra popup con usuarios + inmuebles + @todos.
+ */
+window.attachMentionAutocomplete = function(el) {
+  if (!el || el.dataset.mentionAttached) return;
+  el.dataset.mentionAttached = '1';
+
+  let pop = null;
+  const cerrar = () => { pop?.remove(); pop = null; };
+
+  el.addEventListener('blur', () => setTimeout(cerrar, 150));
+  el.addEventListener('keydown', (ev) => {
+    if (pop && (ev.key === 'Escape')) { cerrar(); ev.preventDefault(); }
+  });
+
+  el.addEventListener('input', async () => {
+    const pos = el.selectionStart;
+    const txt = el.value.substring(0, pos);
+    const m = txt.match(/(?:^|\s)@([a-zA-Z0-9_.-]*)$/);
+    if (!m) { cerrar(); return; }
+    const q = (m[1] || '').toLowerCase();
+    const data = await _cargarDatosMenciones();
+    if (!data.users) { cerrar(); return; }
+
+    // Matches
+    const uMatches = (data.users || []).filter(u =>
+      (u.nombre || '').toLowerCase().includes(q) ||
+      (u.usuario || '').toLowerCase().includes(q)
+    ).slice(0, 5);
+    const iMatches = (data.inmuebles || []).filter(i =>
+      (i.codigo_house || '').toLowerCase().includes(q)
+    ).slice(0, 5);
+
+    const matches = [];
+    // @todos / @equipo (solo roles altos)
+    const uAct = window.userStore?.get();
+    if (uAct && ['admin','oficina','gestor'].includes(uAct.rol) && ('todos'.startsWith(q) || 'equipo'.startsWith(q))) {
+      matches.push({ type: 'team', label: '@todos', sub: 'Todo el equipo interno', insert: 'todos' });
+    }
+    uMatches.forEach(u => matches.push({
+      type: 'user',
+      label: '@' + (u.usuario || u.nombre?.split(' ')[0] || 'usuario'),
+      sub: u.nombre || '',
+      insert: u.usuario || u.nombre?.split(' ')[0] || 'usuario',
+      foto: u.foto,
+    }));
+    iMatches.forEach(i => matches.push({
+      type: 'inm',
+      label: '@' + i.codigo_house,
+      sub: (i.tipo || '') + (i.barrio ? ' en ' + i.barrio : i.ciudad ? ' en ' + i.ciudad : ''),
+      insert: i.codigo_house,
+    }));
+
+    if (!matches.length) { cerrar(); return; }
+
+    // Posición del popup: bajo el textarea
+    const rect = el.getBoundingClientRect();
+    if (!pop) {
+      pop = document.createElement('div');
+      pop.id = 'mentPop';
+      pop.style.cssText = 'position:fixed;z-index:10050;background:#fff;border:1.5px solid #3b82f6;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-width:320px;max-height:260px;overflow-y:auto;font-family:inherit';
+      document.body.appendChild(pop);
+    }
+    pop.style.left = rect.left + 'px';
+    pop.style.top = (rect.bottom + 4) + 'px';
+    pop.style.width = Math.min(rect.width, 320) + 'px';
+
+    pop.innerHTML = matches.map((m, idx) => {
+      const ico = m.type === 'team' ? '👥' : m.type === 'inm' ? '🏠' : '👤';
+      const avatar = m.foto
+        ? `<div style="width:28px;height:28px;border-radius:50%;background-image:url('${m.foto}');background-size:cover;flex-shrink:0"></div>`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:${m.type==='inm'?'#dbeafe':m.type==='team'?'#fef3c7':'#e0e7ff'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${ico}</div>`;
+      return `<div data-idx="${idx}" style="display:flex;gap:8px;align-items:center;padding:8px 10px;cursor:pointer;border-bottom:1px solid #f3f4f6">
+        ${avatar}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:#1f2937">${m.label}</div>
+          <div style="font-size:10px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.sub}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Click handler
+    pop.querySelectorAll('[data-idx]').forEach(row => {
+      row.addEventListener('mousedown', (ev) => {
+        ev.preventDefault();
+        const idx = parseInt(row.getAttribute('data-idx'));
+        const match = matches[idx];
+        if (!match) return;
+        // Reemplazar el "@parcial" por "@insert "
+        const before = el.value.substring(0, pos).replace(/@[a-zA-Z0-9_.-]*$/, '@' + match.insert + ' ');
+        const after = el.value.substring(pos);
+        el.value = before + after;
+        const newPos = before.length;
+        el.setSelectionRange(newPos, newPos);
+        cerrar();
+        el.focus();
+      });
+      row.addEventListener('mouseenter', () => row.style.background = '#eff6ff');
+      row.addEventListener('mouseleave', () => row.style.background = '');
+    });
+  });
 };
 
 // ============================================================
@@ -415,6 +684,10 @@ function _renderModalCrear(inmuebleIdPre) {
       </div>
     </div>`;
   document.body.appendChild(ov);
+  setTimeout(() => {
+    const ta = document.getElementById('int_nota');
+    if (ta && window.attachMentionAutocomplete) window.attachMentionAutocomplete(ta);
+  }, 50);
 }
 
 window.confirmarCrearInteresado = async function() {
@@ -639,7 +912,13 @@ window.abrirNotaLead = function(leadId) {
     </div>
   </div>`;
   document.body.appendChild(ov);
-  setTimeout(() => document.getElementById('nota_txt')?.focus(), 50);
+  setTimeout(() => {
+    const ta = document.getElementById('nota_txt');
+    if (ta) {
+      ta.focus();
+      if (window.attachMentionAutocomplete) window.attachMentionAutocomplete(ta);
+    }
+  }, 50);
 };
 
 window.confirmarNota = async function(leadId) {
@@ -692,6 +971,10 @@ window.abrirAgendarVisitaLead = function(leadId, inmuebleId) {
     </div>
   </div>`;
   document.body.appendChild(ov);
+  setTimeout(() => {
+    const ta = document.getElementById('vis_notas');
+    if (ta && window.attachMentionAutocomplete) window.attachMentionAutocomplete(ta);
+  }, 50);
 };
 
 window.confirmarAgendarVisita = async function(leadId, inmuebleId) {

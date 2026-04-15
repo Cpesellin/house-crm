@@ -476,6 +476,10 @@ export async function load() {
     if (rlb) rlb.style.display = 'flex';
 
     console.log('[load] ✅ Complete');
+    // Badge de interesados sin actividad (módulo Interesados)
+    if (typeof window.actualizarBadgeInteresados === 'function') {
+      setTimeout(() => window.actualizarBadgeInteresados(), 500);
+    }
 
   } catch (e) {
     console.error('[load] Error:', e);
