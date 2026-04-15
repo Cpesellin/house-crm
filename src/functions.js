@@ -240,6 +240,17 @@ window.handleNotifClick = async function(notifId, accionTipo, accionDestino, acc
       .eq('contexto_id', n.contexto_id)
       .eq('leida', false);
     }
+
+    // 3. Si es una sugerencia inteligente, marcar abierta_at en sugerencias_enviadas
+    if (n && (n.tipo === 'sugerencia' || (accionTipo === 'abrir_inmueble_nuevo' && accionDestino))) {
+      SBc.from('sugerencias_enviadas').update({
+        resultado: 'abierta', abierta_at: new Date().toISOString()
+      })
+      .eq('usuario_id', u.id)
+      .eq('inmueble_id', accionDestino)
+      .in('resultado', ['enviada'])
+      .then(() => {}, e => console.warn('[sug abierta]', e));
+    }
   } catch (e) { console.error('[notif click]', e); }
 
   // 3. Cerrar dropdown
@@ -941,6 +952,14 @@ window.quickMove = async function(id,estado) {
     await window.noti('eliminar_inmueble','rojo','🗑️ Revisar: '+desc+' fue marcado como '+estado,u.nombre+' marcó '+desc+' como '+estado+'. Revisar si se debe eliminar del sistema.','admin',null,id);
   }
   else{await window.noti('cambio_estado','info','🔄 '+desc+' → '+estado,u.nombre+' movió '+desc+' a '+estado,null,'all',id);}
+
+  // HOOK sugerencias: si el inmueble vuelve a estar disponible, dispara matching
+  if (estado === 'Disponible' || estado === 'Aún Disponible') {
+    if (window.sugerirInmuebleNuevo) {
+      window.sugerirInmuebleNuevo(id).catch(e => console.warn('[sugerir-quickMove]', e));
+    }
+  }
+
   window.toast(estado==='Retirado'?'⛔ Retirado. Ya no aparecerá en inventario.':'✅ Movido a '+estado);window.load();
 };
 
@@ -1867,8 +1886,8 @@ window.showPublicView = async function(id) {
       <div style="max-width:720px;margin:0 auto">
         <button onclick="window.abrirInteres('${id}')" style="width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;font-family:inherit">💙 Me interesa este inmueble</button>
         <div style="display:flex;gap:8px">
-          <a href="${_waUrl}" target="_blank" style="flex:1;padding:12px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
-          <a href="${_telUrl}" style="flex:1;padding:12px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
+          <a href="${_waUrl}" target="_blank" onclick="window.trackEvent && window.trackEvent('compartir_wa',{inmueble_id:'${id}',ciudad:'${(p.ciudad||'').replace(/'/g,'')}',barrio:'${(p.barrio||'').replace(/'/g,'')}',tipo_inmueble:'${(p.tipo||'').replace(/'/g,'')}',negociacion:'${neg}',precio:${pv||pa||0},habitaciones:${p.habitaciones||0}})" style="flex:1;padding:12px;background:#25d366;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">💬 WhatsApp</a>
+          <a href="${_telUrl}" onclick="window.trackEvent && window.trackEvent('llamar',{inmueble_id:'${id}',ciudad:'${(p.ciudad||'').replace(/'/g,'')}',barrio:'${(p.barrio||'').replace(/'/g,'')}',tipo_inmueble:'${(p.tipo||'').replace(/'/g,'')}',negociacion:'${neg}',precio:${pv||pa||0},habitaciones:${p.habitaciones||0}})" style="flex:1;padding:12px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📞 Llamar</a>
         </div>
       </div>
     </div>`;
@@ -2596,6 +2615,10 @@ window.toggleFavorito = async function(inmId) {
       await SB().from('favoritos').insert({ usuario_id: u.id, inmueble_id: inmId });
       window.toast('❤️ Guardado en favoritos');
       if (window.trackEvent) window.trackEvent('favorito_add', { inmueble_id: inmId, ciudad: inmObj?.ciudad, barrio: inmObj?.barrio, tipo_inmueble: inmObj?.tipo, negociacion: inmObj?.negociacion, precio: inmObj?.precio_venta || inmObj?.precio_arriendo, habitaciones: inmObj?.habitaciones });
+      // Si era una sugerencia activa, marca como convertida
+      SB().from('sugerencias_enviadas').update({ resultado: 'convertida', convertida_at: new Date().toISOString() })
+        .eq('usuario_id', u.id).eq('inmueble_id', inmId).neq('resultado', 'convertida')
+        .then(() => {}, e => console.warn('[sug conv fav]', e));
     }
     // Update FAVS array
     if (existing) { window.FAVS = (window.FAVS||[]).filter(id => id !== inmId); }
@@ -3156,6 +3179,10 @@ window.guardarInteres = async function(inmId) {
       // Dispara recálculo en background (fire-and-forget)
       if (window.recalcularPreferencias) window.recalcularPreferencias(u.id).catch(()=>{});
     }
+    // Si era una sugerencia activa, marca como convertida (máxima conversión)
+    SB().from('sugerencias_enviadas').update({ resultado: 'convertida', convertida_at: new Date().toISOString() })
+      .eq('usuario_id', u.id).eq('inmueble_id', inmId).neq('resultado', 'convertida')
+      .then(() => {}, e => console.warn('[sug conv int]', e));
 
     // Notificar a admins (escalable a 4h, Fase 4 lo recoge)
     try {
@@ -3516,6 +3543,19 @@ window.confirmarCitaCliente = async function(citaId) {
       confirmada_cliente_at: now,
       estado: 'confirmada',  // ambos confirmados ya (captador lo hizo al proponer)
     }).eq('id', citaId);
+
+    // TRACK: cita_solicitada (evento máximo de engagement del comprador)
+    if (window.trackEvent) {
+      const inm = cita.inmueble || {};
+      window.trackEvent('cita_solicitada', {
+        inmueble_id: cita.inmueble_id,
+        ciudad: inm.ciudad, barrio: inm.barrio, tipo_inmueble: inm.tipo,
+      });
+    }
+    // Si era sugerencia activa, conversión máxima
+    SB().from('sugerencias_enviadas').update({ resultado: 'convertida', convertida_at: now })
+      .eq('usuario_id', u.id).eq('inmueble_id', cita.inmueble_id).neq('resultado', 'convertida')
+      .then(() => {}, e => console.warn('[sug conv cita]', e));
 
     // Notificar al captador
     const capEmail = cita.inmueble?.captador?.email;
