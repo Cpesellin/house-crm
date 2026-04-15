@@ -410,29 +410,53 @@ export async function notificar(opts) {
     contexto_tipo, contexto_id,
     prioridad = 'normal',
     escalable = false,
-    horas_para_escalar = 24
+    horas_para_escalar = 24,
+    // Nuevos (migración #34)
+    broadcast_id = null,
+    broadcast_tipo = null,
+    emisor_nombre = null,
+    emisor_foto = null,
+    perfil_destino = null,
+    destinatariosConPerfil = null, // [{id, perfil}] — si se pasa, override de destinatarios
+    noExcluirEmisor = false,
   } = opts;
 
-  if (!destinatarios.length) {
-    console.warn('[notificar] Sin destinatarios para:', tipo);
-    return;
-  }
   if (!accion_tipo) {
     console.warn('[notificar] Falta accion_tipo para:', tipo);
     return;
   }
 
-  const userId = window.userStore?.get()?.id || null;
+  const u = window.userStore?.get();
+  const userId = u?.id || null;
+  const emNom = emisor_nombre || u?.nombre || null;
+  const emFoto = emisor_foto || u?.foto_url || null;
 
-  // Filtrar duplicados y al emisor (no se notifica a sí mismo)
+  // Construir lista final de {destId, perfil}
+  let lista = [];
+  if (destinatariosConPerfil && destinatariosConPerfil.length) {
+    lista = destinatariosConPerfil.map(x => ({ id: x.id, perfil: x.perfil || perfil_destino || null }));
+  } else {
+    if (!destinatarios.length) {
+      console.warn('[notificar] Sin destinatarios para:', tipo);
+      return;
+    }
+    lista = destinatarios.map(d => ({ id: d, perfil: perfil_destino || null }));
+  }
+
+  // Filtrar duplicados y (opcionalmente) al emisor
   const seen = new Set();
-  const destFiltrados = destinatarios
-    .filter(d => d && d !== userId && !seen.has(d) && seen.add(d));
+  const destFiltrados = lista.filter(x => {
+    if (!x.id) return false;
+    if (!noExcluirEmisor && x.id === userId) return false;
+    if (seen.has(x.id)) return false;
+    seen.add(x.id);
+    return true;
+  });
 
   if (!destFiltrados.length) return;
 
-  const registros = destFiltrados.map(destId => ({
-    destinatario_id: destId,
+  const registros = destFiltrados.map(x => ({
+    destinatario_id: x.id,
     emisor_id: userId,
     tipo,
     categoria,
@@ -448,6 +472,11 @@ export async function notificar(opts) {
     contexto_id: contexto_id || null,
     escalable,
     horas_para_escalar,
+    broadcast_id,
+    broadcast_tipo,
+    emisor_nombre: emNom,
+    emisor_foto: emFoto,
+    perfil_destino: x.perfil || null,
   }));
 
   try {
@@ -578,9 +607,247 @@ export async function procesarEscalamientos() {
   }
 }
 
+// ============================================================
+// BROADCAST / EMISIÓN ADMIN (Migración #34)
+// ============================================================
+
+/**
+ * Emite una notificación broadcast (comunicado) a un segmento de usuarios.
+ * alcance: 'todos' | 'rol' | 'perfil' | 'ids'
+ *   - rol: {rol:'admin'|'oficina'|'gestor'|'asesor'|'publico'}
+ *   - perfil: {perfil:'comprador'|'vendedor'|'comisionista'|'referenciador'}
+ *   - ids: {ids:[uuid,...]}
+ */
+export async function emitirNotificacion({
+  alcance = 'todos',
+  filtros = {},
+  titulo,
+  mensaje,
+  icono = '📢',
+  color = '#6366f1',
+  prioridad = 'normal',
+  accion_tipo = 'abrir_comunicado',
+  accion_destino = null,
+  accion_seccion = null,
+}) {
+  const SBc = getSupabaseClient();
+  const u = window.userStore?.get();
+  if (!u) throw new Error('no_auth');
+  if (u.rol !== 'admin' && u.rol !== 'oficina') throw new Error('no_admin');
+  if (!titulo || !titulo.trim()) throw new Error('sin_titulo');
+
+  // 1. Resolver destinatarios con su perfil
+  let destinatariosConPerfil = [];
+
+  if (alcance === 'todos') {
+    const { data } = await SBc.from('usuarios')
+      .select('id, tipo_usuario, rol, perfiles_publicos')
+      .eq('activo', true);
+    (data || []).forEach(row => {
+      const perfil = row.tipo_usuario === 'publico'
+        ? (row.perfiles_publicos?.[0] || 'publico')
+        : row.rol;
+      destinatariosConPerfil.push({ id: row.id, perfil });
+    });
+  } else if (alcance === 'rol') {
+    const rol = filtros.rol;
+    if (!rol) throw new Error('rol_requerido');
+    const { data } = await SBc.from('usuarios')
+      .select('id, rol').eq('activo', true).eq('rol', rol);
+    (data || []).forEach(row => destinatariosConPerfil.push({ id: row.id, perfil: row.rol }));
+  } else if (alcance === 'perfil') {
+    const perfil = filtros.perfil;
+    if (!perfil) throw new Error('perfil_requerido');
+    const { data } = await SBc.from('usuarios')
+      .select('id, perfiles_publicos')
+      .eq('activo', true)
+      .eq('tipo_usuario', 'publico')
+      .contains('perfiles_publicos', [perfil]);
+    (data || []).forEach(row => destinatariosConPerfil.push({ id: row.id, perfil }));
+  } else if (alcance === 'ids') {
+    const ids = filtros.ids || [];
+    if (!ids.length) throw new Error('ids_vacios');
+    const { data } = await SBc.from('usuarios')
+      .select('id, tipo_usuario, rol, perfiles_publicos')
+      .in('id', ids);
+    (data || []).forEach(row => {
+      const perfil = row.tipo_usuario === 'publico'
+        ? (row.perfiles_publicos?.[0] || 'publico')
+        : row.rol;
+      destinatariosConPerfil.push({ id: row.id, perfil });
+    });
+  }
+
+  if (!destinatariosConPerfil.length) throw new Error('sin_destinatarios');
+
+  // 2. Generar broadcast_id compartido
+  const broadcastId = (crypto?.randomUUID?.() ||
+    ('bc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10)));
+  const broadcastTipo = destinatariosConPerfil.length > 50 ? 'masivo'
+    : (alcance === 'ids' && destinatariosConPerfil.length === 1) ? 'individual'
+    : 'segmentado';
+
+  // 3. Enviar
+  await notificar({
+    tipo: 'comunicado',
+    categoria: 'general',
+    titulo,
+    mensaje,
+    icono,
+    color,
+    prioridad,
+    accion_tipo,
+    accion_destino,
+    accion_seccion,
+    broadcast_id: broadcastId,
+    broadcast_tipo: broadcastTipo,
+    destinatariosConPerfil,
+  });
+
+  return {
+    broadcast_id: broadcastId,
+    total: destinatariosConPerfil.length,
+    tipo: broadcastTipo,
+  };
+}
+
+// ============================================================
+// NOTIFICACIÓN AUTOMÁTICA: CAMBIO DE PRECIO A FAVORITOS
+// ============================================================
+export async function notificarCambioPrecioFavorito(inmuebleId, precioAnterior, precioNuevo) {
+  if (!inmuebleId || !precioAnterior || !precioNuevo || precioAnterior === precioNuevo) return;
+  const SBc = getSupabaseClient();
+
+  // Buscar usuarios que tienen este inmueble como favorito
+  const { data: favs } = await SBc.from('favoritos')
+    .select('usuario_id')
+    .eq('inmueble_id', inmuebleId);
+  if (!favs || !favs.length) return;
+
+  const ids = favs.map(f => f.usuario_id);
+
+  // Info del inmueble
+  const { data: inm } = await SBc.from('inmuebles')
+    .select('tipo, ciudad, direccion').eq('id', inmuebleId).maybeSingle();
+
+  const bajo = precioNuevo < precioAnterior;
+  const diff = Math.abs(precioNuevo - precioAnterior);
+  const pct = Math.round((diff / precioAnterior) * 100);
+  const desc = inm ? `${inm.tipo || 'Inmueble'}${inm.ciudad ? ' en ' + inm.ciudad : ''}` : 'Un inmueble en tus favoritos';
+
+  await notificar({
+    tipo: 'cambio_precio',
+    categoria: 'favorito',
+    titulo: bajo ? `💸 Bajó de precio (-${pct}%)` : `📈 Subió de precio (+${pct}%)`,
+    mensaje: `${desc}: ${fmtCOP(precioAnterior)} → ${fmtCOP(precioNuevo)}`,
+    icono: bajo ? '💸' : '📈',
+    color: bajo ? '#10b981' : '#f59e0b',
+    prioridad: bajo ? 'alta' : 'normal',
+    accion_tipo: 'abrir_inmueble',
+    accion_destino: inmuebleId,
+    contexto_tipo: 'inmueble',
+    contexto_id: inmuebleId,
+    destinatarios: ids,
+  });
+}
+
+function fmtCOP(n) {
+  if (!n) return '';
+  return '$' + Math.round(n).toLocaleString('es-CO');
+}
+
+// ============================================================
+// NOTIFICACIÓN AUTOMÁTICA: INMUEBLE NUEVO (al aprobarlo)
+// Avisa a compradores con perfil público activo (match básico por ciudad).
+// ============================================================
+export async function notificarInmuebleNuevo(inmuebleId) {
+  if (!inmuebleId) return;
+  const SBc = getSupabaseClient();
+
+  const { data: inm } = await SBc.from('inmuebles')
+    .select('id, tipo, ciudad, barrio, precio_venta, precio_arriendo, negociacion, captador_id, captador:usuarios!captador_id(nombre)')
+    .eq('id', inmuebleId).maybeSingle();
+  if (!inm) return;
+
+  // Compradores activos
+  const { data: users } = await SBc.from('usuarios')
+    .select('id, tipo_usuario, perfiles_publicos, activo')
+    .eq('activo', true);
+  if (!users) return;
+
+  const destinatariosConPerfil = users
+    .filter(u => (u.perfiles_publicos || []).includes('comprador'))
+    .filter(u => u.id !== inm.captador_id) // no auto-notificar al captador
+    .map(u => ({ id: u.id, perfil: 'comprador' }));
+
+  if (!destinatariosConPerfil.length) return;
+
+  const precio = (inm.negociacion || '').toLowerCase().includes('arriendo')
+    ? inm.precio_arriendo : inm.precio_venta;
+  const desc = `${inm.tipo || 'Inmueble'}${inm.barrio ? ' en ' + inm.barrio : inm.ciudad ? ' en ' + inm.ciudad : ''}`;
+
+  await notificar({
+    tipo: 'inmueble_nuevo',
+    categoria: 'inmueble_nuevo',
+    titulo: `🆕 Nuevo inmueble: ${desc}`,
+    mensaje: precio ? `${desc} · ${fmtCOP(precio)}` : desc,
+    icono: '🆕',
+    color: '#10b981',
+    prioridad: 'normal',
+    accion_tipo: 'abrir_inmueble_nuevo',
+    accion_destino: inmuebleId,
+    contexto_tipo: 'inmueble',
+    contexto_id: inmuebleId,
+    destinatariosConPerfil,
+  });
+}
+
+// ============================================================
+// NOTIFICACIÓN AUTOMÁTICA: PERFIL NUEVO (registro aprobado)
+// Avisa a todos los admin + oficina.
+// ============================================================
+export async function notificarPerfilNuevo(usuarioId, intencion = null) {
+  if (!usuarioId) return;
+  const SBc = getSupabaseClient();
+
+  const { data: nuevo } = await SBc.from('usuarios')
+    .select('id, nombre, email, tipo_usuario, perfiles_publicos, rol')
+    .eq('id', usuarioId).maybeSingle();
+  if (!nuevo) return;
+
+  // Destinatarios: admin + oficina
+  const admins = await getAdminIds();
+  const oficinas = await getOficinaIds();
+  const ids = [...new Set([...admins, ...oficinas])];
+  if (!ids.length) return;
+
+  const rol = nuevo.tipo_usuario === 'publico'
+    ? ((nuevo.perfiles_publicos || [])[0] || intencion || 'público')
+    : nuevo.rol;
+  const titulo = `🧑‍💼 Nuevo perfil: ${nuevo.nombre || 'Usuario'}`;
+  const msg = `${nuevo.nombre || 'Un usuario'}${nuevo.email ? ' (' + nuevo.email + ')' : ''} se registró como ${rol}.`;
+
+  await notificar({
+    tipo: 'perfil_nuevo',
+    categoria: 'perfil_nuevo',
+    titulo,
+    mensaje: msg,
+    icono: '🧑‍💼',
+    color: '#3b82f6',
+    prioridad: 'normal',
+    accion_tipo: 'abrir_perfil_nuevo',
+    accion_destino: usuarioId,
+    destinatarios: ids,
+  });
+}
+
 // Expose to window for compatibility with non-module code
 if (typeof window !== 'undefined') {
   window.notificar = notificar;
+  window.emitirNotificacion = emitirNotificacion;
+  window.notificarCambioPrecioFavorito = notificarCambioPrecioFavorito;
+  window.notificarInmuebleNuevo = notificarInmuebleNuevo;
+  window.notificarPerfilNuevo = notificarPerfilNuevo;
   window.getAdminIds = getAdminIds;
   window.getOficinaIds = getOficinaIds;
   window.getGestorArriendosIds = getGestorArriendosIds;
