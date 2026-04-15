@@ -9,6 +9,35 @@
  *   - badgeInteresadosInmueble(inmuebleId) para tarjetas
  */
 
+// Inyectar CSS responsive una sola vez
+if (typeof document !== 'undefined' && !document.getElementById('int-mobile-css')) {
+  const s = document.createElement('style');
+  s.id = 'int-mobile-css';
+  s.textContent = `
+    @media (max-width: 640px) {
+      #interesadosc .kcol { flex: 0 0 260px !important; }
+      #interesadosc .kcard { padding: 14px !important; font-size: 13px !important; }
+      #interesadosc input, #interesadosc select, #interesadosc textarea { font-size: 16px !important; }
+      #intOv > div, #detLeadOv > div, #visOv > div, #notaOv > div {
+        max-height: 100vh !important;
+        height: 100vh;
+        border-radius: 0 !important;
+      }
+      #intOv, #detLeadOv, #visOv, #notaOv { padding: 0 !important; align-items: stretch !important; }
+      #detLeadOv button, #detLeadOv select { min-height: 44px !important; }
+    }
+    @media (max-width: 480px) {
+      #interesadosc .kcol { flex: 0 0 calc(100vw - 60px) !important; max-width: 340px; }
+    }
+    /* Evita zoom en iOS cuando input <16px */
+    #intOv input, #intOv select, #intOv textarea,
+    #detLeadOv input, #detLeadOv select, #detLeadOv textarea,
+    #visOv input, #visOv select, #visOv textarea,
+    #notaOv input, #notaOv select, #notaOv textarea { font-size: 16px; }
+  `;
+  document.head.appendChild(s);
+}
+
 const _TIP = () => window.TIPIFICACIONES || {};
 const _CAN = () => window.CANAL_ORIGEN_LEAD || {};
 
@@ -89,16 +118,21 @@ window.rInteresados = async function() {
           const dias = Math.floor((Date.now() - new Date(l.fecha_ultima_actividad).getTime()) / 864e5);
           const urgent = dias > 3 ? '🔴' : dias > 1 ? '🟡' : '🟢';
           const canal = _CAN()[l.canal_origen] || {};
+          const otrasTips = Object.values(_TIP()).filter(t => t.id !== l.tipificacion).sort((a,b)=>a.orden-b.orden);
           h += `<div class="kcard" draggable="true" ondragstart="onDragStartLead(event,'${l.id}')"
               onclick="abrirDetalleInteresado('${l.id}')"
-              style="padding:10px;background:#fff;border:1px solid var(--brd);border-radius:8px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04)">
-            <div style="font-size:12px;font-weight:700;color:var(--tx);line-height:1.3">${(l.nombre_completo || 'Sin nombre').slice(0,40)}</div>
-            ${inm.codigo_house ? `<div style="font-size:10px;color:var(--b600);font-weight:700;margin-top:2px">${inm.codigo_house}</div>` : ''}
-            <div style="font-size:10px;color:var(--sub);margin-top:3px">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-              <div style="font-size:10px;color:var(--sub)">${canal.emoji || '📱'} ${l.telefono || '—'}</div>
-              <div style="font-size:10px">${urgent} ${dias}d</div>
+              style="padding:12px;background:#fff;border:1px solid var(--brd);border-radius:10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+            <div style="font-size:13px;font-weight:700;color:var(--tx);line-height:1.3">${(l.nombre_completo || 'Sin nombre').slice(0,40)}</div>
+            ${inm.codigo_house ? `<div style="font-size:11px;color:var(--b600);font-weight:700;margin-top:3px">${inm.codigo_house}</div>` : ''}
+            <div style="font-size:11px;color:var(--sub);margin-top:3px">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+              <div style="font-size:11px;color:var(--sub)">${canal.emoji || '📱'} ${l.telefono || '—'}</div>
+              <div style="font-size:11px;font-weight:700">${urgent} ${dias}d</div>
             </div>
+            <select onclick="event.stopPropagation()" onchange="moverLeadDesdeTarjeta('${l.id}',this.value,event);this.value=''" style="width:100%;margin-top:8px;padding:7px;border:1px dashed var(--brd);border-radius:6px;font-size:11px;color:var(--sub);background:var(--b50);cursor:pointer">
+              <option value="">⇄ Mover a…</option>
+              ${otrasTips.map(t => `<option value="${t.id}">${t.emoji} ${t.label}</option>`).join('')}
+            </select>
           </div>`;
         });
       }
@@ -357,11 +391,12 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
     </div>
 
     <div style="padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap">
-      <select id="lead_chg_tip" onchange="onCambiarTipUI('${lead.id}',this.value)" style="padding:8px 10px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;font-weight:700;background:var(--cd);color:var(--tx)">
+      <select id="lead_chg_tip" onchange="onCambiarTipUI('${lead.id}',this.value)" style="padding:10px 12px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:700;background:var(--cd);color:var(--tx);min-height:42px;flex:1;min-width:140px">
         ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).map(t => `<option value="${t.id}" ${t.id===lead.tipificacion?'selected':''}>${t.emoji} ${t.label}</option>`).join('')}
       </select>
-      <button onclick="abrirAgendarVisitaLead('${lead.id}','${inm.id}')" style="padding:8px 14px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📅 Agendar visita</button>
-      <button onclick="abrirNotaLead('${lead.id}')" style="padding:8px 14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📝 Nueva nota</button>
+      <button onclick="abrirAgendarVisitaLead('${lead.id}','${inm.id}')" style="padding:10px 14px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">📅 Agendar visita</button>
+      <button onclick="abrirNotaLead('${lead.id}')" style="padding:10px 14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">📝 Nueva nota</button>
+      ${window.userStore?.get()?.rol === 'admin' ? `<button onclick="confirmarEliminarLead('${lead.id}','${(lead.nombre_completo||'').replace(/'/g,'\\\'')}')" title="Eliminar lead" style="padding:10px 14px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">🗑️ Eliminar</button>` : ''}
     </div>`;
 
   // Visitas pendientes
@@ -407,6 +442,38 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
 // ============================================================
 // ACCIONES DENTRO DEL DETALLE
 // ============================================================
+
+window.confirmarEliminarLead = async function(leadId, nombre) {
+  const motivo = prompt(`¿Eliminar lead "${nombre}"?\n\nSe marca como descartado (no se borra físicamente).\n\nMotivo (opcional):`);
+  if (motivo === null) return; // usuario canceló
+  try {
+    await window.eliminarInteresado(leadId, motivo || null);
+    document.getElementById('detLeadOv')?.remove();
+    window.toast('🗑️ Lead eliminado');
+    if (location.hash.includes('interesados') && window.rInteresados) window.rInteresados();
+  } catch (e) {
+    if (e.message === 'solo_admin_elimina') window.toast('❌ Solo admin puede eliminar', 'terr');
+    else window.toast('Error: ' + e.message, 'terr');
+  }
+};
+
+// Mobile-friendly: cambiar tipificación desde la tarjeta del Kanban
+window.moverLeadDesdeTarjeta = async function(leadId, nuevaTip, ev) {
+  ev?.stopPropagation();
+  if (!nuevaTip) return;
+  try {
+    if (nuevaTip === 'cierre_ganado' || nuevaTip === 'cierre_perdido') {
+      const ok = await (window.cfShow ? window.cfShow('🏆', `¿Mover a ${_TIP()[nuevaTip].label}?`, 'Esta acción cambia el estado del lead y queda registrada en el historial.') : window.confirm(`¿Mover a ${_TIP()[nuevaTip].label}?`));
+      if (!ok) return;
+    }
+    await window.cambiarTipificacion(leadId, nuevaTip);
+    window.toast('✅ Movido a ' + _TIP()[nuevaTip].label);
+    window.rInteresados();
+  } catch (e) {
+    if (e.message === 'requiere_visita_realizada') window.toast('❌ Requiere visita realizada previa', 'terr');
+    else window.toast('Error: ' + (e.message || 'no se pudo mover'), 'terr');
+  }
+};
 
 window.onCambiarTipUI = async function(leadId, nuevaTip) {
   try {

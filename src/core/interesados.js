@@ -138,22 +138,42 @@ export async function crearInteresado(data) {
     descripcion: `Lead creado${data.canal_origen ? ' (canal: ' + data.canal_origen + ')' : ''}` + (data.nota_inicial ? '. Nota: ' + data.nota_inicial : ''),
   });
 
-  // Notificar al captador del inmueble si no es el mismo creador
+  // Notificar al captador + gestores si es arriendo + admins si es privado
   try {
     const { data: inm } = await SB().from('inmuebles')
-      .select('captador_id, tipo, ciudad, barrio, codigo_house').eq('id', data.inmueble_id).maybeSingle();
-    if (inm && inm.captador_id && inm.captador_id !== u.id && typeof window.notificar === 'function') {
-      await window.notificar({
-        tipo: 'lead_nuevo',
-        categoria: 'solicitud',
-        titulo: `👤 Nuevo interesado en tu ${inm.tipo || 'inmueble'}`,
-        mensaje: `${u.nombre || 'Un asesor'} registró a ${data.nombre_completo} interesado en ${inm.codigo_house || inm.tipo} (${inm.barrio || inm.ciudad || ''}).`,
-        icono: '👤', color: '#3B82F6', prioridad: 'alta',
-        accion_tipo: 'abrir_seccion', accion_seccion: 'interesados',
-        accion_destino: created.id,
-        contexto_tipo: 'interesado', contexto_id: created.id,
-        destinatarios: [inm.captador_id],
-      });
+      .select('captador_id, tipo, ciudad, barrio, codigo_house, negociacion').eq('id', data.inmueble_id).maybeSingle();
+    if (inm && typeof window.notificar === 'function') {
+      const destinatarios = new Set();
+      // Captador del inmueble (si no es el mismo creador)
+      if (inm.captador_id && inm.captador_id !== u.id) destinatarios.add(inm.captador_id);
+      // Si es arriendo → notificar a gestores
+      const esArriendo = (inm.negociacion || '').toLowerCase().includes('arriendo');
+      if (esArriendo && typeof window.getGestorArriendosIds === 'function') {
+        const gestores = await window.getGestorArriendosIds();
+        gestores.forEach(gid => { if (gid !== u.id) destinatarios.add(gid); });
+      }
+      // Si el lead es privado (admin creándolo), solo los admins se enteran
+      if (esPrivado && typeof window.getAdminIds === 'function') {
+        const admins = await window.getAdminIds();
+        destinatarios.clear();
+        admins.forEach(aid => { if (aid !== u.id) destinatarios.add(aid); });
+      }
+
+      if (destinatarios.size) {
+        await window.notificar({
+          tipo: 'lead_nuevo',
+          categoria: 'solicitud',
+          titulo: `👤 Nuevo interesado en ${inm.tipo || 'inmueble'}${esArriendo ? ' (arriendo)' : ''}`,
+          mensaje: `${u.nombre || 'Un asesor'} registró a ${data.nombre_completo} interesado en ${inm.codigo_house || inm.tipo} (${inm.barrio || inm.ciudad || ''}).`,
+          icono: esArriendo ? '🔑' : '👤',
+          color: esArriendo ? '#F97316' : '#3B82F6',
+          prioridad: 'alta',
+          accion_tipo: 'abrir_seccion', accion_seccion: 'interesados',
+          accion_destino: created.id,
+          contexto_tipo: 'interesado', contexto_id: created.id,
+          destinatarios: [...destinatarios],
+        });
+      }
     }
   } catch (e) { console.warn('[crearInteresado notif]', e); }
 
@@ -231,6 +251,34 @@ export async function cambiarTipificacion(id, nuevaTipificacion, motivo = null) 
     descripcion: `Cambió de "${TIPIFICACIONES[anterior]?.label || anterior}" a "${TIPIFICACIONES[nuevaTipificacion].label}"` + (motivo ? ` — ${motivo}` : ''),
     tipificacion_anterior: anterior,
     tipificacion_nueva: nuevaTipificacion,
+  });
+
+  return true;
+}
+
+// ============================================================
+// ELIMINAR (soft delete — solo admin)
+// ============================================================
+
+export async function eliminarInteresado(id, motivo = null) {
+  const u = U(); if (!u) throw new Error('no_auth');
+  if (u.rol !== 'admin') throw new Error('solo_admin_elimina');
+  if (!id) throw new Error('id_requerido');
+
+  // Soft delete: estado='descartado' (sigue en DB para auditoría)
+  const { error } = await SB().from('interesados').update({
+    estado: 'descartado',
+    updated_at: new Date().toISOString(),
+    fecha_ultima_actividad: new Date().toISOString(),
+  }).eq('id', id);
+  if (error) throw error;
+
+  // Registrar en historial
+  await SB().from('interesados_historial').insert({
+    interesado_id: id,
+    asesor_id: u.id,
+    tipo_actividad: 'nota',
+    descripcion: `🗑️ Lead eliminado por ${u.nombre || 'admin'}` + (motivo ? ` — Motivo: ${motivo}` : ''),
   });
 
   return true;
@@ -564,6 +612,7 @@ if (typeof window !== 'undefined') {
   window.crearInteresado = crearInteresado;
   window.editarInteresado = editarInteresado;
   window.cambiarTipificacion = cambiarTipificacion;
+  window.eliminarInteresado = eliminarInteresado;
   window.agregarNotaHistorial = agregarNotaHistorial;
   window.agendarVisita = agendarVisita;
   window.cambiarEstadoVisita = cambiarEstadoVisita;
