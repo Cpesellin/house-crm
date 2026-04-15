@@ -7,6 +7,7 @@ import './styles/global.css';
 import './config/cloudinary.js';
 import './core/notifications.js';
 import './core/sugerencias.js';
+import './core/interesados.js';
 import './load.js';
 import './sections.js';
 import './functions.js';
