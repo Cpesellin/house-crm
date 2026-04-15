@@ -133,6 +133,7 @@ function renderShell(container) {
 
     <button class="mi" data-s="referir" onclick="go('referir')"><span class="mic">\u{1F91D}</span>Referir arriendo</button>
     <button class="mi" data-s="mis-referidos" onclick="go('mis-referidos')"><span class="mic">\u{1F4B0}</span>Mis referidos<span class="mib" id="mrefb" style="display:none">0</span></button>
+    <button class="mi" data-s="interesados" onclick="go('interesados')" id="minteresados" style="display:none"><span class="mic">\u{1F464}</span>Interesados<span class="mib" id="mintb" style="display:none">0</span></button>
     <button class="mi" data-s="admin-pagos" onclick="go('admin-pagos')" id="madminpagos" style="display:none"><span class="mic">\u{1F4B3}</span>Pagos referidos</button>
     <button class="mi" data-s="negocios-admin" onclick="go('negocios-admin')" id="mnegocios" style="display:none"><span class="mic">\u{1F4BC}</span>Negocios</button>
     <button class="mi" data-s="arriendos-admin" onclick="go('arriendos-admin')" id="marriendos" style="display:none"><span class="mic">\u{1F511}</span>Arriendos</button>
@@ -256,6 +257,7 @@ function renderShell(container) {
 <div class="sec" id="sec-arriendos-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="arriendosadminc"></div></div>
 <div class="sec" id="sec-config-usuarios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="configusuariosc"></div></div>
 <div class="sec" id="sec-sugerencias-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="sugerenciasadminc"></div></div>
+<div class="sec" id="sec-interesados"><div style="max-width:1400px;margin:0 auto;padding:10px 14px 60px" id="interesadosc"></div></div>
 <div class="sec" id="sec-mis-negocios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misnegociosc"></div></div>
 <div class="sec" id="sec-cuenta"><div class="fsec" id="cuentac"></div></div>
 <div class="sec" id="sec-mis-pub"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="mispubc"></div></div>
@@ -472,6 +474,11 @@ function sApp() {
 
     if (U.rol === 'admin' || U.rol === 'oficina' || U.es_gestor_arriendos)
       document.getElementById('magenda').style.display = 'flex';
+    // Interesados: visible para todos los internos (asesor, gestor, oficina, admin)
+    if (U.tipo_usuario === 'interno' || U.tipo_usuario == null || !U.tipo_usuario) {
+      const intEl = document.getElementById('minteresados');
+      if (intEl) intEl.style.display = 'flex';
+    }
     if (U.rol === 'admin') {
       document.getElementById('musrs').style.display = 'flex';
       const apEl = document.getElementById('madminpagos');
