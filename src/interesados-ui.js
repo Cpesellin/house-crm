@@ -144,6 +144,14 @@ window.toggleInmExp = function(inmId) {
   window.rInteresados();
 };
 
+// Tab por inmueble (venta / arriendo / todos) cuando aplique
+window._intState.tabPorInm = window._intState.tabPorInm || {};
+window.setTabInm = function(inmId, tab, ev) {
+  ev?.stopPropagation();
+  window._intState.tabPorInm[inmId] = tab;
+  window.rInteresados();
+};
+
 // ============================================================
 // renderer principal — KANBAN
 // ============================================================
@@ -626,35 +634,90 @@ function _renderVistaPorInmueble(leads, porTip) {
       ? `<div style="width:72px;height:72px;border-radius:10px;background-image:url('${foto}');background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15)"></div>`
       : `<div style="width:72px;height:72px;border-radius:10px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">${emoFallback}</div>`;
 
-    // Header del inmueble (click toggle)
+    // Detectar negociaciones del inmueble (venta, arriendo o ambas)
+    const inmD = (window.D || []).find(x => x.id === g.id) || inm;
+    const negStr = (inmD.negociacion || inm.negociacion || '').toLowerCase();
+    const tieneVenta = negStr.includes('venta');
+    const tieneArriendo = negStr.includes('arriendo') || negStr.includes('renta');
+    const ambasNegs = tieneVenta && tieneArriendo;
+    // Contar leads por modalidad
+    const countVenta = g.leads.filter(l => (l.modalidad || '').toLowerCase().includes('compra') || (l.modalidad || '').toLowerCase().includes('venta')).length;
+    const countArr = g.leads.filter(l => (l.modalidad || '').toLowerCase().includes('arriendo')).length;
+    const countSin = g.leads.length - countVenta - countArr;
+
+    // Header del inmueble (2 filas, limpio)
     h += `<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-      <div onclick="toggleInmExp('${g.id}')" style="padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#eff6ff,transparent);border-left:4px solid #3b82f6">
-        ${thumbHtml}
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-size:15px;font-weight:800;color:var(--tx)">${inm.codigo_house || '(sin código)'}</span>
-            <span style="font-size:12px;color:var(--sub);font-weight:600">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</span>
+      <div onclick="toggleInmExp('${g.id}')" style="padding:12px 14px;cursor:pointer;background:linear-gradient(90deg,#eff6ff,transparent);border-left:4px solid #3b82f6">
+        <!-- Fila 1: thumb + identidad + expand -->
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          ${thumbHtml}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:16px;font-weight:800;color:var(--tx);line-height:1.2">${inm.codigo_house || '(sin código)'}</div>
+            <div style="font-size:12px;color:var(--sub);font-weight:600;margin-top:3px">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>
+            ${negStr ? `<div style="font-size:10.5px;color:var(--b700);font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.3px">${tieneVenta && tieneArriendo ? '💰 Venta · 🔑 Arriendo' : tieneArriendo ? '🔑 Arriendo' : tieneVenta ? '💰 Venta' : negStr}</div>` : ''}
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).filter(t => countsTip[t.id] > 0).map(t => `<span style="font-size:10px;font-weight:800;background:${t.color}22;color:${t.color};padding:2px 8px;border-radius:10px">${t.emoji} ${countsTip[t.id]}</span>`).join('')}
+            </div>
           </div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-            ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).filter(t => countsTip[t.id] > 0).map(t => `<span style="font-size:10px;font-weight:800;background:${t.color}22;color:${t.color};padding:2px 8px;border-radius:10px">${t.emoji} ${countsTip[t.id]}</span>`).join('')}
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+            <div style="background:#3b82f6;color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:12px">${g.count}</div>
+            <div style="font-size:16px;color:var(--sub);transform:rotate(${expandido?'0':'-90'}deg);transition:transform .2s">▼</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
-          <button onclick="abrirFichaInmueble('${g.id}',event)" title="Ver ficha del inmueble" style="padding:6px 9px;background:var(--cd);color:var(--b700);border:1.5px solid var(--b200);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🏠 Ficha</button>
-          <button onclick="event.stopPropagation();abrirCrearInteresado('${g.id}')" style="padding:6px 10px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">+ Nuevo</button>
-          <div style="background:#3b82f6;color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:12px">${g.count}</div>
-          <div style="font-size:16px;color:var(--sub);transform:rotate(${expandido?'0':'-90'}deg);transition:transform .2s">▼</div>
+        <!-- Fila 2: botones de acción -->
+        <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--brd)" onclick="event.stopPropagation()">
+          <button onclick="abrirFichaInmueble('${g.id}',event)" title="Ver ficha del inmueble" style="flex:1;padding:8px;background:#fff;color:var(--b700);border:1.5px solid var(--b200);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">🏠 Ficha</button>
+          <button onclick="abrirCrearInteresado('${g.id}')" style="flex:1;padding:8px;background:#3b82f6;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo lead</button>
         </div>
       </div>`;
 
     if (expandido) {
-      // Agrupar sus leads por tipificación
+      // Filtro por modalidad si el inmueble tiene ambas negociaciones
+      const tabActual = window._intState.tabPorInm?.[g.id] || 'todos';
+      let leadsFiltrados = g.leads;
+      if (ambasNegs) {
+        if (tabActual === 'venta') {
+          leadsFiltrados = g.leads.filter(l => {
+            const m = (l.modalidad || '').toLowerCase();
+            return m.includes('compra') || m.includes('venta');
+          });
+        } else if (tabActual === 'arriendo') {
+          leadsFiltrados = g.leads.filter(l => (l.modalidad || '').toLowerCase().includes('arriendo'));
+        } else if (tabActual === 'sin_clasif') {
+          leadsFiltrados = g.leads.filter(l => {
+            const m = (l.modalidad || '').toLowerCase();
+            return !m.includes('compra') && !m.includes('venta') && !m.includes('arriendo');
+          });
+        }
+      }
+
+      // Recalcular counts por tipificación sobre los filtrados
+      const countsTipFilt = {};
+      Object.keys(_TIP()).forEach(k => countsTipFilt[k] = 0);
+      leadsFiltrados.forEach(l => { countsTipFilt[l.tipificacion] = (countsTipFilt[l.tipificacion] || 0) + 1; });
+
       const tipsConLeads = Object.values(_TIP()).sort((a,b)=>a.orden-b.orden)
-        .filter(t => countsTip[t.id] > 0);
+        .filter(t => countsTipFilt[t.id] > 0);
 
       h += `<div style="padding:10px 14px 14px">`;
+
+      // Tabs Venta/Arriendo solo si el inmueble tiene ambas
+      if (ambasNegs) {
+        h += `<div style="display:flex;gap:4px;margin-bottom:10px;padding:3px;background:var(--b50);border-radius:8px">
+          <button onclick="setTabInm('${g.id}','todos',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='todos'?'#fff':'transparent'};color:${tabActual==='todos'?'var(--b700)':'var(--sub)'};box-shadow:${tabActual==='todos'?'0 1px 3px rgba(0,0,0,.1)':'none'}">👥 Todos (${g.count})</button>
+          <button onclick="setTabInm('${g.id}','venta',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='venta'?'#fff':'transparent'};color:${tabActual==='venta'?'#2563eb':'var(--sub)'};box-shadow:${tabActual==='venta'?'0 1px 3px rgba(0,0,0,.1)':'none'}">💰 Venta (${countVenta})</button>
+          <button onclick="setTabInm('${g.id}','arriendo',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='arriendo'?'#fff':'transparent'};color:${tabActual==='arriendo'?'#ea580c':'var(--sub)'};box-shadow:${tabActual==='arriendo'?'0 1px 3px rgba(0,0,0,.1)':'none'}">🔑 Arriendo (${countArr})</button>
+          ${countSin > 0 ? `<button onclick="setTabInm('${g.id}','sin_clasif',event)" style="padding:7px 10px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='sin_clasif'?'#fff':'transparent'};color:${tabActual==='sin_clasif'?'var(--sub)':'var(--sub)'}" title="Sin clasificar">❓ ${countSin}</button>` : ''}
+        </div>`;
+      }
+
+      // Si la tab filtrada queda vacía
+      if (!leadsFiltrados.length) {
+        h += `<div style="padding:18px;text-align:center;font-size:12px;color:var(--sub)">No hay leads en esta categoría.</div>`;
+      }
+
       tipsConLeads.forEach(t => {
-        const leadsTip = g.leads.filter(l => l.tipificacion === t.id);
+        const leadsTip = leadsFiltrados.filter(l => l.tipificacion === t.id);
         h += `<div style="margin-bottom:10px">
           <div style="font-size:10px;font-weight:800;color:${t.color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-left:4px;border-left:3px solid ${t.color}">${t.emoji} ${t.label} (${leadsTip.length})</div>
           <div style="display:flex;flex-direction:column;gap:5px">`;
