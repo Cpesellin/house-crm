@@ -293,30 +293,59 @@ window.rReg = function () { if (typeof window.iForm === 'function') window.iForm
 // F28: rAl — Alertas (click abre inmueble)
 // ══════════════════════════════════════════════════════════════════
 
-// Tab activo de la sección Alertas (filtro por categoría)
-window._notifTab = window._notifTab || 'todas';
+// Filtros activos de la sección Alertas
+window._notifTab = window._notifTab || 'todas';       // por categoría/caso
+window._notifPerfil = window._notifPerfil || 'todos'; // por perfil destino
 
 const NOTIF_TABS = [
-  { id: 'todas',     label: 'Todas',       emoji: '🔔' },
-  { id: 'inmueble',  label: 'Inmuebles',   emoji: '🏠' },
-  { id: 'solicitud', label: 'Solicitudes', emoji: '📋' },
-  { id: 'referido',  label: 'Referidos',   emoji: '🤝' },
-  { id: 'pago',      label: 'Pagos',       emoji: '💰' },
-  { id: 'agenda',    label: 'Agenda',      emoji: '📅' },
-  { id: 'mensaje',   label: 'Mensajes',    emoji: '💬' },
-  { id: 'sistema',   label: 'Sistema',     emoji: '⚙️' },
+  { id: 'todas',          label: 'Todas',            emoji: '🔔' },
+  { id: 'inmueble',       label: 'Inmuebles',        emoji: '🏠' },
+  { id: 'favorito',       label: 'Favoritos',        emoji: '❤️' },
+  { id: 'inmueble_nuevo', label: 'Inmuebles nuevos', emoji: '🆕' },
+  { id: 'perfil_nuevo',   label: 'Perfiles nuevos',  emoji: '🧑‍💼' },
+  { id: 'moderacion',     label: 'Moderación',       emoji: '🛡️' },
+  { id: 'calificacion',   label: 'Calificación',     emoji: '⭐' },
+  { id: 'cita',           label: 'Citas',            emoji: '📅' },
+  { id: 'cierre',         label: 'Cierres',          emoji: '🏆' },
+  { id: 'solicitud',      label: 'Solicitudes',      emoji: '📋' },
+  { id: 'referido',       label: 'Referidos',        emoji: '🤝' },
+  { id: 'pago',           label: 'Pagos',            emoji: '💰' },
+  { id: 'agenda',         label: 'Agenda',           emoji: '📅' },
+  { id: 'mensaje',        label: 'Mensajes',         emoji: '💬' },
+  { id: 'general',        label: 'Comunicados',      emoji: '📢' },
+  { id: 'sistema',        label: 'Sistema',          emoji: '⚙️' },
+];
+
+const PERFIL_TABS = [
+  { id: 'todos',         label: 'Todos',         emoji: '👥' },
+  { id: 'comprador',     label: 'Comprador',     emoji: '🛒' },
+  { id: 'vendedor',      label: 'Vendedor',      emoji: '🏷️' },
+  { id: 'comisionista',  label: 'Comisionista',  emoji: '💼' },
+  { id: 'referenciador', label: 'Referenciador', emoji: '🤝' },
+  { id: 'asesor',        label: 'Asesor',        emoji: '🔵' },
+  { id: 'gestor',        label: 'Gestor',        emoji: '🟢' },
 ];
 
 window.setNotifTab = function(tab) {
   window._notifTab = tab;
   if (window.rAl) window.rAl();
 };
+window.setNotifPerfil = function(p) {
+  window._notifPerfil = p;
+  if (window.rAl) window.rAl();
+};
 
 window.rAl = function () {
   const el = document.getElementById('all'); if (!el) return;
+  const u = window.userStore?.get();
+  const esAdmin = u && (u.rol === 'admin' || u.rol === 'oficina');
   const all = (window.NOTIFS || window.ALU || []).filter(n => !n.descartada);
   const tab = window._notifTab || 'todas';
-  const filtered = tab === 'todas' ? all : all.filter(n => n.categoria === tab);
+  const perfilSel = window._notifPerfil || 'todos';
+  let filtered = tab === 'todas' ? all : all.filter(n => n.categoria === tab);
+  if (perfilSel !== 'todos') {
+    filtered = filtered.filter(n => n.perfil_destino === perfilSel);
+  }
 
   // KPIs
   const noLeidas = all.filter(n => !n.leida).length;
@@ -329,15 +358,31 @@ window.rAl = function () {
     <div style="flex:1;min-width:80px;padding:10px;background:var(--b50);border:1px solid var(--b200);border-radius:8px;text-align:center"><div style="font-family:Fraunces,serif;font-size:20px;font-weight:700;color:var(--b700)">${noLeidas}</div><div style="font-size:7px;color:var(--b700);text-transform:uppercase;letter-spacing:1px">No leídas</div></div>
   </div>`;
 
-  // Botón "marcar todas leídas"
+  // Botones de acción (emitir comunicado para admin + marcar todas)
+  h += `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">`;
+  if (esAdmin) {
+    h += `<button onclick="abrirEmisionComunicado()" style="padding:7px 14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:8px;font-size:12px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 2px 6px #6366f133">📢 Emitir comunicado</button>`;
+  } else { h += `<div></div>`; }
   if (noLeidas > 0) {
-    h += `<div style="text-align:right;margin-bottom:8px"><button onclick="marcarTodasLeidas()" style="padding:5px 10px;background:var(--cd);border:1px solid var(--brd);border-radius:6px;font-size:11px;font-weight:700;color:var(--b600);cursor:pointer">✓ Marcar todas como leídas</button></div>`;
+    h += `<button onclick="marcarTodasLeidas()" style="padding:6px 12px;background:var(--cd);border:1px solid var(--brd);border-radius:6px;font-size:11px;font-weight:700;color:var(--b600);cursor:pointer">✓ Marcar todas leídas</button>`;
   }
+  h += `</div>`;
 
-  // Tabs por categoría
+  // Filtro por PERFIL (fila 1)
+  h += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">`;
+  PERFIL_TABS.forEach(p => {
+    const cnt = p.id === 'todos' ? all.length : all.filter(n => n.perfil_destino === p.id).length;
+    if (p.id !== 'todos' && cnt === 0) return;
+    const active = perfilSel === p.id;
+    h += `<button onclick="setNotifPerfil('${p.id}')" style="padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${active?'#6366f1':'var(--brd)'};background:${active?'#6366f1':'var(--cd)'};color:${active?'#fff':'var(--tx)'}">${p.emoji} ${p.label}${cnt>0?' ('+cnt+')':''}</button>`;
+  });
+  h += `</div>`;
+
+  // Filtro por CATEGORÍA/CASO (fila 2)
   h += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--brd)">`;
   NOTIF_TABS.forEach(t => {
-    const cnt = t.id === 'todas' ? all.length : all.filter(n => n.categoria === t.id).length;
+    const baseArr = perfilSel === 'todos' ? all : all.filter(n => n.perfil_destino === perfilSel);
+    const cnt = t.id === 'todas' ? baseArr.length : baseArr.filter(n => n.categoria === t.id).length;
     if (t.id !== 'todas' && cnt === 0) return;
     const active = tab === t.id;
     h += `<button onclick="setNotifTab('${t.id}')" style="padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${active?'var(--b500)':'var(--brd)'};background:${active?'var(--b500)':'var(--cd)'};color:${active?'#fff':'var(--tx)'}">${t.emoji} ${t.label}${cnt>0?' ('+cnt+')':''}</button>`;
@@ -365,12 +410,18 @@ window.rAl = function () {
       : n.prioridad === 'alta'
         ? '<span style="font-size:8px;font-weight:800;background:#f59e0b;color:#fff;padding:2px 6px;border-radius:8px;margin-left:6px">ALTA</span>'
         : '';
+    const emisorNom = n.emisor_nombre || n.emisor?.nombre || '';
+    const avatar = window._avatarHtml ? window._avatarHtml(emisorNom || 'House', n.emisor_foto, 44) : `<div style="width:44px;height:44px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:20px">${ico}</div>`;
+    const perfilChip = n.perfil_destino ? `<span style="font-size:9px;font-weight:700;background:#eef2ff;color:#4338ca;padding:2px 6px;border-radius:6px;margin-left:6px">${n.perfil_destino}</span>` : '';
     return `<div style="display:flex;gap:10px;padding:12px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ${color};border-radius:10px;margin-bottom:6px;cursor:pointer;opacity:${opacity}" onclick="handleNotifClick('${n.id}','${n.accion_tipo||''}','${n.accion_destino||''}','${n.accion_seccion||''}')">
-      <div style="width:38px;height:38px;border-radius:10px;background:${color}1a;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">${ico}</div>
+      <div style="position:relative;flex-shrink:0">
+        ${avatar}
+        <div style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:${color};color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid var(--cd)">${ico}</div>
+      </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:var(--tx)">${n.titulo || ''}${prioBadge}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">${n.titulo || ''}${prioBadge}${perfilChip}</div>
         ${n.mensaje ? `<div style="font-size:11px;color:var(--sub);margin-top:3px">${n.mensaje}</div>` : ''}
-        <div style="font-size:10px;color:var(--sub);margin-top:4px;opacity:.75">${fecha}${n.emisor?.nombre ? ' · 👤 ' + n.emisor.nombre : ''}</div>
+        <div style="font-size:10px;color:var(--sub);margin-top:4px;opacity:.75">${fecha}${emisorNom ? ' · 👤 ' + emisorNom : ''}${n.broadcast_id ? ' · 📢 comunicado' : ''}</div>
       </div>
       <button onclick="event.stopPropagation();descartarNotificacion('${n.id}')" title="Descartar" style="background:none;border:none;color:var(--sub);font-size:16px;cursor:pointer;padding:4px;align-self:flex-start">×</button>
     </div>`;
@@ -1516,6 +1567,109 @@ window._togglePermiso = async function(permisoId, rolKey, nuevoValor) {
     if (typeof window.rConfigUsuarios === 'function') window.rConfigUsuarios();
   } catch(e) {
     console.error('[_togglePermiso]', e);
+    window.toast('Error: ' + e.message, 'terr');
+  }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// SUGERENCIAS INTELIGENTES — Dashboard Admin (KPIs)
+// ══════════════════════════════════════════════════════════════════
+
+window.rSugerenciasAdmin = async function() {
+  const el = document.getElementById('sugerenciasadminc');
+  if (!el) return;
+  const SB = window.SB || (window.getSupabaseClient && window.getSupabaseClient());
+  const supa = SB || (typeof window.userStore !== 'undefined' && window.__supabase) || window.__supabase;
+
+  el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--sub)">⏳ Cargando métricas de sugerencias...</div>';
+
+  try {
+    // Query stats vía módulo supabase
+    const mod = await import('./config/supabase.js');
+    const SBc = mod.getSupabaseClient();
+
+    const hace7d = new Date(Date.now() - 7 * 864e5).toISOString();
+    const hace30d = new Date(Date.now() - 30 * 864e5).toISOString();
+
+    const [sugTotal, sugUltimos7d, sugUltimos30d, evTotal, prefTotal, topSug] = await Promise.all([
+      SBc.from('sugerencias_enviadas').select('*', { count: 'exact', head: true }),
+      SBc.from('sugerencias_enviadas').select('*', { count: 'exact', head: true }).gte('created_at', hace7d),
+      SBc.from('sugerencias_enviadas').select('resultado,abierta_at,convertida_at,score,created_at').gte('created_at', hace30d).limit(2000),
+      SBc.from('eventos_usuario').select('tipo', { count: 'exact', head: true }).gte('created_at', hace30d),
+      SBc.from('preferencias_calculadas').select('usuario_id', { count: 'exact', head: true }).gte('engagement_score', 10),
+      SBc.from('sugerencias_enviadas')
+        .select('id,score,razones,resultado,created_at,usuario:usuarios!usuario_id(nombre),inmueble:inmuebles!inmueble_id(tipo,ciudad,barrio,codigo_house)')
+        .order('score', { ascending: false }).limit(20),
+    ]);
+
+    const total30 = (sugUltimos30d.data || []).length;
+    const abiertas = (sugUltimos30d.data || []).filter(s => s.abierta_at || s.resultado === 'abierta' || s.resultado === 'convertida').length;
+    const convert = (sugUltimos30d.data || []).filter(s => s.convertida_at || s.resultado === 'convertida').length;
+    const tasaApertura = total30 > 0 ? Math.round((abiertas / total30) * 100) : 0;
+    const tasaConv = total30 > 0 ? Math.round((convert / total30) * 100) : 0;
+    const scorePromedio = total30 > 0
+      ? Math.round((sugUltimos30d.data.reduce((a, s) => a + (s.score || 0), 0) / total30))
+      : 0;
+
+    let h = `<div class="card" style="margin-bottom:12px"><div class="cdh"><div class="chl"><div class="chi">🎯</div><div><div class="cht">Sugerencias Inteligentes</div><div class="chsb">Últimos 30 días · Sistema de matching automático</div></div></div><button onclick="recalcularTodasPrefsUI()" style="padding:8px 14px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer">🔄 Recalcular todas</button></div><div class="cdb">`;
+
+    // KPIs
+    h += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
+      <div style="padding:14px;background:var(--b50);border:1.5px solid var(--b200);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:var(--b700)">${sugTotal.count || 0}</div><div style="font-size:10px;color:var(--b700);font-weight:700">Total enviadas</div></div>
+      <div style="padding:14px;background:#6366f110;border:1.5px solid #6366f140;border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:#6366f1">${sugUltimos7d.count || 0}</div><div style="font-size:10px;color:#6366f1;font-weight:700">Últimos 7 días</div></div>
+      <div style="padding:14px;background:var(--greenbg);border:1.5px solid var(--gb);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:#065f46">${tasaApertura}%</div><div style="font-size:10px;color:#065f46;font-weight:700">Tasa apertura (30d)</div></div>
+      <div style="padding:14px;background:var(--goldbg);border:1.5px solid var(--yb);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:var(--gold)">${tasaConv}%</div><div style="font-size:10px;color:var(--gold);font-weight:700">Conversión (30d)</div></div>
+      <div style="padding:14px;background:#8b5cf610;border:1.5px solid #8b5cf640;border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:#8b5cf6">${scorePromedio}</div><div style="font-size:10px;color:#8b5cf6;font-weight:700">Score promedio</div></div>
+      <div style="padding:14px;background:var(--b50);border:1.5px solid var(--b200);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:var(--b700)">${evTotal.count || 0}</div><div style="font-size:10px;color:var(--b700);font-weight:700">Eventos (30d)</div></div>
+      <div style="padding:14px;background:var(--greenbg);border:1.5px solid var(--gb);border-radius:10px;text-align:center"><div style="font-family:Fraunces,serif;font-size:28px;font-weight:800;color:#065f46">${prefTotal.count || 0}</div><div style="font-size:10px;color:#065f46;font-weight:700">Compradores elegibles</div></div>
+    </div>`;
+
+    // Top 20 sugerencias por score
+    const top = topSug.data || [];
+    h += `<div style="margin-top:10px"><div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🏆 Top 20 sugerencias por score</div>`;
+    if (!top.length) {
+      h += `<div class="emp"><span class="emp-i">📭</span><h3>Aún no hay sugerencias enviadas</h3><p>Se generarán cuando un comprador con engagement ≥10 matchee un inmueble nuevo.</p></div>`;
+    } else {
+      h += `<div style="display:flex;flex-direction:column;gap:6px">`;
+      top.forEach(s => {
+        const razones = (s.razones || []).join(' · ');
+        const inm = s.inmueble || {};
+        const usr = s.usuario || {};
+        const color = s.score >= 80 ? '#10b981' : s.score >= 70 ? '#f59e0b' : '#6366f1';
+        const estado = s.resultado === 'convertida' ? '🎉 convertida' : s.resultado === 'abierta' ? '👁️ abierta' : s.resultado === 'ignorada' ? '⚪ ignorada' : '📨 enviada';
+        h += `<div style="display:flex;gap:10px;padding:10px 12px;background:var(--cd);border:1.5px solid var(--brd);border-left:4px solid ${color};border-radius:8px;align-items:center">
+          <div style="width:48px;height:48px;border-radius:8px;background:${color}22;display:flex;align-items:center;justify-content:center;font-family:Fraunces,serif;font-weight:800;color:${color};font-size:16px">${s.score}%</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;color:var(--tx)">${inm.tipo || 'Inmueble'}${inm.barrio ? ' en ' + inm.barrio : inm.ciudad ? ' en ' + inm.ciudad : ''}${inm.codigo_house ? ' · ' + inm.codigo_house : ''}</div>
+            <div style="font-size:11px;color:var(--sub);margin-top:2px">→ ${usr.nombre || 'Usuario'} · ${razones || 'match general'}</div>
+          </div>
+          <div style="font-size:10px;color:var(--sub);font-weight:700">${estado}</div>
+        </div>`;
+      });
+      h += `</div>`;
+    }
+    h += `</div>`;
+
+    h += `<div style="margin-top:16px;padding:12px;background:var(--b50);border-radius:10px;font-size:11px;color:var(--b700);line-height:1.6">
+      💡 <strong>Reglas:</strong> max 3 sugerencias/día/usuario · score mínimo 60 · engagement mínimo 10 · no repetir (UNIQUE) · pesos: interés 5, llamada 4, favorito 3, compartir 3, vista 1, remove fav -2
+    </div>`;
+    h += `</div></div>`;
+    el.innerHTML = h;
+  } catch (e) {
+    console.error('[rSugerenciasAdmin]', e);
+    el.innerHTML = '<div class="card"><div class="cdb"><div class="emp"><span class="emp-i">⚠️</span><h3>Error cargando métricas</h3><p>' + (e.message || e) + '</p></div></div></div>';
+  }
+};
+
+// Helper: dispara recalc manual
+window.recalcularTodasPrefsUI = async function() {
+  if (!window.recalcularTodasLasPreferencias) return window.toast('Módulo no disponible', 'terr');
+  if (window.toast) window.toast('⏳ Recalculando preferencias...', 'info');
+  try {
+    const r = await window.recalcularTodasLasPreferencias();
+    window.toast('✅ ' + r.recalculados + ' usuarios recalculados');
+    if (window.rSugerenciasAdmin) window.rSugerenciasAdmin();
+  } catch (e) {
     window.toast('Error: ' + e.message, 'terr');
   }
 };

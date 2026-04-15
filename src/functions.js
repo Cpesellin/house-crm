@@ -86,69 +86,135 @@ window._timeAgo = function(iso) {
   return new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
 };
 
-window.renderBell = function() {
-  const el = document.getElementById('belllist');
-  if (!el) return;
-  const notifs = (window.NOTIFS || window.ALU || []).filter(n => !n.descartada);
-  if (!notifs.length) { el.innerHTML='<div class="bell-empty">🎉 Sin notificaciones</div>'; return; }
+// Helper: avatar (foto o inicial con color según emisor_nombre)
+window._avatarHtml = function(emisorNombre, emisorFoto, size = 40) {
+  const nombre = emisorNombre || 'House';
+  const inicial = (nombre.trim()[0] || 'H').toUpperCase();
+  // Color derivado del nombre (hash simple)
+  let h = 0; for (let i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  const bg = `hsl(${hue},55%,52%)`;
+  if (emisorFoto) {
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;background-image:url('${emisorFoto}');background-size:cover;background-position:center;flex-shrink:0"></div>`;
+  }
+  const fs = Math.round(size * 0.42);
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${fs}px;flex-shrink:0">${inicial}</div>`;
+};
 
-  // Agrupar por contexto_id (las del mismo inmueble/referido se colapsan)
+window.renderBell = function() {
+  const el = document.getElementById('belldd');
+  if (!el) return;
+  const list = document.getElementById('belllist');
+  if (!list) return;
+
+  // Ancho 360 inline (no tocar CSS)
+  el.style.width = '360px';
+  el.style.maxHeight = '560px';
+  el.style.overflow = 'hidden';
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+
+  const notifs = (window.NOTIFS || window.ALU || []).filter(n => !n.descartada);
+  const noLeidas = notifs.filter(n => !n.leida).length;
+
+  // Header header con "Marcar todas"
+  const hd = el.querySelector('.bell-hd');
+  if (hd) {
+    hd.innerHTML = `<span style="display:flex;align-items:center;gap:8px;font-weight:800">🔔 Notificaciones${noLeidas ? `<span style="background:#ef4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:800">${noLeidas}</span>` : ''}</span>
+      ${noLeidas ? `<button onclick="marcarTodasLeidas()" style="background:none;border:none;color:var(--b600);font-size:11px;font-weight:700;cursor:pointer">✓ Todas</button>` : ''}`;
+    hd.style.display = 'flex';
+    hd.style.justifyContent = 'space-between';
+    hd.style.alignItems = 'center';
+    hd.style.padding = '12px 14px';
+    hd.style.borderBottom = '1px solid var(--brd)';
+  }
+
+  if (!notifs.length) {
+    list.innerHTML = '<div class="bell-empty" style="padding:40px 20px;text-align:center;color:var(--sub)">🎉 Sin notificaciones</div>';
+    list.style.overflowY = 'auto';
+    list.style.flex = '1';
+    return;
+  }
+
+  // Agrupar por contexto_id (broadcast_id también agrupa)
   const grupos = {};
   const sueltas = [];
   notifs.forEach(n => {
-    if (n.contexto_id) {
-      if (!grupos[n.contexto_id]) grupos[n.contexto_id] = [];
-      grupos[n.contexto_id].push(n);
+    const key = n.broadcast_id || n.contexto_id;
+    if (key) {
+      if (!grupos[key]) grupos[key] = [];
+      grupos[key].push(n);
     } else {
       sueltas.push(n);
     }
   });
 
-  // Construir lista combinada (grupos + sueltas) ordenada por fecha de la más reciente
   const items = [];
-  Object.values(grupos).forEach(grupo => {
-    grupo.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-    items.push({ kind: 'group', items: grupo, latest: grupo[0] });
+  Object.values(grupos).forEach(g => {
+    g.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    items.push({ kind: 'group', items: g, latest: g[0] });
   });
   sueltas.forEach(n => items.push({ kind: 'single', latest: n }));
   items.sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
 
-  const top = items.slice(0, 8);
+  // Separar en Nuevas (24h o no leídas) / Anteriores
+  const ahora = Date.now();
+  const nuevas = [];
+  const anteriores = [];
+  items.slice(0, 20).forEach(it => {
+    const n = it.latest;
+    const hrs = (ahora - new Date(n.created_at).getTime()) / 3600000;
+    if (!n.leida || hrs < 24) nuevas.push(it);
+    else anteriores.push(it);
+  });
 
-  el.innerHTML = top.map(it => {
+  const renderItem = (it) => {
     const n = it.latest;
     const count = it.kind === 'group' ? it.items.length : 1;
-    const noLeidas = it.kind === 'group' ? it.items.filter(x => !x.leida).length : (n.leida ? 0 : 1);
+    const sinLeer = it.kind === 'group' ? it.items.filter(x => !x.leida).length > 0 : !n.leida;
     const ico = n.icono || '📌';
     const color = n.color || '#3b82f6';
-    const titulo = (n.titulo || '').replace(/'/g,"\\'");
-    const mensaje = (n.mensaje || '').replace(/</g,'&lt;');
+    const mensaje = (n.mensaje || '').replace(/</g,'&lt;').slice(0, 80);
     const tiempo = window._timeAgo(n.created_at);
-    const dotPrio = (n.prioridad === 'critica') ? '#ef4444'
-      : (n.prioridad === 'alta') ? '#f59e0b' : '';
-    const opacity = noLeidas === 0 ? '.55' : '1';
+    const emisorNom = n.emisor_nombre || n.emisor?.nombre || '';
+    const avatar = window._avatarHtml(emisorNom || 'House', n.emisor_foto, 40);
+    const bg = sinLeer ? 'var(--b50)' : 'transparent';
+    const leftBar = sinLeer ? `border-left:3px solid ${color}` : 'border-left:3px solid transparent';
 
-    // Botones rápidos para verificar
     let actions = '';
     if (n.tipo === 'verificar' && n.accion_destino) {
       const idI = n.accion_destino;
-      actions = `<div style="display:flex;gap:4px;margin-top:6px"><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:9px;font-weight:700;background:#10b981;color:#fff;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Aún Disponible')">✅ Disponible</button><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:9px;font-weight:700;background:#ef4444;color:#fff;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Retirado')">❌ No disponible</button></div>`;
+      actions = `<div style="display:flex;gap:4px;margin-top:6px"><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:9px;font-weight:700;background:#10b981;color:#fff;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Aún Disponible')">✅ Disponible</button><button style="flex:1;padding:4px;border:none;border-radius:4px;font-size:9px;font-weight:700;background:#ef4444;color:#fff;cursor:pointer" onclick="event.stopPropagation();closeBell();quickMove('${idI}','Retirado')">❌ No</button></div>`;
     }
 
-    return `<div class="bell-item" style="opacity:${opacity};display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid var(--brd);cursor:pointer" onclick="handleNotifClick('${n.id}','${n.accion_tipo||''}','${n.accion_destino||''}','${n.accion_seccion||''}')">
+    return `<div class="bell-item" style="display:flex;gap:10px;padding:11px 14px;background:${bg};${leftBar};border-bottom:1px solid var(--brd);cursor:pointer;position:relative" onclick="handleNotifClick('${n.id}','${n.accion_tipo||''}','${n.accion_destino||''}','${n.accion_seccion||''}')">
       <div style="position:relative;flex-shrink:0">
-        <div style="width:34px;height:34px;border-radius:9px;background:${color}1a;display:flex;align-items:center;justify-content:center;font-size:17px">${ico}</div>
-        ${count > 1 ? `<div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:50%;background:${color};color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center">${count}</div>` : ''}
+        ${avatar}
+        <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid var(--cd)">${ico}</div>
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;color:var(--tx);line-height:1.3">${n.titulo || ''}</div>
-        ${mensaje ? `<div style="font-size:11px;color:var(--sub);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mensaje}</div>` : ''}
-        <div style="font-size:10px;color:var(--sub);margin-top:3px;opacity:.7">${tiempo}${n.emisor?.nombre ? ' · ' + n.emisor.nombre : ''}</div>
+        <div style="font-size:12.5px;font-weight:${sinLeer?'700':'500'};color:var(--tx);line-height:1.35">${n.titulo || ''}${count>1?`<span style="margin-left:6px;font-size:10px;background:${color}22;color:${color};padding:1px 6px;border-radius:8px;font-weight:700">+${count-1}</span>`:''}</div>
+        ${mensaje ? `<div style="font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${mensaje}</div>` : ''}
+        <div style="font-size:10.5px;color:var(--sub);margin-top:4px;opacity:.75">${tiempo}${emisorNom ? ' · ' + emisorNom : ''}</div>
         ${actions}
       </div>
-      ${dotPrio ? `<div style="width:8px;height:8px;border-radius:50%;background:${dotPrio};flex-shrink:0;margin-top:6px"></div>` : ''}
+      ${sinLeer ? `<div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;align-self:center"></div>` : ''}
     </div>`;
-  }).join('');
+  };
+
+  let html = '';
+  if (nuevas.length) {
+    html += `<div style="padding:8px 14px 4px;font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:0.8px;background:var(--cd)">Nuevas</div>`;
+    html += nuevas.map(renderItem).join('');
+  }
+  if (anteriores.length) {
+    html += `<div style="padding:10px 14px 4px;font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:0.8px;background:var(--cd)">Anteriores</div>`;
+    html += anteriores.map(renderItem).join('');
+  }
+
+  list.innerHTML = html;
+  list.style.overflowY = 'auto';
+  list.style.flex = '1';
 };
 
 // ── Click en notificación: marcar leída + navegar contextual ──
@@ -224,6 +290,25 @@ window.handleNotifClick = async function(notifId, accionTipo, accionDestino, acc
     case 'abrir_usuario':
       if (window.go) window.go('users');
       break;
+    case 'abrir_comunicado':
+    case 'abrir_favorito':
+    case 'abrir_inmueble_nuevo':
+    case 'abrir_perfil_nuevo':
+      // Si tiene destino de inmueble, lo abre; si no, queda en alertas
+      if (accionTipo === 'abrir_inmueble_nuevo' && accionDestino) {
+        const idx2 = (window.D || []).findIndex(p => p.id === accionDestino);
+        if (idx2 > -1) {
+          if (window.go) window.go('inv');
+          setTimeout(() => window.oM && window.oM(idx2), 200);
+          break;
+        }
+      }
+      if (accionTipo === 'abrir_perfil_nuevo') {
+        if (window.go) window.go('users');
+        break;
+      }
+      if (window.go) window.go('alertas');
+      break;
     case 'abrir_seccion':
       if (accionSeccion && window.go) window.go(accionSeccion);
       break;
@@ -252,6 +337,192 @@ window.descartarNotificacion = async function(notifId) {
     descartada: true, leida: true, leida_at: new Date().toISOString()
   }).eq('id', notifId);
   if (window.load) window.load();
+};
+
+// ══════════════════════════════════════════════════════════════════
+// EMISIÓN DE COMUNICADOS (ADMIN / OFICINA) — 3 pasos
+// ══════════════════════════════════════════════════════════════════
+
+window._emiState = { step: 1, alcance: 'todos', filtros: {}, titulo: '', mensaje: '', prioridad: 'normal', icono: '📢', color: '#6366f1' };
+
+window.abrirEmisionComunicado = function() {
+  const u = U();
+  if (!u || (u.rol !== 'admin' && u.rol !== 'oficina')) {
+    if (window.toast) window.toast('Solo admin/oficina', 'err');
+    return;
+  }
+  window._emiState = { step: 1, alcance: 'todos', filtros: {}, titulo: '', mensaje: '', prioridad: 'normal', icono: '📢', color: '#6366f1' };
+  const ov = document.createElement('div');
+  ov.id = 'emiOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.onclick = (e) => { if (e.target === ov) window.cerrarEmision(); };
+  ov.innerHTML = `<div id="emiBox" style="background:var(--cd);border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)"></div>`;
+  document.body.appendChild(ov);
+  window.renderEmision();
+};
+
+window.cerrarEmision = function() {
+  document.getElementById('emiOv')?.remove();
+};
+
+window.setEmiStep = function(n) { window._emiState.step = n; window.renderEmision(); };
+window.setEmiAlcance = function(a) {
+  window._emiState.alcance = a;
+  window._emiState.filtros = {};
+  window.renderEmision();
+};
+window.setEmiFiltro = function(k, v) { window._emiState.filtros[k] = v; window.renderEmision(); };
+window.setEmiCampo = function(k, v) { window._emiState[k] = v; };
+
+window.renderEmision = async function() {
+  const box = document.getElementById('emiBox');
+  if (!box) return;
+  const s = window._emiState;
+
+  let body = '';
+
+  // HEADER con stepper
+  body += `<div style="padding:18px 20px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:16px;font-weight:800;color:var(--tx)">📢 Emitir comunicado</div>
+    <button onclick="cerrarEmision()" style="background:none;border:none;font-size:22px;color:var(--sub);cursor:pointer">×</button>
+  </div>`;
+  body += `<div style="padding:14px 20px;display:flex;gap:6px">`;
+  ['Alcance','Filtros','Contenido'].forEach((lb,i) => {
+    const n = i+1;
+    const act = s.step === n;
+    const done = s.step > n;
+    body += `<div style="flex:1;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:${act?'#6366f1':done?'#10b981':'var(--b50)'};color:${(act||done)?'#fff':'var(--sub)'}">${n}. ${lb}</div>`;
+  });
+  body += `</div>`;
+
+  // STEP 1: ALCANCE
+  if (s.step === 1) {
+    const opciones = [
+      { id:'todos',  emoji:'🌐', label:'Todos los usuarios',    desc:'Todo el CRM activo' },
+      { id:'rol',    emoji:'🎖️', label:'Por rol',                desc:'Admin, oficina, gestor, asesor, público' },
+      { id:'perfil', emoji:'👥', label:'Por perfil público',     desc:'Comprador, vendedor, comisionista, referenciador' },
+    ];
+    body += `<div style="padding:0 20px 18px">`;
+    opciones.forEach(o => {
+      const sel = s.alcance === o.id;
+      body += `<div onclick="setEmiAlcance('${o.id}')" style="padding:14px;border-radius:12px;border:2px solid ${sel?'#6366f1':'var(--brd)'};background:${sel?'#6366f10d':'var(--cd)'};margin-bottom:8px;cursor:pointer;display:flex;gap:12px;align-items:center">
+        <div style="font-size:24px">${o.emoji}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--tx)">${o.label}</div><div style="font-size:11px;color:var(--sub);margin-top:2px">${o.desc}</div></div>
+        ${sel?'<div style="color:#6366f1;font-size:18px">✓</div>':''}
+      </div>`;
+    });
+    body += `</div>`;
+    body += `<div style="padding:14px 20px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="cerrarEmision()" style="padding:10px 16px;background:var(--cd);border:1px solid var(--brd);border-radius:8px;font-weight:700;cursor:pointer;color:var(--tx)">Cancelar</button>
+      <button onclick="setEmiStep(2)" style="padding:10px 18px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer">Siguiente →</button>
+    </div>`;
+  }
+
+  // STEP 2: FILTROS
+  if (s.step === 2) {
+    body += `<div style="padding:0 20px 18px">`;
+    if (s.alcance === 'todos') {
+      body += `<div style="padding:20px;text-align:center;background:var(--b50);border-radius:10px;font-size:12px;color:var(--sub)">Sin filtros adicionales. El comunicado irá a TODOS los usuarios activos.</div>`;
+    } else if (s.alcance === 'rol') {
+      const roles = [
+        { id:'admin',   emoji:'🔴', label:'Admin' },
+        { id:'oficina', emoji:'🟠', label:'Oficina' },
+        { id:'gestor',  emoji:'🟢', label:'Gestor' },
+        { id:'asesor',  emoji:'🔵', label:'Asesor' },
+        { id:'publico', emoji:'⚫', label:'Público' },
+      ];
+      body += `<div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Selecciona rol:</div>`;
+      roles.forEach(r => {
+        const sel = s.filtros.rol === r.id;
+        body += `<div onclick="setEmiFiltro('rol','${r.id}')" style="padding:12px;border-radius:10px;border:2px solid ${sel?'#6366f1':'var(--brd)'};background:${sel?'#6366f10d':'var(--cd)'};margin-bottom:6px;cursor:pointer;display:flex;gap:10px;align-items:center">
+          <div style="font-size:18px">${r.emoji}</div>
+          <div style="flex:1;font-size:13px;font-weight:700;color:var(--tx)">${r.label}</div>
+          ${sel?'<div style="color:#6366f1;font-size:16px">✓</div>':''}
+        </div>`;
+      });
+    } else if (s.alcance === 'perfil') {
+      const perfs = [
+        { id:'comprador',     emoji:'🛒', label:'Comprador' },
+        { id:'vendedor',      emoji:'🏷️', label:'Vendedor' },
+        { id:'comisionista',  emoji:'💼', label:'Comisionista' },
+        { id:'referenciador', emoji:'🤝', label:'Referenciador' },
+      ];
+      body += `<div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Selecciona perfil:</div>`;
+      perfs.forEach(p => {
+        const sel = s.filtros.perfil === p.id;
+        body += `<div onclick="setEmiFiltro('perfil','${p.id}')" style="padding:12px;border-radius:10px;border:2px solid ${sel?'#6366f1':'var(--brd)'};background:${sel?'#6366f10d':'var(--cd)'};margin-bottom:6px;cursor:pointer;display:flex;gap:10px;align-items:center">
+          <div style="font-size:18px">${p.emoji}</div>
+          <div style="flex:1;font-size:13px;font-weight:700;color:var(--tx)">${p.label}</div>
+          ${sel?'<div style="color:#6366f1;font-size:16px">✓</div>':''}
+        </div>`;
+      });
+    }
+    body += `</div>`;
+
+    const ok = s.alcance === 'todos' || (s.alcance === 'rol' && s.filtros.rol) || (s.alcance === 'perfil' && s.filtros.perfil);
+    body += `<div style="padding:14px 20px;border-top:1px solid var(--brd);display:flex;justify-content:space-between;gap:8px">
+      <button onclick="setEmiStep(1)" style="padding:10px 16px;background:var(--cd);border:1px solid var(--brd);border-radius:8px;font-weight:700;cursor:pointer;color:var(--tx)">← Atrás</button>
+      <button ${ok?'':'disabled'} onclick="setEmiStep(3)" style="padding:10px 18px;background:${ok?'#6366f1':'#ccc'};color:#fff;border:none;border-radius:8px;font-weight:800;cursor:${ok?'pointer':'not-allowed'}">Siguiente →</button>
+    </div>`;
+  }
+
+  // STEP 3: CONTENIDO
+  if (s.step === 3) {
+    body += `<div style="padding:0 20px 18px">
+      <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Título*</div>
+      <input id="emiTit" maxlength="80" placeholder="Ej: Mantenimiento programado este sábado" value="${(s.titulo||'').replace(/"/g,'&quot;')}" oninput="setEmiCampo('titulo',this.value)" style="width:100%;padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;font-weight:600;background:var(--cd);color:var(--tx);margin-bottom:12px"/>
+
+      <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Mensaje</div>
+      <textarea id="emiMsg" maxlength="300" rows="4" placeholder="Detalles del comunicado..." oninput="setEmiCampo('mensaje',this.value)" style="width:100%;padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:12px;background:var(--cd);color:var(--tx);margin-bottom:12px;resize:vertical">${(s.mensaje||'').replace(/</g,'&lt;')}</textarea>
+
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Icono</div>
+          <input maxlength="2" value="${s.icono}" oninput="setEmiCampo('icono',this.value||'📢')" style="width:100%;padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:18px;text-align:center;background:var(--cd);color:var(--tx)"/>
+        </div>
+        <div style="flex:2">
+          <div style="font-size:11px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Prioridad</div>
+          <select onchange="setEmiCampo('prioridad',this.value);renderEmision()" style="width:100%;padding:10px;border:1.5px solid var(--brd);border-radius:8px;font-size:13px;background:var(--cd);color:var(--tx)">
+            <option value="baja" ${s.prioridad==='baja'?'selected':''}>Baja</option>
+            <option value="normal" ${s.prioridad==='normal'?'selected':''}>Normal</option>
+            <option value="alta" ${s.prioridad==='alta'?'selected':''}>Alta</option>
+            <option value="critica" ${s.prioridad==='critica'?'selected':''}>Crítica</option>
+          </select>
+        </div>
+      </div>
+    </div>`;
+
+    const ok = !!(s.titulo && s.titulo.trim());
+    body += `<div style="padding:14px 20px;border-top:1px solid var(--brd);display:flex;justify-content:space-between;gap:8px">
+      <button onclick="setEmiStep(2)" style="padding:10px 16px;background:var(--cd);border:1px solid var(--brd);border-radius:8px;font-weight:700;cursor:pointer;color:var(--tx)">← Atrás</button>
+      <button ${ok?'':'disabled'} onclick="confirmarEmision()" style="padding:10px 18px;background:${ok?'linear-gradient(135deg,#6366f1,#8b5cf6)':'#ccc'};color:#fff;border:none;border-radius:8px;font-weight:800;cursor:${ok?'pointer':'not-allowed'}">📤 Enviar</button>
+    </div>`;
+  }
+
+  box.innerHTML = body;
+};
+
+window.confirmarEmision = async function() {
+  const s = window._emiState;
+  if (!s.titulo || !s.titulo.trim()) return;
+  try {
+    const r = await window.emitirNotificacion({
+      alcance: s.alcance,
+      filtros: s.filtros,
+      titulo: s.titulo.trim(),
+      mensaje: (s.mensaje || '').trim() || null,
+      icono: s.icono || '📢',
+      color: s.color || '#6366f1',
+      prioridad: s.prioridad,
+      accion_tipo: 'abrir_comunicado',
+    });
+    window.cerrarEmision();
+    if (window.toast) window.toast(`📢 Comunicado enviado a ${r.total} usuario${r.total>1?'s':''}`);
+    if (window.load) window.load();
+  } catch (e) {
+    console.error('[confirmarEmision]', e);
+    if (window.toast) window.toast('Error: ' + (e.message || 'no se pudo enviar'), 'err');
+  }
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -325,6 +596,29 @@ window.oM = function(idx) {
   const esGestor = u && u.es_gestor_arriendos;
   const canEdit = esMio || esP || esGestor;
   _modalDirty = false;
+
+  // TRACK: view_card (solo usuarios públicos, los otros no alimentan sugerencias)
+  if (window.trackEvent && u && u.tipo_usuario === 'publico') {
+    window.trackEvent('view_card', {
+      inmueble_id: p.id, ciudad: p.ciudad, barrio: p.barrio,
+      tipo_inmueble: p.tipo, negociacion: p.negociacion,
+      precio: p.precio_venta || p.precio_arriendo, habitaciones: p.habitaciones,
+    });
+    // dwell_card: si el modal sigue abierto después de 5s
+    window._dwellStart = Date.now();
+    window._dwellInm = p.id;
+    clearTimeout(window._dwellTimer);
+    window._dwellTimer = setTimeout(() => {
+      if (window._dwellInm === p.id && document.getElementById('moda')?.classList.contains('show')) {
+        window.trackEvent('dwell_card', {
+          inmueble_id: p.id, ciudad: p.ciudad, barrio: p.barrio,
+          tipo_inmueble: p.tipo, negociacion: p.negociacion,
+          precio: p.precio_venta || p.precio_arriendo, habitaciones: p.habitaciones,
+          dwell_ms: 5000,
+        });
+      }
+    }, 5000);
+  }
 
   const canSeeRealDir = esMio || esP || esGestor;
 
@@ -521,10 +815,17 @@ window.saveAll = async function(id) {
     if(newPV!==oldPV&&(newPV>0||oldPV>0)){
       await SB().from('historial').insert({inmueble_id:id,usuario_id:u.id,accion:'cambio_precio',campo_modificado:'precio_venta',valor_anterior:String(oldPV),valor_nuevo_detalle:String(newPV)});
       await window.noti('cambio_precio','rojo','💲 Precio venta cambió: '+desc,u.nombre+' cambió precio de '+desc+': '+fm(oldPV)+' → '+fm(newPV),null,'all',id);
+      // Notificar a los usuarios que tienen este inmueble en favoritos
+      if (window.notificarCambioPrecioFavorito) {
+        window.notificarCambioPrecioFavorito(id, oldPV, newPV).catch(e=>console.warn('[notifFav venta]',e));
+      }
     }
     if(newPA!==oldPA&&(newPA>0||oldPA>0)){
       await SB().from('historial').insert({inmueble_id:id,usuario_id:u.id,accion:'cambio_precio',campo_modificado:'precio_arriendo',valor_anterior:String(oldPA),valor_nuevo_detalle:String(newPA)});
       await window.noti('cambio_precio','rojo','💲 Precio arriendo cambió: '+desc,u.nombre+' cambió arriendo de '+desc+': '+fm(oldPA)+' → '+fm(newPA),null,'all',id);
+      if (window.notificarCambioPrecioFavorito) {
+        window.notificarCambioPrecioFavorito(id, oldPA, newPA).catch(e=>console.warn('[notifFav arr]',e));
+      }
     }
   }
 
@@ -685,6 +986,14 @@ window.responderSol = async function(solId,respuesta) {
 
 window.shareInm = function(id) {
   const p=findInm(id);if(!p)return;const u=U();
+  // TRACK: compartir por whatsapp
+  if (window.trackEvent) {
+    window.trackEvent('compartir_wa', {
+      inmueble_id: id, ciudad: p.ciudad, barrio: p.barrio,
+      tipo_inmueble: p.tipo, negociacion: p.negociacion,
+      precio: p.precio_venta || p.precio_arriendo, habitaciones: p.habitaciones,
+    });
+  }
   const tip=p.tipo||'Inmueble',ciu=p.ciudad||'',cod=p.codigo_house||'';
   const ubPub=p.direccion_publica||p.barrio||ciu;
   const pv=p.precio_venta||0,pa=p.precio_arriendo||0;
@@ -1169,6 +1478,28 @@ window.doSearch = function() {
   const qv = (document.getElementById('q')?.value || '').trim().toLowerCase();
   if (qv.length >= 2) { let r = []; try { r = JSON.parse(localStorage.getItem('hcrm_recent') || '[]'); } catch(e){} r = r.filter(x => x !== qv); r.unshift(qv); localStorage.setItem('hcrm_recent', JSON.stringify(r.slice(0, 5))); }
   const qC=document.getElementById('qClear');if(qC)qC.style.display=qv?'flex':'none';
+
+  // TRACK: search + filter (sólo públicos, debounced al escribir)
+  const uT = U();
+  if (window.trackEvent && uT && uT.tipo_usuario === 'publico') {
+    clearTimeout(window._srchTrkT);
+    window._srchTrkT = setTimeout(() => {
+      const payload = {
+        ciudad: [...(window.F?.ciudad || [])][0] || null,
+        tipo: [...(window.F?.tipo || [])][0] || null,
+        negociacion: [...(window.F?.neg || [])][0] || null,
+        precio_min: parsePriceInput('vnMin') || parsePriceInput('arMin') || null,
+        precio_max: parsePriceInput('vnMax') || parsePriceInput('arMax') || null,
+      };
+      if (qv.length >= 2) window.trackEvent('search', { search_text: qv, filtro_payload: payload });
+      if (payload.ciudad || payload.tipo || payload.negociacion || payload.precio_min || payload.precio_max) {
+        window.trackEvent('filter', {
+          ciudad: payload.ciudad, tipo_inmueble: payload.tipo,
+          negociacion: payload.negociacion, filtro_payload: payload,
+        });
+      }
+    }, 1200);
+  }
 
   const arMin = parsePriceInput('arMin'), arMax = parsePriceInput('arMax');
   const vnMin = parsePriceInput('vnMin'), vnMax = parsePriceInput('vnMax');
@@ -2121,6 +2452,7 @@ window.completeEmailReg = async function(tipo) {
 
     const notiTitulo = quierePublicar ? '👤 Nuevo usuario (quiere publicar)' : '👤 Nuevo usuario registrado';
     await window.noti('registro_externo', 'info', notiTitulo, reg.nombre + ' (' + reg.email + ') se registró' + (quierePublicar ? ' — quiere publicar inmuebles' : ''), null, 'admin', null);
+    if (window.notificarPerfilNuevo) window.notificarPerfilNuevo(newUser.id, quierePublicar ? 'vendedor' : 'comprador').catch(e=>console.warn('[notifPerfilNuevo]',e));
 
     // Log in
     const userData = {
@@ -2191,6 +2523,7 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
 
     const notiTitulo = quierePublicar ? '👤 Nuevo usuario (quiere publicar)' : '👤 Nuevo usuario registrado';
     await window.noti('registro_externo', 'info', notiTitulo, nombre + ' (' + email + ') se registró' + (quierePublicar ? ' — quiere publicar inmuebles' : ''), null, 'admin', null);
+    if (window.notificarPerfilNuevo) window.notificarPerfilNuevo(newUser.id, quierePublicar ? 'vendedor' : 'comprador').catch(e=>console.warn('[notifPerfilNuevo]',e));
 
     // Log in the new user
     const userData = {
@@ -2253,12 +2586,16 @@ window.toggleFavorito = async function(inmId) {
   try {
     // Check if already favorited
     const { data: existing } = await SB().from('favoritos').select('id').eq('usuario_id', u.id).eq('inmueble_id', inmId).single();
+    // TRACK
+    const inmObj = findInm(inmId);
     if (existing) {
       await SB().from('favoritos').delete().eq('id', existing.id);
       window.toast('💔 Eliminado de favoritos');
+      if (window.trackEvent) window.trackEvent('favorito_remove', { inmueble_id: inmId, ciudad: inmObj?.ciudad, barrio: inmObj?.barrio, tipo_inmueble: inmObj?.tipo, negociacion: inmObj?.negociacion, precio: inmObj?.precio_venta || inmObj?.precio_arriendo, habitaciones: inmObj?.habitaciones });
     } else {
       await SB().from('favoritos').insert({ usuario_id: u.id, inmueble_id: inmId });
       window.toast('❤️ Guardado en favoritos');
+      if (window.trackEvent) window.trackEvent('favorito_add', { inmueble_id: inmId, ciudad: inmObj?.ciudad, barrio: inmObj?.barrio, tipo_inmueble: inmObj?.tipo, negociacion: inmObj?.negociacion, precio: inmObj?.precio_venta || inmObj?.precio_arriendo, habitaciones: inmObj?.habitaciones });
     }
     // Update FAVS array
     if (existing) { window.FAVS = (window.FAVS||[]).filter(id => id !== inmId); }
@@ -2415,6 +2752,10 @@ window.aprobarRegistro = async function(userId, tipo) {
     await SB().from('usuarios').update(upd).eq('id', userId);
     await SB().from('registro_solicitudes').update({ estado: 'aprobado' }).eq('usuario_id', userId).eq('estado', 'pendiente');
     await window.noti('registro_aprobado', 'verde', '✅ Tu solicitud fue aprobada', 'Ya puedes publicar tus inmuebles en House.', usr?.email, null, null);
+    // HOOK: notificar a admins que hay un perfil nuevo aprobado (vendedor)
+    if (window.notificarPerfilNuevo) {
+      window.notificarPerfilNuevo(userId, 'vendedor').catch(e => console.warn('[notifPerfilNuevo]', e));
+    }
     window.toast('✅ Registro aprobado · puede publicar');
     if (typeof window.rUsers === 'function') window.rUsers();
   } catch(e) { console.error('[aprobarRegistro]', e); window.toast('Error: ' + e.message, 'terr'); }
@@ -2449,6 +2790,16 @@ window.aprobarInmuebleExterno = async function(inmId) {
     await window.noti('inmueble_aprobado', 'verde', '✅ Tu inmueble fue aprobado', 'Tu ' + (inm?.tipo||'inmueble') + ' en ' + (inm?.ciudad||'') + ' ya está publicado.', capEmail, null, inmId);
     await window.noti('inmueble_aprobado', 'verde', '✅ Inmueble externo aprobado', (inm?.captador?.nombre||'Propietario') + ': ' + (inm?.tipo||'') + ' en ' + (inm?.ciudad||''), null, 'admin', inmId);
     if (inm?.captador_id) await window.mensajeDeNegocio({ inmuebleId: inmId, clienteId: inm.captador_id, contextoTipo: 'moderacion', tipoMensaje: 'sistema', texto: '✅ Tu ' + (inm?.tipo||'inmueble') + ' en ' + (inm?.ciudad||'') + ' fue aprobado y ya está publicado.' });
+    // HOOK: notificar a compradores que hay un inmueble nuevo (genérico — todos los compradores)
+    if (window.notificarInmuebleNuevo) {
+      window.notificarInmuebleNuevo(inmId).catch(e => console.warn('[notifInmNuevo]', e));
+    }
+    // HOOK: sugerencias personalizadas (sólo a compradores con match >= 60)
+    if (window.sugerirInmuebleNuevo) {
+      window.sugerirInmuebleNuevo(inmId).then(r => {
+        if (r?.sugeridos > 0) console.log('[sugerir] ' + r.sugeridos + ' sugerencias emitidas');
+      }).catch(e => console.warn('[sugerir]', e));
+    }
     window.toast('✅ Inmueble aprobado y publicado');
     if (typeof window.rUsers === 'function') window.rUsers();
   } catch(e) { console.error('[aprobarInmuebleExterno]', e); window.toast('Error: ' + e.message, 'terr'); }
@@ -2790,6 +3141,20 @@ window.guardarInteres = async function(inmId) {
       // Activate comprador profile
       if (typeof window.activarPerfilPublico === 'function') window.activarPerfilPublico('comprador');
       window.toast('💙 ¡Interés enviado!');
+    }
+
+    // TRACK: interes
+    if (window.trackEvent) {
+      const inmObj = findInm(inmId);
+      window.trackEvent('interes', {
+        inmueble_id: inmId,
+        ciudad: inmObj?.ciudad, barrio: inmObj?.barrio,
+        tipo_inmueble: inmObj?.tipo, negociacion: inmObj?.negociacion,
+        precio: presup || inmObj?.precio_venta || inmObj?.precio_arriendo,
+        habitaciones: inmObj?.habitaciones,
+      });
+      // Dispara recálculo en background (fire-and-forget)
+      if (window.recalcularPreferencias) window.recalcularPreferencias(u.id).catch(()=>{});
     }
 
     // Notificar a admins (escalable a 4h, Fase 4 lo recoge)

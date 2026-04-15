@@ -137,6 +137,7 @@ function renderShell(container) {
     <button class="mi" data-s="negocios-admin" onclick="go('negocios-admin')" id="mnegocios" style="display:none"><span class="mic">\u{1F4BC}</span>Negocios</button>
     <button class="mi" data-s="arriendos-admin" onclick="go('arriendos-admin')" id="marriendos" style="display:none"><span class="mic">\u{1F511}</span>Arriendos</button>
     <button class="mi" data-s="config-usuarios" onclick="go('config-usuarios')" id="mconfigusrs" style="display:none"><span class="mic">\u2699\uFE0F</span>Config Usuarios</button>
+    <button class="mi" data-s="sugerencias-admin" onclick="go('sugerencias-admin')" id="msugeradm" style="display:none"><span class="mic">\u{1F3AF}</span>Sugerencias</button>
     <button class="mi" data-s="users" onclick="go('users')" id="musrs" style="display:none"><span class="mic">\u{1F465}</span>Usuarios</button>
     <button class="mi" data-s="perfil" onclick="go('perfil')"><span class="mic">\u2699\uFE0F</span>Mi Perfil</button>
     <button class="mi" data-s="papelera" onclick="go('papelera')" id="mpap" style="display:none"><span class="mic">\u{1F5D1}\uFE0F</span>Papelera</button>
@@ -254,6 +255,7 @@ function renderShell(container) {
 <div class="sec" id="sec-negocios-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="negociosadminc"></div></div>
 <div class="sec" id="sec-arriendos-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="arriendosadminc"></div></div>
 <div class="sec" id="sec-config-usuarios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="configusuariosc"></div></div>
+<div class="sec" id="sec-sugerencias-admin"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="sugerenciasadminc"></div></div>
 <div class="sec" id="sec-mis-negocios"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misnegociosc"></div></div>
 <div class="sec" id="sec-cuenta"><div class="fsec" id="cuentac"></div></div>
 <div class="sec" id="sec-mis-pub"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="mispubc"></div></div>
@@ -483,6 +485,8 @@ function sApp() {
       if (arrEl) arrEl.style.display = 'flex';
       const cfgEl = document.getElementById('mconfigusrs');
       if (cfgEl) cfgEl.style.display = 'flex';
+      const sugEl = document.getElementById('msugeradm');
+      if (sugEl) sugEl.style.display = 'flex';
     }
   }
 
@@ -527,6 +531,10 @@ export async function initApp(container) {
           window.go(currentHash || (isExt2 ? 'portafolio' : 'inv'));
         }
         if (typeof window.load === 'function') window.load();
+        // Recalcular preferencias en background (sugerencias inteligentes)
+        if (u2 && isExt2 && typeof window.recalcularPreferencias === 'function') {
+          setTimeout(() => window.recalcularPreferencias(u2.id).catch(() => {}), 3000);
+        }
       }
       if (event === AUTH_EVENTS.LOGIN_ERROR) {
         const errEl = document.getElementById('lerr');
