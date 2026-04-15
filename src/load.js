@@ -210,7 +210,10 @@ function render(ls) {
         actBtn = `<div style="display:flex;gap:4px"><a class="vb" style="flex:1;text-align:center;background:#25d366;color:#fff;text-decoration:none;border:none" href="https://wa.me/${capTel2}?text=${encodeURIComponent('Hola '+capNom2+', estoy interesado en este inmueble: '+prevUrl2)}" target="_blank" onclick="event.stopPropagation()">💬 WhatsApp</a><button class="vb" style="flex:1;background:var(--b50);color:var(--b700);border:1.5px solid var(--b200)" onclick="event.stopPropagation();abrirChat('${p.captador_id||p.captador?.id||''}','${p.id}')">🏠 Me interesa</button></div>`;
       }
     } else {
-      actBtn = `<button class="vb" onclick="oM&&oM(${idx})">Ver detalle →</button>`;
+      // Interno: Ver detalle + badge de interesados
+      const _badgeI = (typeof window.badgeInteresadosInmueble === 'function')
+        ? window.badgeInteresadosInmueble(p.id) : '';
+      actBtn = `<div style="display:flex;gap:6px;align-items:center"><button class="vb" style="flex:1" onclick="oM&&oM(${idx})">Ver detalle →</button>${_badgeI}</div>`;
     }
 
     // Portales badge (hidden for external users)

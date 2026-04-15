@@ -753,6 +753,39 @@ window.oM = function(idx) {
   // DELETE (admin)
   if(u&&u.rol==='admin')b+=`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)"><button class="bt bd" style="width:100%" onclick="eliminarInm('${p.id}')">🗑️ Eliminar</button></div>`;
 
+  // INTERESADOS / LEADS (solo internos)
+  const _esIntUser = u && (!u.tipo_usuario || u.tipo_usuario === 'interno');
+  if (_esIntUser) {
+    b += `<div style="margin-top:14px;padding:12px;background:var(--b50);border:1.5px solid var(--b200);border-radius:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:800;color:var(--b700)">👤 Interesados en este inmueble</div>
+        <button onclick="abrirCrearInteresado('${p.id}')" style="padding:6px 12px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">+ Nuevo</button>
+      </div>
+      <div id="oMInt-${p.id}" style="font-size:11px;color:var(--sub)">Cargando…</div>
+    </div>`;
+    // Carga async de la lista
+    setTimeout(async () => {
+      try {
+        if (!window.listarInteresados) return;
+        const leads = await window.listarInteresados({ inmueble_id: p.id });
+        const el = document.getElementById('oMInt-' + p.id);
+        if (!el) return;
+        if (!leads.length) { el.innerHTML = '<div style="padding:6px 0">Sin interesados aún. Crea el primero.</div>'; return; }
+        const TIPC = window.TIPIFICACIONES || {};
+        el.innerHTML = leads.slice(0, 8).map(l => {
+          const t = TIPC[l.tipificacion] || {};
+          return `<div onclick="abrirDetalleInteresado('${l.id}')" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--cd);border:1px solid var(--brd);border-radius:6px;margin-bottom:4px;cursor:pointer">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:var(--tx)">${(l.nombre_completo || 'Sin nombre').slice(0,40)}</div>
+              <div style="font-size:10px;color:var(--sub)">${l.telefono || '—'}${l.asignado?.nombre ? ' · ' + l.asignado.nombre : ''}</div>
+            </div>
+            <span style="font-size:9px;font-weight:800;background:${t.color}22;color:${t.color};padding:2px 8px;border-radius:8px;white-space:nowrap">${t.emoji || ''} ${t.label || l.tipificacion}</span>
+          </div>`;
+        }).join('') + (leads.length > 8 ? `<div style="font-size:10px;color:var(--sub);margin-top:4px">+ ${leads.length - 8} más en <a onclick="closeModal&&closeModal();go(\`interesados\`)" style="color:var(--b600);cursor:pointer;font-weight:700">Interesados</a></div>` : '');
+      } catch (e) { console.warn('[oM interesados]', e); }
+    }, 100);
+  }
+
   // SAVE
   if(canEdit)b+=`<div id="saveAnchor" style="margin-top:14px"><button class="bt bp" style="width:100%;padding:14px;font-size:14px" onclick="saveAll('${p.id}')">💾 Guardar cambios</button></div>`;
   if(canEdit)b+=`<div class="fab-save"><button onclick="document.getElementById('saveAnchor').scrollIntoView({behavior:'smooth'})" title="Guardar">💾</button></div>`;

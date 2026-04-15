@@ -167,8 +167,12 @@ window.rPipe = function () {
     // Revalidate
     if (colId === 'Aún Disponible') c += `<div style="padding:4px 12px 8px"><button class="pk-reval" onclick="event.stopPropagation();reVal('${p.id}')">🔄 Volver a validar</button></div>`;
 
-    // Actions: move-to
-    c += `<div class="pkc-actions" onclick="event.stopPropagation()"><select class="esel" style="flex:1;font-size:11px;padding:7px 10px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover a...</option>${otherCols.map(c2 => `<option value="${c2.id}">${c2.e} ${c2.l}</option>`).join('')}</select></div>`;
+    // Actions: move-to + badge interesados (solo internos)
+    const _uPk = window.userStore?.get();
+    const _esInterno = _uPk && (!_uPk.tipo_usuario || _uPk.tipo_usuario === 'interno');
+    const _badgeInt = (_esInterno && typeof window.badgeInteresadosInmueble === 'function')
+      ? window.badgeInteresadosInmueble(p.id) : '';
+    c += `<div class="pkc-actions" onclick="event.stopPropagation()" style="display:flex;gap:6px;align-items:center"><select class="esel" style="flex:1;font-size:11px;padding:7px 10px" onchange="if(this.value)quickMove('${p.id}',this.value)"><option value="">⇄ Mover a...</option>${otherCols.map(c2 => `<option value="${c2.id}">${c2.e} ${c2.l}</option>`).join('')}</select>${_badgeInt}</div>`;
 
     c += `</div>`; // close pkc
     return c;
