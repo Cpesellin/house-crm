@@ -107,12 +107,11 @@ window.renderBell = function() {
   const list = document.getElementById('belllist');
   if (!list) return;
 
-  // Ancho 360 inline (no tocar CSS)
+  // NO tocar el.style.display — el toggle show/hide lo maneja la clase CSS .show
+  // Solo ajustar dimensiones y layout vía atributos que no interfieren con display
   el.style.width = '360px';
   el.style.maxHeight = '560px';
   el.style.overflow = 'hidden';
-  el.style.display = 'flex';
-  el.style.flexDirection = 'column';
 
   const notifs = (window.NOTIFS || window.ALU || []).filter(n => !n.descartada);
   const noLeidas = notifs.filter(n => !n.leida).length;

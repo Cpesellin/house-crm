@@ -231,10 +231,12 @@ export async function loginWithCredentials(username, password) {
   try {
     const h = await hashPwd(pwd);
 
+    // Buscar por usuario O por email (el usuario público se registra con email
+    // pero su campo 'usuario' es solo el prefijo limpio del email)
     const { data: user } = await SB
       .from('usuarios')
       .select('*')
-      .eq('usuario', usr)
+      .or(`usuario.eq.${usr},email.eq.${usr}`)
       .eq('activo', true)
       .single();
 

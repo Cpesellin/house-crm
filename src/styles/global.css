@@ -124,7 +124,7 @@ body.dark .vb{background:linear-gradient(135deg,#3d3520,#5a4a2a);color:#d4a853}b
 .ldr{text-align:center;padding:36px}.lds{display:inline-flex;gap:5px;margin-bottom:6px}.ld{width:7px;height:7px;border-radius:50%;background:var(--b400);animation:lb 1.2s infinite}.ld:nth-child(1){animation-delay:-.24s}.ld:nth-child(2){animation-delay:-.12s}@keyframes lb{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1.3);opacity:1}}
 /* BELL */
 .bell-wrap{position:relative}.bell-dd{position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.2);z-index:150;display:none;overflow:hidden;animation:fi .15s}
-.bell-dd.show{display:block}
+.bell-dd.show{display:flex;flex-direction:column}
 .bell-hd{padding:10px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}.bell-hd span{font-size:12px;font-weight:800}
 .bell-list{max-height:280px;overflow-y:auto}.bell-item{padding:9px 14px;border-bottom:1px solid var(--g100);display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:10px}.bell-item:hover{background:var(--cd2)}.bell-item:last-child{border-bottom:none}
 .bell-item .be{font-size:16px;flex-shrink:0}.bell-item .bt2{font-weight:700;font-size:10px}.bell-item .bd2{color:var(--sub);font-size:9px;margin-top:1px}.bell-item .bf{color:var(--g400);font-size:8px;margin-top:2px}
