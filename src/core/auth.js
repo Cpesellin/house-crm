@@ -216,6 +216,53 @@ async function _handleGoogleCredential(response) {
  * @param {string} password
  * @returns {Promise<{ success: boolean, error?: string }>}
  */
+// ─── Helper: llamar Edge Function migrate-user ──────────────────
+async function _callMigrateUser(emailOrUsername, password) {
+  try {
+    const url = getEnv('VITE_SUPA_URL');
+    const anon = getEnv('VITE_SUPA_KEY');
+    if (!url || !anon) return { ok: false, error: 'no_env' };
+    const r = await fetch(`${url}/functions/v1/migrate-user`, {
+      method: 'POST',
+      headers: { 'apikey': anon, 'Authorization': `Bearer ${anon}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailOrUsername, usuario: emailOrUsername, password }),
+    });
+    return await r.json();
+  } catch (e) {
+    console.warn('[auth] migrate-user call failed:', e);
+    return { ok: false, error: 'network' };
+  }
+}
+
+// ─── Helper: hidratar userStore desde BD ────────────────────────
+async function _hydrateUserStoreFromDB(userId, authToken = null) {
+  const SB = getSB();
+  const { data: user, error } = await SB
+    .from('usuarios')
+    .select('*')
+    .eq('id', userId)
+    .eq('activo', true)
+    .maybeSingle();
+  if (error || !user) return null;
+  const userData = {
+    id: user.id,
+    email: user.email || '',
+    nombre: user.nombre,
+    rol: user.rol,
+    foto: user.foto || '',
+    usuario: user.usuario || '',
+    telefono_contacto: user.telefono_contacto || '',
+    es_gestor_arriendos: user.es_gestor_arriendos || false,
+    tipo_usuario: user.tipo_usuario || 'interno',
+    token: authToken || 'sbauth:' + user.id,
+    puede_publicar: user.puede_publicar || false,
+    puede_referir: user.puede_referir !== false,
+    perfiles_publicos: user.perfiles_publicos || [],
+  };
+  userStore.set(userData);
+  return userData;
+}
+
 export async function loginWithCredentials(username, password) {
   const usr = (username || '').trim().toLowerCase();
   const pwd = (password || '').trim();
@@ -229,42 +276,105 @@ export async function loginWithCredentials(username, password) {
   const SB = getSB();
 
   try {
-    const h = await hashPwd(pwd);
-
-    // Buscar por usuario O por email (el usuario público se registra con email
-    // pero su campo 'usuario' es solo el prefijo limpio del email)
-    const { data: user } = await SB
+    // ── PASO 1: Lookup en usuarios para obtener email real + flag auth_migrated ──
+    const { data: userRow } = await SB
       .from('usuarios')
-      .select('*')
+      .select('id, email, usuario, password_hash, auth_migrated, activo')
       .or(`usuario.eq.${usr},email.eq.${usr}`)
       .eq('activo', true)
-      .single();
+      .maybeSingle();
 
-    if (!user || user.password_hash !== h) {
+    if (!userRow) {
+      const msg = 'Usuario o contraseña incorrectos';
+      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
+      return { success: false, error: msg };
+    }
+
+    const emailReal = userRow.email || `${userRow.usuario}@house.local`;
+
+    // ── PASO 2: Si ya está migrado, ir directo a Supabase Auth ──
+    if (userRow.auth_migrated) {
+      const { data: sess, error: eAuth } = await SB.auth.signInWithPassword({
+        email: emailReal, password: pwd,
+      });
+      if (eAuth || !sess?.session) {
+        const msg = 'Usuario o contraseña incorrectos';
+        _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
+        return { success: false, error: msg };
+      }
+      const userData = await _hydrateUserStoreFromDB(userRow.id, sess.session.access_token);
+      if (!userData) {
+        const msg = 'Error cargando perfil';
+        _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
+        return { success: false, error: msg };
+      }
+      _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
+      return { success: true, viaSupabaseAuth: true };
+    }
+
+    // ── PASO 3: No migrado — validar con SHA-256 legacy Y migrar al vuelo ──
+    const h = await hashPwd(pwd);
+    if (userRow.password_hash !== h) {
+      const msg = 'Usuario o contraseña incorrectos';
+      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
+      return { success: false, error: msg };
+    }
+
+    // Password correcto en legacy → llamar Edge Function para migrar
+    const mig = await _callMigrateUser(usr, pwd);
+    if (mig.ok) {
+      // Migración ok → retry signInWithPassword
+      const { data: sess } = await SB.auth.signInWithPassword({
+        email: mig.email || emailReal, password: pwd,
+      });
+      if (sess?.session) {
+        const userData = await _hydrateUserStoreFromDB(userRow.id, sess.session.access_token);
+        if (userData) {
+          console.log('[auth] ✨ Usuario migrado a Supabase Auth');
+          _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
+          return { success: true, migrated: true, viaSupabaseAuth: true };
+        }
+      }
+      // Migración reportó ok pero signIn falló → fallback legacy
+      console.warn('[auth] Migración ok pero signIn falló, usando fallback legacy');
+    } else {
+      console.warn('[auth] migrate-user error:', mig.error, mig.detail);
+    }
+
+    // ── PASO 4 (fallback seguro): flujo legacy completo ──
+    // Si migración falla por cualquier motivo (edge function caída, password < 6, etc.)
+    // el usuario igual puede entrar con el flujo anterior. Zero downtime garantizado.
+    const { data: userFull } = await SB
+      .from('usuarios')
+      .select('*')
+      .eq('id', userRow.id)
+      .eq('activo', true)
+      .single();
+    if (!userFull) {
       const msg = 'Usuario o contraseña incorrectos';
       _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
       return { success: false, error: msg };
     }
 
     const userData = {
-      id: user.id,
-      email: user.email || '',
-      nombre: user.nombre,
-      rol: user.rol,
-      foto: user.foto || '',
-      usuario: user.usuario,
-      telefono_contacto: user.telefono_contacto || '',
-      es_gestor_arriendos: user.es_gestor_arriendos || false,
-      tipo_usuario: user.tipo_usuario || 'interno',
-      token: 'cred:' + user.usuario + ':' + h,
-      puede_publicar: user.puede_publicar || false,
-      puede_referir: user.puede_referir !== false,
-      perfiles_publicos: user.perfiles_publicos || [],
+      id: userFull.id,
+      email: userFull.email || '',
+      nombre: userFull.nombre,
+      rol: userFull.rol,
+      foto: userFull.foto || '',
+      usuario: userFull.usuario,
+      telefono_contacto: userFull.telefono_contacto || '',
+      es_gestor_arriendos: userFull.es_gestor_arriendos || false,
+      tipo_usuario: userFull.tipo_usuario || 'interno',
+      token: 'cred:' + userFull.usuario + ':' + h,
+      puede_publicar: userFull.puede_publicar || false,
+      puede_referir: userFull.puede_referir !== false,
+      perfiles_publicos: userFull.perfiles_publicos || [],
     };
 
     userStore.set(userData);
     _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
-    return { success: true };
+    return { success: true, viaLegacy: true };
 
   } catch (e) {
     console.error('[auth] Credential login error:', e);
@@ -281,7 +391,14 @@ export async function loginWithCredentials(username, password) {
  * Clear session and reload page.
  * Identical behavior to original logout().
  */
-export function logout() {
+export async function logout() {
+  // Cerrar sesión en Supabase Auth si hay una activa
+  try {
+    const SB = getSB();
+    await SB.auth.signOut();
+  } catch (e) {
+    console.warn('[auth] SB.auth.signOut failed:', e);
+  }
   userStore.clear();
   _emitAuth(AUTH_EVENTS.LOGOUT);
   location.reload();
@@ -323,18 +440,53 @@ export function initAuth(options = {}) {
   _initialized = true;
   console.log('[auth] initAuth() starting...');
 
-  // 1. Try to restore existing session
-  const restored = userStore.restore();
-  console.log('[auth] Session restored:', restored, restored ? userStore.get()?.nombre : 'none');
-  if (restored) {
-    _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userStore.get());
-  }
+  // 1. Primero intentar restaurar sesión de Supabase Auth (más reciente, más seguro)
+  //    Si existe, hidrata userStore desde usuarios y emite SESSION_RESTORED
+  (async () => {
+    try {
+      const SB = getSB();
+      const { data } = await SB.auth.getSession();
+      if (data?.session?.user?.id) {
+        const userData = await _hydrateUserStoreFromDB(data.session.user.id, data.session.access_token);
+        if (userData) {
+          console.log('[auth] Session restored from Supabase Auth:', userData.nombre);
+          _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userData);
+          return;
+        }
+      }
+    } catch (e) { console.warn('[auth] Supabase getSession failed:', e); }
 
-  // 2. Initialize Google One Tap
+    // 2. Fallback: restaurar sesión legacy desde sessionStorage
+    const restored = userStore.restore();
+    console.log('[auth] Session restored from sessionStorage:', restored, restored ? userStore.get()?.nombre : 'none');
+    if (restored) {
+      _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userStore.get());
+    }
+  })();
+
+  // 3. Auto-sync userStore cuando Supabase Auth cambia de estado
+  try {
+    const SB = getSB();
+    SB.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        // Si Supabase cierra sesión pero userStore aún la tiene (legacy), no hacemos nada
+        // El logout explícito se encarga de limpiar ambos
+      } else if (event === 'TOKEN_REFRESHED' && session?.user?.id) {
+        // Actualizar token en userStore silenciosamente
+        const u = userStore.get();
+        if (u && u.id === session.user.id) {
+          u.token = session.access_token;
+          userStore.set(u);
+        }
+      }
+    });
+  } catch (e) { console.warn('[auth] onAuthStateChange setup failed:', e); }
+
+  // 4. Initialize Google One Tap
   console.log('[auth] Initializing Google One Tap...');
   _initGoogle(options);
 
-  return { hasSession: restored };
+  return { hasSession: !!userStore.get() };
 }
 
 function _initGoogle(options) {
