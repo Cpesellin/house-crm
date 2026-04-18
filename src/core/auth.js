@@ -453,6 +453,32 @@ export function initAuth(options = {}) {
           u.token = session.access_token;
           userStore.set(u);
         }
+      } else if (event === 'PASSWORD_RECOVERY') {
+        // Usuario clickeó el magic link del email de reset
+        // Mostramos el panel de reset en modo "fase 2" (nueva contraseña)
+        console.log('[auth] Password recovery session detected');
+        window._inPasswordRecovery = true;
+        try {
+          // Ocultar formulario de login, mostrar panel de reset en modo fase 2
+          document.getElementById('lov_login')?.style && (document.getElementById('lov_login').style.display = 'none');
+          document.getElementById('lov_register')?.style && (document.getElementById('lov_register').style.display = 'none');
+          const panel = document.getElementById('lov_reset');
+          if (panel) panel.style.display = 'block';
+          // Cambiar UI a fase 2: ocultar email, mostrar pwd + pwd2
+          const rstEmail = document.getElementById('rst_email');
+          const rstPwd = document.getElementById('rst_pwd');
+          const rstPwd2 = document.getElementById('rst_pwd2');
+          const rstTitle = document.getElementById('rst_title');
+          const rstHint = document.getElementById('rst_hint');
+          const rstBtn = document.getElementById('rst_btn');
+          if (rstEmail) rstEmail.style.display = 'none';
+          if (rstPwd) rstPwd.style.display = 'block';
+          if (rstPwd2) rstPwd2.style.display = 'block';
+          if (rstTitle) rstTitle.textContent = '🔐 Nueva contraseña';
+          if (rstHint) rstHint.textContent = 'Escribe tu nueva contraseña. Mínimo 6 caracteres.';
+          if (rstBtn) rstBtn.textContent = '🔒 Guardar nueva contraseña';
+          setTimeout(() => rstPwd?.focus(), 100);
+        } catch (uiErr) { console.warn('[auth] UI switch for recovery failed:', uiErr); }
       }
     });
   } catch (e) { console.warn('[auth] onAuthStateChange setup failed:', e); }

@@ -2286,57 +2286,89 @@ window.toggleResetForm = function() {
   loginPanel.style.display = showingReset ? '' : 'none';
   if (regPanel) regPanel.style.display = 'none';
   resetPanel.style.display = showingReset ? 'none' : '';
-  // Clear fields
+  // Clear fields + reset UI a modo fase 1 (email only)
   const rstErr = document.getElementById('rst_err');
   const rstOk = document.getElementById('rst_ok');
+  const rstEmail = document.getElementById('rst_email');
+  const rstPwd = document.getElementById('rst_pwd');
+  const rstPwd2 = document.getElementById('rst_pwd2');
+  const rstTitle = document.getElementById('rst_title');
+  const rstHint = document.getElementById('rst_hint');
+  const rstBtn = document.getElementById('rst_btn');
   if (rstErr) rstErr.style.display = 'none';
   if (rstOk) rstOk.style.display = 'none';
+  // Solo resetear el estado si NO estamos en recovery activo
+  if (!window._inPasswordRecovery) {
+    if (rstEmail) { rstEmail.value = ''; rstEmail.style.display = ''; }
+    if (rstPwd) { rstPwd.value = ''; rstPwd.style.display = 'none'; }
+    if (rstPwd2) { rstPwd2.value = ''; rstPwd2.style.display = 'none'; }
+    if (rstTitle) rstTitle.textContent = '🔒 Recuperar contraseña';
+    if (rstHint) rstHint.textContent = 'Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña';
+    if (rstBtn) rstBtn.textContent = '🔒 Enviar enlace de recuperación';
+  }
 };
 
+// Flujo de 2 fases con magic link:
+//   Fase 1: usuario ingresa email → se envía enlace con token de recovery
+//   Fase 2: usuario hace click en enlace → landing → introduce nueva pwd
+// El flag window._inPasswordRecovery lo setea el listener PASSWORD_RECOVERY
+// en auth.js initAuth, al detectar que la sesión actual es tipo 'recovery'.
 window.resetPassword = async function() {
-  const email = (document.getElementById('rst_email')?.value || '').trim();
-  const pwd = (document.getElementById('rst_pwd')?.value || '').trim();
-  const pwd2 = (document.getElementById('rst_pwd2')?.value || '').trim();
   const errEl = document.getElementById('rst_err');
   const okEl = document.getElementById('rst_ok');
   const btn = document.getElementById('rst_btn');
   const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } if (okEl) okEl.style.display = 'none'; };
+  const showOk = (msg) => { if (okEl) { okEl.textContent = msg; okEl.style.display = 'block'; } if (errEl) errEl.style.display = 'none'; };
 
+  const SBc = SB();
+
+  // ── FASE 2: setear nueva contraseña (usuario vino del magic link) ──
+  if (window._inPasswordRecovery) {
+    const pwd = (document.getElementById('rst_pwd')?.value || '').trim();
+    const pwd2 = (document.getElementById('rst_pwd2')?.value || '').trim();
+    if (!pwd || pwd.length < 6) { showErr('La contraseña debe tener al menos 6 caracteres'); return; }
+    if (pwd !== pwd2) { showErr('Las contraseñas no coinciden'); return; }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+    try {
+      const { error } = await SBc.auth.updateUser({ password: pwd });
+      if (error) throw error;
+      showOk('✅ Contraseña actualizada. Abriendo tu cuenta...');
+      window._inPasswordRecovery = false;
+      // La sesión ya está activa tras updateUser → recargar para entrar al dashboard
+      setTimeout(() => { location.hash = '#/portafolio'; location.reload(); }, 1500);
+    } catch (e) {
+      console.error('[resetPassword phase2]', e);
+      showErr('Error: ' + (e.message || 'No se pudo actualizar'));
+      if (btn) { btn.disabled = false; btn.textContent = '🔒 Guardar nueva contraseña'; }
+    }
+    return;
+  }
+
+  // ── FASE 1: pedir reset por email (magic link) ──
+  const email = (document.getElementById('rst_email')?.value || '').trim();
   if (!email || !email.includes('@')) { showErr('Ingresa un email válido'); return; }
-  if (!pwd || pwd.length < 4) { showErr('La contraseña debe tener al menos 4 caracteres'); return; }
-  if (pwd !== pwd2) { showErr('Las contraseñas no coinciden'); return; }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
   if (errEl) errEl.style.display = 'none';
 
   try {
-    // Find user by email
-    const { data: usr, error: findErr } = await SB().from('usuarios').select('id,email,activo').eq('email', email).maybeSingle();
-    if (findErr) throw findErr;
-    if (!usr) { showErr('No encontramos una cuenta con ese email'); if (btn) { btn.disabled = false; btn.textContent = '🔒 Cambiar contraseña'; } return; }
-    if (!usr.activo) { showErr('Esta cuenta está desactivada. Contacta a House.'); if (btn) { btn.disabled = false; btn.textContent = '🔒 Cambiar contraseña'; } return; }
-
-    // Hash new password
-    const hash = await window.hashPwd(pwd);
-
-    // Update password
-    const { error: updErr } = await SB().from('usuarios').update({ password_hash: hash }).eq('id', usr.id);
-    if (updErr) throw updErr;
-
-    // Success
-    if (okEl) { okEl.textContent = '✅ Contraseña actualizada. Ya puedes iniciar sesión.'; okEl.style.display = 'block'; }
-    if (errEl) errEl.style.display = 'none';
-    // Clear fields
+    const { error } = await SBc.auth.resetPasswordForEmail(email, {
+      redirectTo: location.origin + '/',
+    });
+    // Respuesta intencionalmente uniforme para evitar user enumeration:
+    // no confirmamos ni negamos la existencia del email en la plataforma
+    if (error) {
+      console.warn('[resetPassword] Supabase error (suppressed):', error);
+    }
+    showOk('📧 Si existe una cuenta registrada con ese email, te enviamos un enlace. Revisa tu bandeja de entrada (y la carpeta de spam). El enlace expira en 1 hora.');
     if (document.getElementById('rst_email')) document.getElementById('rst_email').value = '';
-    if (document.getElementById('rst_pwd')) document.getElementById('rst_pwd').value = '';
-    if (document.getElementById('rst_pwd2')) document.getElementById('rst_pwd2').value = '';
-    // Auto-switch to login after 2s
-    setTimeout(() => { window.toggleResetForm(); }, 2500);
-  } catch(e) {
-    console.error('[resetPassword]', e);
-    showErr('Error: ' + (e.message || 'No se pudo actualizar'));
+  } catch (e) {
+    console.error('[resetPassword phase1]', e);
+    // Mantener respuesta uniforme incluso en error de red
+    showOk('📧 Si existe una cuenta registrada con ese email, te enviamos un enlace. Revisa tu bandeja (y spam).');
   }
-  if (btn) { btn.disabled = false; btn.textContent = '🔒 Cambiar contraseña'; }
+  if (btn) { btn.disabled = false; btn.textContent = '🔒 Enviar enlace de recuperación'; }
 };
 
 window.registerExternal = async function() {

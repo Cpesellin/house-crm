@@ -48,13 +48,13 @@ function renderShell(container) {
 
     <!-- PANEL RESET PASSWORD (hidden by default) -->
     <div id="lov_reset" style="display:none">
-      <div style="font-size:15px;font-weight:800;text-align:center;color:#fff;margin-bottom:4px">\u{1F512} Recuperar contrase\u00F1a</div>
-      <div style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:14px">Ingresa tu email y crea una nueva contrase\u00F1a</div>
+      <div id="rst_title" style="font-size:15px;font-weight:800;text-align:center;color:#fff;margin-bottom:4px">\u{1F512} Recuperar contrase\u00F1a</div>
+      <div id="rst_hint" style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:14px">Ingresa tu email y te enviaremos un enlace para restablecer tu contrase\u00F1a</div>
       <div class="lfrm">
         <input id="rst_email" type="email" placeholder="Tu email registrado" autocomplete="email" style="margin-bottom:8px">
-        <input id="rst_pwd" type="password" placeholder="Nueva contrase\u00F1a" autocomplete="new-password" style="margin-bottom:8px">
-        <input id="rst_pwd2" type="password" placeholder="Confirmar contrase\u00F1a" autocomplete="new-password" style="margin-bottom:10px">
-        <button type="button" onclick="resetPassword()" id="rst_btn" style="background:#f59e0b;color:#fff;font-weight:700">\u{1F512} Cambiar contrase\u00F1a</button>
+        <input id="rst_pwd" type="password" placeholder="Nueva contrase\u00F1a (m\u00EDn 6 caracteres)" autocomplete="new-password" style="margin-bottom:8px;display:none">
+        <input id="rst_pwd2" type="password" placeholder="Confirmar contrase\u00F1a" autocomplete="new-password" style="margin-bottom:10px;display:none">
+        <button type="button" onclick="resetPassword()" id="rst_btn" style="background:#f59e0b;color:#fff;font-weight:700">\u{1F512} Enviar enlace de recuperaci\u00F3n</button>
       </div>
       <div id="rst_err" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>
       <div id="rst_ok" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);border-radius:8px;font-size:11px;color:#6ee7b7;text-align:center"></div>
