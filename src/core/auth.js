@@ -276,10 +276,13 @@ export async function loginWithCredentials(username, password) {
   const SB = getSB();
 
   try {
-    // ── PASO 1: Lookup en usuarios para obtener email real + flag auth_migrated ──
+    // ── PASO 1: Lookup ligero SIN password_hash (preparación para RLS estricto) ──
+    // El password nunca se valida en el cliente. La validación sucede en:
+    //   - Supabase Auth (si auth_migrated=true)
+    //   - Edge Function migrate-user con service_role (si auth_migrated=false)
     const { data: userRow } = await SB
       .from('usuarios')
-      .select('id, email, usuario, password_hash, auth_migrated, activo')
+      .select('id, email, usuario, auth_migrated, activo')
       .or(`usuario.eq.${usr},email.eq.${usr}`)
       .eq('activo', true)
       .maybeSingle();
@@ -312,69 +315,41 @@ export async function loginWithCredentials(username, password) {
       return { success: true, viaSupabaseAuth: true };
     }
 
-    // ── PASO 3: No migrado — validar con SHA-256 legacy Y migrar al vuelo ──
-    const h = await hashPwd(pwd);
-    if (userRow.password_hash !== h) {
-      const msg = 'Usuario o contraseña incorrectos';
-      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
-      return { success: false, error: msg };
-    }
-
-    // Password correcto en legacy → llamar Edge Function para migrar
+    // ── PASO 3: No migrado — la Edge Function valida password + migra ──
+    // migrate-user ejecuta con service_role y tiene acceso a password_hash
+    // sin exponerlo al cliente. Es el único path que aún depende de SHA-256.
     const mig = await _callMigrateUser(usr, pwd);
-    if (mig.ok) {
-      // Migración ok → retry signInWithPassword
-      const { data: sess } = await SB.auth.signInWithPassword({
-        email: mig.email || emailReal, password: pwd,
-      });
-      if (sess?.session) {
-        const userData = await _hydrateUserStoreFromDB(userRow.id, sess.session.access_token);
-        if (userData) {
-          console.log('[auth] ✨ Usuario migrado a Supabase Auth');
-          _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
-          return { success: true, migrated: true, viaSupabaseAuth: true };
-        }
-      }
-      // Migración reportó ok pero signIn falló → fallback legacy
-      console.warn('[auth] Migración ok pero signIn falló, usando fallback legacy');
-    } else {
-      console.warn('[auth] migrate-user error:', mig.error, mig.detail);
-    }
-
-    // ── PASO 4 (fallback seguro): flujo legacy completo ──
-    // Si migración falla por cualquier motivo (edge function caída, password < 6, etc.)
-    // el usuario igual puede entrar con el flujo anterior. Zero downtime garantizado.
-    const { data: userFull } = await SB
-      .from('usuarios')
-      .select('*')
-      .eq('id', userRow.id)
-      .eq('activo', true)
-      .single();
-    if (!userFull) {
-      const msg = 'Usuario o contraseña incorrectos';
+    if (!mig.ok) {
+      // Credenciales inválidas, user no existe, o edge function caída
+      const msg = mig.error === 'invalid_credentials'
+        ? 'Usuario o contraseña incorrectos'
+        : 'Error de autenticación. Intenta de nuevo.';
+      console.warn('[auth] migrate-user denied:', mig.error, mig.detail);
       _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
       return { success: false, error: msg };
     }
 
-    const userData = {
-      id: userFull.id,
-      email: userFull.email || '',
-      nombre: userFull.nombre,
-      rol: userFull.rol,
-      foto: userFull.foto || '',
-      usuario: userFull.usuario,
-      telefono_contacto: userFull.telefono_contacto || '',
-      es_gestor_arriendos: userFull.es_gestor_arriendos || false,
-      tipo_usuario: userFull.tipo_usuario || 'interno',
-      token: 'cred:' + userFull.usuario + ':' + h,
-      puede_publicar: userFull.puede_publicar || false,
-      puede_referir: userFull.puede_referir !== false,
-      perfiles_publicos: userFull.perfiles_publicos || [],
-    };
+    // Migración ok → iniciar sesión con Supabase Auth
+    const { data: sess, error: eSess } = await SB.auth.signInWithPassword({
+      email: mig.email || emailReal, password: pwd,
+    });
+    if (eSess || !sess?.session) {
+      console.warn('[auth] Post-migration signIn failed:', eSess);
+      const msg = 'Error iniciando sesión tras migración. Intenta de nuevo.';
+      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
+      return { success: false, error: msg };
+    }
 
-    userStore.set(userData);
+    const userData = await _hydrateUserStoreFromDB(userRow.id, sess.session.access_token);
+    if (!userData) {
+      const msg = 'Error cargando perfil';
+      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, msg);
+      return { success: false, error: msg };
+    }
+
+    console.log('[auth] ✨ Usuario migrado a Supabase Auth');
     _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
-    return { success: true, viaLegacy: true };
+    return { success: true, migrated: true, viaSupabaseAuth: true };
 
   } catch (e) {
     console.error('[auth] Credential login error:', e);
