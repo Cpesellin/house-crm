@@ -893,7 +893,8 @@ window.ldAn = async function(id) {
   el.innerHTML=filtered.map(a=>{
     const f=a.created_at?new Date(a.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     const vis=(a.visibilidad||'privada')==='privada'?'<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--goldbg);color:#92400e;border:1px solid var(--yb);font-weight:700">🔒 Privada</span>':'<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:var(--b50);color:var(--b700);border:1px solid var(--b200);font-weight:700">👥 Equipo</span>';
-    return`<div class="ait"><div class="aim"><b>👤 ${a.autor?a.autor.nombre:'?'}</b> · ${f} ${vis}</div>${a.texto}</div>`;
+    const eh=window.escapeHtml||(s=>String(s||''));
+    return`<div class="ait"><div class="aim"><b>👤 ${eh(a.autor?a.autor.nombre:'?')}</b> · ${f} ${vis}</div>${eh(a.texto)}</div>`;
   }).join('');
 };
 
@@ -1736,7 +1737,7 @@ window.ldConcNotas = async function(concId) {
   const el = document.getElementById('cn-' + concId); if (!el) return;
   const { data } = await SB().from('conciliacion_notas').select('*,autor:usuarios!usuario_id(nombre)').eq('conciliacion_id', concId).order('created_at', { ascending: true });
   if (!data || !data.length) { el.innerHTML = '<span style="font-size:11px;color:var(--g400)">Sin anotaciones</span>'; return; }
-  el.innerHTML = data.map(n => { const f = n.created_at ? new Date(n.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="conc-nota"><div class="conc-nota-meta">👤 ${n.autor ? n.autor.nombre : '?'} · ${f}</div>${n.texto}</div>`; }).join('');
+  el.innerHTML = data.map(n => { const f = n.created_at ? new Date(n.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; return `<div class="conc-nota"><div class="conc-nota-meta">👤 ${(window.escapeHtml||String)(n.autor ? n.autor.nombre : '?')} · ${f}</div>${(window.escapeHtml||String)(n.texto)}</div>`; }).join('');
 };
 
 window.concAddNote = async function(concId) {
