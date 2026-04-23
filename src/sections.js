@@ -605,7 +605,7 @@ window.rPerfil = function () {
   if(u.foto)h+=`<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
   else h+=`<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0].toUpperCase()}</div>`;
   const profileRol = u.es_gestor_arriendos ? 'Gestor Arriendos' : u.rol;
-  h+=`<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div><div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${profileRol}</div></div>`;
+  h+=`<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${(window.escapeHtml||String)(u.nombre||'')}</div><div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-top:2px">${profileRol}</div></div>`;
 
   // F17: Editable fields
   h+=`<div class="msc"><div class="msct">✏️ Editar</div><div class="mgr">`;
@@ -1960,7 +1960,7 @@ window.rCuenta = function() {
   h += `<div style="text-align:center;margin-bottom:16px">`;
   if (u.foto) h += `<img src="${u.foto}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:3px solid var(--b200)">`;
   else h += `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--b500),var(--purple));display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:24px;color:#fff;font-weight:800">${(u.nombre||'?')[0]}</div>`;
-  h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${u.nombre}</div>`;
+  h += `<div style="font-family:Fraunces,serif;font-size:18px;font-weight:800">${(window.escapeHtml||String)(u.nombre||'')}</div>`;
   h += `</div>`;
 
   // Activity role cards (async counts)

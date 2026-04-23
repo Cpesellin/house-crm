@@ -691,9 +691,10 @@ window.oM = function(idx) {
 
     // Descripciones
     b += `<div class="msc"><div class="msct">📝 Descripciones</div>`;
-    b += `<div class="desc-box"><div class="desc-hdr priv">🔒 Privada — Solo tú y admin</div><textarea id="me_desc_priv" placeholder="Notas internas...">${p.descripcion_privada||''}</textarea></div>`;
-    b += `<div class="desc-box"><div class="desc-hdr pub">👁️ Para cliente — Visible en enlace</div><textarea id="me_desc_cli" placeholder="Texto comercial...">${p.descripcion_cliente||''}</textarea></div>`;
-    b += `<div class="desc-box"><div class="desc-hdr team">👥 Para equipo — Todos los asesores</div><textarea id="me_obs" placeholder="Info general...">${p.observaciones||''}</textarea></div></div>`;
+    const _ehDesc=window.escapeHtml||(s=>String(s||''));
+    b += `<div class="desc-box"><div class="desc-hdr priv">🔒 Privada — Solo tú y admin</div><textarea id="me_desc_priv" placeholder="Notas internas...">${_ehDesc(p.descripcion_privada||'')}</textarea></div>`;
+    b += `<div class="desc-box"><div class="desc-hdr pub">👁️ Para cliente — Visible en enlace</div><textarea id="me_desc_cli" placeholder="Texto comercial...">${_ehDesc(p.descripcion_cliente||'')}</textarea></div>`;
+    b += `<div class="desc-box"><div class="desc-hdr team">👥 Para equipo — Todos los asesores</div><textarea id="me_obs" placeholder="Info general...">${_ehDesc(p.observaciones||'')}</textarea></div></div>`;
 
     // Foto upload
     b += `<div class="msc"><div class="msct">📷 Fotos (${fotos.length}) <span style="font-size:10px;color:var(--sub);font-weight:500">— mantén presionado para reordenar</span></div>`;
@@ -720,13 +721,14 @@ window.oM = function(idx) {
     // Propietario for gestor
     if(esGestor&&isArriendo&&!canEdit){
       b+=`<div class="msc"><div class="msct">👤 Propietario</div><div style="background:var(--greenbg);border:1.5px solid var(--gb);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px;color:#065f46;font-weight:700">🔑 Visible para gestor</div><div class="mgr">`;
-      if(p.propietario_nombre)b+=`<div class="mf ful"><div class="mfl">Nombre</div><div class="mfv">${p.propietario_nombre}</div></div>`;
-      if(p.propietario_telefono)b+=`<div class="mf"><div class="mfl">Teléfono</div><div class="mfv">${p.propietario_telefono}</div></div>`;
-      if(p.propietario_email)b+=`<div class="mf"><div class="mfl">Email</div><div class="mfv">${p.propietario_email}</div></div>`;
+      const _ehProp=window.escapeHtml||(s=>String(s||''));
+      if(p.propietario_nombre)b+=`<div class="mf ful"><div class="mfl">Nombre</div><div class="mfv">${_ehProp(p.propietario_nombre)}</div></div>`;
+      if(p.propietario_telefono)b+=`<div class="mf"><div class="mfl">Teléfono</div><div class="mfv">${_ehProp(p.propietario_telefono)}</div></div>`;
+      if(p.propietario_email)b+=`<div class="mf"><div class="mfl">Email</div><div class="mfv">${_ehProp(p.propietario_email)}</div></div>`;
       b+=`</div></div>`;
     }
 
-    if(p.observaciones)b+=`<div class="msc"><div class="msct">👥 Descripción equipo</div><div style="font-size:12px;line-height:1.5;padding:8px;background:var(--cd2);border-radius:6px">${p.observaciones}</div></div>`;
+    if(p.observaciones)b+=`<div class="msc"><div class="msct">👥 Descripción equipo</div><div style="font-size:12px;line-height:1.5;padding:8px;background:var(--cd2);border-radius:6px">${(window.escapeHtml||String)(p.observaciones)}</div></div>`;
     if(p.captador)b+=`<div class="msc"><div class="msct">👤 Asesor</div><div class="mgr"><div class="mf ful"><div class="mfl">Captador</div><div class="mfv">👤 ${p.captador.nombre}</div></div></div></div>`;
   }
 
@@ -1902,7 +1904,7 @@ window.showPublicView = async function(id) {
     if (p.descripcion_cliente) {
       h += `<div style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0">
         <div style="font-size:12px;font-weight:800;color:#1e293b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Descripción</div>
-        <div style="font-size:14px;line-height:1.7;color:#475569">${p.descripcion_cliente}</div>
+        <div style="font-size:14px;line-height:1.7;color:#475569">${(window.escapeHtml||String)(p.descripcion_cliente)}</div>
       </div>`;
     }
 
