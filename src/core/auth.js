@@ -46,6 +46,20 @@ console.log('[auth] ENV check:', {
   GID: GID ? GID.slice(0, 20) + '...' : 'MISSING',
 });
 
+// ─── Recovery mode detection (CRITICAL: debe correr ANTES que Supabase consuma el hash) ──
+// Cuando el usuario hace click en un magic link de reset password, Supabase envía:
+//   https://site.com/#access_token=...&type=recovery
+// Detectamos este caso para NO restaurar la sesión como un login normal.
+// El flag _inPasswordRecovery hace que initAuth muestre el formulario de nueva pwd.
+if (typeof window !== 'undefined' && typeof location !== 'undefined') {
+  const hashStr = location.hash || '';
+  if (/type=recovery/.test(hashStr)) {
+    window._inPasswordRecovery = true;
+    window._bootInRecovery = true;
+    console.log('[auth] 🔐 Recovery link detected — will show password reset UI');
+  }
+}
+
 // ─── Supabase client (lazy singleton) ────────────────────────────
 
 let _sb = null;
@@ -415,29 +429,71 @@ export function initAuth(options = {}) {
   _initialized = true;
   console.log('[auth] initAuth() starting...');
 
-  // 1. Primero intentar restaurar sesión de Supabase Auth (más reciente, más seguro)
-  //    Si existe, hidrata userStore desde usuarios y emite SESSION_RESTORED
-  (async () => {
-    try {
-      const SB = getSB();
-      const { data } = await SB.auth.getSession();
-      if (data?.session?.user?.id) {
-        const userData = await _hydrateUserStoreFromDB(data.session.user.id, data.session.access_token);
-        if (userData) {
-          console.log('[auth] Session restored from Supabase Auth:', userData.nombre);
-          _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userData);
-          return;
-        }
-      }
-    } catch (e) { console.warn('[auth] Supabase getSession failed:', e); }
-
-    // 2. Fallback: restaurar sesión legacy desde sessionStorage
-    const restored = userStore.restore();
-    console.log('[auth] Session restored from sessionStorage:', restored, restored ? userStore.get()?.nombre : 'none');
-    if (restored) {
-      _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userStore.get());
+  // 1. Si estamos en recovery (magic link clickeado), NO restaurar sesión.
+  //    Mostrar el panel de reset de contraseña en fase 2 y esperar al usuario.
+  if (window._bootInRecovery) {
+    console.log('[auth] Boot in password recovery — skipping session restore');
+    const setupRecoveryUI = () => {
+      try {
+        // Ocultar shell y mostrar pantalla de login con panel reset en fase 2
+        const shell = document.getElementById('shell');
+        if (shell) shell.style.display = 'none';
+        const lov = document.getElementById('lov');
+        if (lov) { lov.style.display = 'flex'; }
+        const loginPanel = document.getElementById('lov_login');
+        const regPanel = document.getElementById('lov_register');
+        const resetPanel = document.getElementById('lov_reset');
+        if (loginPanel) loginPanel.style.display = 'none';
+        if (regPanel) regPanel.style.display = 'none';
+        if (resetPanel) resetPanel.style.display = '';
+        // Cambiar UI del panel reset a fase 2: ocultar email, mostrar pwd+pwd2
+        const rstEmail = document.getElementById('rst_email');
+        const rstPwd = document.getElementById('rst_pwd');
+        const rstPwd2 = document.getElementById('rst_pwd2');
+        const rstTitle = document.getElementById('rst_title');
+        const rstHint = document.getElementById('rst_hint');
+        const rstBtn = document.getElementById('rst_btn');
+        if (rstEmail) rstEmail.style.display = 'none';
+        if (rstPwd) rstPwd.style.display = '';
+        if (rstPwd2) rstPwd2.style.display = '';
+        if (rstTitle) rstTitle.textContent = '🔐 Nueva contraseña';
+        if (rstHint) rstHint.textContent = 'Escribe tu nueva contraseña. Mínimo 6 caracteres.';
+        if (rstBtn) rstBtn.textContent = '🔒 Guardar nueva contraseña';
+        setTimeout(() => rstPwd?.focus(), 100);
+      } catch (e) { console.warn('[auth] Recovery UI setup failed:', e); }
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupRecoveryUI);
+    } else {
+      // Dar un tick para que App.js ya haya montado el DOM
+      setTimeout(setupRecoveryUI, 50);
     }
-  })();
+    // Forzar que Supabase parseé los tokens del hash para que updateUser funcione
+    try { getSB(); } catch {}
+  } else {
+    // 2. Flujo normal: restaurar sesión Supabase o legacy
+    (async () => {
+      try {
+        const SB = getSB();
+        const { data } = await SB.auth.getSession();
+        if (data?.session?.user?.id) {
+          const userData = await _hydrateUserStoreFromDB(data.session.user.id, data.session.access_token);
+          if (userData) {
+            console.log('[auth] Session restored from Supabase Auth:', userData.nombre);
+            _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userData);
+            return;
+          }
+        }
+      } catch (e) { console.warn('[auth] Supabase getSession failed:', e); }
+
+      // Fallback: sesión legacy desde sessionStorage
+      const restored = userStore.restore();
+      console.log('[auth] Session restored from sessionStorage:', restored, restored ? userStore.get()?.nombre : 'none');
+      if (restored) {
+        _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userStore.get());
+      }
+    })();
+  }
 
   // 3. Auto-sync userStore cuando Supabase Auth cambia de estado
   try {
