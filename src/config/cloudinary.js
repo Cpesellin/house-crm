@@ -15,12 +15,86 @@ const CLOUD_NAME   = getEnv('VITE_CLOUD_NAME') || 'dfelsbmbo';
 const CLOUD_PRESET = getEnv('VITE_CLOUD_PRESET') || 'fichas_unsigned';
 const MAX_FOTOS = 30;
 
+// ─── Validaciones de archivos (defensa en profundidad) ─────────
+// La validación real debe ocurrir en el preset de Cloudinary dashboard.
+// Acá agregamos checks cliente-side para fallar temprano y dar feedback
+// al usuario legítimo; NO es una barrera de seguridad absoluta (un atacante
+// sofisticado bypasea el cliente fácil), pero reduce el ruido y protege
+// contra errores de usuarios.
+
+const ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/quicktime', 'video/webm',
+]);
+const MAX_SIZE_IMAGE = 10 * 1024 * 1024;   // 10 MB para imágenes
+const MAX_SIZE_VIDEO = 50 * 1024 * 1024;   // 50 MB para videos
+
+// Magic bytes (primeros bytes del archivo) para validar tipo real
+// https://en.wikipedia.org/wiki/List_of_file_signatures
+const MAGIC_BYTES = [
+  { mime: 'image/jpeg', bytes: [0xFF, 0xD8, 0xFF] },
+  { mime: 'image/png',  bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] },
+  { mime: 'image/gif',  bytes: [0x47, 0x49, 0x46, 0x38] }, // GIF8
+  { mime: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF (WebP is RIFF-based)
+  // Videos comienzan con variedad de headers — no chequeamos magic bytes para ellos
+];
+
+async function checkMagicBytes(file) {
+  // Solo validamos magic bytes para imágenes (videos tienen muchas variantes)
+  if (!file.type.startsWith('image/')) return true;
+  try {
+    const slice = file.slice(0, 12);
+    const buf = new Uint8Array(await slice.arrayBuffer());
+    for (const sig of MAGIC_BYTES) {
+      if (sig.bytes.every((b, i) => buf[i] === b)) return true;
+    }
+    // Ningún magic byte de imagen coincide
+    return false;
+  } catch (e) {
+    console.warn('[cloudinary] magic bytes check failed:', e);
+    return true; // fail open (no bloqueamos por error de lectura)
+  }
+}
+
+function validateFile(file) {
+  // 1. Tipo MIME
+  if (!ALLOWED_MIME.has(file.type)) {
+    return { ok: false, reason: 'tipo_no_permitido', detail: `Tipo "${file.type}" no permitido. Solo JPG, PNG, WebP, GIF, MP4.` };
+  }
+  // 2. Tamaño
+  const isVideo = file.type.startsWith('video/');
+  const maxSize = isVideo ? MAX_SIZE_VIDEO : MAX_SIZE_IMAGE;
+  if (file.size > maxSize) {
+    const mb = Math.round(file.size / 1024 / 1024);
+    const limit = Math.round(maxSize / 1024 / 1024);
+    return { ok: false, reason: 'muy_grande', detail: `${file.name} pesa ${mb}MB. Máximo ${limit}MB.` };
+  }
+  // 3. Nombre sospechoso (extensiones double-encoded, ejecutables)
+  const badExt = /\.(html?|svg|js|mjs|ts|exe|bat|cmd|sh|py|php|rb|dll|msi|jar|zip|rar|tar|gz|7z)$/i;
+  if (badExt.test(file.name)) {
+    return { ok: false, reason: 'extension_peligrosa', detail: `Extensión "${file.name.split('.').pop()}" no permitida.` };
+  }
+  return { ok: true };
+}
+
 /**
- * Upload a single file to Cloudinary. Identical to original uploadToCloudinary().
+ * Upload a single file to Cloudinary with client-side validation.
  * @param {File} file
  * @returns {Promise<{url:string, thumb:string, tipo:string}>}
  */
 export async function uploadToCloudinary(file) {
+  // ── Validación cliente (defensa en profundidad) ──
+  const v = validateFile(file);
+  if (!v.ok) {
+    console.warn('[cloudinary] rejected:', v.reason, v.detail);
+    throw new Error(v.detail);
+  }
+  // Magic bytes: verifica que el contenido real coincida con el MIME declarado
+  const magicOk = await checkMagicBytes(file);
+  if (!magicOk) {
+    throw new Error(`${file.name}: el contenido no coincide con una imagen válida.`);
+  }
+
   const fd = new FormData();
   fd.append('file', file);
   fd.append('upload_preset', CLOUD_PRESET);
