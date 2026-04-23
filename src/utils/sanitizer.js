@@ -183,9 +183,9 @@ function safeJsonAttr(json) {
 
 // ─── Export ──────────────────────────────────────────────────────
 // Para uso en módulos ES:
-// export { escapeHtml, safeText, escapeAttr, safeUrl, allowBasicHtml, safeJsonAttr };
+export { escapeHtml, safeText, escapeAttr, safeUrl, allowBasicHtml, safeJsonAttr };
 
-// Para uso inline en el HTML monolítico (asignar al scope global):
+// Para uso inline en código no-module (functions.js, sections.js, interesados-ui.js):
 if (typeof window !== 'undefined') {
   window.escapeHtml = escapeHtml;
   window.safeText = safeText;

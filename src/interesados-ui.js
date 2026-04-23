@@ -964,7 +964,7 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
   let h = `<div style="background:var(--cd);border-radius:14px;max-width:700px;width:100%;max-height:92vh;overflow-y:auto">
     <div style="padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:start;gap:12px">
       <div style="flex:1;min-width:0">
-        <div style="font-size:18px;font-weight:800;color:var(--tx)">${lead.nombre_completo || 'Sin nombre'}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--tx)">${(window.escapeHtml||String)(lead.nombre_completo || 'Sin nombre')}</div>
         <div style="font-size:12px;color:var(--sub);margin-top:3px">
           📱 ${lead.telefono || '—'}${lead.email ? ' · ✉️ ' + lead.email : ''}
         </div>

@@ -98,7 +98,8 @@ function renderWelcome() {
   const sal = h2 < 12 ? 'Buenos días' : h2 < 18 ? 'Buenas tardes' : 'Buenas noches';
 
   // Show as floating toast that auto-hides
-  el.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;color:var(--tx)">${sal}, ${U.nombre.split(' ')[0]} 👋</div><div style="font-size:10px;color:var(--sub)">· ${my.length} inmuebles${pendVer > 0 ? ' · ' + pendVer + ' pendientes' : ''}</div></div>`;
+  const _eh=window.escapeHtml||(s=>String(s||''));
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;color:var(--tx)">${sal}, ${_eh(U.nombre.split(' ')[0])} 👋</div><div style="font-size:10px;color:var(--sub)">· ${my.length} inmuebles${pendVer > 0 ? ' · ' + pendVer + ' pendientes' : ''}</div></div>`;
   el.style.cssText = 'display:block;position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:89;max-width:90%;width:auto;padding:8px 18px;background:var(--cd);border:1px solid var(--brd);border-radius:20px;box-shadow:0 4px 16px rgba(0,0,0,.1);animation:fi .3s';
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .5s'; setTimeout(() => { el.style.display = 'none'; el.style.opacity = ''; el.style.transition = ''; el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.transform = ''; el.style.zIndex = ''; el.style.maxWidth = ''; el.style.width = ''; el.style.padding = ''; el.style.background = ''; el.style.border = ''; el.style.borderRadius = ''; el.style.boxShadow = ''; }, 500); }, 3000);
 }

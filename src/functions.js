@@ -192,7 +192,7 @@ window.renderBell = function() {
         <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid var(--cd)">${ico}</div>
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12.5px;font-weight:${sinLeer?'700':'500'};color:var(--tx);line-height:1.35">${n.titulo || ''}${count>1?`<span style="margin-left:6px;font-size:10px;background:${color}22;color:${color};padding:1px 6px;border-radius:8px;font-weight:700">+${count-1}</span>`:''}</div>
+        <div style="font-size:12.5px;font-weight:${sinLeer?'700':'500'};color:var(--tx);line-height:1.35">${(window.escapeHtml||String)(n.titulo || '')}${count>1?`<span style="margin-left:6px;font-size:10px;background:${color}22;color:${color};padding:1px 6px;border-radius:8px;font-weight:700">+${count-1}</span>`:''}</div>
         ${mensaje ? `<div style="font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${mensaje}</div>` : ''}
         <div style="font-size:10.5px;color:var(--sub);margin-top:4px;opacity:.75">${tiempo}${emisorNom ? ' · ' + emisorNom : ''}</div>
         ${actions}

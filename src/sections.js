@@ -423,8 +423,8 @@ window.rAl = function () {
         <div style="position:absolute;bottom:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:${color};color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid var(--cd)">${ico}</div>
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:var(--tx)">${n.titulo || ''}${prioBadge}${perfilChip}</div>
-        ${n.mensaje ? `<div style="font-size:11px;color:var(--sub);margin-top:3px">${n.mensaje}</div>` : ''}
+        <div style="font-size:13px;font-weight:700;color:var(--tx)">${(window.escapeHtml||String)(n.titulo || '')}${prioBadge}${perfilChip}</div>
+        ${n.mensaje ? `<div style="font-size:11px;color:var(--sub);margin-top:3px">${(window.escapeHtml||String)(n.mensaje)}</div>` : ''}
         <div style="font-size:10px;color:var(--sub);margin-top:4px;opacity:.75">${fecha}${emisorNom ? ' · 👤 ' + emisorNom : ''}${n.broadcast_id ? ' · 📢 comunicado' : ''}</div>
       </div>
       <button onclick="event.stopPropagation();descartarNotificacion('${n.id}')" title="Descartar" style="background:none;border:none;color:var(--sub);font-size:16px;cursor:pointer;padding:4px;align-self:flex-start">×</button>
