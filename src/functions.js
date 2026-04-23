@@ -2277,6 +2277,16 @@ window.toggleRegForm = function() {
   if (regErr) regErr.style.display = 'none';
 };
 
+// Toggle para mostrar/ocultar contraseña (ícono 👁️)
+window.togglePwdVis = function(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input) return;
+  const visible = input.type === 'text';
+  input.type = visible ? 'password' : 'text';
+  if (btn) btn.textContent = visible ? '👁️' : '🙈';
+};
+
 window.toggleResetForm = function() {
   const loginPanel = document.getElementById('lov_login');
   const regPanel = document.getElementById('lov_register');
@@ -2300,8 +2310,12 @@ window.toggleResetForm = function() {
   // Solo resetear el estado si NO estamos en recovery activo
   if (!window._inPasswordRecovery) {
     if (rstEmail) { rstEmail.value = ''; rstEmail.style.display = ''; }
-    if (rstPwd) { rstPwd.value = ''; rstPwd.style.display = 'none'; }
-    if (rstPwd2) { rstPwd2.value = ''; rstPwd2.style.display = 'none'; }
+    const pwdWrap = document.getElementById('rst_pwd_wrap');
+    const pwd2Wrap = document.getElementById('rst_pwd2_wrap');
+    if (pwdWrap) pwdWrap.style.display = 'none';
+    if (pwd2Wrap) pwd2Wrap.style.display = 'none';
+    if (rstPwd) { rstPwd.value = ''; rstPwd.type = 'password'; }
+    if (rstPwd2) { rstPwd2.value = ''; rstPwd2.type = 'password'; }
     if (rstTitle) rstTitle.textContent = '🔒 Recuperar contraseña';
     if (rstHint) rstHint.textContent = 'Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña';
     if (rstBtn) rstBtn.textContent = '🔒 Enviar enlace de recuperación';

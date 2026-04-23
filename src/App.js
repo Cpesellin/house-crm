@@ -52,8 +52,14 @@ function renderShell(container) {
       <div id="rst_hint" style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:14px">Ingresa tu email y te enviaremos un enlace para restablecer tu contrase\u00F1a</div>
       <div class="lfrm">
         <input id="rst_email" type="email" placeholder="Tu email registrado" autocomplete="email" style="margin-bottom:8px">
-        <input id="rst_pwd" type="password" placeholder="Nueva contrase\u00F1a (m\u00EDn 6 caracteres)" autocomplete="new-password" style="margin-bottom:8px;display:none">
-        <input id="rst_pwd2" type="password" placeholder="Confirmar contrase\u00F1a" autocomplete="new-password" style="margin-bottom:10px;display:none">
+        <div id="rst_pwd_wrap" style="position:relative;margin-bottom:8px;display:none">
+          <input id="rst_pwd" type="password" placeholder="Nueva contrase\u00F1a (m\u00EDn 6 caracteres)" autocomplete="new-password" style="margin-bottom:0;padding-right:36px;width:100%">
+          <button type="button" id="rst_eye1" onclick="togglePwdVis('rst_pwd','rst_eye1')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;padding:4px 6px;font-size:15px">\u{1F441}\uFE0F</button>
+        </div>
+        <div id="rst_pwd2_wrap" style="position:relative;margin-bottom:10px;display:none">
+          <input id="rst_pwd2" type="password" placeholder="Confirmar contrase\u00F1a" autocomplete="new-password" style="margin-bottom:0;padding-right:36px;width:100%">
+          <button type="button" id="rst_eye2" onclick="togglePwdVis('rst_pwd2','rst_eye2')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;padding:4px 6px;font-size:15px">\u{1F441}\uFE0F</button>
+        </div>
         <button type="button" onclick="resetPassword()" id="rst_btn" style="background:#f59e0b;color:#fff;font-weight:700">\u{1F512} Enviar enlace de recuperaci\u00F3n</button>
       </div>
       <div id="rst_err" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;color:#fca5a5;text-align:center"></div>

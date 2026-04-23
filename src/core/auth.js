@@ -48,15 +48,29 @@ console.log('[auth] ENV check:', {
 
 // ─── Recovery mode detection (CRITICAL: debe correr ANTES que Supabase consuma el hash) ──
 // Cuando el usuario hace click en un magic link de reset password, Supabase envía:
-//   https://site.com/#access_token=...&type=recovery
-// Detectamos este caso para NO restaurar la sesión como un login normal.
-// El flag _inPasswordRecovery hace que initAuth muestre el formulario de nueva pwd.
+//   https://site.com/#access_token=...&refresh_token=...&type=recovery
+// Extraemos los tokens manualmente y los guardamos para restaurar la sesión de recovery
+// explícitamente en initAuth (el detectSessionInUrl de Supabase no es confiable con
+// nuestro hash-routing).
 if (typeof window !== 'undefined' && typeof location !== 'undefined') {
   const hashStr = location.hash || '';
   if (/type=recovery/.test(hashStr)) {
     window._inPasswordRecovery = true;
     window._bootInRecovery = true;
-    console.log('[auth] 🔐 Recovery link detected — will show password reset UI');
+    // Parsear tokens del hash
+    try {
+      const params = new URLSearchParams(hashStr.startsWith('#') ? hashStr.slice(1) : hashStr);
+      window._recoveryTokens = {
+        access_token:  params.get('access_token'),
+        refresh_token: params.get('refresh_token'),
+        expires_at:    params.get('expires_at'),
+        expires_in:    params.get('expires_in'),
+        type:          params.get('type'),
+      };
+      console.log('[auth] 🔐 Recovery link detected — tokens parsed, will show reset UI');
+    } catch (e) {
+      console.warn('[auth] Failed to parse recovery hash:', e);
+    }
   }
 }
 
@@ -454,6 +468,10 @@ export function initAuth(options = {}) {
         const rstHint = document.getElementById('rst_hint');
         const rstBtn = document.getElementById('rst_btn');
         if (rstEmail) rstEmail.style.display = 'none';
+        const pwdWrap = document.getElementById('rst_pwd_wrap');
+        const pwd2Wrap = document.getElementById('rst_pwd2_wrap');
+        if (pwdWrap) pwdWrap.style.display = '';
+        if (pwd2Wrap) pwd2Wrap.style.display = '';
         if (rstPwd) rstPwd.style.display = '';
         if (rstPwd2) rstPwd2.style.display = '';
         if (rstTitle) rstTitle.textContent = '🔐 Nueva contraseña';
@@ -468,8 +486,27 @@ export function initAuth(options = {}) {
       // Dar un tick para que App.js ya haya montado el DOM
       setTimeout(setupRecoveryUI, 50);
     }
-    // Forzar que Supabase parseé los tokens del hash para que updateUser funcione
-    try { getSB(); } catch {}
+    // Setear la sesión de recovery manualmente con los tokens parseados del hash
+    // (no confiamos en detectSessionInUrl porque nuestro hash-routing lo interfiere)
+    (async () => {
+      try {
+        const SB = getSB();
+        const tk = window._recoveryTokens;
+        if (tk?.access_token && tk?.refresh_token) {
+          const { data, error } = await SB.auth.setSession({
+            access_token: tk.access_token,
+            refresh_token: tk.refresh_token,
+          });
+          if (error) {
+            console.error('[auth] setSession recovery failed:', error);
+          } else {
+            console.log('[auth] ✅ Recovery session set manually, user:', data.session?.user?.email);
+          }
+          // Limpiar hash de la URL (seguridad + UX)
+          try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+        }
+      } catch (e) { console.warn('[auth] Recovery setSession exception:', e); }
+    })();
   } else {
     // 2. Flujo normal: restaurar sesión Supabase o legacy
     (async () => {
@@ -528,6 +565,10 @@ export function initAuth(options = {}) {
           const rstHint = document.getElementById('rst_hint');
           const rstBtn = document.getElementById('rst_btn');
           if (rstEmail) rstEmail.style.display = 'none';
+          const pwdWrap = document.getElementById('rst_pwd_wrap');
+          const pwd2Wrap = document.getElementById('rst_pwd2_wrap');
+          if (pwdWrap) pwdWrap.style.display = '';
+          if (pwd2Wrap) pwd2Wrap.style.display = '';
           if (rstPwd) rstPwd.style.display = 'block';
           if (rstPwd2) rstPwd2.style.display = 'block';
           if (rstTitle) rstTitle.textContent = '🔐 Nueva contraseña';
