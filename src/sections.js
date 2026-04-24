@@ -1217,7 +1217,7 @@ window.rComando = async function() {
   // Fetch all 4 queues in parallel
   const [resModeracion, resIntereses, resCierres, resReferidos, resVerif] = await Promise.all([
     SB().from('inmuebles').select('id,tipo,ciudad,barrio,descripcion,created_at,estado_revision,alertas_moderacion,motivo_cambios,captador:usuarios!captador_id(nombre)').in('estado_revision', ['en_revision','cambios_solicitados']).eq('origen', 'externo').order('created_at', { ascending: true }).limit(20),
-    SB().from('intereses_compradores').select('id,created_at,presupuesto_max,fecha_ideal,mensaje,inmueble:inmuebles(id,tipo,ciudad,barrio,precio),usuario:usuarios!usuario_id(id,nombre,foto,telefono_contacto)').eq('estado', 'nuevo').order('created_at', { ascending: true }).limit(20),
+    SB().from('intereses_compradores').select('id,created_at,presupuesto_max,fecha_ideal,mensaje,inmueble:inmuebles(id,tipo,ciudad,barrio,precio_venta,precio_arriendo),usuario:usuarios!usuario_id(id,nombre,foto,telefono_contacto)').eq('estado', 'nuevo').order('created_at', { ascending: true }).limit(20),
     SB().from('cierres').select('id,tipo,precio_final,comision_total,comision_captador,comision_casa,fase_a_pagada,fase_b_pagada,pagada,captador:usuarios!captador_id(nombre),inmueble:inmuebles(tipo,ciudad,barrio)').eq('estado', 'activo').or('fase_a_pagada.eq.false,fase_b_pagada.eq.false,pagada.eq.false').order('created_at', { ascending: true }).limit(20),
     SB().from('referidos').select('id,estado,bono_monto,bono_pagado,comision_monto,comision_pagada,referidor:usuarios!referidor_id(nombre)').or('and(estado.in.(contrato_firmado,publicado),bono_pagado.eq.false),and(estado.eq.arrendado,comision_pagada.eq.false)').order('updated_at', { ascending: false }).limit(20),
     SB().from('inmuebles').select('id,tipo,ciudad,barrio,fecha_estado,captador:usuarios!captador_id(nombre)').eq('estado', 'Verificar Disponibilidad').order('fecha_estado', { ascending: true }).limit(20),
@@ -1767,7 +1767,7 @@ window.rMisNegocios = async function() {
 
   try {
     // Load cierres + participantes
-    let qC = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,precio,codigo_house,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre), participantes:participantes_comision(id,rol_comision,nombre_externo,porcentaje,monto,pago_estado,usuario_id)').order('created_at', { ascending: false });
+    let qC = SB().from('cierres').select('*, inmueble:inmuebles(id,tipo,ciudad,barrio,precio_venta,precio_arriendo,codigo_house,fotos:fotos(url)), captador:usuarios!captador_id(id,nombre), participantes:participantes_comision(id,rol_comision,nombre_externo,porcentaje,monto,pago_estado,usuario_id)').order('created_at', { ascending: false });
     if (!isAdmin) qC = qC.or('captador_id.eq.' + u.id);
     const { data: cierres } = await qC;
 
