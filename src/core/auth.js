@@ -527,7 +527,21 @@ export function initAuth(options = {}) {
       const restored = userStore.restore();
       console.log('[auth] Session restored from sessionStorage:', restored, restored ? userStore.get()?.nombre : 'none');
       if (restored) {
-        _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userStore.get());
+        // ⚠️ Detección de sesión legacy huérfana:
+        // Si tenemos userStore (sessionStorage) pero NO Supabase Auth session,
+        // significa que el usuario tiene un token "cred:user:hash" viejo y
+        // las queries con RLS estricta van a fallar (auth.uid() es null).
+        // Forzamos logout para que tenga que loguearse de nuevo y obtener
+        // una sesión real de Supabase Auth.
+        const u = userStore.get();
+        const tokenLooksLegacy = !u?.token || u.token.startsWith('cred:') || u.token.startsWith('google:');
+        if (tokenLooksLegacy) {
+          console.warn('[auth] ⚠️ Sesión legacy detectada sin Supabase Auth → forzar re-login');
+          userStore.clear();
+          // No emitir SESSION_RESTORED para que la app muestre la pantalla de login
+          return;
+        }
+        _emitAuth(AUTH_EVENTS.SESSION_RESTORED, u);
       }
     })();
   }
