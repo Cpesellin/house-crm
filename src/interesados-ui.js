@@ -613,6 +613,12 @@ function _renderVistaPorInmueble(leads, porTip) {
     .sort((a, b) => b.count - a.count);
 
   const expandidos = window._intState.inmueblesExpandidos || {};
+  // Auto-cleanup: eliminar IDs huérfanos que ya no están en los datos actuales
+  // (previene cache stale entre sesiones / dispositivos)
+  const validIds = new Set(grupos.map(g => g.id));
+  Object.keys(expandidos).forEach(id => {
+    if (!validIds.has(id)) delete expandidos[id];
+  });
   // Por defecto expandidos los top 3
   grupos.slice(0, 3).forEach(g => { if (expandidos[g.id] === undefined) expandidos[g.id] = true; });
 
