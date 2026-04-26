@@ -167,20 +167,148 @@ export async function hashPwd(pwd) {
 }
 
 
+// ─── Google JWT signature verification ───────────────────────────
+// Cierra MEDIO-03 del security audit: valida la firma del ID token
+// de Google contra las claves públicas (JWKS) en lugar de solo
+// decodificar el payload sin verificación.
+//
+// Web Crypto API nativa, sin dependencias. Cache JWKS 1 hora.
+
+let _jwksCache = null;
+let _jwksCacheAt = 0;
+const _JWKS_TTL = 60 * 60 * 1000; // 1 hora
+
+async function _getGoogleJwks() {
+  const now = Date.now();
+  if (_jwksCache && (now - _jwksCacheAt) < _JWKS_TTL) return _jwksCache;
+  const r = await fetch('https://www.googleapis.com/oauth2/v3/certs');
+  if (!r.ok) throw new Error('No se pudo obtener JWKS de Google');
+  _jwksCache = await r.json();
+  _jwksCacheAt = now;
+  return _jwksCache;
+}
+
+function _b64urlDecode(s) {
+  return atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+}
+
+function _b64urlToBytes(s) {
+  const bin = _b64urlDecode(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/**
+ * Verifica un Google ID token. Retorna el payload si la firma es válida,
+ * null si es inválida o ha expirado.
+ *
+ * Validaciones:
+ *   1. Estructura: 3 partes separadas por '.'
+ *   2. Algoritmo: alg = RS256 (rechaza none, HS256, etc.)
+ *   3. Issuer: accounts.google.com o https://accounts.google.com
+ *   4. Audience: nuestro VITE_GID
+ *   5. Expiración: exp > now
+ *   6. Firma: válida contra JWKS de Google (RSA-SHA256)
+ */
+async function _verifyGoogleIdToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+
+  let header, payload;
+  try {
+    header = JSON.parse(_b64urlDecode(parts[0]));
+    payload = JSON.parse(_b64urlDecode(parts[1]));
+  } catch { return null; }
+
+  // Algoritmo
+  if (header.alg !== 'RS256') {
+    console.warn('[auth] Google JWT con alg distinto a RS256:', header.alg);
+    return null;
+  }
+  // Issuer
+  const okIss = payload.iss === 'accounts.google.com' || payload.iss === 'https://accounts.google.com';
+  if (!okIss) {
+    console.warn('[auth] Google JWT issuer inválido:', payload.iss);
+    return null;
+  }
+  // Audience (debe coincidir con nuestro Client ID)
+  if (GID && payload.aud !== GID) {
+    console.warn('[auth] Google JWT aud distinto a nuestro Client ID');
+    return null;
+  }
+  // Expiración (con 60s de tolerancia para reloj de cliente desfasado)
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (payload.exp && payload.exp + 60 < nowSec) {
+    console.warn('[auth] Google JWT expirado');
+    return null;
+  }
+  if (payload.iat && payload.iat - 60 > nowSec) {
+    console.warn('[auth] Google JWT iat futuro');
+    return null;
+  }
+
+  // Buscar la clave pública correspondiente al kid del header
+  let jwks;
+  try { jwks = await _getGoogleJwks(); }
+  catch (e) { console.warn('[auth] JWKS fetch failed:', e); return null; }
+
+  const key = jwks.keys?.find(k => k.kid === header.kid);
+  if (!key) {
+    console.warn('[auth] kid no encontrado en JWKS:', header.kid);
+    return null;
+  }
+
+  // Importar la clave pública RSA y verificar la firma
+  let cryptoKey;
+  try {
+    cryptoKey = await crypto.subtle.importKey(
+      'jwk', key,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['verify']
+    );
+  } catch (e) { console.warn('[auth] importKey failed:', e); return null; }
+
+  const sigBytes = _b64urlToBytes(parts[2]);
+  const data = new TextEncoder().encode(parts[0] + '.' + parts[1]);
+
+  let valid;
+  try {
+    valid = await crypto.subtle.verify(
+      'RSASSA-PKCS1-v1_5',
+      cryptoKey, sigBytes, data
+    );
+  } catch (e) { console.warn('[auth] verify failed:', e); return null; }
+
+  if (!valid) {
+    console.warn('[auth] ⚠️ Firma de Google JWT inválida — token rechazado');
+    return null;
+  }
+
+  return payload;
+}
+
+
 // ─── Google One Tap callback ─────────────────────────────────────
-// Preserved from original hLog()
 
 async function _handleGoogleCredential(response) {
   const token = response.credential;
   const SB = getSB();
 
   try {
-    // Decode JWT payload (same as original — client-side decode of Google ID token)
-    const parts = token.split('.');
-    const payload = JSON.parse(
-      atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
-    );
+    // CRÍTICO: validar firma del JWT contra JWKS de Google ANTES de confiar
+    // en el payload. Cierra MEDIO-03 del security audit.
+    const payload = await _verifyGoogleIdToken(token);
+    if (!payload) {
+      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, 'Token de Google inválido o expirado');
+      return;
+    }
     const email = payload.email;
+    if (!email) {
+      _emitAuth(AUTH_EVENTS.LOGIN_ERROR, 'Token de Google sin email');
+      return;
+    }
 
     // Lookup user in BD
     const { data: usr } = await SB
