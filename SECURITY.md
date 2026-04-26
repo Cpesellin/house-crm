@@ -150,9 +150,9 @@ SELECT policyname, cmd FROM pg_policies WHERE tablename = 'tabla_nueva';
 | A02 Cryptographic Failures | 🟢 | Bcrypt (Supabase Auth nativo) |
 | A03 Injection | 🟢 | PostgreSQL + helpers escapeHtml en innerHTML |
 | A04 Insecure Design | 🟢 | Magic link reset, validación uploads |
-| A05 Security Misconfiguration | 🟢 | CSP en Vercel + URL allowlist en Supabase |
+| A05 Security Misconfiguration | 🟢 | CSP en Vercel + URL allowlist en Supabase + JWKS verify Google |
 | A06 Vulnerable Components | 🟡 | npm audit pendiente esbuild update |
-| A07 Auth Failures | 🟢 | Supabase Auth + rate limit |
+| A07 Auth Failures | 🟢 | Supabase Auth + rate limit + firma JWT Google |
 | A08 Data Integrity Failures | 🟢 | No detectado |
 | A09 Logging Failures | 🟡 | Supabase logs + audit trails parciales |
 | A10 SSRF | 🟢 | No detectado |
@@ -163,7 +163,7 @@ SELECT policyname, cmd FROM pg_policies WHERE tablename = 'tabla_nueva';
 
 1. **Sandra Morales** (1 admin) sigue sin migrar. Se autocompleta al re-loguearse.
 2. **38 usuarios** con `auth_migrated=false`. Se migran al primer login con dual flow.
-3. **MEDIO-03** (Google OAuth firma): mitigado por GSI client-side, pero idealmente migrar a `signInWithOAuth` nativo. Riesgo bajo.
+3. ~~**MEDIO-03** (Google OAuth firma)~~: ✅ **CERRADO** — `_verifyGoogleIdToken` en `auth.js` valida firma RSA-SHA256 contra JWKS de Google + alg=RS256 estricto + iss + aud + exp.
 4. **CSP `unsafe-inline` y `unsafe-eval`** en `vercel.json`: requeriría refactor de inline event handlers (~200 ocurrencias).
 5. **Service_role key expuesta en chat de desarrollo** durante el sprint. Rotar cuando el equipo coordine ventana de mantenimiento.
 6. **SHA-256 en `migrate-user`**: eliminar cuando todos los 41 usuarios estén en Supabase Auth.
