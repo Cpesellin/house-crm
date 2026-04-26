@@ -1860,8 +1860,9 @@ window.showPublicView = async function(id) {
     </div>`;
 
     // Ubicación
-    h += `<h1 style="font-family:'Fraunces',serif;font-size:22px;font-weight:800;color:#1e293b;line-height:1.2;margin:0">${p.direccion_publica || p.barrio || ''}</h1>`;
-    h += `<p style="font-size:13px;color:#64748b;margin-top:4px">${p.ciudad || ''}</p>`;
+    const _ehPub = window.escapeHtml || (s => String(s||''));
+    h += `<h1 style="font-family:'Fraunces',serif;font-size:22px;font-weight:800;color:#1e293b;line-height:1.2;margin:0">${_ehPub(p.direccion_publica || p.barrio || '')}</h1>`;
+    h += `<p style="font-size:13px;color:#64748b;margin-top:4px">${_ehPub(p.ciudad || '')}</p>`;
 
     // Precios
     h += `<div style="margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">`;
@@ -3036,7 +3037,7 @@ window.abrirInteres = async function(inmId) {
       <div style="max-width:480px;width:100%;max-height:90vh;overflow:auto;background:#faf9f7;border-radius:20px;padding:20px" onclick="event.stopPropagation()">
         <div style="background:#fff;border-radius:14px;padding:14px;border:1px solid #e0ddd8;margin-bottom:20px;display:flex;gap:12px">
           <div style="width:64px;height:64px;border-radius:10px;background:#e8e5e0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${p.tipo === 'Apartamento' ? '🏢' : p.tipo === 'Casa' ? '🏡' : p.tipo === 'Local' ? '🏪' : '🏠'}</div>
-          <div><div style="font-size:15px;font-weight:700;color:#1a1a1a">${p.tipo||''} en ${p.barrio||p.ciudad||''}</div><div style="font-size:13px;color:#5a5550">${p.ciudad||''} · ${precio}</div><div style="font-size:12px;color:#1a4f8b;font-weight:700;margin-top:2px">${p.codigo_house||''}</div></div>
+          <div><div style="font-size:15px;font-weight:700;color:#1a1a1a">${(window.escapeHtml||String)(p.tipo||'')} en ${(window.escapeHtml||String)(p.barrio||p.ciudad||'')}</div><div style="font-size:13px;color:#5a5550">${(window.escapeHtml||String)(p.ciudad||'')} · ${precio}</div><div style="font-size:12px;color:#1a4f8b;font-weight:700;margin-top:2px">${(window.escapeHtml||String)(p.codigo_house||'')}</div></div>
         </div>
         <div style="font-size:26px;font-weight:800;color:#122d4f;line-height:1.2;margin-bottom:8px">¿Para quién es este inmueble?</div>
         <div style="font-size:16px;color:#5a5550;line-height:1.6;margin-bottom:24px">Nosotros verificamos todo y acompañamos la visita.</div>
@@ -3498,7 +3499,7 @@ window.proponerCita = async function(interesId) {
         <button onclick="document.getElementById('citDlg').remove()" style="background:none;border:none;font-size:20px;color:var(--sub);cursor:pointer;padding:4px 8px">✕</button>
       </div>
       <div class="cdb" style="padding:18px">
-        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5">Estás proponiéndole una cita a <b>${c.nombre || 'el cliente'}</b>. Recibirá la propuesta en su sección "Mis citas" y deberá confirmarla.</div>
+        <div style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.5">Estás proponiéndole una cita a <b>${(window.escapeHtml||String)(c.nombre || 'el cliente')}</b>. Recibirá la propuesta en su sección "Mis citas" y deberá confirmarla.</div>
 
         <div class="ff" style="margin-bottom:12px">
           <label class="ffl">Fecha <span class="ffr">*</span></label>
