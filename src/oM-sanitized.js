@@ -64,7 +64,8 @@ function oM(idx) {
   const fotos = p.fotos ? p.fotos.sort((a, b2) => a.orden - b2.orden) : [];
 
   if (fotos.length > 0) {
-    const firstUrl = escapeAttr(fotos[0].url);
+    const _cld = window.cldOpt || (u => u);
+    const firstUrl = escapeAttr(_cld(fotos[0].url, 1200));
     b += `<div class="gal" id="gal">` +
       `<img class="gal-main" id="gal-img" src="${firstUrl}" onclick="window.open(this.src,'_blank')" onerror="drFallback(this)">`;
 
@@ -78,7 +79,7 @@ function oM(idx) {
     if (fotos.length > 1) {
       b += `<div class="gal-thumbs" id="gal-th">`;
       fotos.forEach((f, i) => {
-        b += `<img src="${escapeAttr(f.url_thumb || f.url)}" class="${i === 0 ? 'act' : ''}" onclick="event.stopPropagation();galGo(${i})" onerror="drFallback(this)">`;
+        b += `<img src="${escapeAttr(_cld(f.url_thumb || f.url, 200))}" class="${i === 0 ? 'act' : ''}" onclick="event.stopPropagation();galGo(${i})" onerror="drFallback(this)">`;
       });
       b += '</div>';
     }
@@ -171,8 +172,9 @@ function oM(idx) {
     if (fotos.length > 0) {
       b += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
       fotos.forEach(f => {
-        const thumbUrl = escapeAttr(f.url_thumb || f.url);
-        const fallbackUrl = escapeAttr(f.url);
+        const _cld2 = window.cldOpt || (u => u);
+        const thumbUrl = escapeAttr(_cld2(f.url_thumb || f.url, 200));
+        const fallbackUrl = escapeAttr(_cld2(f.url, 400));
         b += `<div class="foto-prev-item">` +
           `<img src="${thumbUrl}" onerror="this.src='${fallbackUrl}'">` +
           `<button class="foto-del" onclick="event.stopPropagation();delFoto('${escapeAttr(f.id)}','${escapeAttr(p.id)}')" type="button">✕</button></div>`;

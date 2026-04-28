@@ -148,7 +148,7 @@ window.rPipe = function () {
     const hab = p.habitaciones||'', ban = p.banos||'', area = p.area_construida||'';
     const sps = [hab&&hab!=0?'🛏️ '+hab:'', ban&&ban!=0?'🚿 '+ban:'', area?'📐 '+area+'m²':''].filter(Boolean);
     const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
-    const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+    const thumb = sortedF.length > 0 ? ((window.cldOpt||(u=>u))(sortedF[0].url_thumb || sortedF[0].url, 400)) : '';
     const otherCols = PCOLS.filter(c2 => c2.id !== colId);
     const pSols = SOL.filter(s => s.inmueble_id === p.id && s.estado === 'pendiente');
     const ubPub = p.direccion_publica || p.barrio || p.ciudad || '';
@@ -213,7 +213,7 @@ window.rPipe = function () {
         const dias2 = diasDesde(s.created_at);
         const capNom = p.captador ? p.captador.nombre : '?';
         const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
-        const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+        const thumb = sortedF.length > 0 ? ((window.cldOpt||(u=>u))(sortedF[0].url_thumb || sortedF[0].url, 400)) : '';
         h += `<div class="pkc">`;
         h += `<div style="padding:6px 12px;background:var(--goldbg);border-bottom:1px solid rgba(245,158,11,.2);font-size:11px;font-weight:700;color:#92400e">🔍 Esperando respuesta de ${capNom}</div>`;
         h += `<div class="pkc-row" onclick="oM&&oM(${idx})">`;
@@ -229,7 +229,7 @@ window.rPipe = function () {
         if (!p) return;
         const idx = allD.indexOf(p);
         const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
-        const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+        const thumb = sortedF.length > 0 ? ((window.cldOpt||(u=>u))(sortedF[0].url_thumb || sortedF[0].url, 400)) : '';
         h += `<div class="pkc">`;
         h += `<div style="padding:6px 12px;background:var(--redbg);border-bottom:1px solid var(--rb);font-size:11px;font-weight:700;color:var(--red)">📩 ${s.solicitante ? s.solicitante.nombre : '?'} consulta disponibilidad</div>`;
         h += `<div class="pkc-row" onclick="oM&&oM(${idx})">`;
@@ -251,7 +251,7 @@ window.rPipe = function () {
       const capNom = p.captador ? p.captador.nombre : '?';
       const ubPub = p.direccion_publica || p.barrio || p.ciudad || '';
       const sortedF = p.fotos ? [...p.fotos].sort((a,b) => (a.orden||0) - (b.orden||0)) : [];
-      const thumb = sortedF.length > 0 ? (sortedF[0].url_thumb || sortedF[0].url) : '';
+      const thumb = sortedF.length > 0 ? ((window.cldOpt||(u=>u))(sortedF[0].url_thumb || sortedF[0].url, 400)) : '';
       const specs = [];
       if (hab && hab != 0) specs.push('🛏️ '+hab);
       if (ban && ban != 0) specs.push('🚿 '+ban);
@@ -596,7 +596,7 @@ window.rPort = function () {
   ls.forEach(p => {
     const idx=allD.indexOf(p);const hasM2=!!(p.url_metrocuadrado||'').trim();const hasFR=!!(p.url_fincaraiz||'').trim();
     const esMio=p.captador_id===u?.id;const canEdit=isAdmin||esMio;
-    const fotoThumb=p.fotos&&p.fotos.length>0?(p.fotos[0].url_thumb||p.fotos[0].url):'';
+    const fotoThumb=p.fotos&&p.fotos.length>0?((window.cldOpt||(u=>u))(p.fotos[0].url_thumb||p.fotos[0].url,400)):'';
 
     // F22: Click abre modal
     h+=`<div class="ptl-card" style="flex-direction:column"><div style="display:flex;gap:10px;width:100%;cursor:pointer" onclick="oM&&oM(${idx>=0?idx:0})">`;
@@ -894,7 +894,7 @@ window.rFavoritos = async function() {
         favs.forEach(fav => {
           const p = fav.inmueble; if (!p) return;
           const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-          const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+          const thumb = fotos.length > 0 ? ((window.cldOpt||(u=>u))(fotos[0].url_thumb || fotos[0].url, 400)) : '';
           const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
           const capTel = HOUSE_PHONE;
           const capNom = p.captador?.nombre || 'House';
@@ -928,7 +928,7 @@ window.rFavoritos = async function() {
           const p = it.inmueble;
           if (!p) { h += '<div class="pub-card" style="opacity:.6"><div class="pub-card-body"><div style="font-size:13px;color:var(--sub)">⚠️ Ya no disponible</div></div></div>'; return; }
           const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-          const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+          const thumb = fotos.length > 0 ? ((window.cldOpt||(u=>u))(fotos[0].url_thumb || fotos[0].url, 400)) : '';
           const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
           const cod = p.codigo_house || '';
           const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
@@ -994,7 +994,7 @@ window.rMisIntereses = async function() {
         return;
       }
       const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+      const thumb = fotos.length > 0 ? ((window.cldOpt||(u=>u))(fotos[0].url_thumb || fotos[0].url, 400)) : '';
       const pa = p.precio_arriendo || 0, pv = p.precio_venta || 0;
       const cod = p.codigo_house || '';
       const url = cod ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(cod) : 'https://inmobiliariahouse.com.co/ver/' + p.id;
@@ -1083,7 +1083,7 @@ window.rMisCitas = async function() {
       const est = _estadoCfg[c.estado] || _estadoCfg.propuesta;
       const fechaTxt = new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
       const fotos = inm.fotos ? [...inm.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-      const thumb = fotos[0]?.url_thumb || fotos[0]?.url || '';
+      const thumb = (window.cldOpt||(u=>u))(fotos[0]?.url_thumb || fotos[0]?.url || '', 400);
       const isPast = c.fecha < new Date().toISOString().split('T')[0];
 
       h += `<div class="card" style="margin:0 14px 12px;border-left:4px solid ${est.bd}">`;
@@ -2066,7 +2066,7 @@ window.rMisPub = async function() {
       const revBg = rev === 'aprobado' ? 'var(--greenbg)' : rev === 'rechazado' ? 'var(--redbg)' : 'var(--goldbg)';
       const revLabel = rev === 'aprobado' ? '✅ Publicado' : rev === 'rechazado' ? '❌ Rechazado' : '⏳ En revisión';
       const fotos = p.fotos ? [...p.fotos].sort((a,b)=>(a.orden||0)-(b.orden||0)) : [];
-      const thumb = fotos.length > 0 ? (fotos[0].url_thumb || fotos[0].url) : '';
+      const thumb = fotos.length > 0 ? ((window.cldOpt||(u=>u))(fotos[0].url_thumb || fotos[0].url, 400)) : '';
       h += `<div style="display:flex;gap:12px;padding:14px;background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;margin-bottom:8px">`;
       if (thumb) h += `<img src="${thumb}" style="width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0">`;
       else h += `<div style="width:70px;height:70px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${emo(p.tipo)}</div>`;

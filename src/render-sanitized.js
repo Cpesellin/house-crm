@@ -113,7 +113,8 @@ function render(ls) {
     // ── Card top: carousel o header sin foto ──
     let cardTop = '';
     if (hasF) {
-      const fUrls = sortedFotos.map(f => f.url_thumb || f.url);
+      const _cld = window.cldOpt || (u => u);
+      const fUrls = sortedFotos.map(f => _cld(f.url_thumb || f.url, 600));
       const cid = 'car_' + idx;
 
       // URLs de fotos escapadas para src, JSON escapado para data-attribute

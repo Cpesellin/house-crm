@@ -402,10 +402,11 @@ function sApp() {
 
   const _ini = (U.nombre||'?')[0].toUpperCase();
   if (U.foto) {
-    document.getElementById('ufoto').src = U.foto;
+    const _avt = (window.cldOpt || (u => u))(U.foto, 'avatar');
+    document.getElementById('ufoto').src = _avt;
     document.getElementById('ufoto').style.display = '';
     document.getElementById('ufoto-ini').style.display = 'none';
-    document.getElementById('mufoto').src = U.foto;
+    document.getElementById('mufoto').src = _avt;
     document.getElementById('mufoto').style.display = '';
     document.getElementById('mufoto-ini').style.display = 'none';
   } else {

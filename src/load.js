@@ -200,7 +200,9 @@ function render(ls) {
 
     let cardTop = '';
     if (hasF) {
-      const fUrls = sortedFotos.map(f => f.url_thumb || f.url);
+      // ⚡ Optimización Cloudinary: f_auto + q_auto + ancho 600 (cards mobile/desktop)
+      const _cld = window.cldOpt || (u => u);
+      const fUrls = sortedFotos.map(f => _cld(f.url_thumb || f.url, 600));
       const cid = 'car_' + idx;
       cardTop = `<div class="pc-car" id="${cid}" data-fotos='${JSON.stringify(fUrls)}' data-idx="0"><img src="${fUrls[0]}" onerror="drFallback&&drFallback(this)">`;
       if (sortedFotos.length > 1) cardTop += `<button class="car-nav prev" onclick="event.stopPropagation();cardNav&&cardNav('${cid}',-1)">‹</button><button class="car-nav next" onclick="event.stopPropagation();cardNav&&cardNav('${cid}',1)">›</button>`;

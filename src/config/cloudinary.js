@@ -195,12 +195,56 @@ export function initFotoUpload(containerId, onAdd, existingCount) {
   drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragging'); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
 }
 
+// ─── Optimización on-the-fly de URLs Cloudinary ─────────────────
+// Inyecta f_auto,q_auto + ancho responsive en cualquier URL existente,
+// incluso fotos viejas que se guardaron sin url_thumb optimizado.
+//
+// Uso:
+//   cldOpt(url)            → 800px, calidad/formato auto (default cards/modal)
+//   cldOpt(url, 400)       → 400px (thumbnails grilla)
+//   cldOpt(url, 1200)      → 1200px (galería full-screen)
+//   cldOpt(url, 'thumb')   → preset thumbnail 400px cuadrado
+//
+// Detecta si la URL ya tiene transformaciones para no duplicarlas.
+const _CLD_HOST_RX = /res\.cloudinary\.com\/[^/]+\/(image|video)\/upload\//;
+// Detecta si DESPUÉS de /upload/ hay un segmento de transformaciones
+// (cualquier cosa que empiece con una letra/número/coma seguida de "/").
+// Las transforms tienen forma: w_400,c_fill,q_auto/...
+// Los public_ids con folder pueden empezar con letras también, pero NO contienen
+// las claves típicas (w_, h_, c_, q_, f_, dpr_, ar_). Usamos esa heurística.
+const _CLD_TRANSFORM_RX = /\/upload\/([^/]*\b(?:w_|h_|c_|q_|f_|dpr_|ar_|g_|e_|x_|y_)[^/]*)\//;
+
+export function cldOpt(url, sizeOrPreset) {
+  if (!url || typeof url !== 'string') return url || '';
+  if (!_CLD_HOST_RX.test(url)) return url; // no es Cloudinary
+
+  // Resolver preset → params
+  let params = 'f_auto,q_auto,c_fill,w_800';
+  if (typeof sizeOrPreset === 'number') {
+    params = `f_auto,q_auto,c_fill,w_${sizeOrPreset}`;
+  } else if (sizeOrPreset === 'thumb') {
+    params = 'f_auto,q_auto,c_fill,w_400,h_300';
+  } else if (sizeOrPreset === 'avatar') {
+    params = 'f_auto,q_auto,c_fill,w_128,h_128,g_face';
+  } else if (sizeOrPreset === 'full') {
+    params = 'f_auto,q_auto,c_limit,w_1600';
+  }
+
+  // Si ya hay transformaciones de tamaño/formato, las reemplazamos
+  if (_CLD_TRANSFORM_RX.test(url)) {
+    return url.replace(_CLD_TRANSFORM_RX, `/upload/${params}/`);
+  }
+  // Si no, las insertamos justo después de /upload/
+  return url.replace(/\/upload\//, `/upload/${params}/`);
+}
+
 export { CLOUD_NAME, CLOUD_PRESET, MAX_FOTOS };
 
 // Backward compat
 if (typeof window !== 'undefined') {
   window.uploadToCloudinary = uploadToCloudinary;
   window.initFotoUpload = initFotoUpload;
+  window.cldOpt = cldOpt;
   window.CLOUD_NAME = CLOUD_NAME;
   window.CLOUD_PRESET = CLOUD_PRESET;
   window.MAX_FOTOS = MAX_FOTOS;
