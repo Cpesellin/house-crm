@@ -619,6 +619,54 @@ export async function contarInteresadosPorInmueble(inmuebleId) {
   return count || 0;
 }
 
+// ─────────────────────────────────────────────────────────────
+// BATCH: precargar counts para una lista de inmuebles en UNA query
+// Reemplaza el N+1 (142 queries → 1 query) en el portafolio.
+// Cachea el resultado 60s en window._intCountsCache.
+// ─────────────────────────────────────────────────────────────
+const _intCountsCache = { ts: 0, byId: new Map() };
+
+export async function precargarCountsInteresados(inmuebleIds = []) {
+  const ids = Array.from(new Set((inmuebleIds || []).filter(Boolean)));
+  if (!ids.length) return new Map();
+
+  // Cache de 60s — si está fresco y cubre los ids, devolverlo
+  if (Date.now() - _intCountsCache.ts < 60000 && ids.every(i => _intCountsCache.byId.has(i))) {
+    return _intCountsCache.byId;
+  }
+
+  const u = U();
+  let q = SB().from('interesados')
+    .select('inmueble_id')
+    .in('inmueble_id', ids)
+    .neq('estado', 'descartado')
+    .not('tipificacion', 'in', '(cierre_ganado,cierre_perdido)');
+
+  if (u && u.rol !== 'admin') {
+    q = q.or(`privado.eq.false,privado.is.null,asesor_creador_id.eq.${u.id}`);
+  }
+
+  const { data, error } = await q.limit(5000);
+  const map = new Map(ids.map(i => [i, 0]));
+  if (!error && Array.isArray(data)) {
+    for (const row of data) {
+      if (row.inmueble_id) map.set(row.inmueble_id, (map.get(row.inmueble_id) || 0) + 1);
+    }
+  }
+  _intCountsCache.ts = Date.now();
+  _intCountsCache.byId = map;
+  return map;
+}
+
+export function getCachedIntCount(inmuebleId) {
+  return _intCountsCache.byId.get(inmuebleId);
+}
+
+export function invalidarCacheIntCounts() {
+  _intCountsCache.ts = 0;
+  _intCountsCache.byId.clear();
+}
+
 // Alertas: leads sin actividad > N horas
 export async function leadsSinActividad(horas = 72, asesorId = null) {
   const limite = new Date(Date.now() - horas * 3600000).toISOString();
@@ -652,6 +700,9 @@ if (typeof window !== 'undefined') {
   window.obtenerInmueblesAdicionales = obtenerInmueblesAdicionales;
   window.obtenerVisitas = obtenerVisitas;
   window.contarInteresadosPorInmueble = contarInteresadosPorInmueble;
+  window.precargarCountsInteresados = precargarCountsInteresados;
+  window.getCachedIntCount = getCachedIntCount;
+  window.invalidarCacheIntCounts = invalidarCacheIntCounts;
   window.leadsSinActividad = leadsSinActividad;
   window.parsearMencionesLead = parsearMenciones;
 }

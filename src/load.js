@@ -130,6 +130,28 @@ function render(ls) {
   const rcEl = document.getElementById('resCount'); if(rcEl) rcEl.textContent = ls.length;
   let h = '<div class="pgr">';
 
+  // ⚡ Batch precarga de counts de interesados para todas las tarjetas visibles.
+  // Reemplaza el N+1 (una query por tarjeta → 142+ queries) por UNA sola query.
+  // El badge consume el cache vía window.getCachedIntCount().
+  if (!_isExt && typeof window.precargarCountsInteresados === 'function') {
+    const ids = ls.slice(0, 60).map(p => p.id).filter(Boolean);
+    // Fire-and-forget: cuando termine, refresca los badges visibles.
+    window.precargarCountsInteresados(ids).then(map => {
+      ids.forEach(id => {
+        const el = document.getElementById('badgeInt-' + id);
+        if (!el) return;
+        const n = map.get(id) || 0;
+        const span = el.querySelector('.int-count');
+        if (span) span.textContent = n;
+        if (n > 0) {
+          el.style.background = '#3b82f6';
+          el.style.color = '#fff';
+          el.style.borderColor = '#3b82f6';
+        }
+      });
+    }).catch(() => {});
+  }
+
   ls.slice(0, 60).forEach(p => {
     const idx = D.indexOf(p);
     const tip = p.tipo || 'Inmueble', ciu = p.ciudad || '';

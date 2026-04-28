@@ -9,6 +9,8 @@
  *   - badgeInteresadosInmueble(inmuebleId) para tarjetas
  */
 
+import { getSupabaseClient } from './config/supabase.js';
+
 // ============================================================
 // BADGE DE ALERTAS en menú (leads sin actividad > 72h)
 // ============================================================
@@ -316,10 +318,7 @@ async function _cargarDatosMenciones() {
   const cache = window._mentionCache;
   if (cache.users && cache.inmuebles && (Date.now() - cache.ts < 60000)) return cache;
   try {
-    const SB = window.SB || null;
-    // Fetch desde módulo supabase
-    const mod = await import('./config/supabase.js');
-    const SBc = mod.getSupabaseClient();
+    const SBc = getSupabaseClient();
     const [rUsers, rInms] = await Promise.all([
       SBc.from('usuarios').select('id,nombre,usuario,foto').eq('activo', true).neq('tipo_usuario', 'publico').limit(100),
       SBc.from('inmuebles').select('id,codigo_house,tipo,ciudad,barrio').not('codigo_house', 'is', null).limit(300),
@@ -1260,18 +1259,24 @@ window.marcarVisita = async function(visitaId, nuevoEstado) {
  */
 window.badgeInteresadosInmueble = function(inmuebleId) {
   const id = 'badgeInt-' + inmuebleId;
+  // Pintar count desde cache batch si está disponible (sin red).
+  // Si no, fallback a query individual (caso aislado).
+  const paint = (n) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelector('.int-count').textContent = n;
+    if (n > 0) {
+      el.style.background = '#3b82f6';
+      el.style.color = '#fff';
+      el.style.borderColor = '#3b82f6';
+    }
+  };
   setTimeout(async () => {
     try {
+      const cached = window.getCachedIntCount && window.getCachedIntCount(inmuebleId);
+      if (typeof cached === 'number') { paint(cached); return; }
       const n = await window.contarInteresadosPorInmueble(inmuebleId);
-      const el = document.getElementById(id);
-      if (el) {
-        el.querySelector('.int-count').textContent = n;
-        if (n > 0) {
-          el.style.background = '#3b82f6';
-          el.style.color = '#fff';
-          el.style.borderColor = '#3b82f6';
-        }
-      }
+      paint(n);
     } catch {}
   }, 50);
   return `<button id="${id}" onclick="event.stopPropagation();abrirCrearInteresado('${inmuebleId}')"

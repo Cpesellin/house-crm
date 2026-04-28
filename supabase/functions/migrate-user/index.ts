@@ -67,12 +67,14 @@ Deno.serve(async (req: Request) => {
     }
 
     // 1. Buscar usuario por email O por usuario
-    const { data: userRow, error: eFind } = await SB
+    // Case-insensitive: el input puede venir con casing distinto al de la BD
+    const { data: userRows, error: eFind } = await SB
       .from('usuarios')
       .select('id, email, usuario, password_hash, activo, auth_migrated, nombre')
-      .or(`email.eq.${usuarioOrEmail},usuario.eq.${usuarioOrEmail}`)
+      .or(`email.ilike.${usuarioOrEmail},usuario.ilike.${usuarioOrEmail}`)
       .eq('activo', true)
-      .maybeSingle();
+      .limit(1);
+    const userRow = Array.isArray(userRows) && userRows.length ? userRows[0] : null;
 
     if (eFind) return json({ ok: false, error: 'db_error', detail: eFind.message }, 500);
     if (!userRow) return json({ ok: false, error: 'user_not_found' }, 404);

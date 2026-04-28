@@ -15,6 +15,7 @@ import './functions.js';
 import './interesados-ui.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
+import { getSupabaseClient } from './config/supabase.js';
 
 // ---------------------------------------------------------------------------
 // Store router reference for App.js backward compat bridge
@@ -74,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       check();
     });
 
-    const { getSupabaseClient } = await import('./config/supabase.js');
     const SB = getSupabaseClient();
 
     // If it's a HOUSE code, resolve to UUID

@@ -436,12 +436,14 @@ export async function loginWithCredentials(username, password) {
     // El password nunca se valida en el cliente. La validación sucede en:
     //   - Supabase Auth (si auth_migrated=true)
     //   - Edge Function migrate-user con service_role (si auth_migrated=false)
-    const { data: userRow } = await SB
+    // Case-insensitive: el usuario puede teclear 'Cristhian.M' y la BD tener 'cristhian.m' o viceversa
+    const { data: userRows } = await SB
       .from('usuarios')
       .select('id, email, usuario, auth_migrated, activo')
-      .or(`usuario.eq.${usr},email.eq.${usr}`)
+      .or(`usuario.ilike.${usr},email.ilike.${usr}`)
       .eq('activo', true)
-      .maybeSingle();
+      .limit(1);
+    const userRow = Array.isArray(userRows) && userRows.length ? userRows[0] : null;
 
     if (!userRow) {
       const msg = 'Usuario o contraseña incorrectos';

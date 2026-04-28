@@ -106,6 +106,28 @@ window.rPipe = function () {
 
   const tab = window._pipeTab || 'Disponible';
 
+  // ⚡ Batch precarga de counts de interesados para todas las tarjetas del pipeline.
+  // Reemplaza el N+1 (1 query por tarjeta) por UNA sola query agregada.
+  if (typeof window.precargarCountsInteresados === 'function') {
+    const _ids = Array.from(new Set([...MIS.map(p => p.id), ...arrDisp.map(p => p.id)].filter(Boolean)));
+    if (_ids.length) {
+      window.precargarCountsInteresados(_ids).then(map => {
+        _ids.forEach(id => {
+          const el = document.getElementById('badgeInt-' + id);
+          if (!el) return;
+          const n = map.get(id) || 0;
+          const span = el.querySelector('.int-count');
+          if (span) span.textContent = n;
+          if (n > 0) {
+            el.style.background = '#3b82f6';
+            el.style.color = '#fff';
+            el.style.borderColor = '#3b82f6';
+          }
+        });
+      }).catch(() => {});
+    }
+  }
+
   // ── TAB BAR ──
   if (nav) {
     let navH = PCOLS.map(col =>
@@ -1589,9 +1611,8 @@ window.rSugerenciasAdmin = async function() {
   el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--sub)">⏳ Cargando métricas de sugerencias...</div>';
 
   try {
-    // Query stats vía módulo supabase
-    const mod = await import('./config/supabase.js');
-    const SBc = mod.getSupabaseClient();
+    // Query stats vía módulo supabase (ya importado estáticamente)
+    const SBc = getSupabaseClient();
 
     const hace7d = new Date(Date.now() - 7 * 864e5).toISOString();
     const hace30d = new Date(Date.now() - 30 * 864e5).toISOString();
