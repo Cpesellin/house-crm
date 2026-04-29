@@ -25,6 +25,8 @@ const ROUTES = {
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
   // v2 \u2014 nueva ficha de propiedad editorial. Hash: #/p/HOUSE-178
   'p':        { section: 'sec-property-detail', label: 'Propiedad',  auth: false },
+  // v2 \u2014 portfolio list (home p\u00fablica editorial). Hash: #/v2
+  'v2':       { section: 'sec-portfolio-list',  label: 'Portafolio v2', auth: false },
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true },
@@ -91,8 +93,9 @@ const ROUTE_RENDERERS = {
   'admin-pagos':  'renderAdminPaymentPanel',
   'referir':    'renderReferralForm',
   'mis-referidos': 'renderMisReferidos',
-  // v2 ficha
+  // v2 ficha + portfolio
   'p':                'rPropertyV2',
+  'v2':               'rPortfolioListV2',
 };
 
 // ---------------------------------------------------------------------------

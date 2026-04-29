@@ -255,6 +255,8 @@ function renderShell(container) {
 <!-- EXTERNAL USER SECTIONS -->
 <!-- v2 — Property Detail (nueva, opt-in via #/p/:codigo) -->
 <div class="sec" id="sec-property-detail"></div>
+<!-- v2 — Portfolio List (nueva, opt-in via #/v2) -->
+<div class="sec" id="sec-portfolio-list"></div>
 <div class="sec" id="sec-portafolio"><div style="max-width:1300px;margin:0 auto;padding:0 0 60px" id="portafolioc"></div></div>
 <div class="sec" id="sec-favoritos"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="favoritosc"></div></div>
 <div class="sec" id="sec-mis-intereses"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinteresesc"></div></div>
