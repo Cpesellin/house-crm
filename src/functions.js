@@ -1529,7 +1529,11 @@ window.doSearch = function() {
   const allD = D();
   if (!allD.length) return;
   window.renderSel();
-  const qv = (document.getElementById('q')?.value || '').trim().toLowerCase();
+  // Normalizamos el query igual que el índice (sin acentos) para que
+  // "monteria" matchee "Montería".
+  const _norm = window._searchNorm || (s => String(s||'').toLowerCase());
+  const qvRaw = (document.getElementById('q')?.value || '').trim();
+  const qv = _norm(qvRaw);
   if (qv.length >= 2) { let r = []; try { r = JSON.parse(localStorage.getItem('hcrm_recent') || '[]'); } catch(e){} r = r.filter(x => x !== qv); r.unshift(qv); localStorage.setItem('hcrm_recent', JSON.stringify(r.slice(0, 5))); }
   const qC=document.getElementById('qClear');if(qC)qC.style.display=qv?'flex':'none';
 
@@ -1576,7 +1580,12 @@ window.doSearch = function() {
       if (arMax > 0 && (pa <= 0 || pa > arMax)) return false;
       if (vnMin > 0 && (pv <= 0 || pv < vnMin)) return false;
       if (vnMax > 0 && (pv <= 0 || pv > vnMax)) return false;
-      if (qv) { const all = Object.values(p).join(' ').toLowerCase() + (p.captador ? p.captador.nombre : ''); if (!qv.split(/\s+/).every(w => all.toLowerCase().includes(w))) return false; }
+      if (qv) {
+        // Usa el índice precomputado (campos relevantes, sin acentos).
+        // Fallback: lo construye on-the-fly si el inmueble no lo tiene.
+        const idx = p._searchIndex || (window._buildSearchIndex ? window._buildSearchIndex(p) : '');
+        if (!qv.split(/\s+/).filter(Boolean).every(w => idx.includes(w))) return false;
+      }
       return true;
     });
   }
