@@ -23,6 +23,8 @@ const ROUTES = {
   'perfil':   { section: 'sec-perfil',   label: 'Mi Perfil',      icon: '\u2699\uFE0F', auth: true, internal: true },
   'papelera': { section: 'sec-papelera', label: 'Papelera',       icon: '\u{1F5D1}\uFE0F', auth: true, internal: true, roles: ['admin'] },
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
+  // v2 \u2014 nueva ficha de propiedad editorial. Hash: #/p/HOUSE-178
+  'p':        { section: 'sec-property-detail', label: 'Propiedad',  auth: false },
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true },
@@ -89,6 +91,8 @@ const ROUTE_RENDERERS = {
   'admin-pagos':  'renderAdminPaymentPanel',
   'referir':    'renderReferralForm',
   'mis-referidos': 'renderMisReferidos',
+  // v2 ficha
+  'p':                'rPropertyV2',
 };
 
 // ---------------------------------------------------------------------------
@@ -173,8 +177,11 @@ function navigateTo(route) {
   }
 
   // Update hash silently (won't re-trigger if already the same)
+  // Si el hash actual ya empieza con la ruta correcta (incluyendo params,
+  // p.ej. #/p/HOUSE-178), lo dejamos tal cual para no perder los params.
   const desired = `#/${route}`;
-  if (location.hash !== desired) {
+  const currentRouteKey = location.hash.replace(/^#\/?/, '').split('/')[0];
+  if (currentRouteKey !== route) {
     location.hash = desired;
     // hashchange listener will call navigateTo again, so bail here
     return;

@@ -1,0 +1,67 @@
+/* =========================================================================
+   HOUSE — Design System v2 (editorial portfolio)
+   Tokens del handoff de Claude Design. Scopeados a .v2-page para coexistir
+   con el design system actual sin pisarlo.
+   ========================================================================= */
+
+.v2-page {
+  /* ── Color: ink (texto y superficies oscuras) ───────────────────────── */
+  --v2-ink:        #0E1430;
+  --v2-ink-2:      #2A3152;
+  --v2-ink-3:      #6A7088;
+  --v2-ink-4:      #9A9FB3;
+
+  /* ── Color: cream/paper (fondo y superficies) ───────────────────────── */
+  --v2-cream:      #F5F1EA;
+  --v2-cream-2:    #EFE9DC;
+  --v2-paper:      #FBFAF6;
+
+  /* ── Color: lines (bordes) ──────────────────────────────────────────── */
+  --v2-line:       #E6E2D8;
+  --v2-line-2:     #D6D1C4;
+
+  /* ── Color: brand blue ──────────────────────────────────────────────── */
+  --v2-blue:       #1E2F8A;
+  --v2-blue-2:     #2B3FBF;
+  --v2-blue-soft:  #E8ECFB;
+  --v2-blue-ink:   #0A1448;
+
+  /* ── Color: accents ─────────────────────────────────────────────────── */
+  --v2-amber:      oklch(72% 0.12 70);
+  --v2-amber-soft: oklch(92% 0.05 70);
+  --v2-green:      oklch(55% 0.12 155);
+  --v2-green-soft: oklch(93% 0.04 155);
+  --v2-red:        oklch(58% 0.18 25);
+
+  /* ── Tipografía ─────────────────────────────────────────────────────── */
+  --v2-serif: "Fraunces", "Source Serif 4", Georgia, serif;
+  --v2-sans:  "Inter Tight", "Inter", system-ui, -apple-system, sans-serif;
+  --v2-mono:  "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  /* ── Layout ─────────────────────────────────────────────────────────── */
+  --v2-pad: clamp(20px, 4vw, 48px);
+  --v2-max: 1340px;
+
+  /* ── Radii ──────────────────────────────────────────────────────────── */
+  --v2-radius:      4px;
+  --v2-radius-card: 6px;
+  --v2-radius-mob:  12px;
+
+  /* ── Sombras (uso contado) ──────────────────────────────────────────── */
+  --v2-shadow-pop:    0 8px 40px rgba(14, 20, 48, 0.12);
+  --v2-shadow-sticky: 0 -8px 24px rgba(14, 20, 48, 0.06);
+
+  /* ── Aplicar tipografía + features de Inter Tight ──────────────────── */
+  font-family: var(--v2-sans);
+  font-feature-settings: "ss01", "cv11";
+  color: var(--v2-ink);
+  background: var(--v2-cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Reset chico solo dentro de .v2-page para no contagiar el resto */
+.v2-page * { box-sizing: border-box; }
+.v2-page button { font-family: inherit; }
+.v2-page input, .v2-page textarea, .v2-page select { font-family: inherit; font-size: 16px; /* anti-zoom iOS */ }

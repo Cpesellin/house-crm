@@ -253,6 +253,8 @@ function renderShell(container) {
 <div class="sec" id="sec-papelera"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F5D1}\uFE0F</div><div><div class="cht">Papelera</div><div class="chsb">Inmuebles eliminados</div></div></div></div><div class="cdb" id="papc"></div></div></div>
 
 <!-- EXTERNAL USER SECTIONS -->
+<!-- v2 — Property Detail (nueva, opt-in via #/p/:codigo) -->
+<div class="sec" id="sec-property-detail"></div>
 <div class="sec" id="sec-portafolio"><div style="max-width:1300px;margin:0 auto;padding:0 0 60px" id="portafolioc"></div></div>
 <div class="sec" id="sec-favoritos"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="favoritosc"></div></div>
 <div class="sec" id="sec-mis-intereses"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinteresesc"></div></div>
