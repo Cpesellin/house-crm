@@ -2,6 +2,7 @@
   "rewrites": [
     {
       "source": "/ver/:ref",
+      "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
       "destination": "/api/ver?ref=:ref"
     },
     {
