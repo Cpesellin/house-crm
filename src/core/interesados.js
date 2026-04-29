@@ -624,7 +624,9 @@ export async function contarInteresadosPorInmueble(inmuebleId) {
 // Reemplaza el N+1 (142 queries → 1 query) en el portafolio.
 // Cachea el resultado 60s en window._intCountsCache.
 // ─────────────────────────────────────────────────────────────
-const _intCountsCache = { ts: 0, byId: new Map() };
+// Cache de counts. `inflight` es la promesa de la query batch en curso —
+// los badges la awaitean antes de caer al fallback individual.
+const _intCountsCache = { ts: 0, byId: new Map(), inflight: null };
 
 export async function precargarCountsInteresados(inmuebleIds = []) {
   const ids = Array.from(new Set((inmuebleIds || []).filter(Boolean)));
@@ -635,36 +637,52 @@ export async function precargarCountsInteresados(inmuebleIds = []) {
     return _intCountsCache.byId;
   }
 
+  // Si ya hay una query batch en vuelo, devolver esa misma promesa
+  if (_intCountsCache.inflight) return _intCountsCache.inflight;
+
   const u = U();
-  let q = SB().from('interesados')
-    .select('inmueble_id')
-    .in('inmueble_id', ids)
-    .neq('estado', 'descartado')
-    .not('tipificacion', 'in', '(cierre_ganado,cierre_perdido)');
+  const promise = (async () => {
+    let q = SB().from('interesados')
+      .select('inmueble_id')
+      .in('inmueble_id', ids)
+      .neq('estado', 'descartado')
+      .not('tipificacion', 'in', '(cierre_ganado,cierre_perdido)');
 
-  if (u && u.rol !== 'admin') {
-    q = q.or(`privado.eq.false,privado.is.null,asesor_creador_id.eq.${u.id}`);
-  }
-
-  const { data, error } = await q.limit(5000);
-  const map = new Map(ids.map(i => [i, 0]));
-  if (!error && Array.isArray(data)) {
-    for (const row of data) {
-      if (row.inmueble_id) map.set(row.inmueble_id, (map.get(row.inmueble_id) || 0) + 1);
+    if (u && u.rol !== 'admin') {
+      q = q.or(`privado.eq.false,privado.is.null,asesor_creador_id.eq.${u.id}`);
     }
-  }
-  _intCountsCache.ts = Date.now();
-  _intCountsCache.byId = map;
-  return map;
+
+    const { data, error } = await q.limit(5000);
+    const map = new Map(ids.map(i => [i, 0]));
+    if (!error && Array.isArray(data)) {
+      for (const row of data) {
+        if (row.inmueble_id) map.set(row.inmueble_id, (map.get(row.inmueble_id) || 0) + 1);
+      }
+    }
+    _intCountsCache.ts = Date.now();
+    _intCountsCache.byId = map;
+    _intCountsCache.inflight = null;
+    return map;
+  })();
+
+  _intCountsCache.inflight = promise;
+  return promise;
 }
 
 export function getCachedIntCount(inmuebleId) {
   return _intCountsCache.byId.get(inmuebleId);
 }
 
+// Promesa de la query batch en vuelo (o null si no hay) — la usa el badge
+// para evitar disparar queries individuales mientras la batch resuelve.
+export function getIntCountsInflight() {
+  return _intCountsCache.inflight;
+}
+
 export function invalidarCacheIntCounts() {
   _intCountsCache.ts = 0;
   _intCountsCache.byId.clear();
+  _intCountsCache.inflight = null;
 }
 
 // Alertas: leads sin actividad > N horas
@@ -702,6 +720,7 @@ if (typeof window !== 'undefined') {
   window.contarInteresadosPorInmueble = contarInteresadosPorInmueble;
   window.precargarCountsInteresados = precargarCountsInteresados;
   window.getCachedIntCount = getCachedIntCount;
+  window.getIntCountsInflight = getIntCountsInflight;
   window.invalidarCacheIntCounts = invalidarCacheIntCounts;
   window.leadsSinActividad = leadsSinActividad;
   window.parsearMencionesLead = parsearMenciones;

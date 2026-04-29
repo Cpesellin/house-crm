@@ -1273,8 +1273,18 @@ window.badgeInteresadosInmueble = function(inmuebleId) {
   };
   setTimeout(async () => {
     try {
-      const cached = window.getCachedIntCount && window.getCachedIntCount(inmuebleId);
+      // 1. ¿Cache directo?
+      let cached = window.getCachedIntCount && window.getCachedIntCount(inmuebleId);
       if (typeof cached === 'number') { paint(cached); return; }
+      // 2. ¿Hay una batch precarga en vuelo? Esperarla en lugar de disparar
+      // una query individual (evita el N+1 cuando la batch tarda más de 50ms).
+      const inflight = window.getIntCountsInflight && window.getIntCountsInflight();
+      if (inflight) {
+        await inflight;
+        cached = window.getCachedIntCount && window.getCachedIntCount(inmuebleId);
+        if (typeof cached === 'number') { paint(cached); return; }
+      }
+      // 3. Fallback: query individual (caso aislado, no en listado)
       const n = await window.contarInteresadosPorInmueble(inmuebleId);
       paint(n);
     } catch {}
