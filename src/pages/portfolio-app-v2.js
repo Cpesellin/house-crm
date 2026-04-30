@@ -542,6 +542,85 @@ function renderFeatured() {
   `;
 }
 
+// "Lo que seleccionaste" — pills removibles de cada filtro activo +
+// botón "Limpiar todos los filtros". Sólo se renderiza si hay filtros.
+function renderSelBar() {
+  const NEG = window.NEG_OPTS || [];
+  const TIPO = window.TIPO_OPTS || [];
+
+  const pills = [];
+
+  // Negocio
+  state.neg.forEach((v) => {
+    const o = NEG.find((x) => x.v === v);
+    pills.push({
+      key: 'neg-' + v,
+      label: `${o ? o.e + ' ' + o.l : capitalize(v)}`,
+      group: 'neg',
+      value: v,
+    });
+  });
+  // Ciudad
+  state.ciu.forEach((v) => {
+    pills.push({
+      key: 'ciu-' + v,
+      label: `📍 ${v}`,
+      group: 'ciu',
+      value: v,
+    });
+  });
+  // Tipo
+  state.tipo.forEach((v) => {
+    const o = TIPO.find((x) => x.v === v);
+    pills.push({
+      key: 'tipo-' + v,
+      label: `${o ? o.e + ' ' + (o.l || o.v) : v}`,
+      group: 'tipo',
+      value: v,
+    });
+  });
+  // Precio
+  if (state.precioMin || state.precioMax) {
+    const min = state.precioMin ? '$' + Math.round(state.precioMin / 1e6) + 'M' : '$0';
+    const max = state.precioMax ? '$' + Math.round(state.precioMax / 1e6) + 'M' : '∞';
+    pills.push({
+      key: 'precio',
+      label: `💰 ${min} – ${max}`,
+      group: 'precio',
+      value: null,
+    });
+  }
+  // Búsqueda
+  if (state.search && state.search.trim()) {
+    pills.push({
+      key: 'search',
+      label: `🔍 "${state.search.trim()}"`,
+      group: 'search',
+      value: null,
+    });
+  }
+
+  if (pills.length === 0) return '';
+
+  return `
+    <div class="pa-selbar">
+      <div class="pa-selbar-title">Lo que seleccionaste</div>
+      <div class="pa-selbar-pills">
+        ${pills.map((p) => `
+          <button class="pa-selpill" type="button"
+                  data-group="${_esc(p.group)}" data-value="${_esc(p.value || '')}">
+            ${_esc(p.label)}
+            <span class="pa-selpill-x">✕</span>
+          </button>
+        `).join('')}
+      </div>
+      <button class="pa-selbar-clearall" type="button" id="v2appSelClearAll">
+        🗑️ Limpiar todos los filtros
+      </button>
+    </div>
+  `;
+}
+
 function renderResults() {
   // Subtitle a partir de los Sets (no strings) — describe los filtros activos
   const subParts = [];
@@ -686,6 +765,7 @@ async function renderPortfolioAppV2() {
         <div class="pa-content">
           ${renderBanner(stats)}
           ${renderChips()}
+          ${renderSelBar()}
           ${renderFeatured()}
           ${renderResults()}
         </div>
@@ -797,36 +877,8 @@ async function renderPortfolioAppV2() {
         paint();
       });
     }
-    // Repintar results
-    const contentEl = root.querySelector('.pa-content');
-    if (contentEl) {
-      // Quita y reescribe results + featured
-      const featuredEl = contentEl.querySelector('.pa-featured');
-      if (featuredEl) featuredEl.remove();
-      const resultsHead = contentEl.querySelector('.pa-results-head');
-      if (resultsHead) {
-        // Borrar todo desde results-head hasta el final del contenido
-        let n = resultsHead;
-        while (n) {
-          const nx = n.nextElementSibling;
-          n.remove();
-          n = nx;
-        }
-      }
-      const wrap = document.createElement('div');
-      wrap.innerHTML = renderFeatured() + renderResults();
-      while (wrap.firstChild) contentEl.appendChild(wrap.firstChild);
-      // Rebind results events
-      const more = document.getElementById('v2appMore');
-      if (more) more.addEventListener('click', () => { state.visibleCount += 12; repaintChipsAndResults(); });
-      const clear = document.getElementById('v2appClear');
-      if (clear) clear.addEventListener('click', () => {
-        state.neg.clear(); state.ciu.clear(); state.tipo.clear();
-        state.precioMin = null; state.precioMax = null;
-        state.search = '';
-        paint();
-      });
-    }
+    // Repintar results + selbar (más simple: paint completo, mantiene dropdown abierto)
+    paint();
   }
 
   paint();
@@ -865,6 +917,31 @@ async function renderPortfolioAppV2() {
     if (chipsClear) chipsClear.addEventListener('click', () => {
       state.neg.clear(); state.ciu.clear(); state.tipo.clear();
       state.precioMin = null; state.precioMax = null;
+      paint();
+    });
+
+    // SelBar: pills removibles + clear all
+    document.querySelectorAll('.pa-selpill').forEach((el) => {
+      el.addEventListener('click', () => {
+        const g = el.dataset.group;
+        const v = el.dataset.value;
+        if (g === 'neg' || g === 'ciu' || g === 'tipo') state[g].delete(v);
+        else if (g === 'precio') { state.precioMin = null; state.precioMax = null; }
+        else if (g === 'search') {
+          state.search = '';
+          const q = document.getElementById('v2appQ');
+          if (q) q.value = '';
+        }
+        paint();
+      });
+    });
+    const selClearAll = document.getElementById('v2appSelClearAll');
+    if (selClearAll) selClearAll.addEventListener('click', () => {
+      state.neg.clear(); state.ciu.clear(); state.tipo.clear();
+      state.precioMin = null; state.precioMax = null;
+      state.search = '';
+      const q = document.getElementById('v2appQ');
+      if (q) q.value = '';
       paint();
     });
 

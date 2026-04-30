@@ -369,6 +369,56 @@
 }
 .pa-dropdown-price input:focus { border-color: var(--v2-primary); }
 
+/* ── "Lo que seleccionaste" — pills de filtros activos ─────────────── */
+.v2-page.app .pa-selbar {
+  background: var(--v2-paper);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-r-lg);
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.v2-page.app .pa-selbar-title {
+  font-size: 11px; font-weight: 700;
+  color: var(--v2-ink-3);
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.v2-page.app .pa-selbar-pills {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.v2-page.app .pa-selpill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: var(--v2-r-pill);
+  background: var(--v2-cream); border: 1px solid var(--v2-line);
+  font-size: 12.5px; font-weight: 600; color: var(--v2-ink);
+  cursor: pointer; font-family: inherit;
+  transition: background .12s, border-color .12s;
+}
+.v2-page.app .pa-selpill:hover {
+  background: #fce4e4; border-color: #fcd0d0; color: var(--v2-red);
+}
+.v2-page.app .pa-selpill-x {
+  display: inline-grid; place-items: center;
+  width: 16px; height: 16px; border-radius: var(--v2-r-pill);
+  background: var(--v2-line); color: var(--v2-ink-3);
+  font-size: 10px; font-weight: 700;
+}
+.v2-page.app .pa-selpill:hover .pa-selpill-x {
+  background: var(--v2-red); color: #fff;
+}
+.v2-page.app .pa-selbar-clearall {
+  width: 100%; padding: 10px;
+  border-radius: var(--v2-r-md);
+  background: #fce4e4;
+  border: 1px solid #fcd0d0;
+  color: var(--v2-red);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.v2-page.app .pa-selbar-clearall:hover {
+  background: #fbd5d5; border-color: #f8b4b4;
+}
+
 /* ── Featured ───────────────────────────────────────────────────────── */
 .v2-page.app .pa-featured {
   position: relative; cursor: pointer;
