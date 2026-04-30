@@ -15,6 +15,7 @@ import './functions.js';
 import './interesados-ui.js';
 import './pages/property-detail-v2.js';
 import './pages/portfolio-list-v2.js';
+import './pages/portfolio-app-v2.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';

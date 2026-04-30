@@ -27,6 +27,8 @@ const ROUTES = {
   'p':        { section: 'sec-property-detail', label: 'Propiedad',  auth: false },
   // v2 \u2014 portfolio list (home p\u00fablica editorial). Hash: #/v2
   'v2':       { section: 'sec-portfolio-list',  label: 'Portafolio v2', auth: false },
+  // v2 \u2014 portfolio app con sidebar (versi\u00f3n logged-in). Hash: #/v2-app
+  'v2-app':   { section: 'sec-portfolio-app',   label: 'Portafolio App', auth: false },
   // External user routes
   'portafolio': { section: 'sec-portafolio', sectionLoggedIn: 'sec-inv', label: 'Explorar', icon: '\u{1F50D}', auth: false },
   'favoritos':  { section: 'sec-favoritos',  label: 'Favoritos',       icon: '\u2764\uFE0F', auth: true },
@@ -96,6 +98,7 @@ const ROUTE_RENDERERS = {
   // v2 ficha + portfolio
   'p':                'rPropertyV2',
   'v2':               'rPortfolioListV2',
+  'v2-app':           'rPortfolioAppV2',
 };
 
 // ---------------------------------------------------------------------------
