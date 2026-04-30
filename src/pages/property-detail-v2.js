@@ -101,15 +101,39 @@ async function fetchPropertyByCode(code) {
   if (local && Array.isArray(local.fotos) && local.fotos.length) return local;
 
   const sb = SB();
+
+  // Sólo seleccionamos campos PÚBLICOS — los internos (direccion, observaciones,
+  // descripcion_interna, caracteristicas) están protegidos por RLS para anon.
+  // Si el usuario está logueado, intentamos fetch con campos extras (más rico).
+  const u = window.userStore?.get();
+  const PUB_FIELDS = 'id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,parqueaderos,estado,descripcion_cliente,captador:usuarios!captador_id(id,nombre,foto,telefono_contacto),fotos(url,url_thumb,orden)';
+  const FULL_FIELDS = PUB_FIELDS.replace(',descripcion_cliente,', ',descripcion_cliente,descripcion_interna,observaciones,caracteristicas,direccion,area_total,antiguedad,');
+
+  const fields = u ? FULL_FIELDS : PUB_FIELDS;
+
   let q = sb
     .from('inmuebles')
-    .select(
-      'id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,direccion,precio_venta,precio_arriendo,habitaciones,banos,area_construida,area_total,estrato,antiguedad,parqueaderos,estado,descripcion_cliente,descripcion_interna,observaciones,caracteristicas,captador:usuarios!captador_id(id,nombre,email,foto,telefono_contacto),fotos(url,url_thumb,orden)'
-    )
+    .select(fields)
     .eq('eliminado', false)
     .limit(1);
   q = isUuid ? q.eq('id', code) : q.eq('codigo_house', code);
-  const { data } = await q;
+
+  let { data, error } = await q;
+
+  // Fallback: si la query con campos full falló (RLS), reintentamos con públicos
+  if (error && u) {
+    console.warn('[v2/p] query full falló, reintentando con públicos:', error.message);
+    let q2 = sb.from('inmuebles').select(PUB_FIELDS).eq('eliminado', false).limit(1);
+    q2 = isUuid ? q2.eq('id', code) : q2.eq('codigo_house', code);
+    const r = await q2;
+    data = r.data;
+    error = r.error;
+  }
+
+  if (error) {
+    console.error('[v2/p] fetch error:', error.message);
+    return null;
+  }
   return Array.isArray(data) && data.length ? data[0] : null;
 }
 
