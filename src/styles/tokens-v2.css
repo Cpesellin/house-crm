@@ -72,3 +72,13 @@
   font-family: inherit;
   font-size: 16px; /* anti-zoom iOS */
 }
+
+/* ── Override del .sec global ───────────────────────────────────────
+   El .sec del CRM (global.css) tiene max-width:1300px y padding 14px.
+   Las pantallas v2 son full-bleed (foto hero edge-to-edge, sidebar
+   sticky a 100vh, banner gradient ancho completo). Reseteamos. */
+.sec.v2-page {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
