@@ -503,6 +503,7 @@ function renderMortgage(price) {
 }
 
 function renderSticky(p) {
+  // (legacy 3-col sticky, ya no se usa en mobile — reemplazado por renderMSticky)
   const a = p.captador || {};
   const tel = (a.telefono_contacto || '').replace(/[^\d+]/g, '');
   const wapp = tel
@@ -515,6 +516,195 @@ function renderSticky(p) {
       </button>
       ${tel ? `<a class="pd-cta pd-cta-wapp" href="${_esc(wapp)}" target="_blank" rel="noopener">${icon('whats', 14)} WhatsApp</a>` : `<button class="pd-cta pd-cta-wapp" type="button" disabled style="opacity:.5">${icon('whats', 14)} WhatsApp</button>`}
       ${tel ? `<a class="pd-cta pd-cta-tel" href="tel:${_esc(tel)}">${icon('phone', 14)} Llamar</a>` : `<button class="pd-cta pd-cta-tel" type="button" disabled style="opacity:.5">${icon('phone', 14)} Llamar</button>`}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MOBILE RENDER — patrón mobile.jsx (overlay header + sheet + tabs)
+// ═══════════════════════════════════════════════════════════════════
+function renderMobile(p, similar) {
+  const fotos = Array.isArray(p.fotos)
+    ? [...p.fotos].sort((a, b) => (a.orden || 0) - (b.orden || 0))
+    : [];
+  const mainImg = fotos.length ? _cld(fotos[0].url || fotos[0].url_thumb, 1200) : '';
+  const isFav = (window.FAVS || []).includes(p.id);
+
+  // Pills: deal + code + premium/nuevo
+  const deal = dealLabel(p);
+  const dealPill = deal === 'arriendo'
+    ? `<span class="pd-pill pd-pill-green">En arriendo</span>`
+    : `<span class="pd-pill pd-pill-blue">En venta</span>`;
+  const codePill = p.codigo_house ? `<span class="pd-pill pd-pill-cream">${_esc(p.codigo_house)}</span>` : '';
+
+  // Price
+  const precio = deal === 'arriendo' ? p.precio_arriendo : p.precio_venta;
+  const precioStr = fmtCOP(precio);
+  const period = deal === 'arriendo' ? '<span class="pd-sheet-price-period"> /mes</span>' : '';
+  const cuotaEst = deal === 'venta' && precio
+    ? '$' + Math.round((precio * 0.0085) / 1000).toLocaleString('es-CO') + '.000'
+    : null;
+
+  // Specs (4 tiles)
+  const specsTiles = [
+    { ic: 'bed', val: p.habitaciones || '—', lab: 'Hab' },
+    { ic: 'bath', val: p.banos || '—', lab: 'Baños' },
+    { ic: 'area', val: p.area_construida ? p.area_construida : '—', lab: 'm²' },
+    { ic: 'car', val: p.parqueaderos || '—', lab: 'Park' },
+  ];
+
+  // Advisor
+  const a = p.captador || {};
+  const ini = (a.nombre || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const tel = (a.telefono_contacto || '').replace(/[^\d+]/g, '');
+  const wapp = tel
+    ? `https://wa.me/${tel.replace(/^\+/, '')}?text=${encodeURIComponent('Hola ' + (a.nombre || '').split(' ')[0] + ', vi el inmueble ' + (p.codigo_house || '') + ' y me interesa.')}`
+    : null;
+
+  // Description
+  const descTxt = (p.descripcion_cliente || p.descripcion_interna || p.observaciones || '').trim();
+  const descFallback = 'Acabados de primera, distribución funcional y excelente entrada de luz natural. Sector residencial tranquilo, cerca a colegios, vías principales y centros comerciales.';
+  const descParas = (descTxt || descFallback)
+    .split(/\n\n+/)
+    .map((t) => `<p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--v2-ink)">${_esc(t)}</p>`)
+    .join('');
+
+  const features = parseFeatures(p);
+  const amenities = (() => {
+    const tipo = (p.tipo || '').toLowerCase();
+    if (tipo.includes('apto') || tipo.includes('apartamento') || tipo.includes('penthouse'))
+      return ['Portería 24h', 'Piscina', 'Gimnasio', 'Salón social', 'BBQ', 'Ascensor'];
+    if (tipo.includes('casa')) return ['Patio', 'Garaje', 'Zona verde'];
+    if (tipo.includes('finca')) return ['Zona verde', 'Piscina', 'BBQ', 'Casa principal'];
+    if (tipo.includes('local') || tipo.includes('bodega')) return ['Vitrina', 'Bodega', 'Servicios públicos'];
+    return [];
+  })();
+
+  // Photo dots (max 6 visible) + counter
+  const photoDots = fotos.slice(0, 6).map((_, i) =>
+    `<button class="pd-mhero-dot${i === 0 ? ' is-active' : ''}" type="button" data-idx="${i}" aria-label="Foto ${i + 1}"></button>`
+  ).join('');
+
+  return `
+    <!-- Mobile hero con foto extendida + overlay header -->
+    <div class="pd-mhero">
+      ${mainImg ? `<img id="v2MainImg" src="${_esc(mainImg)}" alt="" loading="eager" onerror="this.style.display='none'">` : ''}
+      <div class="pd-mhero-overlay">
+        <button class="pd-iconcircle" type="button" aria-label="Volver" onclick="history.length>1?history.back():location.hash='#/portafolio'">
+          ${icon('chev-l', 18)}
+        </button>
+        <div class="pd-mhero-actions">
+          <button class="pd-iconcircle" type="button" aria-label="Compartir" onclick="window._v2Share&&window._v2Share()">${icon('share', 16)}</button>
+          <button class="pd-iconcircle ${isFav ? 'is-active' : ''}" id="v2FavBtn" type="button" aria-label="Guardar" onclick="window._v2ToggleFav&&window._v2ToggleFav()">${icon('heart', 16)}</button>
+        </div>
+      </div>
+      ${fotos.length > 1 ? `
+        <button class="pd-mhero-prev" type="button" aria-label="Anterior" onclick="window._v2GalleryNav&&window._v2GalleryNav(-1)">${icon('chev-l', 16)}</button>
+        <button class="pd-mhero-next" type="button" aria-label="Siguiente" onclick="window._v2GalleryNav&&window._v2GalleryNav(1)">${icon('chev-r', 16)}</button>
+        <div class="pd-mhero-dots">${photoDots}</div>
+      ` : ''}
+      ${fotos.length ? `<div class="pd-mhero-counter" id="v2GalCounter">1 / ${fotos.length}</div>` : ''}
+    </div>
+
+    <!-- Sheet con borde superior redondeado -->
+    <div class="pd-sheet">
+      <div class="pd-sheet-pills">
+        ${dealPill}
+        ${codePill}
+      </div>
+      <div class="pd-sheet-eyebrow">${_esc(p.tipo || 'Inmueble')} · en ${_esc(deal)}</div>
+      <h1 class="pd-sheet-title">${_esc(p.tipo || 'Inmueble')} en ${_esc(p.barrio || p.ciudad || '')}</h1>
+      <div class="pd-sheet-meta">${icon('mappin', 12)} ${_esc([p.barrio, p.ciudad].filter(Boolean).join(', '))}</div>
+
+      <div class="pd-sheet-price">
+        <div class="pd-sheet-price-eyebrow">Precio de ${deal}</div>
+        <div class="pd-sheet-price-num">${_esc(precioStr || 'Consultar')}${period}</div>
+        ${cuotaEst ? `<div class="pd-sheet-price-cuota">Cuota desde <strong>${cuotaEst}</strong> /mes · Crédito 15a</div>` : ''}
+      </div>
+
+      <div class="pd-sheet-specs">
+        ${specsTiles.map((s) => `
+          <div class="pd-sheet-spec">
+            ${icon(s.ic, 14)}
+            <div class="pd-sheet-spec-num">${_esc(s.val)}</div>
+            <div class="pd-sheet-spec-lab">${_esc(s.lab)}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Tabs -->
+      <div class="pd-tabs" id="v2Tabs">
+        <button class="pd-tab is-active" type="button" data-tab="detalles">Detalles</button>
+        <button class="pd-tab" type="button" data-tab="comunes">Comunes</button>
+        <button class="pd-tab" type="button" data-tab="mapa">Mapa</button>
+      </div>
+
+      <div class="pd-tab-content" id="v2TabDetalles">
+        ${descParas}
+        ${features.length ? `
+          <div class="pd-sheet-features">
+            ${features.map((f) => `
+              <div class="pd-sheet-feature">
+                <span class="pd-sheet-feature-check">${icon('check', 11)}</span>
+                ${_esc(f)}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="pd-tab-content" id="v2TabComunes" style="display:none">
+        ${amenities.length
+          ? `<div class="pd-sheet-amenities">${amenities.map((a) => `<span class="pd-pill pd-pill-cream">${_esc(a)}</span>`).join('')}</div>`
+          : `<p style="margin:0;font-size:13.5px;color:var(--v2-ink-3)">Sin información de zonas comunes.</p>`}
+      </div>
+
+      <div class="pd-tab-content" id="v2TabMapa" style="display:none">
+        <div class="pd-sheet-map">
+          <svg viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice">
+            <rect width="320" height="160" fill="#f0e8d4"/>
+            ${Array.from({ length: 5 }, (_, i) => `<line x1="0" y1="${32 * (i + 1)}" x2="320" y2="${32 * (i + 1)}" stroke="#e6dcc2" stroke-width="1"/>`).join('')}
+            ${Array.from({ length: 8 }, (_, i) => `<line x1="${40 * i}" y1="0" x2="${40 * i}" y2="160" stroke="#e6dcc2" stroke-width="1"/>`).join('')}
+            <circle cx="160" cy="80" r="14" fill="${'currentColor'}" opacity="0.18" style="color:var(--v2-primary)"/>
+            <circle cx="160" cy="80" r="7" style="fill:var(--v2-primary)"/>
+          </svg>
+        </div>
+        <p style="margin:8px 0 0;font-size:11.5px;color:var(--v2-ink-3);text-align:center">Por privacidad mostramos zona aproximada</p>
+      </div>
+
+      <!-- Advisor card -->
+      <div class="pd-sheet-advisor">
+        <div class="pd-sheet-advisor-avatar">${a.foto ? `<img src="${_esc(_cld(a.foto, 'avatar'))}" alt="">` : _esc(ini)}</div>
+        <div class="pd-sheet-advisor-info">
+          <div class="pd-sheet-advisor-eyebrow">Tu asesor</div>
+          <div class="pd-sheet-advisor-name">${_esc(a.nombre || 'Equipo House')}</div>
+        </div>
+        ${wapp
+          ? `<a class="pd-sheet-advisor-chat" href="${_esc(wapp)}" target="_blank" rel="noopener">${icon('whats', 12)} Chat</a>`
+          : ''}
+      </div>
+    </div>
+
+    ${renderMSticky(p)}
+    ${renderContactModal(p)}
+  `;
+}
+
+function renderMSticky(p) {
+  const a = p.captador || {};
+  const tel = (a.telefono_contacto || '').replace(/[^\d+]/g, '');
+  const wapp = tel
+    ? `https://wa.me/${tel.replace(/^\+/, '')}?text=${encodeURIComponent('Hola, me interesa el inmueble ' + (p.codigo_house || ''))}`
+    : '#';
+  return `
+    <div class="pd-msticky">
+      <button class="pd-msticky-main" type="button" onclick="window._v2OpenContact&&window._v2OpenContact()">
+        ${icon('sparkle', 15)} Me interesa este inmueble
+      </button>
+      <div class="pd-msticky-row">
+        ${tel ? `<a class="pd-msticky-wapp" href="${_esc(wapp)}" target="_blank" rel="noopener">${icon('whats', 14)} WhatsApp</a>` : `<button class="pd-msticky-wapp" type="button" disabled style="opacity:.5">${icon('whats', 14)} WhatsApp</button>`}
+        ${tel ? `<a class="pd-msticky-tel" href="tel:${_esc(tel)}">${icon('phone', 14)} Llamar</a>` : `<button class="pd-msticky-tel" type="button" disabled style="opacity:.5">${icon('phone', 14)} Llamar</button>`}
+      </div>
     </div>
   `;
 }
@@ -635,26 +825,33 @@ async function renderPropertyDetailV2() {
 
   // Render real
   const similar = await fetchSimilar(p, 3);
-  root.innerHTML = `
-    ${renderTopBar(p)}
-    ${renderHero(p, isMobile)}
-    ${renderGallery(p, isMobile)}
-    <div class="pd-body">
-      <div class="pd-grid">
-        <div>
-          ${renderSpecs(p)}
-          ${renderDescripcion(p)}
-          ${renderFeatures(p)}
-          ${renderAmenities(p)}
-          ${renderMap(p)}
+
+  if (isMobile) {
+    // Mobile: patrón mobile.jsx (overlay header + sheet + tabs + sticky bottom 2 filas)
+    root.innerHTML = renderMobile(p, similar);
+  } else {
+    // Desktop: layout 2 cols con aside sticky 380px + similar abajo
+    root.innerHTML = `
+      ${renderTopBar(p)}
+      ${renderHero(p, false)}
+      ${renderGallery(p, false)}
+      <div class="pd-body">
+        <div class="pd-grid">
+          <div>
+            ${renderSpecs(p)}
+            ${renderDescripcion(p)}
+            ${renderFeatures(p)}
+            ${renderAmenities(p)}
+            ${renderMap(p)}
+          </div>
+          ${renderAside(p, false)}
         </div>
-        ${renderAside(p, isMobile)}
+        ${renderSimilar(similar)}
       </div>
-      ${renderSimilar(similar)}
-    </div>
-    ${renderSticky(p)}
-    ${renderContactModal(p)}
-  `;
+      ${renderSticky(p)}
+      ${renderContactModal(p)}
+    `;
+  }
 
   // ── Wiring ──
   const fotos = Array.isArray(p.fotos)
@@ -685,6 +882,38 @@ async function renderPropertyDetailV2() {
 
   window._v2GalleryGo = (i) => setMain(Number(i));
   window._v2GalleryNav = (delta) => setMain(activeIdx + Number(delta));
+
+  // Mobile dots wiring (clickear cualquiera = ir a esa foto)
+  if (isMobile) {
+    root.querySelectorAll('.pd-mhero-dot').forEach((d) => {
+      d.addEventListener('click', () => setMain(Number(d.dataset.idx) || 0));
+    });
+    // Sobrescribir setMain para actualizar dots
+    const _origSetMain = setMain;
+    const setMainMobile = (i) => {
+      _origSetMain(i);
+      root.querySelectorAll('.pd-mhero-dot').forEach((d, idx) => {
+        d.classList.toggle('is-active', idx === activeIdx);
+      });
+    };
+    window._v2GalleryGo = (i) => setMainMobile(Number(i));
+    window._v2GalleryNav = (delta) => setMainMobile(activeIdx + Number(delta));
+
+    // Tabs wiring
+    const tabsBar = root.querySelector('#v2Tabs');
+    if (tabsBar) {
+      tabsBar.addEventListener('click', (e) => {
+        const btn = e.target.closest('.pd-tab');
+        if (!btn) return;
+        const target = btn.dataset.tab;
+        tabsBar.querySelectorAll('.pd-tab').forEach((b) => b.classList.toggle('is-active', b === btn));
+        ['detalles', 'comunes', 'mapa'].forEach((t) => {
+          const el = root.querySelector(`#v2Tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+          if (el) el.style.display = (t === target) ? '' : 'none';
+        });
+      });
+    }
+  }
 
   // Mortgage simulator
   if (p.precio_venta && dealLabel(p) === 'venta') {
