@@ -1305,6 +1305,14 @@ const CIU_OPTS = [{v:'Pereira',e:'🏙️',d:'Centro, Pinares, Álamos, Cuba...'
 const TIPO_OPTS = [{v:'Apartamento',e:'🏢',l:'Apto'},{v:'Apartaestudio',e:'🏬',l:'Apartaestudio'},{v:'Casa',e:'🏡',l:'Casa'},{v:'Finca',e:'🌾',l:'Finca'},{v:'Local',e:'🏪',l:'Local'},{v:'Lote',e:'📐',l:'Lote'},{v:'Oficina',e:'💼',l:'Oficina'},{v:'Bodega',e:'🏭',l:'Bodega'},{v:'Penthouse',e:'✨',l:'PH'}];
 const NEG_MAP = {venta:'Comprar',arriendo:'Arrendar',ambas:'Las dos'};
 
+// Expose para v2-app (que reusa la config en lugar de duplicarla)
+if (typeof window !== 'undefined') {
+  window.NEG_OPTS = NEG_OPTS;
+  window.CIU_OPTS = CIU_OPTS;
+  window.TIPO_OPTS = TIPO_OPTS;
+  window.NEG_MAP = NEG_MAP;
+}
+
 // ── Format price input with thousands separator ──
 window.fmtPrice = function(el) {
   const clean = el.value.replace(/\D/g,'');

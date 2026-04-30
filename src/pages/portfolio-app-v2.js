@@ -72,25 +72,21 @@ function isNew(p) {
 }
 function capitalize(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
 
-// STATE
+// STATE — multi-select Sets compatibles con window.F del CRM
 const state = {
   data: [],
   filtered: [],
   search: '',
-  deal: 'todos',
-  tipo: 'todos',
-  ciudad: 'todas',
+  // Sets en lugar de strings: permiten multi-select igual que el CRM existente
+  neg: new Set(),    // 'venta', 'arriendo', 'ambas'
+  ciu: new Set(),    // 'Pereira', 'Dosquebradas', ...
+  tipo: new Set(),   // 'Apartamento', 'Casa', ...
+  precioMin: null,
   precioMax: null,
-  view: 'grid',  // grid | list | map
+  view: 'grid',
   visibleCount: 12,
+  openDropdown: null, // 'neg' | 'ciu' | 'tipo' | 'precio' | null
 };
-const DEAL_CYCLE = ['todos', 'venta', 'arriendo'];
-const PRICE_BUCKETS = [
-  { lab: 'Cualquiera', val: null },
-  { lab: 'Hasta $500M', val: 500_000_000 },
-  { lab: 'Hasta $800M', val: 800_000_000 },
-  { lab: 'Hasta $1.500M', val: 1_500_000_000 },
-];
 
 // DATA
 async function fetchPortfolio() {
@@ -115,16 +111,46 @@ async function fetchPortfolio() {
   }
 }
 
+// Detectar si un inmueble matchea cada criterio. Mismo patrón que doSearch
+// del CRM: compara con .toLowerCase() en ambos lados para tolerar variantes
+// de casing en BD (PEREIRA vs Pereira).
+function matchesNeg(p) {
+  if (state.neg.size === 0) return true;
+  const n = (p.negociacion || '').toLowerCase();
+  const tieneVenta = n.includes('venta');
+  const tieneArriendo = n.includes('arriendo');
+  const esAmbas = tieneVenta && tieneArriendo;
+  if (state.neg.has('ambas') && esAmbas) return true;
+  if (state.neg.has('venta') && tieneVenta) return true;
+  if (state.neg.has('arriendo') && tieneArriendo) return true;
+  return false;
+}
+function matchesCiu(p) {
+  if (state.ciu.size === 0) return true;
+  const c = (p.ciudad || '').toLowerCase();
+  for (const v of state.ciu) if (c.includes(v.toLowerCase())) return true;
+  return false;
+}
+function matchesTipo(p) {
+  if (state.tipo.size === 0) return true;
+  const t = (p.tipo || '').toLowerCase();
+  for (const v of state.tipo) if (t.includes(v.toLowerCase())) return true;
+  return false;
+}
+function matchesPrecio(p) {
+  const pr = priceFor(p) || 0;
+  if (state.precioMin && (pr <= 0 || pr < state.precioMin)) return false;
+  if (state.precioMax && (pr <= 0 || pr > state.precioMax)) return false;
+  return true;
+}
+
 function applyFilters() {
   const q = searchNorm(state.search);
   state.filtered = state.data.filter((p) => {
-    if (state.deal !== 'todos' && dealLabel(p) !== state.deal) return false;
-    if (state.tipo !== 'todos' && (p.tipo || '').toLowerCase() !== state.tipo.toLowerCase()) return false;
-    if (state.ciudad !== 'todas' && (p.ciudad || '').toLowerCase() !== state.ciudad.toLowerCase()) return false;
-    if (state.precioMax) {
-      const pr = priceFor(p) || 0;
-      if (!pr || pr > state.precioMax) return false;
-    }
+    if (!matchesNeg(p)) return false;
+    if (!matchesCiu(p)) return false;
+    if (!matchesTipo(p)) return false;
+    if (!matchesPrecio(p)) return false;
     if (q) {
       const idx = p._searchIndex || searchNorm([p.tipo, p.ciudad, p.barrio, p.codigo_house, p.captador?.nombre].filter(Boolean).join(' '));
       if (!q.split(/\s+/).filter(Boolean).every((w) => idx.includes(w))) return false;
@@ -133,8 +159,85 @@ function applyFilters() {
   });
 }
 
-function getUniqueValues(field) {
-  return Array.from(new Set(state.data.map((p) => (p[field] || '').trim()).filter(Boolean)));
+// Cuenta cuántos inmuebles matchearían si agregáramos cada opción al filtro.
+// Permite mostrar counts dinámicos en el dropdown.
+function countWithOption(group, value) {
+  const tmpSet = new Set(state[group]);
+  tmpSet.add(value);
+  const q = searchNorm(state.search);
+  return state.data.filter((p) => {
+    // Aplicamos todos los filtros excepto el group, que reemplazamos
+    const orig = state[group];
+    state[group] = tmpSet;
+    let ok;
+    if (group === 'neg') ok = matchesNeg(p);
+    else if (group === 'ciu') ok = matchesCiu(p);
+    else if (group === 'tipo') ok = matchesTipo(p);
+    else ok = true;
+    state[group] = orig;
+    if (!ok) return false;
+    // Demás filtros sin tocar
+    if (group !== 'neg' && !matchesNeg(p)) return false;
+    if (group !== 'ciu' && !matchesCiu(p)) return false;
+    if (group !== 'tipo' && !matchesTipo(p)) return false;
+    if (!matchesPrecio(p)) return false;
+    if (q) {
+      const idx = p._searchIndex || searchNorm([p.tipo, p.ciudad, p.barrio, p.codigo_house, p.captador?.nombre].filter(Boolean).join(' '));
+      if (!q.split(/\s+/).filter(Boolean).every((w) => idx.includes(w))) return false;
+    }
+    return true;
+  }).length;
+}
+
+// Construye opciones del dropdown a partir de la config del CRM (window.NEG_OPTS,
+// CIU_OPTS, TIPO_OPTS) + opciones extra encontradas en la data real.
+function getOptionsFor(group) {
+  if (group === 'neg') {
+    return (window.NEG_OPTS || [
+      { v: 'venta', l: 'Comprar', e: '🏠', d: 'En venta' },
+      { v: 'arriendo', l: 'Arrendar', e: '🔑', d: 'En arriendo' },
+      { v: 'ambas', l: 'Las dos', e: '🔄', d: 'Ver todo' },
+    ]).map((o) => ({ value: o.v, label: o.l, emoji: o.e, desc: o.d }));
+  }
+  if (group === 'ciu') {
+    const cfg = window.CIU_OPTS || [];
+    const fromCfg = cfg.map((o) => ({ value: o.v, label: o.v, emoji: o.e, desc: o.d || '' }));
+    // Ciudades de la BD que NO están en la config (Cartago, Armenia, La Virginia, etc.)
+    const inCfg = new Set(fromCfg.map((o) => o.value.toLowerCase()));
+    const fromData = Array.from(new Set(state.data.map((p) => (p.ciudad || '').trim()).filter(Boolean)))
+      .filter((c) => !inCfg.has(c.toLowerCase()))
+      .map((c) => ({ value: c, label: c, emoji: '📍', desc: '' }));
+    return [...fromCfg, ...fromData];
+  }
+  if (group === 'tipo') {
+    const cfg = window.TIPO_OPTS || [];
+    const fromCfg = cfg.map((o) => ({ value: o.v, label: o.l || o.v, emoji: o.e, desc: '' }));
+    const inCfg = new Set(fromCfg.map((o) => o.value.toLowerCase()));
+    const fromData = Array.from(new Set(state.data.map((p) => (p.tipo || '').trim()).filter(Boolean)))
+      .filter((t) => !inCfg.has(t.toLowerCase()))
+      .map((t) => ({ value: t, label: t, emoji: '🏠', desc: '' }));
+    return [...fromCfg, ...fromData];
+  }
+  return [];
+}
+
+function chipLabel(group) {
+  const set = state[group];
+  if (group === 'precio') {
+    if (state.precioMin || state.precioMax) {
+      const min = state.precioMin ? '$' + Math.round(state.precioMin / 1e6) + 'M' : '0';
+      const max = state.precioMax ? '$' + Math.round(state.precioMax / 1e6) + 'M' : 'sin tope';
+      return `${min} – ${max}`;
+    }
+    return 'Cualquiera';
+  }
+  if (set.size === 0) return 'Cualquiera';
+  if (set.size === 1) {
+    const v = Array.from(set)[0];
+    if (group === 'neg') return v === 'ambas' ? 'Las dos' : capitalize(v);
+    return v;
+  }
+  return `${set.size} seleccionados`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -267,44 +370,143 @@ function renderBanner(stats) {
 }
 
 function renderChips() {
-  const dealLab = state.deal === 'todos' ? 'Cualquiera' : capitalize(state.deal);
-  const tipoLab = state.tipo === 'todos' ? 'Cualquiera' : capitalize(state.tipo);
-  const ciudadLab = state.ciudad === 'todas' ? 'Todas' : capitalize(state.ciudad);
-  const precioLab = state.precioMax
-    ? `Hasta $${Math.round(state.precioMax / 1e6)}M`
-    : 'Cualquiera';
+  // Cada chip muestra count (cuántos elementos seleccionados) si > 0,
+  // y abre un dropdown popover en click. Patrón inspirado en el filtro
+  // del CRM existente pero con UX más liviana (sin abrir un panel grande).
+  const c = (group) => state[group].size;
+  const chipClass = (group) => `pa-chip${state[group].size > 0 ? ' is-active' : ''}`;
+  const priceClass = `pa-chip${(state.precioMin || state.precioMax) ? ' is-active' : ''}`;
 
   return `
     <div class="pa-chips">
-      <button class="pa-chip" type="button" id="v2appDeal">
+      <button class="${chipClass('neg')}" type="button" id="v2appChipNeg">
         ${icon('sparkle', 13, 'var(--v2-amber)')}
         <span class="pa-chip-lab">Negocio</span>
-        <span>${_esc(dealLab)}</span>
+        <span>${_esc(chipLabel('neg'))}</span>
+        ${c('neg') > 1 ? `<span class="pa-chip-count">${c('neg')}</span>` : ''}
         ${icon('chev-d', 11)}
       </button>
-      <button class="pa-chip" type="button" id="v2appCiudad">
+      <button class="${chipClass('ciu')}" type="button" id="v2appChipCiu">
         ${icon('mappin', 13, 'var(--v2-primary)')}
         <span class="pa-chip-lab">Ciudad</span>
-        <span>${_esc(ciudadLab)}</span>
+        <span>${_esc(chipLabel('ciu'))}</span>
+        ${c('ciu') > 1 ? `<span class="pa-chip-count">${c('ciu')}</span>` : ''}
         ${icon('chev-d', 11)}
       </button>
-      <button class="pa-chip" type="button" id="v2appTipo">
+      <button class="${chipClass('tipo')}" type="button" id="v2appChipTipo">
         ${icon('home', 13, 'var(--v2-green)')}
         <span class="pa-chip-lab">Tipo</span>
-        <span>${_esc(tipoLab)}</span>
+        <span>${_esc(chipLabel('tipo'))}</span>
+        ${c('tipo') > 1 ? `<span class="pa-chip-count">${c('tipo')}</span>` : ''}
         ${icon('chev-d', 11)}
       </button>
-      <button class="pa-chip" type="button" id="v2appPrecio">
+      <button class="${priceClass}" type="button" id="v2appChipPrecio">
         ${icon('star', 13, 'var(--v2-amber)')}
         <span class="pa-chip-lab">Precio</span>
-        <span>${_esc(precioLab)}</span>
+        <span>${_esc(chipLabel('precio'))}</span>
         ${icon('chev-d', 11)}
       </button>
+      ${(c('neg') + c('ciu') + c('tipo') + (state.precioMin || state.precioMax ? 1 : 0)) > 0 ? `
+        <button class="pa-chip" type="button" id="v2appChipsClear" style="color:var(--v2-red);font-weight:700">
+          ✕ Limpiar
+        </button>
+      ` : ''}
       <span class="pa-chip-divider"></span>
       <a class="pa-chip" href="#/favoritos">
         ${icon('heart', 13, 'var(--v2-red)')}
         Favoritos
       </a>
+    </div>
+  `;
+}
+
+// Renderiza el dropdown popover anclado al chip correspondiente
+function renderDropdown(group, anchorRect) {
+  if (group === 'precio') return renderPriceDropdown(anchorRect);
+
+  const opts = getOptionsFor(group);
+  const titles = { neg: 'Tipo de negocio', ciu: 'Ciudad', tipo: 'Tipo de inmueble' };
+
+  // Preparar items con count
+  const items = opts.map((o) => {
+    const isSelected = state[group].has(o.value);
+    // Count: si NO está seleccionado, qué pasaría si lo agregamos.
+    // Si SÍ está seleccionado, cuántos hay actualmente con ese filtro
+    // (usamos el count actual del set sin tocarlo y mostramos el que aporta).
+    let count;
+    if (isSelected) {
+      // Count cuántos elementos del filtered actual matchean SOLO esta opción
+      count = state.data.filter((p) => {
+        // Aplicamos todos los filtros pero sólo esta opción del group
+        const single = new Set([o.value]);
+        const orig = state[group];
+        state[group] = single;
+        const ok = matchesNeg(p) && matchesCiu(p) && matchesTipo(p) && matchesPrecio(p);
+        state[group] = orig;
+        if (!ok) return false;
+        return true;
+      }).length;
+    } else {
+      count = countWithOption(group, o.value);
+    }
+    return { ...o, isSelected, count };
+  });
+
+  const left = Math.max(8, Math.min(window.innerWidth - 260, anchorRect.left));
+  const top = anchorRect.bottom + 6;
+
+  return `
+    <div class="pa-dropdown-back" id="v2appDdBack"></div>
+    <div class="pa-dropdown" id="v2appDd" style="left:${left}px;top:${top}px;">
+      <div class="pa-dropdown-title">${titles[group] || ''}</div>
+      <div class="pa-dropdown-list">
+        ${items.map((o) => `
+          <button class="pa-dropdown-opt ${o.isSelected ? 'is-selected' : ''}"
+                  type="button" data-group="${group}" data-value="${_esc(o.value)}">
+            <span class="pa-dropdown-opt-emoji">${_esc(o.emoji || '•')}</span>
+            <span class="pa-dropdown-opt-info">
+              <span class="pa-dropdown-opt-label">${_esc(o.label)}</span>
+              ${o.desc ? `<span class="pa-dropdown-opt-desc">${_esc(o.desc)}</span>` : ''}
+            </span>
+            <span class="pa-dropdown-opt-count">${o.count}</span>
+            <span class="pa-dropdown-opt-check">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg>
+            </span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="pa-dropdown-foot">
+        <button type="button" id="v2appDdClear">Limpiar</button>
+        <button type="button" class="is-primary" id="v2appDdClose">Listo</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPriceDropdown(anchorRect) {
+  const left = Math.max(8, Math.min(window.innerWidth - 260, anchorRect.left));
+  const top = anchorRect.bottom + 6;
+  return `
+    <div class="pa-dropdown-back" id="v2appDdBack"></div>
+    <div class="pa-dropdown" id="v2appDd" style="left:${left}px;top:${top}px;">
+      <div class="pa-dropdown-title">Precio</div>
+      <div class="pa-dropdown-price">
+        <label>Mínimo
+          <input type="number" id="v2appPmin" placeholder="0" value="${state.precioMin || ''}" inputmode="numeric">
+        </label>
+        <label>Máximo
+          <input type="number" id="v2appPmax" placeholder="Sin tope" value="${state.precioMax || ''}" inputmode="numeric">
+        </label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <button type="button" class="pa-chip" data-pq="500">Hasta $500M</button>
+          <button type="button" class="pa-chip" data-pq="800">Hasta $800M</button>
+          <button type="button" class="pa-chip" data-pq="1500">Hasta $1.500M</button>
+        </div>
+      </div>
+      <div class="pa-dropdown-foot">
+        <button type="button" id="v2appDdClear">Limpiar</button>
+        <button type="button" class="is-primary" id="v2appDdClose">Aplicar</button>
+      </div>
     </div>
   `;
 }
@@ -482,9 +684,144 @@ async function renderPortfolioAppV2() {
           ${renderResults()}
         </div>
       </div>
+      <!-- Contenedor para dropdowns flotantes (popovers) -->
+      <div id="v2appDdRoot"></div>
     `;
     bindEvents();
   };
+
+  function closeDropdown() {
+    const r = document.getElementById('v2appDdRoot');
+    if (r) r.innerHTML = '';
+  }
+
+  function bindDropdownEvents(group) {
+    const back = document.getElementById('v2appDdBack');
+    if (back) back.addEventListener('click', closeDropdown);
+    const closeBtn = document.getElementById('v2appDdClose');
+    if (closeBtn) closeBtn.addEventListener('click', () => { closeDropdown(); paint(); });
+
+    if (group === 'precio') {
+      const pmin = document.getElementById('v2appPmin');
+      const pmax = document.getElementById('v2appPmax');
+      const sync = () => {
+        state.precioMin = pmin && pmin.value ? Number(pmin.value) : null;
+        state.precioMax = pmax && pmax.value ? Number(pmax.value) : null;
+      };
+      if (pmin) pmin.addEventListener('input', sync);
+      if (pmax) pmax.addEventListener('input', sync);
+      document.querySelectorAll('.pa-dropdown [data-pq]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const m = Number(b.dataset.pq) * 1_000_000;
+          state.precioMin = null;
+          state.precioMax = m;
+          if (pmin) pmin.value = '';
+          if (pmax) pmax.value = m;
+        });
+      });
+      const clear = document.getElementById('v2appDdClear');
+      if (clear) clear.addEventListener('click', () => {
+        state.precioMin = null; state.precioMax = null;
+        if (pmin) pmin.value = '';
+        if (pmax) pmax.value = '';
+      });
+      return;
+    }
+
+    // Multi-select para neg/ciu/tipo
+    document.querySelectorAll('.pa-dropdown-opt').forEach((el) => {
+      el.addEventListener('click', () => {
+        const g = el.dataset.group;
+        const v = el.dataset.value;
+        if (state[g].has(v)) state[g].delete(v);
+        else state[g].add(v);
+        // Re-render dropdown manteniéndolo abierto (counts cambian)
+        const chip = document.getElementById('v2appChip' + g.charAt(0).toUpperCase() + g.slice(1));
+        if (chip) {
+          // Actualizar chips/results sin cerrar dropdown
+          repaintChipsAndResults();
+          // Re-render dropdown con nuevos counts
+          const r2 = chip.getBoundingClientRect();
+          const ddRoot = document.getElementById('v2appDdRoot');
+          if (ddRoot) ddRoot.innerHTML = renderDropdown(g, r2);
+          bindDropdownEvents(g);
+        }
+      });
+    });
+    const clear = document.getElementById('v2appDdClear');
+    if (clear) clear.addEventListener('click', () => {
+      state[group].clear();
+      const chip = document.getElementById('v2appChip' + group.charAt(0).toUpperCase() + group.slice(1));
+      repaintChipsAndResults();
+      if (chip) {
+        const r2 = chip.getBoundingClientRect();
+        const ddRoot = document.getElementById('v2appDdRoot');
+        if (ddRoot) ddRoot.innerHTML = renderDropdown(group, r2);
+        bindDropdownEvents(group);
+      }
+    });
+  }
+
+  function repaintChipsAndResults() {
+    applyFilters();
+    // Repintar la sección de chips
+    const chipsHost = root.querySelector('.pa-chips');
+    if (chipsHost) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderChips();
+      chipsHost.replaceWith(tmp.firstElementChild);
+      // Re-bind chip clicks
+      ['Neg', 'Ciu', 'Tipo', 'Precio'].forEach((g) => {
+        const id = 'v2appChip' + g;
+        const btn = document.getElementById(id);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const rect = btn.getBoundingClientRect();
+            const ddRoot = document.getElementById('v2appDdRoot');
+            if (!ddRoot) return;
+            ddRoot.innerHTML = renderDropdown(g.toLowerCase(), rect);
+            bindDropdownEvents(g.toLowerCase());
+          });
+        }
+      });
+      const cl = document.getElementById('v2appChipsClear');
+      if (cl) cl.addEventListener('click', () => {
+        state.neg.clear(); state.ciu.clear(); state.tipo.clear();
+        state.precioMin = null; state.precioMax = null;
+        paint();
+      });
+    }
+    // Repintar results
+    const contentEl = root.querySelector('.pa-content');
+    if (contentEl) {
+      // Quita y reescribe results + featured
+      const featuredEl = contentEl.querySelector('.pa-featured');
+      if (featuredEl) featuredEl.remove();
+      const resultsHead = contentEl.querySelector('.pa-results-head');
+      if (resultsHead) {
+        // Borrar todo desde results-head hasta el final del contenido
+        let n = resultsHead;
+        while (n) {
+          const nx = n.nextElementSibling;
+          n.remove();
+          n = nx;
+        }
+      }
+      const wrap = document.createElement('div');
+      wrap.innerHTML = renderFeatured() + renderResults();
+      while (wrap.firstChild) contentEl.appendChild(wrap.firstChild);
+      // Rebind results events
+      const more = document.getElementById('v2appMore');
+      if (more) more.addEventListener('click', () => { state.visibleCount += 12; repaintChipsAndResults(); });
+      const clear = document.getElementById('v2appClear');
+      if (clear) clear.addEventListener('click', () => {
+        state.neg.clear(); state.ciu.clear(); state.tipo.clear();
+        state.precioMin = null; state.precioMax = null;
+        state.search = '';
+        paint();
+      });
+    }
+  }
 
   paint();
 
@@ -501,31 +838,27 @@ async function renderPortfolioAppV2() {
       });
     }
 
-    // Cycle filters
-    const dealBtn = document.getElementById('v2appDeal');
-    if (dealBtn) dealBtn.addEventListener('click', () => {
-      const i = DEAL_CYCLE.indexOf(state.deal);
-      state.deal = DEAL_CYCLE[(i + 1) % DEAL_CYCLE.length];
-      paint();
-    });
-    const tipoBtn = document.getElementById('v2appTipo');
-    if (tipoBtn) tipoBtn.addEventListener('click', () => {
-      const tipos = ['todos', ...getUniqueValues('tipo').slice(0, 6)];
-      const i = tipos.indexOf(state.tipo);
-      state.tipo = tipos[(i + 1) % tipos.length] || 'todos';
-      paint();
-    });
-    const ciudadBtn = document.getElementById('v2appCiudad');
-    if (ciudadBtn) ciudadBtn.addEventListener('click', () => {
-      const ciudades = ['todas', ...getUniqueValues('ciudad').slice(0, 6)];
-      const i = ciudades.indexOf(state.ciudad);
-      state.ciudad = ciudades[(i + 1) % ciudades.length] || 'todas';
-      paint();
-    });
-    const precioBtn = document.getElementById('v2appPrecio');
-    if (precioBtn) precioBtn.addEventListener('click', () => {
-      const i = PRICE_BUCKETS.findIndex((b) => b.val === state.precioMax);
-      state.precioMax = PRICE_BUCKETS[(i + 1) % PRICE_BUCKETS.length].val;
+    // Chips → abrir dropdown popover
+    const openDropdown = (group, btn) => {
+      const rect = btn.getBoundingClientRect();
+      const ddRoot = document.getElementById('v2appDdRoot');
+      if (!ddRoot) return;
+      ddRoot.innerHTML = renderDropdown(group, rect);
+      bindDropdownEvents(group);
+    };
+    const chipNeg = document.getElementById('v2appChipNeg');
+    if (chipNeg) chipNeg.addEventListener('click', () => openDropdown('neg', chipNeg));
+    const chipCiu = document.getElementById('v2appChipCiu');
+    if (chipCiu) chipCiu.addEventListener('click', () => openDropdown('ciu', chipCiu));
+    const chipTipo = document.getElementById('v2appChipTipo');
+    if (chipTipo) chipTipo.addEventListener('click', () => openDropdown('tipo', chipTipo));
+    const chipPrecio = document.getElementById('v2appChipPrecio');
+    if (chipPrecio) chipPrecio.addEventListener('click', () => openDropdown('precio', chipPrecio));
+
+    const chipsClear = document.getElementById('v2appChipsClear');
+    if (chipsClear) chipsClear.addEventListener('click', () => {
+      state.neg.clear(); state.ciu.clear(); state.tipo.clear();
+      state.precioMin = null; state.precioMax = null;
       paint();
     });
 
@@ -562,17 +895,7 @@ async function renderPortfolioAppV2() {
   }
 
   function repaintResults() {
-    applyFilters();
-    // Re-render solo la sección de resultados sin tocar sidebar/topbar
-    const headHost = root.querySelector('.pa-results-head');
-    if (!headHost) return paint();
-    // Más simple: repintamos el contenido completo (no es costoso)
-    const contentEl = root.querySelector('.pa-content');
-    if (contentEl) {
-      const beforeResults = contentEl.querySelector('.pa-featured') || contentEl.querySelector('.pa-chips');
-      // Quitamos todo lo que sigue después del último .pa-featured/.pa-chips y reescribimos
-    }
-    paint();
+    repaintChipsAndResults();
   }
 
   // Toggle fav delegated
