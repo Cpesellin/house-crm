@@ -543,10 +543,16 @@ function renderFeatured() {
 }
 
 function renderResults() {
+  // Subtitle a partir de los Sets (no strings) — describe los filtros activos
   const subParts = [];
-  if (state.deal !== 'todos') subParts.push(capitalize(state.deal));
-  if (state.tipo !== 'todos') subParts.push(capitalize(state.tipo));
-  if (state.ciudad !== 'todas') subParts.push(capitalize(state.ciudad));
+  if (state.neg.size) subParts.push(Array.from(state.neg).map(capitalize).join('/'));
+  if (state.tipo.size) subParts.push(Array.from(state.tipo).join('/'));
+  if (state.ciu.size) subParts.push(Array.from(state.ciu).join('/'));
+  if (state.precioMin || state.precioMax) {
+    const min = state.precioMin ? '$' + Math.round(state.precioMin / 1e6) + 'M' : '0';
+    const max = state.precioMax ? '$' + Math.round(state.precioMax / 1e6) + 'M' : 'sin tope';
+    subParts.push(`${min}–${max}`);
+  }
   const sub = subParts.length ? subParts.join(' · ') : 'ordenados por más recientes';
 
   return `
