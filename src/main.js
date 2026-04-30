@@ -66,7 +66,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (verId) {
-    console.log('[main] Public view mode for:', verId);
+    // ⚡ Redirección al diseño v2 (#/p/:codigo).
+    // Antes: cargaba el modal showPublicView (diseño viejo).
+    // Ahora: redirige al SPA hash-route que renderiza la ficha v2 con
+    // galería + sticky CTA + tabs + asesor + simulador. El bot de WhatsApp
+    // sigue obteniendo OG tags vía /api/ver (vercel rewrite por user-agent).
+    console.log('[main] /ver/' + verId + ' → redirigiendo a #/p/' + verId);
+    location.replace('/#/p/' + encodeURIComponent(verId));
+    return;
+  }
+
+  // ── Legacy: bloque viejo de showPublicView eliminado.
+  // Si en algún momento querés volver al modal antiguo, revertí el commit
+  // donde se agregó la redirección a #/p/. ──
+  if (false && verId) {
     const app = document.getElementById('app');
 
     // Show loading while we resolve

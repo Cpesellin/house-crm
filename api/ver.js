@@ -68,6 +68,10 @@ function renderHTML(opts) {
   const d = esc(opts.description);
   const i = esc(opts.image);
   const u = esc(opts.canonical);
+  // ── Redirect target para humanos: si el opts incluye redirectTo (ficha v2)
+  // lo usamos; si no, cae al canonical (compat). ──
+  const redirectTo = opts.redirectTo || opts.canonical;
+  const r = esc(redirectTo);
   return '<!DOCTYPE html>\n<html lang="es"><head>' +
     '<meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -88,9 +92,9 @@ function renderHTML(opts) {
     '<meta name="twitter:title" content="' + t + '">' +
     '<meta name="twitter:description" content="' + d + '">' +
     '<meta name="twitter:image" content="' + i + '">' +
-    '<meta http-equiv="refresh" content="0;url=' + u + '">' +
-    '<script>window.location.replace(' + JSON.stringify(opts.canonical) + ');</script>' +
-    '</head><body><p>Redirigiendo a <a href="' + u + '">' + t + '</a>…</p></body></html>';
+    '<meta http-equiv="refresh" content="0;url=' + r + '">' +
+    '<script>window.location.replace(' + JSON.stringify(redirectTo) + ');</script>' +
+    '</head><body><p>Redirigiendo a <a href="' + r + '">' + t + '</a>…</p></body></html>';
 }
 
 function fallbackHtml(canonical) {
@@ -168,11 +172,18 @@ module.exports = async function handler(req, res) {
     const rawImg = fotos.length ? (fotos[0].url || fotos[0].url_thumb) : null;
     const ogImage = rawImg ? cloudinaryOG(rawImg) : FALLBACK_OG;
 
+    // Canonical = URL "linda" estable (lo que ven WhatsApp/Facebook al scrapear).
+    // RedirectTo = ficha v2 con hash route (lo que el navegador del humano carga).
+    // Preferimos el código HOUSE-XXX en el redirect para que la URL sea legible.
+    const codeForUrl = p.codigo_house || ref;
+    const redirectTo = SITE_URL + '/#/p/' + encodeURIComponent(codeForUrl);
+
     const html = renderHTML({
       title: tituloInmueble(p) + ' · Inmobiliaria House',
       description: descripcionInmueble(p),
       image: ogImage,
       canonical: canonical,
+      redirectTo: redirectTo,
     });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
