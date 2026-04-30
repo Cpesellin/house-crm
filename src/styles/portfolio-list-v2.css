@@ -115,17 +115,22 @@
 .v2-page.pl .pl-search-input svg {
   width: 18px; height: 18px; color: var(--v2-ink-4); flex-shrink: 0;
 }
+/* Mobile: grid 2x2 de selectos para que respiren */
 .v2-page.pl .pl-search-row {
-  display: flex; gap: 4px; flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
 }
 .v2-page.pl .pl-select {
   display: flex; flex-direction: column; align-items: flex-start;
-  padding: 8px 14px; border-radius: var(--v2-r-md);
-  background: transparent; border: none;
-  cursor: pointer; min-width: 0; flex: 1;
-  border-left: 1px solid var(--v2-line);
+  padding: 9px 12px; border-radius: var(--v2-r-md);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer; min-width: 0;
+  text-align: left;
 }
-.v2-page.pl .pl-select:first-child { border-left: none; }
+.v2-page.pl .pl-select:hover { background: var(--v2-cream-2); border-color: var(--v2-line); }
+.v2-page.pl .pl-search-go { grid-column: 1 / -1; /* full width en mobile */ }
 .v2-page.pl .pl-select:hover { background: var(--v2-cream-2); }
 .v2-page.pl .pl-select-lab {
   font-size: 10px; color: var(--v2-ink-3);
@@ -422,7 +427,19 @@
   .v2-page.pl .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
   .v2-page.pl .pl-featured { height: 280px; }
   .v2-page.pl .pl-search { flex-direction: row; align-items: stretch; }
-  .v2-page.pl .pl-search-row { flex-wrap: nowrap; }
+  /* En tablet/desktop volvemos al layout original: selectos en línea con
+     borde-izquierdo, botón Buscar al final */
+  .v2-page.pl .pl-search-row {
+    display: flex; flex-wrap: nowrap; gap: 4px;
+  }
+  .v2-page.pl .pl-select {
+    flex: 1; padding: 8px 14px; border-radius: 0;
+    border: none; border-left: 1px solid var(--v2-line);
+  }
+  .v2-page.pl .pl-select:first-child { border-left: none; }
+  .v2-page.pl .pl-select:hover { background: var(--v2-cream-2); border-color: transparent; border-left-color: var(--v2-line); }
+  .v2-page.pl .pl-select:first-child:hover { border-left-color: transparent; }
+  .v2-page.pl .pl-search-go { grid-column: auto; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
