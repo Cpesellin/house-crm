@@ -1039,6 +1039,34 @@ async function renderPropertyDetailV2() {
 
 if (typeof window !== 'undefined') {
   window.rPropertyV2 = renderPropertyDetailV2;
+
+  // TEMPORARY DEBUG OVERLAY — para diagnosticar el corte mobile.
+  // Muestra viewport + sheet width en una esquina. Activado con ?debug=1
+  // en la URL. Removelo de este archivo cuando se confirme el fix.
+  if (location.search.includes('debug=1') || location.hash.includes('debug=1')) {
+    setTimeout(() => {
+      const old = document.getElementById('v2-dbg');
+      if (old) old.remove();
+      const div = document.createElement('div');
+      div.id = 'v2-dbg';
+      div.style.cssText = 'position:fixed;top:80px;right:8px;z-index:99999;background:rgba(0,0,0,0.85);color:#fff;font:11px/1.3 monospace;padding:8px 10px;border-radius:8px;max-width:160px;pointer-events:none;white-space:pre';
+      const update = () => {
+        const sheet = document.querySelector('.pd-sheet');
+        const mhero = document.querySelector('.pd-mhero');
+        const root = document.documentElement;
+        div.textContent = [
+          `vp: ${window.innerWidth}×${window.innerHeight}`,
+          `html: ${root.clientWidth}`,
+          `body: ${document.body.clientWidth}`,
+          `sheet: ${sheet ? sheet.offsetWidth + ' (off:' + sheet.offsetLeft + ')' : '—'}`,
+          `mhero: ${mhero ? mhero.offsetWidth : '—'}`,
+        ].join('\n');
+      };
+      document.body.appendChild(div);
+      update();
+      setInterval(update, 500);
+    }, 1500);
+  }
 }
 
 export { renderPropertyDetailV2 };
