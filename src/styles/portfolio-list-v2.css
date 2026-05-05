@@ -285,8 +285,11 @@
   position: absolute; top: 12px; left: 12px;
   display: flex; gap: 6px; flex-wrap: wrap;
 }
-.v2-page.pl .pl-card-fav {
+.v2-page.pl .pl-card-actions {
   position: absolute; top: 10px; right: 10px;
+  display: flex; gap: 6px; z-index: 2;
+}
+.v2-page.pl .pl-card-iconbtn {
   width: 36px; height: 36px; border-radius: var(--v2-r-pill);
   background: rgba(255,255,255,0.92);
   backdrop-filter: blur(6px);
@@ -294,8 +297,12 @@
   display: grid; place-items: center;
   color: var(--v2-ink); transition: transform .15s;
 }
+.v2-page.pl .pl-card-iconbtn.is-faved { color: var(--v2-red); }
+.v2-page.pl .pl-card-iconbtn:active { transform: scale(0.92); }
+.v2-page.pl .pl-card-iconbtn svg { width: 16px; height: 16px; }
+/* Mantener compat con .pl-card-fav anterior */
+.v2-page.pl .pl-card-fav { width: 36px; height: 36px; border-radius: var(--v2-r-pill); background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); border: none; cursor: pointer; display: grid; place-items: center; color: var(--v2-ink); }
 .v2-page.pl .pl-card-fav.is-faved { color: var(--v2-red); }
-.v2-page.pl .pl-card-fav:active { transform: scale(0.92); }
 .v2-page.pl .pl-card-fav svg { width: 17px; height: 17px; }
 .v2-page.pl .pl-card-photos {
   position: absolute; bottom: 10px; right: 10px;

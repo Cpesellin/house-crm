@@ -7,6 +7,10 @@
   min-height: 100vh;
   padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)); /* sticky CTA con 2 filas */
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* ── MOBILE: Hero con foto extendida + sheet pattern (mobile.jsx) ── */
@@ -70,11 +74,14 @@
 
 /* Sheet con borde superior redondeado, monta sobre la foto */
 .v2-page.pd .pd-sheet {
-  margin-top: -18px; position: relative; z-index: 5;
+  margin: -18px 0 0; position: relative; z-index: 5;
   background: var(--v2-cream);
   border-top-left-radius: 18px;
   border-top-right-radius: 18px;
-  padding: 20px var(--v2-pad-mob) 20px;
+  padding: 20px 18px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* Evita scroll horizontal accidental */
 }
 .v2-page.pd .pd-sheet-pills {
   display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;

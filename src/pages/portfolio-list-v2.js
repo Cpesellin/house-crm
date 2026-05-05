@@ -369,10 +369,16 @@ function renderCard(p) {
       <div class="pl-card-img">
         ${thumb ? `<img loading="lazy" src="${_esc(thumb)}" alt="">` : ''}
         <div class="pl-card-badges">${dealPill}${newPill}</div>
-        <button class="pl-card-fav ${isFav ? 'is-faved' : ''}" type="button" aria-label="Favorito"
-                onclick="event.preventDefault();event.stopPropagation();window._v2plToggleFav&&window._v2plToggleFav('${_esc(p.id)}', this)">
-          ${icon('heart', 17, isFav)}
-        </button>
+        <div class="pl-card-actions">
+          <button class="pl-card-iconbtn" type="button" aria-label="Compartir"
+                  onclick="event.preventDefault();event.stopPropagation();window._v2plShare&&window._v2plShare('${_esc(code)}','${_esc(p.tipo || 'Inmueble')} en ${_esc(p.barrio || p.ciudad || '')}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 11l8-4"/><path d="M8 13l8 4"/></svg>
+          </button>
+          <button class="pl-card-iconbtn ${isFav ? 'is-faved' : ''}" type="button" aria-label="Favorito"
+                  onclick="event.preventDefault();event.stopPropagation();window._v2plToggleFav&&window._v2plToggleFav('${_esc(p.id)}', this)">
+            ${icon('heart', 16, isFav)}
+          </button>
+        </div>
         ${fotos.length ? `<div class="pl-card-photos">1 / ${fotos.length}</div>` : ''}
       </div>
       <div class="pl-card-body">
@@ -551,7 +557,26 @@ async function renderPortfolioListV2() {
     const isFav = (window.FAVS || []).includes(id);
     if (btn) {
       btn.classList.toggle('is-faved', isFav);
-      btn.innerHTML = icon('heart', 17, isFav);
+      btn.innerHTML = icon('heart', 16, isFav);
+    }
+  };
+
+  // Compartir desde la card (Web Share API o fallback copia link)
+  window._v2plShare = async (code, title) => {
+    const url = location.origin + '/ver/' + encodeURIComponent(code);
+    const text = `${title || 'Inmueble'} - Inmobiliaria House`;
+    if (navigator.share) {
+      try { await navigator.share({ title: text, url }); return; } catch (e) {
+        // El usuario canceló; no es error
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      if (window.toast) window.toast('🔗 Link copiado al portapapeles');
+      else alert('Link copiado: ' + url);
+    } catch {
+      prompt('Copia el link:', url);
     }
   };
 }

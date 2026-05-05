@@ -691,10 +691,16 @@ function renderCard(p) {
           ${dealPill}
           ${isNew(p) ? '<span class="pa-pill pa-pill-dark">Nuevo</span>' : ''}
         </div>
-        <button class="pa-card-fav ${isFav ? 'is-faved' : ''}" type="button" aria-label="Favorito"
-                onclick="event.preventDefault();event.stopPropagation();window._v2appFav&&window._v2appFav('${_esc(p.id)}', this)">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>
-        </button>
+        <div class="pa-card-actions">
+          <button class="pa-card-iconbtn" type="button" aria-label="Compartir"
+                  onclick="event.preventDefault();event.stopPropagation();window._v2appShare&&window._v2appShare('${_esc(code)}','${_esc(p.tipo || 'Inmueble')} en ${_esc(p.barrio || p.ciudad || '')}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 11l8-4"/><path d="M8 13l8 4"/></svg>
+          </button>
+          <button class="pa-card-iconbtn ${isFav ? 'is-faved' : ''}" type="button" aria-label="Favorito"
+                  onclick="event.preventDefault();event.stopPropagation();window._v2appFav&&window._v2appFav('${_esc(p.id)}', this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>
+          </button>
+        </div>
         ${fotos.length ? `<div class="pa-card-photos">1 / ${fotos.length}</div>` : ''}
       </div>
       <div class="pa-card-body">
@@ -986,6 +992,24 @@ async function renderPortfolioAppV2() {
     if (typeof window.toggleFavorito === 'function') window.toggleFavorito(id);
     const isFav = (window.FAVS || []).includes(id);
     if (btn) btn.classList.toggle('is-faved', isFav);
+  };
+
+  // Share desde la card
+  window._v2appShare = async (code, title) => {
+    const url = location.origin + '/ver/' + encodeURIComponent(code);
+    const text = `${title || 'Inmueble'} - Inmobiliaria House`;
+    if (navigator.share) {
+      try { await navigator.share({ title: text, url }); return; } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      if (window.toast) window.toast('🔗 Link copiado al portapapeles');
+      else alert('Link copiado: ' + url);
+    } catch {
+      prompt('Copia el link:', url);
+    }
   };
 }
 
