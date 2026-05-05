@@ -66,13 +66,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (verId) {
-    // ⚡ Redirección al diseño v2 (#/p/:codigo).
-    // Antes: cargaba el modal showPublicView (diseño viejo).
-    // Ahora: redirige al SPA hash-route que renderiza la ficha v2 con
-    // galería + sticky CTA + tabs + asesor + simulador. El bot de WhatsApp
-    // sigue obteniendo OG tags vía /api/ver (vercel rewrite por user-agent).
-    console.log('[main] /ver/' + verId + ' → redirigiendo a #/p/' + verId);
-    location.replace('/#/p/' + encodeURIComponent(verId));
+    // RESTAURADO: showPublicView (modal viejo del CRM, probado y funcional).
+    // El v2 (#/p/:codigo) sigue disponible como ruta opt-in, pero los
+    // links compartidos por WhatsApp /ver/HOUSE-X vuelven a usar el modal
+    // clásico que era estable. WhatsApp seguirá viendo los OG tags vía
+    // /api/ver para los bots.
+    console.log('[main] Public view mode for:', verId);
+    const app = document.getElementById('app');
+    app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:32px;margin-bottom:12px">🏠</div><div style="font-size:14px;color:var(--sub);font-weight:600">Cargando inmueble...</div></div></div>';
+    await new Promise(resolve => {
+      const check = () => (typeof window.supabase !== 'undefined') ? resolve() : setTimeout(check, 100);
+      check();
+    });
+    const SB = getSupabaseClient();
+    if (verId.startsWith('HOUSE-')) {
+      try {
+        const { data } = await SB.from('inmuebles').select('id').eq('codigo_house', verId).eq('eliminado', false).single();
+        if (data?.id) { verId = data.id; }
+        else {
+          app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:40px;margin-bottom:12px">🏠</div><h3 style="font-family:Fraunces,serif;font-size:18px;margin-bottom:8px">Inmueble no encontrado</h3><p style="color:var(--sub);font-size:13px">Este enlace puede haber expirado.</p></div></div>';
+          return;
+        }
+      } catch(e) {
+        console.error('[main] Resolve error:', e);
+        app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh"><div style="text-align:center"><div style="font-size:40px;margin-bottom:12px">❌</div><h3>Error de conexión</h3></div></div>';
+        return;
+      }
+    }
+    await new Promise(resolve => {
+      const check = () => (typeof window.showPublicView === 'function') ? resolve() : setTimeout(check, 100);
+      check();
+    });
+    window.showPublicView(verId);
     return;
   }
 
