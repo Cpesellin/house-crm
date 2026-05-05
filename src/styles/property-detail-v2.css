@@ -435,10 +435,16 @@ html.v2-width-anomaly .v2-page.pd .pd-sheet {
 }
 .v2-page.pd .pd-hero-info { min-width: 0; flex: 1; }
 .v2-page.pd .pd-title {
-  margin: 0; font-weight: 800; line-height: 1.1;
-  font-size: clamp(24px, 6vw, 40px);
-  letter-spacing: -0.025em;
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.1;
+  font-size: clamp(22px, 4.5vw, 36px);
+  letter-spacing: -0.02em;
   color: var(--v2-ink);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  min-width: 0;
 }
 .v2-page.pd .pd-meta {
   display: flex; align-items: center; gap: 6px; margin-top: 8px;
@@ -908,11 +914,20 @@ html.v2-width-anomaly .v2-page.pd .pd-sheet {
   .v2-page.pd .pd-topbar,
   .v2-page.pd .pd-sticky-cta { display: none; }
 
-  .v2-page.pd .pd-hero { padding: 24px var(--v2-pad-desk) 0; max-width: var(--v2-max); margin: 0 auto; }
+  .v2-page.pd .pd-hero {
+    padding: 24px 28px 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
+  }
 
   .v2-page.pd .pd-gallery {
-    padding: 16px var(--v2-pad-desk) 0;
-    max-width: var(--v2-max); margin: 0 auto;
+    padding: 16px 28px 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
   }
   .v2-page.pd .pd-gal-grid {
     display: grid; grid-template-columns: 2fr 1fr 1fr;
@@ -935,7 +950,11 @@ html.v2-width-anomaly .v2-page.pd .pd-sheet {
   .v2-page.pd .pd-gal-thumbs { display: none; } /* en desktop usamos el grid */
 
   .v2-page.pd .pd-body {
-    padding: 32px var(--v2-pad-desk) 64px;
+    padding: 32px 28px 64px;
+    max-width: 1280px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
   }
   .v2-page.pd .pd-grid {
     grid-template-columns: 1fr 380px; gap: 48px;
