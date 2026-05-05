@@ -113,7 +113,4 @@ body.v2-active::after {
   z-index: 1;
   isolation: isolate;
   background: #faf6f1 !important;
-  /* Forzar 100vw para que no asome el body por los costados */
-  width: 100vw !important;
-  margin-left: calc(-50vw + 50%) !important; /* truco para escapar de containers */
 }
