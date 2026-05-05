@@ -75,19 +75,32 @@
 
 /* ── Override del .sec global ───────────────────────────────────────
    El .sec del CRM (global.css) tiene max-width:1300px y padding 14px.
-   Las pantallas v2 son full-bleed (foto hero edge-to-edge, sidebar
-   sticky a 100vh, banner gradient ancho completo). Reseteamos. */
+   Las pantallas v2 son full-bleed. Reseteamos. */
 .sec.v2-page {
   max-width: none !important;
   margin: 0 !important;
   padding: 0 !important;
-  /* Forzar ocupar todo el ancho disponible (defensa contra parents
-     que pudieran constrain) */
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  /* En caso de que el .sec esté dentro de un flex container, asegurar
-     que pueda crecer */
   flex: 1 1 100% !important;
   min-width: 0;
+  /* Fondo cream extendido para que cubra cualquier color de fondo del
+     CRM o del navegador que pudiera bleeding por los costados */
+  min-height: 100vh;
+  background: var(--v2-cream) !important;
+}
+
+/* Cuando una pantalla v2 está activa, el body también es cream.
+   Esto cubre cualquier capa azul/gradient del CRM (.hero, etc.) que
+   pudiera asomar detrás. */
+body:has(.sec.v2-page.act) {
+  background: #faf6f1 !important;
+}
+/* Fallback para navegadores sin :has() (Firefox <121, etc): override
+   sólo cuando un v2 está visible */
+.sec.v2-page.act {
+  position: relative;
+  z-index: 1;
+  isolation: isolate; /* nuevo stacking context para evitar bleed-through */
 }

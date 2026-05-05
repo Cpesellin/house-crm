@@ -137,7 +137,7 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
   box-sizing: border-box !important;
 }
 .v2-page.pd .pd-sheet-pills {
-  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
 }
 .v2-page.pd .pd-sheet-eyebrow {
   font-size: 12px;
@@ -150,19 +150,27 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
   text-indent: 0;
 }
 .v2-page.pd .pd-sheet-title {
-  margin: 4px 0 4px; font-size: 24px; font-weight: 800;
-  letter-spacing: -0.02em; line-height: 1.15;
+  margin: 6px 0 6px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--v2-ink);
 }
 .v2-page.pd .pd-sheet-meta {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 13px; color: var(--v2-ink-3); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 14px; color: var(--v2-ink-2); margin-bottom: 18px;
+  font-weight: 500;
 }
-.v2-page.pd .pd-sheet-meta svg { width: 12px; height: 12px; color: var(--v2-ink-4); }
+.v2-page.pd .pd-sheet-meta svg { width: 14px; height: 14px; color: var(--v2-primary); }
 
 .v2-page.pd .pd-sheet-price {
-  background: var(--v2-paper); border-radius: var(--v2-r-lg);
+  background: var(--v2-paper);
+  border-radius: var(--v2-r-lg);
   border: 1px solid var(--v2-line);
-  padding: 14px 16px; margin-bottom: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: var(--v2-shadow-sm);
 }
 .v2-page.pd .pd-sheet-price-eyebrow {
   font-size: 12px;
@@ -175,8 +183,12 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
   text-indent: 0;
 }
 .v2-page.pd .pd-sheet-price-num {
-  font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums; margin-top: 2px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  color: var(--v2-ink);
 }
 .v2-page.pd .pd-sheet-price-period {
   font-size: 14px; color: var(--v2-ink-3); font-weight: 500; margin-left: 4px;
