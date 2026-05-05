@@ -127,8 +127,11 @@ html body .v2-page.pd .pd-sheet,
   display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
 }
 .v2-page.pd .pd-sheet-eyebrow {
-  font-size: 10.5px; color: var(--v2-ink-3);
-  letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+  font-size: 11.5px;
+  color: var(--v2-ink-2);  /* más contraste que ink-3 */
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 .v2-page.pd .pd-sheet-title {
   margin: 4px 0 4px; font-size: 24px; font-weight: 800;
@@ -146,8 +149,11 @@ html body .v2-page.pd .pd-sheet,
   padding: 14px 16px; margin-bottom: 14px;
 }
 .v2-page.pd .pd-sheet-price-eyebrow {
-  font-size: 10.5px; color: var(--v2-ink-3);
-  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+  font-size: 11.5px;
+  color: var(--v2-ink-2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 .v2-page.pd .pd-sheet-price-num {
   font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
@@ -157,7 +163,9 @@ html body .v2-page.pd .pd-sheet,
   font-size: 14px; color: var(--v2-ink-3); font-weight: 500; margin-left: 4px;
 }
 .v2-page.pd .pd-sheet-price-cuota {
-  font-size: 11.5px; color: var(--v2-ink-3); margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--v2-ink-2);
+  margin-top: 6px;
 }
 .v2-page.pd .pd-sheet-price-cuota strong { color: var(--v2-ink); }
 
