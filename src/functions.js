@@ -2686,6 +2686,42 @@ window.toggleFavFilter = function() {
   }
 };
 
+// --- Compartir inmueble (disponible para todos los perfiles) ---
+// Usa Web Share API en mobile (abre selector nativo: WhatsApp, Telegram,
+// SMS, etc.) o copia link al portapapeles en desktop.
+// El link incluye ?v=<timestamp> para forzar a WhatsApp a re-scrapear el
+// preview (evita cache de 30 días si el inmueble fue modificado).
+window.shareInmueble = async function(codeOrId, title) {
+  if (!codeOrId) return;
+  const v = String(Date.now()).slice(-6);
+  const url = location.origin + '/ver/' + encodeURIComponent(codeOrId) + '?v=' + v;
+  const text = (title || 'Inmueble') + ' - Inmobiliaria House';
+
+  // 1) Web Share API (mobile/PWA): selector nativo de apps
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: text, text: text, url });
+      // Track si está disponible
+      if (window.trackEvent) window.trackEvent('share', { code: codeOrId, channel: 'native' });
+      return;
+    } catch (e) {
+      // El usuario canceló — no es error
+      if (e && e.name === 'AbortError') return;
+    }
+  }
+
+  // 2) Fallback: copia al portapapeles (desktop)
+  try {
+    await navigator.clipboard.writeText(url);
+    if (window.toast) window.toast('🔗 Link copiado al portapapeles');
+    else alert('Link copiado: ' + url);
+    if (window.trackEvent) window.trackEvent('share', { code: codeOrId, channel: 'clipboard' });
+  } catch {
+    // 3) Último recurso: prompt
+    prompt('Copia el link:', url);
+  }
+};
+
 // --- Favoritos ---
 window.toggleFavorito = async function(inmId) {
   const u = U();

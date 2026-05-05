@@ -28,8 +28,16 @@ function esc(s) {
 function cloudinaryOG(url) {
   if (!url || typeof url !== 'string') return FALLBACK_OG;
   if (url.indexOf('res.cloudinary.com/') === -1) return url;
-  const params = 'w_1200,h_630,c_fill,g_auto,q_auto,f_jpg';
-  const transformRx = /\/upload\/[^/]*\b(?:w_|h_|c_|q_|f_|dpr_|ar_|g_|e_)[^/]*\//;
+  // Optimizado para WhatsApp/FB scraper:
+  //   - 1200x630: dimensión recomendada por OpenGraph
+  //   - c_fill: rellena el frame, recortando si es necesario
+  //   - g_auto: gravity automático (centra en zonas de interés)
+  //   - q_auto:good: calidad alta pero compatible con todo
+  //   - f_jpg: forzar JPEG (algunas versiones viejas de WhatsApp no leen WebP)
+  //   - fl_progressive: progressive JPEG (carga incremental, más confiable)
+  //   - dpr_2.0: alta resolución para Retina
+  const params = 'w_1200,h_630,c_fill,g_auto,q_auto:good,f_jpg,fl_progressive';
+  const transformRx = /\/upload\/[^/]*\b(?:w_|h_|c_|q_|f_|dpr_|ar_|g_|e_|fl_)[^/]*\//;
   if (transformRx.test(url)) return url.replace(transformRx, `/upload/${params}/`);
   return url.replace('/upload/', `/upload/${params}/`);
 }
@@ -68,8 +76,7 @@ function renderHTML(opts) {
   const d = esc(opts.description);
   const i = esc(opts.image);
   const u = esc(opts.canonical);
-  // ── Redirect target para humanos: si el opts incluye redirectTo (ficha v2)
-  // lo usamos; si no, cae al canonical (compat). ──
+  const altText = esc(opts.imageAlt || opts.title);
   const redirectTo = opts.redirectTo || opts.canonical;
   const r = esc(redirectTo);
   return '<!DOCTYPE html>\n<html lang="es"><head>' +
@@ -77,24 +84,36 @@ function renderHTML(opts) {
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>' + t + '</title>' +
     '<link rel="canonical" href="' + u + '">' +
+    // Preconnect a Cloudinary para que el bot pueda fetchear la imagen rápido
+    '<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>' +
+    '<link rel="dns-prefetch" href="https://res.cloudinary.com">' +
+    // Open Graph (Facebook, WhatsApp, LinkedIn, Telegram)
     '<meta property="og:type" content="website">' +
     '<meta property="og:url" content="' + u + '">' +
     '<meta property="og:title" content="' + t + '">' +
     '<meta property="og:description" content="' + d + '">' +
     '<meta property="og:image" content="' + i + '">' +
+    '<meta property="og:image:url" content="' + i + '">' +
     '<meta property="og:image:secure_url" content="' + i + '">' +
     '<meta property="og:image:width" content="1200">' +
     '<meta property="og:image:height" content="630">' +
     '<meta property="og:image:type" content="image/jpeg">' +
+    '<meta property="og:image:alt" content="' + altText + '">' +
     '<meta property="og:locale" content="es_CO">' +
     '<meta property="og:site_name" content="Inmobiliaria House">' +
+    // Twitter Card (también lo usan algunos clientes)
     '<meta name="twitter:card" content="summary_large_image">' +
     '<meta name="twitter:title" content="' + t + '">' +
     '<meta name="twitter:description" content="' + d + '">' +
     '<meta name="twitter:image" content="' + i + '">' +
+    '<meta name="twitter:image:alt" content="' + altText + '">' +
+    // Redirect humano (los bots ignoran refresh y JS)
     '<meta http-equiv="refresh" content="0;url=' + r + '">' +
     '<script>window.location.replace(' + JSON.stringify(redirectTo) + ');</script>' +
-    '</head><body><p>Redirigiendo a <a href="' + r + '">' + t + '</a>…</p></body></html>';
+    '</head><body style="margin:0;font-family:system-ui">' +
+    // Imagen visible para ayuda visual + fallback para clientes que no parsean OG
+    '<div style="text-align:center;padding:32px"><img src="' + i + '" alt="' + altText + '" style="max-width:100%;height:auto;border-radius:8px"><p>Redirigiendo a <a href="' + r + '">' + t + '</a>…</p></div>' +
+    '</body></html>';
 }
 
 function fallbackHtml(canonical) {
@@ -182,6 +201,7 @@ module.exports = async function handler(req, res) {
       title: tituloInmueble(p) + ' · Inmobiliaria House',
       description: descripcionInmueble(p),
       image: ogImage,
+      imageAlt: tituloInmueble(p) + ' - foto del inmueble',
       canonical: canonical,
       redirectTo: redirectTo,
     });
