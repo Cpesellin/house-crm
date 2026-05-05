@@ -138,7 +138,7 @@ module.exports = async function handler(req, res) {
     const sbUrl = env.url.replace(/\/+$/, '') +
       '/rest/v1/inmuebles?' + filter +
       '&eliminado=eq.false' +
-      '&select=id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,fotos(url,url_thumb,orden)' +
+      '&select=id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,updated_at,fotos(url,url_thumb,orden,id)' +
       '&limit=1';
 
     let p = null;
@@ -187,7 +187,10 @@ module.exports = async function handler(req, res) {
     });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // Cache CDN corto para que cambios de fotos se reflejen rápido
+    // (WhatsApp luego cachea 30 días en cliente, eso no podemos controlarlo
+    // pero el botón "Compartir" agrega ?v=updated_at para invalidar).
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     return res.status(200).send(html);
 
   } catch (e) {

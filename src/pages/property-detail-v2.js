@@ -1007,9 +1007,10 @@ async function renderPropertyDetailV2() {
     // TODO: aquí podríamos llamar a window.abrirInteres o crear un interesado vía API
   };
 
-  // Share + favorite
+  // Share + favorite. ?v=<timestamp> fuerza re-scrapeo de WhatsApp.
   window._v2Share = async () => {
-    const url = location.origin + '/ver/' + encodeURIComponent(p.codigo_house || p.id);
+    const v = String(Date.now()).slice(-6);
+    const url = location.origin + '/ver/' + encodeURIComponent(p.codigo_house || p.id) + '?v=' + v;
     const text = `${p.tipo || 'Inmueble'} en ${p.barrio || p.ciudad || ''} - Inmobiliaria House`;
     if (navigator.share) {
       try { await navigator.share({ title: text, url }); } catch {}

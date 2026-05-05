@@ -561,13 +561,15 @@ async function renderPortfolioListV2() {
     }
   };
 
-  // Compartir desde la card (Web Share API o fallback copia link)
+  // Compartir desde la card (Web Share API o fallback copia link).
+  // Agregamos ?v=<timestamp> para forzar a WhatsApp a re-scrapear el preview
+  // si el inmueble fue modificado (cambia fotos, precio, etc.).
   window._v2plShare = async (code, title) => {
-    const url = location.origin + '/ver/' + encodeURIComponent(code);
+    const v = String(Date.now()).slice(-6); // 6 dígitos = 30 días aprox
+    const url = location.origin + '/ver/' + encodeURIComponent(code) + '?v=' + v;
     const text = `${title || 'Inmueble'} - Inmobiliaria House`;
     if (navigator.share) {
       try { await navigator.share({ title: text, url }); return; } catch (e) {
-        // El usuario canceló; no es error
         if (e && e.name === 'AbortError') return;
       }
     }

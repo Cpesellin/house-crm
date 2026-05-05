@@ -11,6 +11,9 @@
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
+  /* Respetar bordes curvos / notch de mobiles (Samsung edge, iPhone X+) */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* ── MOBILE: Hero con foto extendida + sheet pattern (mobile.jsx) ── */
@@ -78,10 +81,24 @@
   background: var(--v2-cream);
   border-top-left-radius: 18px;
   border-top-right-radius: 18px;
-  padding: 20px 18px 20px;
+  /* Padding mínimo 20px lateral, más si hay safe-area por bordes curvos */
+  padding: 20px max(20px, env(safe-area-inset-left, 0px)) 20px max(20px, env(safe-area-inset-right, 0px));
+  padding-top: 20px;
+  padding-bottom: 20px;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden; /* Evita scroll horizontal accidental */
+}
+
+/* Sticky CTA mobile: también respetar safe-area lateral */
+.v2-page.pd .pd-msticky {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Top overlay: igual */
+.v2-page.pd .pd-mhero-overlay {
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
 }
 .v2-page.pd .pd-sheet-pills {
   display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;

@@ -994,9 +994,11 @@ async function renderPortfolioAppV2() {
     if (btn) btn.classList.toggle('is-faved', isFav);
   };
 
-  // Share desde la card
+  // Share desde la card. ?v=<timestamp> fuerza re-scrapeo de WhatsApp si
+  // se modificó el inmueble.
   window._v2appShare = async (code, title) => {
-    const url = location.origin + '/ver/' + encodeURIComponent(code);
+    const v = String(Date.now()).slice(-6);
+    const url = location.origin + '/ver/' + encodeURIComponent(code) + '?v=' + v;
     const text = `${title || 'Inmueble'} - Inmobiliaria House`;
     if (navigator.share) {
       try { await navigator.share({ title: text, url }); return; } catch (e) {
