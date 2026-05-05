@@ -17,9 +17,13 @@
 /* ── MOBILE: Hero con foto extendida + sheet pattern (mobile.jsx) ── */
 .v2-page.pd .pd-mhero {
   position: relative;
-  height: 320px;
+  height: 280px;  /* reducido de 320 — menos invasivo, más contenido visible */
   background: var(--v2-cream-3);
   margin-top: 0;
+}
+/* Phones más altos con suficiente espacio: foto un poco más alta */
+@media (min-height: 800px) and (max-width: 759px) {
+  .v2-page.pd .pd-mhero { height: 320px; }
 }
 .v2-page.pd .pd-mhero img {
   width: 100%; height: 100%; object-fit: cover; display: block;
@@ -73,17 +77,16 @@
 .v2-page.pd .pd-mhero-prev svg,
 .v2-page.pd .pd-mhero-next svg { width: 16px; height: 16px; }
 
-/* Sheet con borde superior redondeado, monta sobre la foto.
-   Padding lateral 24px (default razonable). */
+/* SHEET FLAT — sin overlay sobre la foto, sin border-radius.
+   Diseño continuo: la foto termina, sigue el contenido sin "capa". */
 html body .v2-page.pd .pd-sheet,
 .v2-page.pd .pd-sheet {
-  margin: -18px 0 0 !important;
+  margin: 0 !important;
   position: relative !important;
-  z-index: 5 !important;
   background: var(--v2-cream) !important;
-  border-top-left-radius: 18px !important;
-  border-top-right-radius: 18px !important;
-  padding-top: 20px !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  padding-top: 24px !important;
   padding-right: 24px !important;
   padding-bottom: 20px !important;
   padding-left: 24px !important;
@@ -92,11 +95,10 @@ html body .v2-page.pd .pd-sheet,
   box-sizing: border-box !important;
 }
 
-/* Anomalía de ancho (Brave con side panel, etc.): padding extra para
-   garantizar que el contenido nunca quede en zona problemática. */
+/* Si hay anomalía de ancho (Brave panel), padding más generoso */
 html.v2-width-anomaly .v2-page.pd .pd-sheet {
-  padding-left: 36px !important;
-  padding-right: 36px !important;
+  padding-left: 32px !important;
+  padding-right: 32px !important;
 }
 html.v2-width-anomaly .v2-page.pd .pd-msticky {
   padding-left: 28px !important;
@@ -286,10 +288,11 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
   display: flex; align-items: center; gap: 12px;
 }
 .v2-page.pd .pd-sheet-advisor-avatar {
-  width: 44px; height: 44px; border-radius: var(--v2-r-pill);
-  background: linear-gradient(135deg, var(--v2-primary), var(--v2-ink));
+  width: 48px; height: 48px; border-radius: var(--v2-r-pill);
+  /* Sólido en lugar de gradient para diseño más flat */
+  background: var(--v2-primary);
   color: #fff; display: grid; place-items: center;
-  font-size: 14px; font-weight: 700; flex-shrink: 0; overflow: hidden;
+  font-size: 16px; font-weight: 700; flex-shrink: 0; overflow: hidden;
 }
 .v2-page.pd .pd-sheet-advisor-avatar img {
   width: 100%; height: 100%; object-fit: cover;
