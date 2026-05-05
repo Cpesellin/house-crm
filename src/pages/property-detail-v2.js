@@ -1038,9 +1038,6 @@ async function renderPropertyDetailV2() {
 }
 
 // ─── Detector de "anomalía de ancho" ──────────────────────────
-// Si el browser está restringiendo el viewport (ej. Brave Mobile con
-// side panel activo), html.clientWidth < window.innerWidth. En ese caso
-// agregamos una clase al <html> para que CSS aplique padding extra.
 function _checkWidthAnomaly() {
   const inner = window.innerWidth;
   const client = document.documentElement.clientWidth;
@@ -1048,11 +1045,31 @@ function _checkWidthAnomaly() {
   document.documentElement.classList.toggle('v2-width-anomaly', isAnomaly);
 }
 
+// ─── Toggle de body class cuando v2 está activa ────────────────
+// :has() no es soportado en todas las versiones de browsers móviles
+// (especialmente Brave/Chrome viejos en Android). Manejamos el toggle
+// vía JS para garantizar que el body tenga fondo cream cuando hay
+// una pantalla v2 activa.
+function _checkV2Active() {
+  const hasV2 = !!document.querySelector('.sec.v2-page.act');
+  document.body.classList.toggle('v2-active', hasV2);
+}
+
 if (typeof window !== 'undefined') {
   window.rPropertyV2 = renderPropertyDetailV2;
   _checkWidthAnomaly();
+  _checkV2Active();
   window.addEventListener('resize', _checkWidthAnomaly);
   window.addEventListener('orientationchange', _checkWidthAnomaly);
+  window.addEventListener('hashchange', () => setTimeout(_checkV2Active, 50));
+  // Observador para detectar cambios de clase 'act' en secciones
+  const _obs = new MutationObserver(_checkV2Active);
+  setTimeout(() => {
+    document.querySelectorAll('.sec').forEach((el) => {
+      _obs.observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+    });
+    _checkV2Active();
+  }, 1000);
 }
 
 export { renderPropertyDetailV2 };

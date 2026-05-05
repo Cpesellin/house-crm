@@ -77,36 +77,34 @@
 .v2-page.pd .pd-mhero-prev svg,
 .v2-page.pd .pd-mhero-next svg { width: 16px; height: 16px; }
 
-/* SHEET FLAT — sin overlay sobre la foto, sin border-radius.
-   Diseño continuo: la foto termina, sigue el contenido sin "capa". */
+/* SHEET FLAT con GRID — padding garantizado mediante grid columns,
+   imposible de override por otros CSS. Los hijos van en la columna del
+   medio, las laterales son padding fijo. */
 html body .v2-page.pd .pd-sheet,
 .v2-page.pd .pd-sheet {
+  display: grid !important;
+  grid-template-columns: 24px 1fr 24px !important;
   margin: 0 !important;
   position: relative !important;
   background: var(--v2-cream) !important;
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
-  padding-top: 24px !important;
-  padding-right: 24px !important;
-  padding-bottom: 20px !important;
-  padding-left: 24px !important;
+  border-radius: 0 !important;
+  padding: 24px 0 20px !important;
   width: 100% !important;
   max-width: 100vw !important;
   box-sizing: border-box !important;
+  row-gap: 0;
 }
-
-/* Si hay anomalía de ancho (Brave panel), padding más generoso */
+/* Todos los hijos directos del sheet → columna del medio */
+.v2-page.pd .pd-sheet > * {
+  grid-column: 2 !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  min-width: 0;
+}
+/* Brave panel: columnas laterales más anchas */
 html.v2-width-anomaly .v2-page.pd .pd-sheet {
-  padding-left: 32px !important;
-  padding-right: 32px !important;
-}
-html.v2-width-anomaly .v2-page.pd .pd-msticky {
-  padding-left: 28px !important;
-  padding-right: 28px !important;
-}
-html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
-  padding-left: 26px !important;
-  padding-right: 26px !important;
+  grid-template-columns: 32px 1fr 32px !important;
 }
 
 /* Children del sheet: max-width 100% para nunca desbordar */

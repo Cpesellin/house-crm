@@ -91,27 +91,25 @@
   background: var(--v2-cream) !important;
 }
 
-/* Cuando una pantalla v2 está activa, todo el documento debe ser cream.
-   Cubre headers/banners/gradients del CRM que pudieran asomar detrás. */
-body:has(.sec.v2-page.act),
-html:has(.sec.v2-page.act) {
+/* Cuando v2 está activa (toggle JS), TODO se viste de cream.
+   Esta es la versión que SÍ funciona en todos los browsers. */
+body.v2-active,
+html:has(body.v2-active) {
   background: #faf6f1 !important;
+  background-color: #faf6f1 !important;
 }
-body:has(.sec.v2-page.act) > header,
-body:has(.sec.v2-page.act) #mhdr {
-  /* Ocultar header del CRM cuando hay v2 activa */
+body.v2-active > header,
+body.v2-active #mhdr {
   display: none !important;
 }
-/* Fallback para navegadores sin :has() — usar isolation stacking */
+body.v2-active::before,
+body.v2-active::after {
+  display: none !important;
+  content: none !important;
+}
 .sec.v2-page.act {
   position: relative;
   z-index: 1;
   isolation: isolate;
   background: var(--v2-cream) !important;
-}
-/* También cubrir cualquier ::before/::after del body */
-body:has(.sec.v2-page.act)::before,
-body:has(.sec.v2-page.act)::after {
-  display: none !important;
-  content: none !important;
 }
