@@ -1054,12 +1054,15 @@ if (typeof window !== 'undefined') {
         const sheet = document.querySelector('.pd-sheet');
         const mhero = document.querySelector('.pd-mhero');
         const root = document.documentElement;
+        const sheetPad = sheet ? getComputedStyle(sheet).paddingLeft : '—';
         div.textContent = [
           `vp: ${window.innerWidth}×${window.innerHeight}`,
           `html: ${root.clientWidth}`,
           `body: ${document.body.clientWidth}`,
           `sheet: ${sheet ? sheet.offsetWidth + ' (off:' + sheet.offsetLeft + ')' : '—'}`,
+          `pad-l: ${sheetPad}`,
           `mhero: ${mhero ? mhero.offsetWidth : '—'}`,
+          `build: v6-32px`,
         ].join('\n');
       };
       document.body.appendChild(div);
