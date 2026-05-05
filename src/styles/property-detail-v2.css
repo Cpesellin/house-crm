@@ -74,8 +74,7 @@
 .v2-page.pd .pd-mhero-next svg { width: 16px; height: 16px; }
 
 /* Sheet con borde superior redondeado, monta sobre la foto.
-   Padding lateral 36px — máxima seguridad contra cualquier corte por
-   curvaturas, paneles laterales de Brave, o renderizado raro. */
+   Padding lateral 24px (default razonable). */
 html body .v2-page.pd .pd-sheet,
 .v2-page.pd .pd-sheet {
   margin: -18px 0 0 !important;
@@ -85,12 +84,27 @@ html body .v2-page.pd .pd-sheet,
   border-top-left-radius: 18px !important;
   border-top-right-radius: 18px !important;
   padding-top: 20px !important;
-  padding-right: 36px !important;
+  padding-right: 24px !important;
   padding-bottom: 20px !important;
-  padding-left: 36px !important;
+  padding-left: 24px !important;
   width: 100% !important;
   max-width: 100vw !important;
   box-sizing: border-box !important;
+}
+
+/* Anomalía de ancho (Brave con side panel, etc.): padding extra para
+   garantizar que el contenido nunca quede en zona problemática. */
+html.v2-width-anomaly .v2-page.pd .pd-sheet {
+  padding-left: 36px !important;
+  padding-right: 36px !important;
+}
+html.v2-width-anomaly .v2-page.pd .pd-msticky {
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+}
+html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
+  padding-left: 26px !important;
+  padding-right: 26px !important;
 }
 
 /* Children del sheet: max-width 100% para nunca desbordar */

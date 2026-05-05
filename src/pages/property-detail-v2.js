@@ -1037,8 +1037,22 @@ async function renderPropertyDetailV2() {
   }
 }
 
+// ─── Detector de "anomalía de ancho" ──────────────────────────
+// Si el browser está restringiendo el viewport (ej. Brave Mobile con
+// side panel activo), html.clientWidth < window.innerWidth. En ese caso
+// agregamos una clase al <html> para que CSS aplique padding extra.
+function _checkWidthAnomaly() {
+  const inner = window.innerWidth;
+  const client = document.documentElement.clientWidth;
+  const isAnomaly = inner > 0 && client > 0 && (inner - client) > 20;
+  document.documentElement.classList.toggle('v2-width-anomaly', isAnomaly);
+}
+
 if (typeof window !== 'undefined') {
   window.rPropertyV2 = renderPropertyDetailV2;
+  _checkWidthAnomaly();
+  window.addEventListener('resize', _checkWidthAnomaly);
+  window.addEventListener('orientationchange', _checkWidthAnomaly);
 }
 
 export { renderPropertyDetailV2 };
