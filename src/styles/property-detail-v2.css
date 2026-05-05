@@ -14,12 +14,21 @@
   margin: 0;
 }
 
-/* ── MOBILE: Hero con foto extendida + sheet pattern (mobile.jsx) ── */
+/* ── MOBILE: Hero con foto. Mismo background que el sheet (cream)
+   para que NO se vea ninguna transición de color.
+   Sin border-radius, sin overlap, sin sombras. */
 .v2-page.pd .pd-mhero {
   position: relative;
-  height: 280px;  /* reducido de 320 — menos invasivo, más contenido visible */
-  background: var(--v2-cream-3);
-  margin-top: 0;
+  height: 280px;
+  background: var(--v2-cream) !important;  /* MISMO color que el sheet */
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 100%;
+  max-width: 100vw;
+  overflow: hidden;
 }
 /* Phones más altos con suficiente espacio: foto un poco más alta */
 @media (min-height: 800px) and (max-width: 759px) {
@@ -27,6 +36,8 @@
 }
 .v2-page.pd .pd-mhero img {
   width: 100%; height: 100%; object-fit: cover; display: block;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 .v2-page.pd .pd-mhero-overlay {
   position: absolute; top: 0; left: 0; right: 0; z-index: 10;

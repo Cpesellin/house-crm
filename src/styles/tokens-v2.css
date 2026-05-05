@@ -92,14 +92,15 @@
 }
 
 /* Cuando v2 está activa (toggle JS), TODO se viste de cream.
-   Esta es la versión que SÍ funciona en todos los browsers. */
-body.v2-active,
-html:has(body.v2-active) {
+   Forzamos en TODOS los niveles para evitar bleed-through. */
+html.v2-active,
+body.v2-active {
   background: #faf6f1 !important;
   background-color: #faf6f1 !important;
 }
 body.v2-active > header,
-body.v2-active #mhdr {
+body.v2-active #mhdr,
+body.v2-active .stb {
   display: none !important;
 }
 body.v2-active::before,
@@ -111,5 +112,8 @@ body.v2-active::after {
   position: relative;
   z-index: 1;
   isolation: isolate;
-  background: var(--v2-cream) !important;
+  background: #faf6f1 !important;
+  /* Forzar 100vw para que no asome el body por los costados */
+  width: 100vw !important;
+  margin-left: calc(-50vw + 50%) !important; /* truco para escapar de containers */
 }

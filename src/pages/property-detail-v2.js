@@ -1053,6 +1053,7 @@ function _checkWidthAnomaly() {
 function _checkV2Active() {
   const hasV2 = !!document.querySelector('.sec.v2-page.act');
   document.body.classList.toggle('v2-active', hasV2);
+  document.documentElement.classList.toggle('v2-active', hasV2);
 }
 
 if (typeof window !== 'undefined') {
