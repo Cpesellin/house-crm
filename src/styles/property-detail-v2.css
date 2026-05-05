@@ -202,24 +202,35 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
 
 .v2-page.pd .pd-sheet-specs {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  background: var(--v2-paper); border-radius: var(--v2-r-lg);
-  border: 1px solid var(--v2-line); margin-bottom: 18px;
+  background: var(--v2-paper);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  /* Sin borde — sombra suave en lugar */
+  box-shadow: 0 1px 2px rgba(44,37,32,0.04), 0 4px 12px rgba(44,37,32,0.04);
 }
 .v2-page.pd .pd-sheet-spec {
-  padding: 12px 4px; text-align: center;
+  padding: 14px 4px;
+  text-align: center;
   border-right: 1px solid var(--v2-line-2);
 }
 .v2-page.pd .pd-sheet-spec:last-child { border-right: none; }
 .v2-page.pd .pd-sheet-spec svg {
-  width: 14px; height: 14px; color: var(--v2-primary);
+  width: 18px; height: 18px; color: var(--v2-primary);
 }
 .v2-page.pd .pd-sheet-spec-num {
-  font-size: 16px; font-weight: 800; margin-top: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 6px;
   font-variant-numeric: tabular-nums;
+  color: var(--v2-ink);
 }
 .v2-page.pd .pd-sheet-spec-lab {
-  font-size: 10px; color: var(--v2-ink-3);
-  text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;
+  font-size: 11px;
+  color: var(--v2-ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
 /* Tabs */
@@ -305,15 +316,17 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
 /* Sticky bottom CTA — patrón mobile.jsx (1 main + 2 col) */
 .v2-page.pd .pd-msticky {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-  padding: 12px var(--v2-pad-mob) calc(18px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to top, var(--v2-cream) 70%, rgba(250,246,241,0));
-  display: flex; flex-direction: column; gap: 8px;
+  padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--v2-cream) 75%, rgba(250,246,241,0));
+  display: flex; flex-direction: column; gap: 10px;
 }
 .v2-page.pd .pd-msticky-main {
-  padding: 14px; border-radius: var(--v2-r-lg);
+  padding: 16px;
+  min-height: 52px;
+  border-radius: 14px;
   background: var(--v2-primary); color: #fff;
   border: none; cursor: pointer;
-  font-size: 14px; font-weight: 700; font-family: inherit;
+  font-size: 15px; font-weight: 700; font-family: inherit;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   box-shadow: 0 4px 14px rgba(29,78,216,0.3);
 }
@@ -323,8 +336,10 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
 }
 .v2-page.pd .pd-msticky-row a,
 .v2-page.pd .pd-msticky-row button {
-  padding: 12px; border-radius: var(--v2-r-md);
-  font-size: 13px; font-weight: 700; font-family: inherit;
+  padding: 14px 12px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 14px; font-weight: 700; font-family: inherit;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   cursor: pointer; text-decoration: none;
 }
@@ -489,9 +504,12 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
 /* ── Specs strip (5 tiles) ──────────────────────────────────────────── */
 .v2-page.pd .pd-specs {
   display: grid; grid-template-columns: repeat(5, 1fr);
-  background: var(--v2-paper); border-radius: var(--v2-r-xl);
-  border: 1px solid var(--v2-line); padding: 4px;
-  margin-bottom: 28px;
+  background: var(--v2-paper);
+  border-radius: var(--v2-r-xl);
+  padding: 8px;
+  margin-bottom: 32px;
+  /* Sombra suave en lugar de borde — más moderno, menos "framed" */
+  box-shadow: 0 1px 2px rgba(44,37,32,0.04), 0 4px 12px rgba(44,37,32,0.04);
 }
 .v2-page.pd .pd-spec {
   padding: 16px 6px; text-align: center;
@@ -566,10 +584,11 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
 /* ── Aside (sticky en desktop) ──────────────────────────────────────── */
 .v2-page.pd .pd-aside { display: contents; /* en mobile no es aside */ }
 .v2-page.pd .pd-aside-card {
-  background: var(--v2-paper); border-radius: var(--v2-r-2xl);
-  border: 1px solid var(--v2-line);
-  box-shadow: var(--v2-shadow-lg);
-  overflow: hidden; margin-bottom: 16px;
+  background: var(--v2-paper);
+  border-radius: var(--v2-r-2xl);
+  box-shadow: 0 1px 3px rgba(44,37,32,0.04), 0 8px 32px rgba(44,37,32,0.08);
+  overflow: hidden;
+  margin-bottom: 20px;
 }
 .v2-page.pd .pd-price-block {
   padding: 20px 22px 18px;
@@ -885,10 +904,10 @@ html.v2-width-anomaly .v2-page.pd .pd-mhero-overlay {
   }
   .v2-page.pd .pd-gal-grid {
     display: grid; grid-template-columns: 2fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr; gap: 8px;
-    height: 460px;
+    grid-template-rows: 1fr 1fr; gap: 6px;
+    height: 480px;
     border-radius: var(--v2-r-2xl); overflow: hidden;
-    border: 1px solid var(--v2-line);
+    /* Sin borde — diseño más limpio sin efecto de "capa" */
   }
   .v2-page.pd .pd-gal-grid .pd-gal-main {
     grid-row: span 2; aspect-ratio: auto;
