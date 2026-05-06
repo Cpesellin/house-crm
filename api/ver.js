@@ -125,7 +125,7 @@ function fallbackHtml(canonical) {
   });
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Cualquier excepción no controlada debe devolver fallback, no 500.
   try {
     const ref = ((req.query && req.query.ref) || '').toString().trim();
@@ -219,4 +219,4 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, s-maxage=30');
     return res.status(200).send(fallbackHtml(SITE_URL));
   }
-};
+}
