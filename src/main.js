@@ -22,6 +22,7 @@ import './domains/sharing/index.js';
 import './domains/favoritos/index.js';
 import './domains/inmuebles/filters.js';
 import './domains/leads/index.js';
+import './domains/cierres/index.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
