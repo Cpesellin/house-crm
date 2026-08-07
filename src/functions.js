@@ -2665,73 +2665,14 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
   }
 };
 
-// --- Favoritos filter toggle (replaces toggleMis for external users) ---
-window._favFilterActive = false;
-window.toggleFavFilter = function() {
-  window._favFilterActive = !window._favFilterActive;
-  const btn = document.getElementById('myToggle');
-  if (btn) {
-    btn.style.background = window._favFilterActive ? '#e11d73' : 'linear-gradient(135deg,#fdf2f8,#fce7f3)';
-    btn.style.color = window._favFilterActive ? '#fff' : '#be185d';
-  }
-  // Filter window.D to show only favorites
-  const D = window.D || [];
-  const favs = window.FAVS || [];
-  if (window._favFilterActive && favs.length) {
-    window.render(D.filter(p => favs.includes(p.id)));
-  } else {
-    window._favFilterActive = false;
-    if (typeof window.doSearch === 'function') window.doSearch();
-    else window.render(D);
-  }
-};
-
 // --- Compartir inmueble ---
 // MOVIDO a src/domains/sharing/index.js
-// Sigue disponible en window.shareInmueble para compatibilidad con
-// onclick inline en cards (load.js, sections.js).
 
 // --- Favoritos ---
-window.toggleFavorito = async function(inmId) {
-  const u = U();
-  if (!u) {
-    window._pendingFavoriteId = inmId;
-    window.showAuthPrompt('favorito', {
-      icono: '❤️',
-      titulo: 'Guarda tus favoritos',
-      mensaje: 'Crea tu cuenta gratis para guardar inmuebles y verlos cuando quieras. Solo toma 30 segundos.',
-      beneficios: ['❤️ Guarda inmuebles que te gustan', '🔔 Te avisamos si baja de precio', '📱 Accede desde cualquier dispositivo'],
-      cta: 'Crear cuenta gratis',
-      ctaSecundario: 'Ahora no',
-    });
-    return;
-  }
-  try {
-    // Check if already favorited
-    const { data: existing } = await SB().from('favoritos').select('id').eq('usuario_id', u.id).eq('inmueble_id', inmId).single();
-    // TRACK
-    const inmObj = findInm(inmId);
-    if (existing) {
-      await SB().from('favoritos').delete().eq('id', existing.id);
-      window.toast('💔 Eliminado de favoritos');
-      if (window.trackEvent) window.trackEvent('favorito_remove', { inmueble_id: inmId, ciudad: inmObj?.ciudad, barrio: inmObj?.barrio, tipo_inmueble: inmObj?.tipo, negociacion: inmObj?.negociacion, precio: inmObj?.precio_venta || inmObj?.precio_arriendo, habitaciones: inmObj?.habitaciones });
-    } else {
-      await SB().from('favoritos').insert({ usuario_id: u.id, inmueble_id: inmId });
-      window.toast('❤️ Guardado en favoritos');
-      if (window.trackEvent) window.trackEvent('favorito_add', { inmueble_id: inmId, ciudad: inmObj?.ciudad, barrio: inmObj?.barrio, tipo_inmueble: inmObj?.tipo, negociacion: inmObj?.negociacion, precio: inmObj?.precio_venta || inmObj?.precio_arriendo, habitaciones: inmObj?.habitaciones });
-      // Si era una sugerencia activa, marca como convertida
-      SB().from('sugerencias_enviadas').update({ resultado: 'convertida', convertida_at: new Date().toISOString() })
-        .eq('usuario_id', u.id).eq('inmueble_id', inmId).neq('resultado', 'convertida')
-        .then(() => {}, e => console.warn('[sug conv fav]', e));
-    }
-    // Update FAVS array
-    if (existing) { window.FAVS = (window.FAVS||[]).filter(id => id !== inmId); }
-    else { window.FAVS = [...(window.FAVS||[]), inmId]; }
-    // Refresh UI
-    if (typeof window.rFavoritos === 'function' && location.hash === '#/favoritos') window.rFavoritos();
-    window.render(window.D || []);
-  } catch(e) { console.error('[toggleFavorito]', e); }
-};
+// MOVIDO a src/domains/favoritos/index.js
+// Sigue disponible en window.toggleFavorito, window.toggleFavFilter,
+// window._favFilterActive y window.FAVS para compat con onclick inline
+// y con el resto del CRM.
 
 // --- Request upgrade to asesor externo ---
 window.requestUpgrade = async function() {

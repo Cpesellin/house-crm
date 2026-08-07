@@ -19,6 +19,7 @@ import './pages/portfolio-app-v2.js';
 // NUEVA ESTRUCTURA — módulos por dominio (scaffolding multi-tenant)
 import './tenant/current.js';
 import './domains/sharing/index.js';
+import './domains/favoritos/index.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
