@@ -9,6 +9,7 @@
 
 import { getSupabaseClient } from './config/supabase.js';
 import { HOUSE_PHONE } from './core/constants.js';
+import { ensureSearchIndex as _ensureSearchIndex } from './domains/inmuebles/search.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -17,51 +18,8 @@ function diasDesde(f) {
   return Math.floor((Date.now() - new Date(f).getTime()) / 864e5);
 }
 
-// Normaliza texto para búsqueda: lowercase + remueve acentos.
-// "Montería" → "monteria", "Niño" → "nino"
-function _searchNorm(s) {
-  // NFD descompone "á" en "a" + combining acute → quitamos los combining
-  // marks (U+0300..U+036F). "Montería" → "monteria".
-  return String(s || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
-
-// Pre-computa un índice de búsqueda por inmueble. Solo campos relevantes,
-// sin acentos, separados por espacios. Se calcula UNA vez después del
-// load() y se reusa en cada keystroke de búsqueda. Esto evita el
-// Object.values(p).join(' ') que se ejecutaba 142 veces × cada tecla y
-// matcheaba contra UUIDs, timestamps y fotos.
-function _buildSearchIndex(p) {
-  if (!p) return '';
-  const parts = [
-    p.tipo, p.negociacion, p.ciudad, p.barrio,
-    p.direccion, p.direccion_publica,
-    p.codigo_house, p.estado, p.estrato,
-    p.habitaciones, p.banos, p.area_construida,
-    p.descripcion_cliente,
-    p.captador?.nombre, p.captador?.usuario,
-    // Precios sin formato (los de búsqueda escriben sin puntos)
-    p.precio_venta, p.precio_arriendo,
-  ];
-  return _searchNorm(parts.filter(Boolean).join(' '));
-}
-
-// Aplica el índice de búsqueda a una colección. Llamar después de cargar
-// inmuebles. Idempotente: si ya tiene índice, no recomputa.
-function _ensureSearchIndex(arr) {
-  if (!Array.isArray(arr)) return;
-  for (const p of arr) {
-    if (p && !p._searchIndex) p._searchIndex = _buildSearchIndex(p);
-  }
-}
-
-if (typeof window !== 'undefined') {
-  window._searchNorm = _searchNorm;
-  window._buildSearchIndex = _buildSearchIndex;
-  window._ensureSearchIndex = _ensureSearchIndex;
-}
+// Índice de búsqueda MOVIDO a src/domains/inmuebles/search.js
+// (_searchNorm / _buildSearchIndex / _ensureSearchIndex siguen en window.*)
 
 function fm(n) {
   return n > 0 ? '$' + Math.round(n).toLocaleString('es-CO') : '';
