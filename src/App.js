@@ -6,6 +6,8 @@
  */
 
 import { load } from './load.js';
+import { toast } from './ui/toast/index.js';
+import { cfShow, cfCancel } from './ui/confirm/index.js';
 
 // ---------------------------------------------------------------------------
 // Logo SVG (brand asset — used in header + login)
@@ -340,43 +342,10 @@ function cmenu() {
 }
 
 // ---------------------------------------------------------------------------
-// Toast (uses original CSS classes)
+// Toast + Confirm dialog
+// MOVIDOS a src/ui/toast/ y src/ui/confirm/
+// (Imports arriba, siguen expuestos en window.toast, window.cfShow, window.cfCancel)
 // ---------------------------------------------------------------------------
-
-function toast(msg, type = 'tok') {
-  const c = document.getElementById('toasts');
-  if (!c) return;
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
-}
-
-// ---------------------------------------------------------------------------
-// Confirm dialog (uses original IDs)
-// ---------------------------------------------------------------------------
-
-let cfRes = null;
-
-function cfShow(icon, title, msg) {
-  return new Promise(r => {
-    document.getElementById('cfi').textContent = icon;
-    document.getElementById('cft').textContent = title;
-    document.getElementById('cfm').textContent = msg;
-    document.getElementById('cfdlg').style.display = 'flex';
-    cfRes = r;
-    document.getElementById('cfok').onclick = () => {
-      document.getElementById('cfdlg').style.display = 'none';
-      r(true);
-    };
-  });
-}
-
-function cfCancel() {
-  document.getElementById('cfdlg').style.display = 'none';
-  if (cfRes) cfRes(false);
-}
 
 // ---------------------------------------------------------------------------
 // Status bar
