@@ -28,6 +28,7 @@ import './domains/inmuebles/detail-modal.js';
 import './domains/public/view.js';
 import './domains/referrals/index.js';
 import './domains/inmuebles/lifecycle.js';
+import './domains/auth-perfil/index.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
