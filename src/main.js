@@ -19,6 +19,8 @@ import './pages/portfolio-app-v2.js';
 // NUEVA ESTRUCTURA — módulos por dominio (scaffolding multi-tenant)
 import { initTenant } from './tenant/current.js';
 import { applyBranding, applyAccessBanner } from './tenant/branding.js';
+import { installAccessGate } from './tenant/access-gate.js';
+import './tenant/config.js';
 import './domains/sharing/index.js';
 import './domains/favoritos/index.js';
 import './domains/inmuebles/filters.js';
@@ -30,6 +32,7 @@ import './domains/public/view.js';
 import './domains/referrals/index.js';
 import './domains/inmuebles/lifecycle.js';
 import './domains/auth-perfil/index.js';
+import './superadmin/tenants-panel.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
@@ -74,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initTenant();
     applyBranding();
     applyAccessBanner();
+    installAccessGate();
   } catch (e) {
     console.warn('[main] tenant init fall\u00f3, seguimos con default:', e);
   }
