@@ -33,6 +33,8 @@ import './domains/referrals/index.js';
 import './domains/inmuebles/lifecycle.js';
 import './domains/auth-perfil/index.js';
 import './superadmin/tenants-panel.js';
+import './billing/facturacion-panel.js';
+import './billing/signup-page.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
