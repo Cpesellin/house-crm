@@ -1,0 +1,283 @@
+/**
+ * Secciones internas v2 — Tier 3 del brief
+ *
+ * Reestiliza las clases compartidas que usan las pantallas del usuario
+ * registrado y del asesor, sin tocar su JS:
+ *
+ *   .card              cards genéricas de sección
+ *   .emp / .emp-i      empty states
+ *   .bt .bp .bd .bgr   botones del CRM
+ *   .wiz-*             wizard de publicar inmueble
+ *   .pub-card-*        tarjetas de "Mis publicaciones"
+ *   .sb .sbok .sber    status badges
+ *   .lds               loaders
+ *
+ * Cubre: Mis Intereses, Favoritos, Mis Publicaciones, Publicar,
+ * Referidos, Mensajes, Mis Negocios y las secciones del CRM interno.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   Cards de sección
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .card {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line) !important;
+  border-radius: var(--v2-r-lg) !important;
+  box-shadow: var(--v2-sh-sm) !important;
+}
+
+html[data-design="v2"] .msc {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line) !important;
+  border-radius: var(--v2-r-md) !important;
+}
+html[data-design="v2"] .msct {
+  color: var(--v2-ink) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+html[data-design="v2"] .mfl {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3) !important;
+}
+html[data-design="v2"] .mfv {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--v2-ink) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Empty states
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .emp {
+  padding: 56px 24px !important;
+  text-align: center;
+  color: var(--v2-ink-3) !important;
+}
+html[data-design="v2"] .emp h3 {
+  font-family: var(--v2-font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.02em;
+  color: var(--v2-ink) !important;
+  margin: 14px 0 0 !important;
+}
+html[data-design="v2"] .emp p {
+  font-size: 14px !important;
+  color: var(--v2-ink-3) !important;
+  line-height: 1.55;
+  margin-top: 8px !important;
+}
+html[data-design="v2"] .emp-i {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  border-radius: var(--v2-r-xl);
+  background: var(--v2-cream-3);
+  font-size: 28px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Botones del CRM
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .bt {
+  border-radius: var(--v2-r-md) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  transition: filter .15s ease, background .15s ease, border-color .15s ease;
+  cursor: pointer;
+}
+html[data-design="v2"] .bt.bp {
+  background: var(--v2-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+html[data-design="v2"] .bt.bp:hover { filter: brightness(.92); }
+
+html[data-design="v2"] .bt.bd {
+  background: var(--v2-red) !important;
+  color: #fff !important;
+  border: none !important;
+}
+html[data-design="v2"] .bt.bgr {
+  background: var(--v2-paper) !important;
+  color: var(--v2-ink) !important;
+  border: 1px solid var(--v2-line-3) !important;
+}
+html[data-design="v2"] .bt.bgr:hover { background: var(--v2-cream-2) !important; }
+html[data-design="v2"] .bt.bsm { font-size: 12.5px !important; }
+
+html[data-design="v2"] .vb {
+  border-radius: var(--v2-r-md) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  height: 42px;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Wizard de publicar inmueble
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .wiz-field { margin-bottom: 16px !important; }
+
+html[data-design="v2"] .wiz-label {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3) !important;
+  display: block;
+  margin-bottom: 6px !important;
+}
+
+html[data-design="v2"] .wiz-input,
+html[data-design="v2"] .wiz-field input,
+html[data-design="v2"] .wiz-field select,
+html[data-design="v2"] .wiz-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1.5px solid var(--v2-line-3) !important;
+  border-radius: var(--v2-r-md) !important;
+  background: var(--v2-paper) !important;
+  color: var(--v2-ink) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 15px !important;
+  padding: 12px 13px !important;
+}
+html[data-design="v2"] .wiz-input:focus,
+html[data-design="v2"] .wiz-field input:focus,
+html[data-design="v2"] .wiz-field select:focus,
+html[data-design="v2"] .wiz-field textarea:focus {
+  outline: none;
+  border-color: var(--v2-primary) !important;
+  box-shadow: 0 0 0 3px var(--v2-primary-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Tarjetas de "Mis publicaciones"
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .pub-card {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line) !important;
+  border-radius: var(--v2-r-lg) !important;
+  box-shadow: var(--v2-sh-sm) !important;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+html[data-design="v2"] .pub-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v2-sh-lg) !important;
+}
+html[data-design="v2"] .pub-card-price {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.015em;
+  color: var(--v2-ink) !important;
+  font-variant-numeric: tabular-nums;
+}
+html[data-design="v2"] .pub-card-actions { gap: 8px !important; padding: 0 14px 14px !important; }
+html[data-design="v2"] .pub-card-wa,
+html[data-design="v2"] .pub-card-det {
+  border-radius: var(--v2-r-md) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+html[data-design="v2"] .pub-card-det {
+  background: var(--v2-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Status badges
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .sb {
+  border-radius: var(--v2-r-full) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  padding: 5px 11px !important;
+}
+html[data-design="v2"] .sb.sbok {
+  background: var(--v2-green-soft) !important;
+  color: #067a52 !important;
+  border: 1px solid #c9ecdc !important;
+}
+html[data-design="v2"] .sb.sber {
+  background: var(--v2-red-soft) !important;
+  color: #991b1b !important;
+  border: 1px solid #f7d4d4 !important;
+}
+html[data-design="v2"] .sb.sbld {
+  background: var(--v2-cream-2) !important;
+  color: var(--v2-ink-3) !important;
+  border: 1px solid var(--v2-line) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Loaders
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .lds {
+  color: var(--v2-ink-3) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 13.5px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Anotaciones (usadas en la ficha interna y en las fichas de sección)
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .abx {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line) !important;
+  border-radius: var(--v2-r-md) !important;
+  padding: 14px !important;
+}
+html[data-design="v2"] .anrow {
+  border-bottom: 1px solid var(--v2-line-2) !important;
+  padding: 10px 0 !important;
+}
+html[data-design="v2"] .ainp textarea {
+  border: 1.5px solid var(--v2-line-3) !important;
+  border-radius: var(--v2-r-md) !important;
+  background: var(--v2-paper) !important;
+  color: var(--v2-ink) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 13.5px !important;
+  padding: 10px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Secciones y titulares genéricos
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .sect-title,
+html[data-design="v2"] h2[style*="Fraunces"],
+html[data-design="v2"] h3[style*="Fraunces"] {
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.025em;
+  color: var(--v2-ink) !important;
+}
+
+/* Tabs internos (usuarios, interesados, etc) */
+html[data-design="v2"] .tabbtn,
+html[data-design="v2"] [onclick*="_usersTab"] {
+  border-radius: var(--v2-r-md) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 600 !important;
+}
