@@ -432,7 +432,13 @@ export function oMv2(idx) {
   st.editando = false;
   st.cambios = new Set();
   st.precioTocado = false;
+  st.guardando = false;
   st.fotos = p.fotos ? [...p.fotos].sort((a, b) => a.orden - b.orden) : [];
+
+  // El modal v1 deja este flag encendido entre aperturas; si no lo
+  // limpiamos, la ficha abre creyendo que ya hay cambios pendientes.
+  window._modalDirty = false;
+  window._pendingFotos = [];
 
   const perm = calcPermisos(p);
   st.perm = perm;
@@ -480,9 +486,9 @@ function pintar() {
     : (p.direccion_publica || p.barrio || '');
 
   // Todos los tabs se renderizan; se oculta el inactivo (contrato saveAll)
-  const panel = (id, html) => `<div data-oM2-panel="${id}" style="display:${st.tab === id ? 'block' : 'none'}">${html}</div>`;
+  const panel = (id, html) => `<div data-panel="${id}" style="display:${st.tab === id ? 'block' : 'none'}">${html}</div>`;
 
-  mbd.innerHTML = `<div class="oM2" style="display:flex;flex-direction:column;height:100%;background:var(--v2-cream);margin:-18px;min-height:0">
+  mbd.innerHTML = `<div class="oM2" style="display:flex;flex-direction:column;flex:1;min-height:0;background:var(--v2-cream);position:relative">
 
     <div style="flex-shrink:0;padding:14px 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div style="min-width:0;flex:1">
@@ -503,9 +509,9 @@ function pintar() {
       </div>
     </div>
 
-    <div style="flex-shrink:0;padding:0 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;gap:2px;overflow-x:auto">${renderTabsBar(perm)}</div>
+    <div id="oM2Tabs" style="flex-shrink:0;padding:0 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;gap:2px;overflow-x:auto">${renderTabsBar(perm)}</div>
 
-    <div style="flex:1;display:flex;min-height:0;overflow:hidden">
+    <div class="oM2-body" style="flex:1;display:flex;min-height:0;overflow:hidden">
       <div style="flex:1;min-width:0;overflow-y:auto;padding:20px 20px 80px">
         ${panel('resumen', tabResumen(p, perm))}
         ${panel('fotos', tabFotos(p, perm))}
@@ -530,11 +536,11 @@ function pintar() {
 // ══════════════════════════════════════════════════════════════════════
 window._oM2Tab = function (id) {
   st.tab = id;
-  document.querySelectorAll('[data-oM2-panel]').forEach((el) => {
-    el.style.display = el.dataset.oM2Panel === id ? 'block' : 'none';
+  document.querySelectorAll('.oM2 [data-panel]').forEach((el) => {
+    el.style.display = el.getAttribute('data-panel') === id ? 'block' : 'none';
   });
   // Repintar sólo la barra de tabs (para el subrayado y pesos)
-  const bar = document.querySelector('.oM2 > div:nth-child(2)');
+  const bar = document.getElementById('oM2Tabs');
   if (bar && st.perm) bar.innerHTML = renderTabsBar(st.perm);
   if (id === 'fotos') setTimeout(montarUpload, 60);
 };

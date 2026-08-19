@@ -601,10 +601,12 @@ html[data-design="v2"] .v2-bottomnav .v2-nav-badge {
 }
 
 /* ── Ficha interna (modal oM v2) ──────────────────────────────────── */
-/* El shell v1 limita el modal; en v2 necesita ser ancho y sin padding
-   propio porque la ficha trae su header, tabs, rail y barra de guardado. */
-html[data-design="v2"] #mdl .card:has(.oM2),
-html[data-design="v2"] #mdl > div:has(.oM2) {
+/* Estructura real del shell (App.js):
+     #mdl.mo > .mb2 > [.m-handle, .mhd2, form > .mbd2#mbd]
+   La ficha v2 trae su propio header, tabs, rail y barra de guardado, así
+   que ocultamos el header del shell y hacemos que la cadena
+   .mb2 → form → .mbd2 propague la altura hasta el contenido. */
+html[data-design="v2"] #mdl:has(.oM2) .mb2 {
   max-width: 1060px !important;
   width: 96vw !important;
   height: 88vh !important;
@@ -615,15 +617,35 @@ html[data-design="v2"] #mdl > div:has(.oM2) {
   border: 1px solid var(--v2-line-3) !important;
   box-shadow: 0 20px 50px rgba(44,37,32,.16) !important;
   position: relative;
+  display: flex !important;
+  flex-direction: column;
+  padding: 0 !important;
 }
-/* El header propio de la ficha reemplaza al del shell */
-html[data-design="v2"] #mdl .cdh:has(+ .cdb .oM2),
-html[data-design="v2"] #mdl .mhd2:has(~ .cdb .oM2) { display: none !important; }
 
-html[data-design="v2"] #mdl .cdb:has(.oM2) {
-  padding: 18px !important;
-  height: 100%;
+/* El header y el handle del shell los reemplaza el header de la ficha */
+html[data-design="v2"] #mdl:has(.oM2) .mhd2,
+html[data-design="v2"] #mdl:has(.oM2) .m-handle { display: none !important; }
+
+/* El <form> intermedio cortaba la cadena de alturas */
+html[data-design="v2"] #mdl:has(.oM2) form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-design="v2"] #mdl:has(.oM2) .mbd2 {
+  padding: 0 !important;
+  flex: 1;
+  min-height: 0;
   overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sin :has() (navegadores viejos): al menos el modal se ve ancho */
+@supports not selector(:has(*)) {
+  html[data-design="v2"] #mdl .mb2 { max-width: 1060px; width: 96vw; }
 }
 
 html[data-design="v2"] .oM2 input:focus,
@@ -636,11 +658,21 @@ html[data-design="v2"] .oM2 select:focus {
 
 /* El rail se apila debajo del contenido en pantallas chicas */
 @media (max-width: 900px) {
-  html[data-design="v2"] .oM2 > div:nth-child(3) { flex-direction: column !important; }
+  html[data-design="v2"] .oM2-body {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
   html[data-design="v2"] .oM2-rail {
     width: 100% !important;
     border-left: none !important;
     border-top: 1px solid var(--v2-line);
+    overflow: visible !important;
+  }
+  html[data-design="v2"] #mdl:has(.oM2) .mb2 {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: none !important;
+    border-radius: 0 !important;
   }
 }
 
