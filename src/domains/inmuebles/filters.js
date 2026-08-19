@@ -217,7 +217,7 @@ window.renderSel = function () {
   if (window._favFilterActive) chips.push({ key: 'fav', label: '♥ Favoritos', remove: 'toggleFavFilter()' });
   if (window._myFilter) chips.push({ key: 'mis', label: '📌 Mis inmuebles', remove: 'toggleMis()' });
   const qv = (document.getElementById('q')?.value || '').trim();
-  if (qv) chips.push({ key: 'q', label: '🔍 "' + qv + '"', remove: "document.getElementById('q').value='';document.getElementById('qClear').style.display='none';renderSel();doSearch()" });
+  if (qv) chips.push({ key: 'q', label: '🔍 "' + escHtml(qv) + '"', remove: "document.getElementById('q').value='';document.getElementById('qClear').style.display='none';renderSel();doSearch()" });
 
   const bar = document.getElementById('selBar');
   const chipsEl = document.getElementById('selChips');
@@ -407,7 +407,7 @@ document.addEventListener('click', (e) => {
 
 // ─── Autocomplete ─────────────────────────────────────────────────────
 window._acIdx = -1;
-function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function hlMatch(text, q) {
   if (!q) return escHtml(text);
   const i = text.toLowerCase().indexOf(q.toLowerCase());
