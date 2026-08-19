@@ -1,0 +1,337 @@
+/**
+ * Modales v2 — Tier 2 del brief
+ *
+ * Reestiliza los modales del embudo de conversión que ya existen en
+ * functions.js y domains/leads/, sin tocar su JS:
+ *   · Auth prompt (bottom sheet)     .authps-*
+ *   · Modal de registro              .regmx-*
+ *   · Confirm dialog                 .cfdlg / .cfbox
+ *   · Flujo "Me interesa"            #ciRolDlg / #ciDlg
+ *   · Campos de formulario           .ff / .ffl / .ffi / .esel
+ *   · Toasts                         .toast
+ *
+ * Todo namespaceado bajo html[data-design="v2"]: sin el flag no aplica.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   Auth prompt — bottom sheet
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .authps-backdrop {
+  background: rgba(44, 37, 32, .5);
+  backdrop-filter: blur(4px);
+}
+
+html[data-design="v2"] .authps-box {
+  background: var(--v2-paper) !important;
+  border-radius: var(--v2-r-xl) var(--v2-r-xl) 0 0 !important;
+  border: 1px solid var(--v2-line);
+  border-bottom: none;
+  box-shadow: var(--v2-sh-xl);
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom)) !important;
+}
+
+html[data-design="v2"] .authps-handle {
+  background: var(--v2-line-3) !important;
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  margin: 4px auto 14px;
+}
+
+html[data-design="v2"] .authps-box [style*="Fraunces"] {
+  font-family: var(--v2-font-sans) !important;
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.025em;
+  color: var(--v2-ink) !important;
+}
+
+html[data-design="v2"] .authps-benefits {
+  background: var(--v2-cream-2);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-r-md);
+  padding: 12px 14px;
+  margin: 4px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+html[data-design="v2"] .authps-benefit {
+  font-size: 13.5px !important;
+  color: var(--v2-ink-2) !important;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+html[data-design="v2"] .authps-cta {
+  background: var(--v2-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--v2-r-md) !important;
+  height: 50px;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  width: 100%;
+  cursor: pointer;
+  transition: filter .15s ease;
+}
+html[data-design="v2"] .authps-cta:hover { filter: brightness(.92); }
+
+html[data-design="v2"] .authps-skip {
+  background: transparent !important;
+  color: var(--v2-ink-3) !important;
+  border: none !important;
+  height: 44px;
+  width: 100%;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  margin-top: 6px;
+}
+html[data-design="v2"] .authps-skip:hover { color: var(--v2-ink); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Modal de registro
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .regmx-backdrop {
+  background: rgba(44, 37, 32, .5);
+  backdrop-filter: blur(4px);
+}
+
+html[data-design="v2"] .regmx-box {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-r-xl) !important;
+  box-shadow: var(--v2-sh-xl);
+}
+
+html[data-design="v2"] .regmx-nombre,
+html[data-design="v2"] .regmx-box [style*="Fraunces"] {
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.025em;
+  color: var(--v2-ink) !important;
+}
+
+html[data-design="v2"] .regmx-input,
+html[data-design="v2"] .regmx-email,
+html[data-design="v2"] .regmx-pass {
+  border: 1.5px solid var(--v2-line-3) !important;
+  border-radius: var(--v2-r-md) !important;
+  background: var(--v2-paper) !important;
+  color: var(--v2-ink) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 15px !important;
+  height: 46px;
+  padding: 0 13px;
+}
+html[data-design="v2"] .regmx-input:focus,
+html[data-design="v2"] .regmx-email:focus,
+html[data-design="v2"] .regmx-pass:focus {
+  outline: none;
+  border-color: var(--v2-primary) !important;
+  box-shadow: 0 0 0 3px var(--v2-primary-soft);
+}
+
+html[data-design="v2"] .regmx-cta {
+  background: var(--v2-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--v2-r-md) !important;
+  height: 48px;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+html[data-design="v2"] .regmx-cta:hover { filter: brightness(.92); }
+
+html[data-design="v2"] .regmx-close {
+  background: var(--v2-cream-2) !important;
+  border: 1px solid var(--v2-line) !important;
+  border-radius: var(--v2-r-md) !important;
+  color: var(--v2-ink-3) !important;
+}
+
+html[data-design="v2"] .regmx-err {
+  background: var(--v2-red-soft) !important;
+  color: #991b1b !important;
+  border: 1px solid #f7d4d4;
+  border-radius: var(--v2-r-md);
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+html[data-design="v2"] .regmx-optin,
+html[data-design="v2"] .regmx-email-notifs {
+  font-size: 12.5px !important;
+  color: var(--v2-ink-3) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Confirm dialog
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .cfdlg {
+  background: rgba(44, 37, 32, .5) !important;
+  backdrop-filter: blur(4px);
+}
+
+html[data-design="v2"] .cfbox {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-r-xl) !important;
+  box-shadow: var(--v2-sh-xl);
+  padding: 26px 24px !important;
+}
+
+html[data-design="v2"] .cfi {
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+
+html[data-design="v2"] .cft {
+  font-family: var(--v2-font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  color: var(--v2-ink) !important;
+}
+
+html[data-design="v2"] .cfm {
+  font-size: 14px !important;
+  color: var(--v2-ink-3) !important;
+  line-height: 1.55;
+  margin-top: 7px;
+}
+
+html[data-design="v2"] .cfbtns { gap: 9px !important; margin-top: 20px !important; }
+html[data-design="v2"] .cfbtns button {
+  height: 46px;
+  border-radius: var(--v2-r-md) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  border: none;
+}
+html[data-design="v2"] .cfbtns button:first-child {
+  background: var(--v2-cream-2) !important;
+  color: var(--v2-ink-2) !important;
+  border: 1px solid var(--v2-line-3) !important;
+}
+html[data-design="v2"] .cfbtns button:last-child {
+  background: var(--v2-primary) !important;
+  color: #fff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Flujo "Me interesa" — split de rol y formularios
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] #ciRolDlg > div,
+html[data-design="v2"] #ciDlg > div {
+  background: var(--v2-cream) !important;
+  border: 1px solid var(--v2-line-3);
+  border-radius: var(--v2-r-xl) !important;
+  box-shadow: var(--v2-sh-xl);
+}
+
+/* Tarjetas de elección de rol (para mí / para otro) */
+html[data-design="v2"] #opt-para-mi,
+html[data-design="v2"] #opt-para-otro {
+  background: var(--v2-paper) !important;
+  border: 2px solid var(--v2-line-3) !important;
+  border-radius: var(--v2-r-lg) !important;
+  padding: 22px 20px !important;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+html[data-design="v2"] #opt-para-mi:hover,
+html[data-design="v2"] #opt-para-otro:hover {
+  border-color: var(--v2-primary) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--v2-sh-lg);
+}
+
+/* Campos de formulario */
+html[data-design="v2"] .ffl {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3) !important;
+}
+
+html[data-design="v2"] .ffi,
+html[data-design="v2"] .esel,
+html[data-design="v2"] #ciDlg input,
+html[data-design="v2"] #ciDlg select,
+html[data-design="v2"] #ciDlg textarea {
+  border: 1.5px solid var(--v2-line-3) !important;
+  border-radius: var(--v2-r-md) !important;
+  background: var(--v2-paper) !important;
+  color: var(--v2-ink) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-size: 14px !important;
+}
+html[data-design="v2"] .ffi:focus,
+html[data-design="v2"] .esel:focus,
+html[data-design="v2"] #ciDlg input:focus,
+html[data-design="v2"] #ciDlg select:focus,
+html[data-design="v2"] #ciDlg textarea:focus {
+  outline: none;
+  border-color: var(--v2-primary) !important;
+  box-shadow: 0 0 0 3px var(--v2-primary-soft);
+}
+
+/* Cabecera de los modales del CRM */
+html[data-design="v2"] .cdh {
+  background: var(--v2-paper) !important;
+  border-bottom: 1px solid var(--v2-line) !important;
+  padding: 16px 18px !important;
+}
+html[data-design="v2"] .cht {
+  font-family: var(--v2-font-sans) !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  color: var(--v2-ink) !important;
+}
+html[data-design="v2"] .chi { font-size: 22px; }
+html[data-design="v2"] .cdb { background: var(--v2-cream) !important; }
+
+/* Grupos de botones tipo "Sí / No / En trámite" */
+html[data-design="v2"] #ci_credito_wrap button,
+html[data-design="v2"] #ci_pago_wrap button,
+html[data-design="v2"] #ci_prop_wrap button {
+  border-radius: var(--v2-r-md) !important;
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 600 !important;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Toasts
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] .toast {
+  background: var(--v2-ink) !important;
+  color: var(--v2-cream) !important;
+  border-radius: var(--v2-r-md) !important;
+  box-shadow: var(--v2-sh-lg);
+  font-family: var(--v2-font-sans) !important;
+  font-size: 13.5px !important;
+  font-weight: 600;
+  padding: 12px 16px !important;
+  border: none !important;
+}
+html[data-design="v2"] .toast.terr {
+  background: var(--v2-red) !important;
+  color: #fff !important;
+}
+html[data-design="v2"] .toast.twarn {
+  background: var(--v2-amber) !important;
+  color: #fff !important;
+}
+html[data-design="v2"] .toast.tok { background: var(--v2-ink) !important; }
