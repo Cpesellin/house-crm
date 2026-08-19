@@ -535,6 +535,50 @@ html[data-design="v2"] .v2-bottomnav .v2-nav-badge {
   border: 1.5px solid var(--v2-cream);
 }
 
+/* ── Ficha interna (modal oM v2) ──────────────────────────────────── */
+/* El shell v1 limita el modal; en v2 necesita ser ancho y sin padding
+   propio porque la ficha trae su header, tabs, rail y barra de guardado. */
+html[data-design="v2"] #mdl .card:has(.oM2),
+html[data-design="v2"] #mdl > div:has(.oM2) {
+  max-width: 1060px !important;
+  width: 96vw !important;
+  height: 88vh !important;
+  max-height: 880px !important;
+  border-radius: var(--v2-r-xl) !important;
+  overflow: hidden !important;
+  background: var(--v2-cream) !important;
+  border: 1px solid var(--v2-line-3) !important;
+  box-shadow: 0 20px 50px rgba(44,37,32,.16) !important;
+  position: relative;
+}
+/* El header propio de la ficha reemplaza al del shell */
+html[data-design="v2"] #mdl .cdh:has(+ .cdb .oM2),
+html[data-design="v2"] #mdl .mhd2:has(~ .cdb .oM2) { display: none !important; }
+
+html[data-design="v2"] #mdl .cdb:has(.oM2) {
+  padding: 18px !important;
+  height: 100%;
+  overflow: hidden !important;
+}
+
+html[data-design="v2"] .oM2 input:focus,
+html[data-design="v2"] .oM2 textarea:focus,
+html[data-design="v2"] .oM2 select:focus {
+  outline: none;
+  border-color: var(--v2-primary) !important;
+  box-shadow: 0 0 0 3px var(--v2-primary-soft);
+}
+
+/* El rail se apila debajo del contenido en pantallas chicas */
+@media (max-width: 900px) {
+  html[data-design="v2"] .oM2 > div:nth-child(3) { flex-direction: column !important; }
+  html[data-design="v2"] .oM2-rail {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--v2-line);
+  }
+}
+
 /* En la ficha pública el bottom-nav compite con los CTAs del inmueble:
    ahí manda "Me interesa / WhatsApp / Llamar", no la navegación. */
 html[data-design="v2"] body.v2-ficha-abierta .v2-bottomnav,

@@ -17,6 +17,7 @@
 import { isV2 } from './flag.js';
 import { renderV2 } from '../domains/inmuebles/cards-v2.js';
 import { showPublicViewV2, pubGoV2 } from '../domains/public/view-v2.js';
+import { oMv2 } from '../domains/inmuebles/detail-modal-v2.js';
 import { icon } from '../ui/icons.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,6 +67,23 @@ function installFichaDispatcher() {
   window.pubGo = function (i) {
     if (isV2()) return pubGoV2(i);
     return _pubGoV1 ? _pubGoV1(i) : undefined;
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Dispatcher del modal de detalle interno (oM)
+// ══════════════════════════════════════════════════════════════════════
+let _oMV1 = null;
+function installFichaInternaDispatcher() {
+  if (_oMV1) return;
+  _oMV1 = window.oM;
+  if (typeof _oMV1 !== 'function') {
+    console.warn('[design-v2] window.oM no existe todavía');
+    return;
+  }
+  window.oM = function (idx) {
+    if (isV2()) return oMv2(idx);
+    return _oMV1(idx);
   };
 }
 
@@ -244,6 +262,7 @@ export function installBridge() {
   installRenderDispatcher();
   installRenderSelDispatcher();
   installFichaDispatcher();
+  installFichaInternaDispatcher();
 
   // Repintar pills en cada cambio de filtro (updatePills es interna
   // de filters.js, así que enganchamos por evento de click en la barra)
