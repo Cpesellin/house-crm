@@ -1,116 +1,325 @@
-/* =========================================================================
-   HOUSE — Design System v2 (detail.jsx fiel)
-   Tokens scopeados a .v2-page para coexistir con global.css.
-   Match exacto con los inline styles del handoff de Claude Design.
-   ========================================================================= */
+/**
+ * Design tokens v2 — sistema editorial cálido
+ * Fuente: mockup de Claude Design (House Landing, agosto 2026)
+ *
+ * MULTI-TENANT:
+ *   --v2-primary hereda de --color-primario, que tenant/branding.js
+ *   setea desde la config del tenant activo. Todos los derivados
+ *   (soft, hover, tints) salen de ahí con color-mix, así que el
+ *   sistema funciona con cualquier color de marca.
+ *
+ * ACTIVACIÓN:
+ *   Los estilos sólo aplican bajo html[data-design="v2"], que
+ *   design-v2/flag.js pone cuando el flag está encendido.
+ *   Sin el flag, esta hoja no afecta nada.
+ */
 
-.v2-page {
-  /* ── Color: surfaces ────────────────────────────────────────────────── */
-  --v2-cream:      #faf6f1;       /* page background */
-  --v2-paper:      #ffffff;       /* card surface */
-  --v2-cream-2:    #fdf8ef;       /* hover */
-  --v2-cream-3:    #f0e8d4;       /* map placeholder bg */
+:root {
+  /* Fallback: si el tenant no cargó todavía, azul por defecto */
+  --color-primario: #1d4ed8;
+}
 
-  /* ── Color: text ────────────────────────────────────────────────────── */
-  --v2-ink:        #2c2520;       /* primary text */
-  --v2-ink-2:      #4a4540;       /* secondary text */
-  --v2-ink-3:      #6b6760;       /* meta / muted */
-  --v2-ink-4:      #9b948a;       /* faint */
+html[data-design="v2"] {
+  /* ── Superficies (cálidas, editorial) ───────────────────────── */
+  --v2-cream:    #faf6f1;   /* fondo de página */
+  --v2-cream-2:  #fdf8ef;   /* hover suave */
+  --v2-cream-3:  #f0e8d4;   /* placeholder de imagen */
+  --v2-paper:    #ffffff;   /* cards */
 
-  /* ── Color: borders ─────────────────────────────────────────────────── */
-  --v2-line:       #ece4d4;       /* card borders */
-  --v2-line-2:     #f0e8d8;       /* internal dividers */
-  --v2-line-3:     #e8e0d2;       /* input borders */
+  /* ── Texto (marrón cálido, no negro puro) ───────────────────── */
+  --v2-ink:      #2c2520;   /* titulares */
+  --v2-ink-2:    #4a4540;   /* cuerpo */
+  --v2-ink-3:    #6b6760;   /* secundario */
+  --v2-ink-4:    #9b948a;   /* placeholder, iconos inactivos */
 
-  /* ── Color: brand (puede sobrescribirse via inline para A/B) ──────── */
-  --v2-primary:    #1d4ed8;       /* default azul */
-  --v2-primary-soft: #eff6ff;     /* primary tinted */
+  /* ── Líneas ─────────────────────────────────────────────────── */
+  --v2-line:     #ece4d4;
+  --v2-line-2:   #f0e8d8;
+  --v2-line-3:   #e8e0d2;
 
-  /* ── Color: accents ─────────────────────────────────────────────────── */
-  --v2-amber:      #d97706;       /* premium / star */
-  --v2-amber-soft: #fdf3e2;       /* premium bg */
-  --v2-green:      #10b981;       /* success / WhatsApp */
-  --v2-green-soft: #e6f7ef;       /* success bg */
+  /* ── Marca (viene del tenant) ───────────────────────────────── */
+  --v2-primary:       var(--color-primario);
+  --v2-primary-soft:  color-mix(in oklab, var(--color-primario) 8%, #ffffff);
+  --v2-primary-hover: color-mix(in oklab, var(--color-primario) 88%, #000000);
+  --v2-primary-tint:  color-mix(in oklab, var(--color-primario) 7%, var(--v2-cream));
+
+  /* ── Semánticos ─────────────────────────────────────────────── */
+  --v2-amber:      #d97706;
+  --v2-amber-soft: #fdf3e2;
+  --v2-green:      #10b981;
+  --v2-green-soft: #e6f7ef;
   --v2-red:        #dc2626;
   --v2-red-soft:   #fef0f0;
 
-  /* ── Tipografía ─────────────────────────────────────────────────────── */
-  --v2-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  /* ── Tipografía ─────────────────────────────────────────────── */
+  --v2-font-sans:    'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --v2-font-display: 'Fraunces', Georgia, serif;
+  --v2-font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
-  /* ── Layout ─────────────────────────────────────────────────────────── */
-  --v2-pad-mob: 16px;
-  --v2-pad-desk: 28px;
-  --v2-max: 1340px;
-
-  /* ── Radii ──────────────────────────────────────────────────────────── */
-  --v2-r-sm:   8px;
+  /* ── Radios ─────────────────────────────────────────────────── */
+  --v2-r-sm:   6px;
   --v2-r-md:   10px;
-  --v2-r-lg:   12px;
-  --v2-r-xl:   14px;
-  --v2-r-2xl:  16px;
-  --v2-r-pill: 999px;
+  --v2-r-lg:   14px;
+  --v2-r-xl:   16px;
+  --v2-r-full: 999px;
 
-  /* ── Sombras (uso contado, suave) ──────────────────────────────────── */
-  --v2-shadow-sm:  0 1px 3px rgba(0,0,0,0.04);
-  --v2-shadow-md:  0 1px 3px rgba(0,0,0,0.08);
-  --v2-shadow-lg:  0 4px 14px rgba(44,37,32,0.06);
-  --v2-shadow-xl:  0 20px 50px rgba(0,0,0,0.25);
-  --v2-shadow-bot: 0 -8px 24px rgba(44,37,32,0.06);
+  /* ── Sombras ────────────────────────────────────────────────── */
+  --v2-sh-sm: 0 1px 3px rgba(0,0,0,.04);
+  --v2-sh-md: 0 4px 14px rgba(44,37,32,.07);
+  --v2-sh-lg: 0 8px 24px rgba(44,37,32,.10);
+  --v2-sh-xl: 0 20px 50px rgba(44,37,32,.10);
+}
 
-  /* ── Aplicar tipografía ────────────────────────────────────────────── */
-  font-family: var(--v2-sans);
-  color: var(--v2-ink);
+/* Fallback para navegadores sin color-mix (Chrome <111, Safari <16.2) */
+@supports not (color: color-mix(in oklab, red 50%, blue)) {
+  html[data-design="v2"] {
+    --v2-primary-soft:  #eff6ff;
+    --v2-primary-hover: #163fae;
+    --v2-primary-tint:  #f2f4fb;
+  }
+}
+
+/* ── Base de página bajo el flag ──────────────────────────────── */
+html[data-design="v2"] body {
   background: var(--v2-cream);
+  color: var(--v2-ink);
+  font-family: var(--v2-font-sans);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reset chico solo dentro de .v2-page para no contagiar el resto */
-.v2-page * { box-sizing: border-box; }
-.v2-page button { font-family: inherit; }
-.v2-page input, .v2-page textarea, .v2-page select {
-  font-family: inherit;
-  font-size: 16px; /* anti-zoom iOS */
+html[data-design="v2"] a {
+  color: var(--v2-primary);
+  text-decoration: none;
+}
+html[data-design="v2"] a:hover { color: var(--v2-primary-hover); }
+
+/* ── Utilidades del sistema v2 ────────────────────────────────── */
+html[data-design="v2"] .v2-display {
+  font-family: var(--v2-font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--v2-primary);
 }
 
-/* ── Override del .sec global ───────────────────────────────────────
-   El .sec del CRM (global.css) tiene max-width:1300px y padding 14px.
-   Las pantallas v2 son full-bleed. Reseteamos. */
-.sec.v2-page {
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  display: block !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  flex: 1 1 100% !important;
-  min-width: 0;
-  /* Fondo cream extendido para que cubra cualquier color de fondo del
-     CRM o del navegador que pudiera bleeding por los costados */
-  min-height: 100vh;
-  background: var(--v2-cream) !important;
+html[data-design="v2"] .v2-mono {
+  font-family: var(--v2-font-mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
-/* Cuando v2 está activa (toggle JS), TODO se viste de cream.
-   Forzamos en TODOS los niveles para evitar bleed-through. */
-html.v2-active,
-body.v2-active {
-  background: #faf6f1 !important;
-  background-color: #faf6f1 !important;
+html[data-design="v2"] .v2-num {
+  font-variant-numeric: tabular-nums;
 }
-body.v2-active > header,
-body.v2-active #mhdr,
-body.v2-active .stb {
-  display: none !important;
+
+/* ── Tarjeta de inmueble ──────────────────────────────────────── */
+html[data-design="v2"] .v2-card {
+  background: var(--v2-paper);
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-r-lg);
+  box-shadow: var(--v2-sh-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease;
 }
-body.v2-active::before,
-body.v2-active::after {
-  display: none !important;
-  content: none !important;
+html[data-design="v2"] .v2-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v2-sh-lg);
 }
-.sec.v2-page.act {
+
+html[data-design="v2"] .v2-card-media {
   position: relative;
-  z-index: 1;
-  isolation: isolate;
-  background: #faf6f1 !important;
+  aspect-ratio: 16 / 10;
+  background: var(--v2-cream-3);
+  overflow: hidden;
+}
+html[data-design="v2"] .v2-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* En móvil la foto vende más: más vertical */
+@media (max-width: 767px) {
+  html[data-design="v2"] .v2-card-media { aspect-ratio: 4 / 3; }
+}
+
+html[data-design="v2"] .v2-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--v2-r-sm);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+html[data-design="v2"] .v2-fav {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 36px; height: 36px;
+  border-radius: var(--v2-r-full);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(6px);
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+html[data-design="v2"] .v2-fav:hover { transform: scale(1.1); }
+
+html[data-design="v2"] .v2-photo-count {
+  position: absolute;
+  bottom: 10px; right: 10px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--v2-r-sm);
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+}
+
+/* ── Botones ──────────────────────────────────────────────────── */
+html[data-design="v2"] .v2-btn {
+  height: 42px;
+  border-radius: var(--v2-r-md);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+html[data-design="v2"] .v2-btn-ghost {
+  border: 1px solid var(--v2-line-3);
+  background: transparent;
+  color: var(--v2-ink);
+}
+html[data-design="v2"] .v2-btn-ghost:hover { background: var(--v2-cream-2); }
+
+html[data-design="v2"] .v2-btn-outline {
+  border: 1.5px solid var(--v2-primary);
+  background: transparent;
+  color: var(--v2-primary);
+}
+html[data-design="v2"] .v2-btn-outline:hover { background: var(--v2-primary-soft); }
+
+html[data-design="v2"] .v2-btn-solid {
+  border: none;
+  background: var(--v2-primary);
+  color: #fff;
+  font-weight: 700;
+}
+html[data-design="v2"] .v2-btn-solid:hover { filter: brightness(.92); }
+
+/* ── Pills de filtro ──────────────────────────────────────────── */
+html[data-design="v2"] .v2-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: var(--v2-r-full);
+  background: var(--v2-paper);
+  border: 1px solid var(--v2-line);
+  color: var(--v2-ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease;
+}
+html[data-design="v2"] .v2-pill:hover { background: var(--v2-cream-2); }
+
+html[data-design="v2"] .v2-pill-on {
+  background: var(--v2-primary-soft);
+  border-color: var(--v2-primary);
+  color: var(--v2-primary);
+  font-weight: 600;
+}
+
+html[data-design="v2"] .v2-pill-dashed {
+  background: transparent;
+  border: 1px dashed var(--v2-line-3);
+  color: var(--v2-ink-3);
+}
+html[data-design="v2"] .v2-pill-dashed:hover {
+  color: var(--v2-red);
+  border-color: var(--v2-red);
+  background: transparent;
+}
+
+/* ── Chip de filtro activo (selection bar) ────────────────────── */
+html[data-design="v2"] .v2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px 0 13px;
+  border-radius: var(--v2-r-full);
+  background: var(--v2-cream-2);
+  border: 1px solid var(--v2-line-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--v2-ink);
+}
+html[data-design="v2"] .v2-chip-x {
+  width: 19px; height: 19px;
+  border-radius: var(--v2-r-full);
+  border: none;
+  background: var(--v2-line-3);
+  color: var(--v2-ink-2);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+html[data-design="v2"] .v2-chip-x:hover { background: var(--v2-ink-4); color: #fff; }
+
+/* ── Grid del portafolio ──────────────────────────────────────── */
+html[data-design="v2"] .v2-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1024px) {
+  html[data-design="v2"] .v2-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  html[data-design="v2"] .v2-grid { grid-template-columns: 1fr; gap: 16px; }
+}
+
+/* ── Skeleton loading ─────────────────────────────────────────── */
+html[data-design="v2"] .v2-skeleton {
+  background: linear-gradient(90deg,
+    var(--v2-cream-3) 25%,
+    var(--v2-cream-2) 50%,
+    var(--v2-cream-3) 75%);
+  background-size: 200% 100%;
+  animation: v2shim 1.4s linear infinite;
+}
+@keyframes v2shim {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design="v2"] .v2-skeleton { animation: none; }
+  html[data-design="v2"] .v2-card { transition: none; }
+  html[data-design="v2"] .v2-card:hover { transform: none; }
 }

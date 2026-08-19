@@ -4,6 +4,7 @@
  */
 
 import './styles/global.css';
+import './styles/tokens-v2.css';
 import './config/cloudinary.js';
 import './utils/sanitizer.js';
 import './core/notifications.js';
@@ -35,6 +36,9 @@ import './domains/auth-perfil/index.js';
 import './superadmin/tenants-panel.js';
 import './billing/facturacion-panel.js';
 import './billing/signup-page.js';
+// DISEÑO V2 — feature flag ?v2=1 (debe ir DESPUÉS de cards.js y filters.js)
+import { initDesignFlag } from './design-v2/flag.js';
+import { installBridge } from './design-v2/bridge.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
@@ -72,6 +76,11 @@ window.addEventListener('unhandledrejection', (event) => {
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('House CRM v2.0 \u2014 Modular Architecture');
+
+  // Dise\u00f1o v2: resuelve el flag y engancha los dispatchers de render.
+  // Con el flag OFF no cambia absolutamente nada.
+  initDesignFlag();
+  installBridge();
 
   // Multi-tenant: detecta subdominio + fetch config + aplica branding.
   // Con window.__MULTITENANT__ OFF (default) devuelve House sin fetch.
