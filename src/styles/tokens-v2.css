@@ -535,6 +535,13 @@ html[data-design="v2"] .v2-bottomnav .v2-nav-badge {
   border: 1.5px solid var(--v2-cream);
 }
 
+/* En la ficha pública el bottom-nav compite con los CTAs del inmueble:
+   ahí manda "Me interesa / WhatsApp / Llamar", no la navegación. */
+html[data-design="v2"] body.v2-ficha-abierta .v2-bottomnav,
+html[data-design="v2"].v2-ficha-abierta .v2-bottomnav {
+  display: none !important;
+}
+
 @media (max-width: 767px) {
   html[data-design="v2"] .v2-bottomnav { display: flex; }
   /* Espacio para que el nav no tape el último card */

@@ -16,6 +16,7 @@
 
 import { isV2 } from './flag.js';
 import { renderV2 } from '../domains/inmuebles/cards-v2.js';
+import { showPublicViewV2, pubGoV2 } from '../domains/public/view-v2.js';
 import { icon } from '../ui/icons.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -23,6 +24,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 // Guardamos las originales una sola vez
 let _renderV1 = null;
 let _renderSelV1 = null;
+let _showPublicViewV1 = null;
+let _pubGoV1 = null;
 
 // ══════════════════════════════════════════════════════════════════════
 // Dispatcher de render (grid de tarjetas)
@@ -38,6 +41,31 @@ function installRenderDispatcher() {
   window.render = function (ls) {
     if (isV2()) return renderV2(ls);
     return _renderV1(ls);
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Dispatcher de la ficha pública (/ver/HOUSE-XXX)
+// ══════════════════════════════════════════════════════════════════════
+function installFichaDispatcher() {
+  if (_showPublicViewV1) return;
+  _showPublicViewV1 = window.showPublicView;
+  _pubGoV1 = window.pubGo;
+
+  if (typeof _showPublicViewV1 !== 'function') {
+    console.warn('[design-v2] window.showPublicView no existe todavía');
+    return;
+  }
+
+  window.showPublicView = function (id) {
+    if (isV2()) return showPublicViewV2(id);
+    return _showPublicViewV1(id);
+  };
+
+  // pubNav delega en pubGo, así que basta con enrutar pubGo
+  window.pubGo = function (i) {
+    if (isV2()) return pubGoV2(i);
+    return _pubGoV1 ? _pubGoV1(i) : undefined;
   };
 }
 
@@ -82,8 +110,12 @@ function swapPillIcon(el, iconName) {
     el.insertBefore(wrap, el.firstChild);
   }
 
-  // Chevron al final (si la pill abre panel)
-  if (!el.querySelector('[data-v2-chev]')) {
+  // El shell v1 ya trae su propio chevron (.pill-chev). Lo reemplazamos
+  // por el SVG del sistema v2 en vez de agregar un segundo.
+  const chevV1 = el.querySelector('.pill-chev');
+  if (chevV1) {
+    chevV1.outerHTML = `<span data-v2-chev="1" style="display:inline-flex;align-items:center;flex-shrink:0;margin-left:auto">${icon('chevronDown', 12, { color: 'currentColor', strokeWidth: 2.2 })}</span>`;
+  } else if (!el.querySelector('[data-v2-chev]')) {
     const chev = document.createElement('span');
     chev.dataset.v2Chev = '1';
     chev.style.cssText = 'display:inline-flex;align-items:center;flex-shrink:0;margin-left:auto';
@@ -211,6 +243,7 @@ export function showSkeletons(n = 6) {
 export function installBridge() {
   installRenderDispatcher();
   installRenderSelDispatcher();
+  installFichaDispatcher();
 
   // Repintar pills en cada cambio de filtro (updatePills es interna
   // de filters.js, así que enganchamos por evento de click en la barra)
