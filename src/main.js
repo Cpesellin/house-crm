@@ -17,7 +17,8 @@ import './pages/property-detail-v2.js';
 import './pages/portfolio-list-v2.js';
 import './pages/portfolio-app-v2.js';
 // NUEVA ESTRUCTURA — módulos por dominio (scaffolding multi-tenant)
-import './tenant/current.js';
+import { initTenant } from './tenant/current.js';
+import { applyBranding, applyAccessBanner } from './tenant/branding.js';
 import './domains/sharing/index.js';
 import './domains/favoritos/index.js';
 import './domains/inmuebles/filters.js';
@@ -66,6 +67,16 @@ window.addEventListener('unhandledrejection', (event) => {
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('House CRM v2.0 \u2014 Modular Architecture');
+
+  // Multi-tenant: detecta subdominio + fetch config + aplica branding.
+  // Con window.__MULTITENANT__ OFF (default) devuelve House sin fetch.
+  try {
+    await initTenant();
+    applyBranding();
+    applyAccessBanner();
+  } catch (e) {
+    console.warn('[main] tenant init fall\u00f3, seguimos con default:', e);
+  }
 
   // Check for public view mode
   // Supports: ?ver=UUID, ?ver=HOUSE-141, or /ver/HOUSE-141

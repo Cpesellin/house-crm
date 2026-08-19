@@ -17,6 +17,7 @@
 
 import { getSupabaseClient } from '../../config/supabase.js';
 import { HOUSE_PHONE } from '../../core/constants.js';
+import { tenantPhone, tenantShortName, tenantBaseUrl } from '../../tenant/config.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
@@ -37,16 +38,16 @@ window.showPublicView = async function (id) {
     }
 
     const fotos = p.fotos ? p.fotos.sort((a, b) => a.orden - b.orden) : [];
-    const capTel = HOUSE_PHONE;
+    const capTel = tenantPhone();
     const _u = U();
     const _isInternal = _u && (_u.tipo_usuario === 'interno' || !_u.tipo_usuario);
-    const capNom = _isInternal ? (p.captador?.nombre || 'House') : 'House';
+    const capNom = _isInternal ? (p.captador?.nombre || tenantShortName()) : tenantShortName();
     const cod = p.codigo_house || '';
     const pv = p.precio_venta || 0, pa = p.precio_arriendo || 0;
     const neg = pv > 0 && pa > 0 ? 'Venta y Arriendo' : pa > 0 ? 'Arriendo' : 'Venta';
 
     // Contacto abierto (visitantes incluidos)
-    const _waUrl = 'https://wa.me/' + capTel + '?text=' + encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: https://inmobiliariahouse.com.co/ver/' + (cod || id));
+    const _waUrl = 'https://wa.me/' + capTel + '?text=' + encodeURIComponent('Hola ' + capNom + ', estoy interesado en este inmueble: ' + tenantBaseUrl() + '/ver/' + (cod || id));
     const _telUrl = 'tel:+' + capTel;
 
     // Push history state: back button vuelve al portafolio en vez de salir del sitio

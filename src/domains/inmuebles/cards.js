@@ -20,6 +20,7 @@
  */
 
 import { HOUSE_PHONE } from '../../core/constants.js';
+import { tenantPhone, tenantShortName, tenantBaseUrl } from '../../tenant/config.js';
 
 // ─── Shortcuts locales con fallback (igual patrón que functions.js) ──
 const fm = window.fm || ((n) => (n > 0 ? '$' + Math.round(n).toLocaleString('es-CO') : ''));
@@ -133,12 +134,13 @@ export function render(ls) {
       cardTop = `<div class="pctop ${hc}" style="position:relative">${ab}<div class="pce">${emo(tip)}</div><div class="pctt">${tip}</div><div class="pccy">${ciu}</div></div><div class="pc-nofoto">📷 Sin foto disponible</div>`;
     }
 
-    // Action button — varía por perfil
-    const capTel2 = HOUSE_PHONE;
-    const capNom2 = 'House';
+    // Action button — varía por perfil (tenant-aware)
+    const capTel2 = tenantPhone();
+    const capNom2 = tenantShortName();
+    const _base = tenantBaseUrl();
     const prevUrl2 = (p.codigo_house || '')
-      ? 'https://inmobiliariahouse.com.co/ver/' + encodeURIComponent(p.codigo_house)
-      : 'https://inmobiliariahouse.com.co/ver/' + p.id;
+      ? _base + '/ver/' + encodeURIComponent(p.codigo_house)
+      : _base + '/ver/' + p.id;
     const esInmExterno = p.origen === 'externo';
     let actBtn;
     if (_isExt) {

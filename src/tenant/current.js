@@ -1,86 +1,156 @@
 /**
  * Módulo: tenant/current
  *
- * SCAFFOLDING MULTI-TENANT (no activo aún).
+ * Detección y cache del tenant actual. Cuando el multi-tenant está
+ * activo, resuelve por subdominio contra el RPC get_tenant_by_slug.
  *
- * Detecta y expone el tenant actual. Por ahora devuelve un tenant default
- * (Inmobiliaria House) mientras no haya subdominios configurados. Cuando
- * se active el multi-tenant, este módulo será el único punto de entrada
- * — el resto de la app llama getCurrentTenant() sin saber cómo se detectó.
+ * DETECCIÓN (en orden):
+ *   1. Query param ?tenant=xxx (útil para dev y previews)
+ *   2. Subdomain: <slug>.plataforma.com → slug
+ *   3. Custom domain: busca en inmobiliaria.metadata.dominio_custom
+ *   4. Fallback: DEFAULT_TENANT (Inmobiliaria House)
  *
- * ESTRATEGIA DE DETECCIÓN (cuando se active):
- *   1. Subdominio: `<slug>.plataforma.com` → lookup en API billing
- *   2. Header X-Tenant (para SSR/API)
- *   3. Fallback default (útil en dev local)
+ * FEATURE FLAG:
+ *   window.__MULTITENANT__ = true activa la detección real
+ *   OFF (default) → siempre devuelve House sin llamar al RPC
  *
- * FEATURE FLAG: window.__MULTITENANT__ = true activa la detección real.
- * Por defecto está en false → todo el código llama a esto pero recibe
- * el tenant default sin cambios de comportamiento.
+ * API:
+ *   getCurrentTenant()      → tenant sincrónico (usa cache)
+ *   initTenant()            → async, ejecutado 1 vez al arranque
+ *   getCurrentTenantSlug()  → slug del tenant (útil para logs)
  */
 
-// Tenant default (Inmobiliaria House). Se mantiene hasta que se active
-// multi-tenant. Estructura preparada para lo que va a venir.
+import { getSupabaseClient } from '../config/supabase.js';
+
+// Default tenant (Inmobiliaria House). Se usa como fallback si:
+//   - Feature flag OFF
+//   - Detección de subdominio falla
+//   - RPC retorna NULL
 const DEFAULT_TENANT = Object.freeze({
-  id: 'house',                                  // slug/id interno
+  id: 'house',
+  slug: 'house',
   nombre: 'Inmobiliaria House',
   color_primario: '#1d4ed8',
   logo_url: '/img/logo.png',
-  dominio: 'inmobiliariahouse.com.co',
   telefono: '+573105922763',
-  email: 'info@inmobiliariahouse.com.co',
-  // Config plan (se pobla desde billing cuando esté activo)
-  plan: {
-    id: 'enterprise',
-    incluye_crm: true,
-    incluye_admin: true,
-  },
+  ciudad: 'Pereira',
+  dominio_custom: 'inmobiliariahouse.com.co',
+  acceso: { permitido: true, estado: 'activa', grace_hasta: null },
 });
 
 let _currentTenant = DEFAULT_TENANT;
+let _initPromise = null;
 
-/**
- * Devuelve el tenant actual. Puro (no async) para llamadas frecuentes
- * desde renderers. La detección real de subdominio corre una vez en
- * initTenant() y cachea el resultado.
- */
 export function getCurrentTenant() {
   return _currentTenant;
 }
 
+export function getCurrentTenantSlug() {
+  return _currentTenant?.slug || 'house';
+}
+
 /**
- * Detección de tenant. Se llama una vez desde main.js al arrancar.
- * Actualmente NO hace nada real (feature flag OFF) — devuelve el default.
- *
- * Cuando se active multi-tenant:
- *   1. Extrae subdominio de location.hostname
- *   2. Consulta billing.plataforma.com/api/tenant/{slug}
- *   3. Cachea el resultado en _currentTenant
- *   4. Aplica branding (logo, colores) al document
+ * Extrae el candidato de slug desde la URL:
+ *   ?tenant=xxx → xxx (dev/preview)
+ *   xxx.plataforma.com → xxx (subdominio)
+ *   inmobiliariahouse.com.co → null (custom domain, se resuelve por metadata)
+ *   localhost → null
  */
-export async function initTenant() {
-  if (!window.__MULTITENANT__) {
-    // Feature flag OFF — todo funciona como antes con Inmobiliaria House
-    return _currentTenant;
-  }
+function detectSlugFromLocation() {
+  const params = new URLSearchParams(location.search);
+  const qParam = params.get('tenant');
+  if (qParam) return qParam.toLowerCase().trim();
 
-  // Placeholder: cuando se active se implementa acá
-  const subdominio = extractSubdomain(location.hostname);
-  if (!subdominio || subdominio === 'www') {
-    return _currentTenant;
-  }
+  const host = location.hostname;
+  if (!host || host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return null;
 
-  // TODO cuando se active: consultar billing y hidratar _currentTenant
-  console.warn('[tenant] Multi-tenant activo pero fetch aún no implementado');
-  return _currentTenant;
+  const parts = host.split('.');
+  // Subdominio genuino: al menos 3 partes y la primera != www
+  if (parts.length >= 3 && parts[0] !== 'www') return parts[0].toLowerCase();
+
+  return null;
 }
 
-function extractSubdomain(hostname) {
-  const parts = hostname.split('.');
-  if (parts.length < 3) return null;
-  return parts[0];
+/**
+ * Detección por dominio custom (ej: inmobiliariahouse.com.co → house).
+ * Busca en inmobiliaria.metadata->>'dominio_custom'.
+ */
+async function detectSlugByCustomDomain(hostname) {
+  try {
+    const SB = getSupabaseClient();
+    const { data, error } = await SB
+      .from('inmobiliaria')
+      .select('slug')
+      .eq('activo', true)
+      .filter('metadata->>dominio_custom', 'eq', hostname)
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data.slug;
+  } catch (e) {
+    console.warn('[tenant] custom domain lookup failed:', e);
+    return null;
+  }
 }
 
-// Expuesto en window para debugging
+/**
+ * Fetch de la config del tenant vía RPC. Retorna null si no existe.
+ */
+async function fetchTenantBySlug(slug) {
+  try {
+    const SB = getSupabaseClient();
+    const { data, error } = await SB.rpc('get_tenant_by_slug', { p_slug: slug });
+    if (error) { console.warn('[tenant] RPC error:', error.message); return null; }
+    return data || null;
+  } catch (e) {
+    console.warn('[tenant] fetch failed:', e);
+    return null;
+  }
+}
+
+/**
+ * Inicialización — se llama UNA vez desde main.js. Idempotente.
+ * Con feature flag OFF: retorna default sin fetch.
+ * Con feature flag ON: detecta slug + fetch + cachea.
+ */
+export function initTenant() {
+  if (_initPromise) return _initPromise;
+
+  _initPromise = (async () => {
+    if (!window.__MULTITENANT__) {
+      // Feature flag OFF — House hardcoded (comportamiento actual)
+      return _currentTenant;
+    }
+
+    // 1) Slug directo de la URL (subdomain o ?tenant=)
+    let slug = detectSlugFromLocation();
+
+    // 2) Fallback: buscar por dominio custom
+    if (!slug) {
+      slug = await detectSlugByCustomDomain(location.hostname);
+    }
+
+    // 3) Si no se pudo detectar, quedarse con House
+    if (!slug) {
+      console.warn('[tenant] no se pudo detectar slug, usando House');
+      return _currentTenant;
+    }
+
+    // 4) Fetch config real
+    const config = await fetchTenantBySlug(slug);
+    if (!config) {
+      console.warn('[tenant] slug "%s" no encontrado, usando House', slug);
+      return _currentTenant;
+    }
+
+    _currentTenant = Object.freeze(config);
+    return _currentTenant;
+  })();
+
+  return _initPromise;
+}
+
+// Exposición para debug + acceso desde otros módulos legacy
 if (typeof window !== 'undefined') {
-  window.__tenant = { get: getCurrentTenant, init: initTenant };
+  window.__tenant = { get: getCurrentTenant, init: initTenant, slug: getCurrentTenantSlug };
 }
