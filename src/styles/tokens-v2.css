@@ -79,6 +79,71 @@ html[data-design="v2"] {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   PUENTE DE TOKENS v1 → v2
+   ═══════════════════════════════════════════════════════════════════
+   El CRM entero (secciones, paneles, superadmin, facturación, signup)
+   está escrito contra las variables del diseño v1: --cd, --brd, --tx,
+   --sub, --b600, etc. En vez de reescribir cada pantalla, bajo el flag
+   remapeamos esas variables a los valores del sistema v2.
+
+   Efecto: toda pantalla que use tokens hereda el look editorial sin
+   tocar una línea de su JS. Las que usan colores hardcodeados quedan
+   igual — esas se migran una por una si hace falta.
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-design="v2"] {
+  /* Superficies */
+  --bg:  var(--v2-cream);
+  --cd:  var(--v2-paper);
+  --cd2: var(--v2-cream-2);
+
+  /* Texto y líneas */
+  --tx:  var(--v2-ink);
+  --sub: var(--v2-ink-3);
+  --brd: var(--v2-line);
+
+  /* Escala de grises → tonos cálidos */
+  --g50:  var(--v2-cream);
+  --g100: var(--v2-cream-2);
+  --g200: var(--v2-line);
+  --g300: var(--v2-line-3);
+  --g400: var(--v2-ink-4);
+  --g500: var(--v2-ink-3);
+  --g600: var(--v2-ink-3);
+  --g700: var(--v2-ink-2);
+  --g800: var(--v2-ink);
+  --g900: var(--v2-ink);
+
+  /* Azules → el primary del tenant */
+  --b50:  var(--v2-primary-soft);
+  --b100: color-mix(in oklab, var(--v2-primary) 14%, #fff);
+  --b200: color-mix(in oklab, var(--v2-primary) 24%, #fff);
+  --b300: color-mix(in oklab, var(--v2-primary) 40%, #fff);
+  --b400: color-mix(in oklab, var(--v2-primary) 62%, #fff);
+  --b500: color-mix(in oklab, var(--v2-primary) 82%, #fff);
+  --b600: var(--v2-primary);
+  --b700: var(--v2-primary-hover);
+  --b800: color-mix(in oklab, var(--v2-primary) 84%, #000);
+  --b900: color-mix(in oklab, var(--v2-primary) 70%, #000);
+
+  /* Semánticos */
+  --green:   var(--v2-green);
+  --greenbg: var(--v2-green-soft);
+  --red:     var(--v2-red);
+  --redbg:   var(--v2-red-soft);
+  --gold:    var(--v2-amber);
+  --goldbg:  var(--v2-amber-soft);
+}
+
+/* Sin color-mix: el puente usa los azules originales */
+@supports not (color: color-mix(in oklab, red 50%, blue)) {
+  html[data-design="v2"] {
+    --b100: #dbeafe; --b200: #bfdbfe; --b300: #93c5fd;
+    --b400: #60a5fa; --b500: #3b82f6;
+    --b800: #1e40af; --b900: #1e3a8a;
+  }
+}
+
 /* ── Base de página bajo el flag ──────────────────────────────── */
 html[data-design="v2"] body {
   background: var(--v2-cream);
