@@ -193,6 +193,43 @@ window._superadminReactivate = async function (slug) {
   } catch (e) { window.toast?.('Error: ' + e.message, 'terr'); }
 };
 
+// Inyecta un botón en el header (junto a la campana) para superadmins.
+// Idempotente + espera a que el shell exista.
+async function injectSuperadminNavIfNeeded() {
+  if (document.getElementById('superadminNavBtn')) return;
+  const bellWrap = document.querySelector('.bell-wrap');
+  if (!bellWrap) return; // shell aún no renderizado
+  const isSuper = await esSuperadmin();
+  if (!isSuper) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'superadminNavBtn';
+  btn.title = 'Panel de tenants (superadmin)';
+  btn.style.cssText = 'background:none;border:none;padding:6px 10px;cursor:pointer;font-size:18px;position:relative;margin-right:4px';
+  btn.innerHTML = '🛠️';
+  btn.onclick = () => { location.hash = '#/superadmin-tenants'; };
+  bellWrap.parentNode?.insertBefore(btn, bellWrap);
+}
+
+// Correr después de que la app + auth boot terminen. El listener escucha
+// cambios de usuario (login/logout) porque el shell puede repintarse.
+function scheduleInjection() {
+  // Múltiples intentos progresivos hasta que el shell exista
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts++;
+    injectSuperadminNavIfNeeded();
+    if (attempts > 20 || document.getElementById('superadminNavBtn')) clearInterval(timer);
+  }, 500);
+}
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scheduleInjection);
+  } else {
+    scheduleInjection();
+  }
+}
+
 // Expuesto en window para invocación programática
 window.rSuperadminTenants = renderTenantsPanel;
 window.goSuperadminTenants = () => { location.hash = '#/superadmin-tenants'; };

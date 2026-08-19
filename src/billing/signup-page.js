@@ -46,10 +46,11 @@ export function renderSignupPage() {
             Tu URL en la plataforma *
             <div style="display:flex;align-items:center;margin-top:6px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden">
               <input id="sg_slug" type="text" placeholder="tuempresa" pattern="[a-z0-9-]+"
+                oninput="window._signupCheckSlug()"
                 style="flex:1;padding:12px;border:none;font-size:15px;font-family:monospace;text-transform:lowercase">
               <span style="padding:12px 14px;background:#f8fafc;font-size:13px;color:#64748b;border-left:1px solid #e2e8f0">.plataforma.com</span>
             </div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:4px">Solo minúsculas, números y guiones</div>
+            <div id="sg_slug_hint" style="font-size:11px;color:#94a3b8;margin-top:4px">Solo minúsculas, números y guiones</div>
           </label>
 
           <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:14px">
@@ -97,6 +98,39 @@ window._signupAutoSlug = function (nombre) {
   // Solo auto-completar si el usuario no editó manualmente
   if (slugEl.dataset.manual === '1') return;
   slugEl.value = slugFromNombre(nombre);
+  window._signupCheckSlug();
+};
+
+// Chequeo de disponibilidad del slug (debounced 400ms)
+window._signupCheckSlug = function () {
+  clearTimeout(window._sgSlugTimer);
+  window._sgSlugTimer = setTimeout(async () => {
+    const slug = document.getElementById('sg_slug')?.value?.trim().toLowerCase();
+    const hint = document.getElementById('sg_slug_hint');
+    if (!hint) return;
+    if (!slug || slug.length < 2) {
+      hint.textContent = 'Solo minúsculas, números y guiones';
+      hint.style.color = '#94a3b8';
+      return;
+    }
+    hint.textContent = '⏳ Verificando disponibilidad…';
+    hint.style.color = '#94a3b8';
+    try {
+      const { data, error } = await SB().rpc('check_slug_available', { p_slug: slug });
+      if (error) throw error;
+      if (data?.available) {
+        hint.textContent = `✅ "${data.clean_slug}" está disponible`;
+        hint.style.color = '#10b981';
+      } else {
+        const razon = { reservado: 'reservado por el sistema', ocupado: 'ya está en uso', muy_corto: 'muy corto' }[data?.reason] || 'no disponible';
+        hint.textContent = `❌ "${data?.clean_slug || slug}" ${razon}`;
+        hint.style.color = '#ef4444';
+      }
+    } catch (e) {
+      hint.textContent = 'No se pudo verificar';
+      hint.style.color = '#94a3b8';
+    }
+  }, 400);
 };
 
 window._signupSubmit = async function () {
