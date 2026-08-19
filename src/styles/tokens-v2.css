@@ -323,3 +323,224 @@ html[data-design="v2"] .v2-skeleton {
   html[data-design="v2"] .v2-card { transition: none; }
   html[data-design="v2"] .v2-card:hover { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHELL v2 — reestiliza el header, hero, búsqueda y filtros que ya
+   existen en App.js. NO reemplaza HTML: sólo pinta encima, así los
+   onclick inline y los IDs siguen funcionando igual.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Header sticky con blur ───────────────────────────────────────── */
+html[data-design="v2"] #mhdr {
+  background: rgba(250, 246, 241, .88) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--v2-line) !important;
+  box-shadow: none !important;
+}
+html[data-design="v2"] #mhdr .nav {
+  height: 64px;
+  padding: 0 20px;
+}
+html[data-design="v2"] #mhdr .lm {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--v2-ink);
+  font-family: var(--v2-font-sans);
+}
+html[data-design="v2"] #mhdr .ib {
+  color: var(--v2-ink-2);
+  border-radius: var(--v2-r-md);
+}
+html[data-design="v2"] #mhdr .ib:hover { background: var(--v2-cream-2); }
+html[data-design="v2"] #mhdr #uname { color: var(--v2-ink-2); font-weight: 600; }
+
+/* ── Hero: de azul corporativo a editorial cálido ─────────────────── */
+html[data-design="v2"] #invHeader {
+  background: linear-gradient(180deg, var(--v2-primary-tint) 0%, var(--v2-cream) 100%) !important;
+  border-bottom: 1px solid var(--v2-line);
+  padding: 32px 20px 28px !important;
+}
+/* El patrón de puntos del v1 no va en el editorial */
+html[data-design="v2"] #invHeader > div:first-child { display: none !important; }
+
+/* Titular del hero */
+html[data-design="v2"] #invHeader [style*="Fraunces"] {
+  color: var(--v2-ink) !important;
+  font-size: 32px !important;
+  letter-spacing: -.03em;
+  font-family: var(--v2-font-sans) !important;
+  font-weight: 800 !important;
+}
+/* Subtítulo */
+html[data-design="v2"] #invHeader [style*="rgba(255,255,255,.4)"] {
+  color: var(--v2-ink-3) !important;
+  font-size: 15px !important;
+  margin-top: 6px;
+}
+
+/* Stats: de 4 cajas sueltas a una sola caja segmentada */
+html[data-design="v2"] #invHeader [style*="display:flex"][style*="gap:6px"] {
+  gap: 0 !important;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-r-lg);
+  background: var(--v2-paper);
+  overflow: hidden;
+  margin-top: 20px !important;
+  max-width: 560px;
+}
+html[data-design="v2"] #invHeader [style*="display:flex"][style*="gap:6px"] > div {
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid var(--v2-line-2) !important;
+  border-radius: 0 !important;
+  padding: 16px 8px !important;
+}
+html[data-design="v2"] #invHeader [style*="display:flex"][style*="gap:6px"] > div:last-child {
+  border-right: none !important;
+}
+/* Números de las stats */
+html[data-design="v2"] #hst2 { color: var(--v2-ink) !important; }
+html[data-design="v2"] #hsv2 { color: var(--v2-primary) !important; }
+html[data-design="v2"] #hsa2 { color: #059669 !important; }
+html[data-design="v2"] #hsb2 { color: var(--v2-amber) !important; }
+html[data-design="v2"] #hst2,
+html[data-design="v2"] #hsv2,
+html[data-design="v2"] #hsa2,
+html[data-design="v2"] #hsb2 {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+}
+/* Labels de las stats */
+html[data-design="v2"] #invHeader [style*="text-transform:uppercase"] {
+  color: var(--v2-ink-3) !important;
+  font-size: 10.5px !important;
+  letter-spacing: .07em !important;
+  margin-top: 6px;
+}
+
+/* ── Barra de búsqueda ────────────────────────────────────────────── */
+html[data-design="v2"] #q {
+  color: var(--v2-ink) !important;
+  font-size: 15.5px !important;
+  font-family: var(--v2-font-sans) !important;
+}
+html[data-design="v2"] #q::placeholder { color: var(--v2-ink-4); }
+html[data-design="v2"] #q:closest-hack { /* no-op, evita colapso de regla */ }
+
+/* Contenedor de la búsqueda: el div que envuelve #q */
+html[data-design="v2"] #q,
+html[data-design="v2"] #qClear { background: transparent !important; }
+
+/* ── Filtros sticky ───────────────────────────────────────────────── */
+html[data-design="v2"] .sticky-filters {
+  background: var(--v2-cream) !important;
+  border-bottom: 1px solid var(--v2-line);
+}
+html[data-design="v2"] .pill-bar {
+  gap: 8px;
+  padding: 14px 20px !important;
+}
+html[data-design="v2"] .sel-bar {
+  background: var(--v2-cream) !important;
+  padding: 0 20px 14px !important;
+  border-bottom: 1px solid var(--v2-line);
+}
+
+/* ── Contenedor de resultados ─────────────────────────────────────── */
+html[data-design="v2"] #res {
+  padding: 28px 20px 40px !important;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+html[data-design="v2"] #resCount { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ── Panels de filtro ─────────────────────────────────────────────── */
+html[data-design="v2"] .fpanel {
+  background: var(--v2-paper) !important;
+  border: 1px solid var(--v2-line) !important;
+  border-radius: var(--v2-r-lg) !important;
+  box-shadow: var(--v2-sh-lg) !important;
+}
+html[data-design="v2"] .fpanel-title {
+  color: var(--v2-ink) !important;
+  font-weight: 700;
+}
+
+/* ── Footer v2 (inyectado por shell.js) ───────────────────────────── */
+html[data-design="v2"] .v2-footer {
+  background: var(--v2-ink);
+  color: var(--v2-cream);
+  padding: 40px 20px 28px;
+  margin-top: 40px;
+}
+html[data-design="v2"] .v2-footer a {
+  color: rgba(250, 246, 241, .75);
+  font-size: 13px;
+  display: block;
+  padding: 3px 0;
+}
+html[data-design="v2"] .v2-footer a:hover { color: var(--v2-cream); }
+html[data-design="v2"] .v2-footer-col-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: rgba(250, 246, 241, .4);
+  margin-bottom: 8px;
+}
+
+/* ── Bottom nav móvil (inyectado por shell.js) ────────────────────── */
+html[data-design="v2"] .v2-bottomnav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 90;
+  background: rgba(250, 246, 241, .96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--v2-line);
+  display: none;
+  padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+}
+html[data-design="v2"] .v2-bottomnav button {
+  position: relative;
+  flex: 1;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--v2-ink-3);
+  font-family: inherit;
+  padding: 8px 0;
+}
+html[data-design="v2"] .v2-bottomnav button.on { color: var(--v2-primary); }
+html[data-design="v2"] .v2-bottomnav span { font-size: 10.5px; font-weight: 600; }
+html[data-design="v2"] .v2-bottomnav .v2-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 18px);
+  min-width: 16px; height: 16px;
+  padding: 0 4px;
+  border-radius: var(--v2-r-full);
+  background: var(--v2-red);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--v2-cream);
+}
+
+@media (max-width: 767px) {
+  html[data-design="v2"] .v2-bottomnav { display: flex; }
+  /* Espacio para que el nav no tape el último card */
+  html[data-design="v2"] #res { padding-bottom: 88px !important; }
+  html[data-design="v2"] #invHeader { padding: 24px 16px 20px !important; }
+  html[data-design="v2"] #invHeader [style*="Fraunces"] { font-size: 26px !important; }
+  html[data-design="v2"] .pill-bar { padding: 12px 16px !important; }
+  html[data-design="v2"] #res { padding-left: 16px !important; padding-right: 16px !important; }
+}

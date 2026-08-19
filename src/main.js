@@ -39,6 +39,7 @@ import './billing/signup-page.js';
 // DISEÑO V2 — feature flag ?v2=1 (debe ir DESPUÉS de cards.js y filters.js)
 import { initDesignFlag } from './design-v2/flag.js';
 import { installBridge } from './design-v2/bridge.js';
+import { installShellV2 } from './design-v2/shell.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
 import { getSupabaseClient } from './config/supabase.js';
@@ -81,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Con el flag OFF no cambia absolutamente nada.
   initDesignFlag();
   installBridge();
+  installShellV2();
 
   // Multi-tenant: detecta subdominio + fetch config + aplica branding.
   // Con window.__MULTITENANT__ OFF (default) devuelve House sin fetch.

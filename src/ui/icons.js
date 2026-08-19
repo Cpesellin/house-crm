@@ -31,9 +31,12 @@ const PATHS = {
   camera: '<path d="M3 8.5A2 2 0 0 1 5 6.5h1.6l1-1.6h4.8l1 1.6H15a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="10" cy="12" r="2.6"/>',
 
   // Specs del inmueble
-  bed:  '<path d="M3 18v-6h18v6"/><path d="M3 18v3"/><path d="M21 18v3"/><path d="M3 12V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5"/>',
-  bath: '<path d="M4 12h16v4a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M6 12V6a2 2 0 0 1 2-2h1"/>',
-  area: '<path d="M3 8V3h5"/><path d="M21 8V3h-5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/>',
+  bed:  '<path d="M2 17v-5h20v5"/><path d="M2 17v3"/><path d="M22 17v3"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M7 12V9.5h4V12"/><path d="M13 12V9.5h4V12"/>',
+  bath: '<path d="M3 13h18"/><path d="M5 13v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3"/><path d="M7 13V6a2 2 0 0 1 2-2 2 2 0 0 1 2 2"/><path d="M10.5 6h1"/>',
+  area: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h4"/><path d="M3 15h4"/><path d="M9 3v4"/><path d="M15 3v4"/>',
+
+  // Etiqueta / negocio
+  tag:  '<path d="M20.6 13.4L13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
   car:  '<path d="M5 17h14"/><path d="M6 17v2"/><path d="M18 17v2"/><path d="M4 13l1.5-4.5A2 2 0 0 1 7.4 7h9.2a2 2 0 0 1 1.9 1.5L20 13v4H4z"/><circle cx="7.5" cy="14.5" r="1"/><circle cx="16.5" cy="14.5" r="1"/>',
 
   // Navegación

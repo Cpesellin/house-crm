@@ -47,7 +47,7 @@ function installRenderDispatcher() {
 
 /** Mapea cada pill del shell a su icono SVG y el emoji que reemplaza */
 const PILL_META = {
-  pillNeg:    { icon: 'money', emoji: '🏷️' },
+  pillNeg:    { icon: 'tag',   emoji: '🏷️' },
   pillCiu:    { icon: 'pin',   emoji: '📍' },
   pillTipo:   { icon: 'grid',  emoji: '🏢' },
   pillPrecio: { icon: 'money', emoji: '💰' },
