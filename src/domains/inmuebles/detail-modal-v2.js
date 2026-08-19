@@ -458,9 +458,8 @@ export function oMv2(idx) {
   mdl.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  // Cargas async
-  if (window.ldAn) window.ldAn(p.id);
-  cargarInteresados(p);
+  // Cargas async (anotaciones e interesados)
+  recargarAsync();
 
   // Upload de fotos (el contenedor existe según el tab activo)
   if (perm.puedeEditar) {
@@ -548,8 +547,18 @@ window._oM2Tab = function (id) {
 window._oM2Editar = function () {
   st.editando = !st.editando;
   pintar();
+  // pintar() re-renderiza todos los tabs, así que los contenedores de
+  // anotaciones e interesados quedan vacíos: hay que repoblarlos.
+  recargarAsync();
   setTimeout(montarUpload, 80);
 };
+
+/** Repuebla lo que se carga por fetch y se pierde en cada pintar() */
+function recargarAsync() {
+  if (!st.p) return;
+  if (window.ldAn) window.ldAn(st.p.id);
+  cargarInteresados(st.p);
+}
 
 window._oM2Touch = function (id, esPrecio) {
   st.cambios.add(id);
@@ -573,8 +582,10 @@ window._oM2Descartar = function () {
   st.cambios.clear();
   st.precioTocado = false;
   window._modalDirty = false;
+  window._pendingFotos = [];
   st.editando = false;
   pintar();
+  recargarAsync();
 };
 
 window._oM2Guardar = async function () {
