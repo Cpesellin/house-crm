@@ -104,6 +104,13 @@ if (typeof document !== 'undefined' && !document.getElementById('int-mobile-css'
 
 const _TIP = () => window.TIPIFICACIONES || {};
 const _CAN = () => window.CANAL_ORIGEN_LEAD || {};
+// Chip de tipificación: un solo estilo para tablero, lista y ficha.
+const tipTono = (id) => (window.tipTono
+  ? window.tipTono(id)
+  : { fg:'#6b6760', bg:'#f7f2e9', bd:'#e8e0d2' });
+const tipChipStyle = (id) => window.tipChipStyle
+  ? window.tipChipStyle(id)
+  : 'background:#f7f2e9;border:1px solid #e8e0d2;color:#6b6760';
 
 // Estado UI
 window._intState = window._intState || {
@@ -113,7 +120,7 @@ window._intState = window._intState || {
   filtroCanal: '',
   search: '',
   cargando: false,
-  view: 'pipeline', // 'pipeline' | 'por_inmueble'
+  view: 'mi_dia', // 'mi_dia' | 'pipeline' | 'por_inmueble'
   inmueblesExpandidos: {}, // { inmueble_id: true/false }
 };
 
@@ -217,15 +224,17 @@ window.rInteresados = async function() {
     h += `<div class="card" style="margin-bottom:12px"><div class="cdh">
       <div class="chl"><div class="chi">👤</div><div>
         <div class="cht">Interesados / Leads</div>
-        <div class="chsb">${leads.length} leads ${esAdmin ? 'totales' : 'míos'}${vistaActual === 'pipeline' ? ' · Pipeline con drag & drop' : ' · Agrupados por inmueble'}</div>
+        <div class="chsb">${leads.length} leads ${esAdmin ? 'totales' : 'míos'}${vistaActual === 'mi_dia' ? ' · Lo que necesita atención hoy' : vistaActual === 'pipeline' ? ' · Pipeline con drag & drop' : ' · Agrupados por inmueble'}</div>
       </div></div>
       <button onclick="abrirCrearInteresadoLibre()" style="padding:8px 14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer">+ Nuevo Lead</button>
     </div></div>`;
 
     // Toggle vista
-    h += `<div style="display:flex;gap:6px;margin-bottom:10px;padding:4px;background:var(--cd);border:1.5px solid var(--brd);border-radius:10px;max-width:360px">
-      <button onclick="setIntView('pipeline')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;background:${vistaActual==='pipeline'?'#3b82f6':'transparent'};color:${vistaActual==='pipeline'?'#fff':'var(--tx)'}">📋 Pipeline</button>
-      <button onclick="setIntView('por_inmueble')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;background:${vistaActual==='por_inmueble'?'#3b82f6':'transparent'};color:${vistaActual==='por_inmueble'?'#fff':'var(--tx)'}">🏠 Por Inmueble</button>
+    const _tabVista = (id, txt) => `<button onclick="setIntView('${id}')" style="flex:1;padding:9px 14px;border:none;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;background:${vistaActual===id?'var(--b600)':'transparent'};color:${vistaActual===id?'#fff':'var(--tx)'}">${txt}</button>`;
+    h += `<div style="display:flex;gap:6px;margin-bottom:10px;padding:4px;background:var(--cd);border:1px solid var(--brd);border-radius:10px;max-width:480px">
+      ${_tabVista('mi_dia', '☀️ Mi Día')}
+      ${_tabVista('pipeline', '📋 Pipeline')}
+      ${_tabVista('por_inmueble', '🏠 Por Inmueble')}
     </div>`;
 
     // Barra de búsqueda + filtros
@@ -255,6 +264,14 @@ window.rInteresados = async function() {
     </div>`;
 
     // Dispatcher de vista
+    if (vistaActual === 'mi_dia') {
+      // Las visitas se piden aparte: Mi Día es el único consumidor.
+      const visitas = await window.visitasDeHoy(esAdmin ? null : u.id);
+      h += window.renderMiDia(leads, visitas);
+      el.innerHTML = h;
+      return;
+    }
+
     if (vistaActual === 'por_inmueble') {
       h += _renderVistaPorInmueble(leads, porTip);
       el.innerHTML = h;
@@ -265,8 +282,8 @@ window.rInteresados = async function() {
     h += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px">`;
     Object.values(_TIP()).sort((a,b) => a.orden - b.orden).forEach(t => {
       const n = (porTip[t.id] || []).length;
-      h += `<div style="padding:10px;background:var(--cd);border:1.5px solid ${t.color}40;border-left:4px solid ${t.color};border-radius:8px;text-align:center">
-        <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:${t.color}">${n}</div>
+      h += `<div style="padding:10px;background:${t.bg};border:1px solid ${t.bd};border-left:4px solid ${t.fg};border-radius:8px;text-align:center">
+        <div style="font-family:Fraunces,serif;font-size:22px;font-weight:800;color:${t.fg}">${n}</div>
         <div style="font-size:9px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">${t.emoji} ${t.label}</div>
       </div>`;
     });
@@ -279,11 +296,11 @@ window.rInteresados = async function() {
       const t = _TIP()[cid];
       const items = porTip[cid] || [];
       h += `<div class="kcol" data-tip="${cid}"
-          style="flex:0 0 280px;background:var(--cd);border:1.5px solid var(--brd);border-top:4px solid ${t.color};border-radius:10px;padding:10px"
-          ondrop="onDropLead(event,'${cid}')" ondragover="event.preventDefault();this.style.background='${t.color}10'" ondragleave="this.style.background=''">
+          style="flex:0 0 280px;background:var(--cd);border:1px solid var(--brd);border-top:4px solid ${t.fg};border-radius:10px;padding:10px"
+          ondrop="onDropLead(event,'${cid}')" ondragover="event.preventDefault();this.style.background='${t.bg}'" ondragleave="this.style.background=''">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:800;color:${t.color}">${t.emoji} ${t.label}</div>
-          <div style="font-size:11px;color:var(--sub);background:${t.color}22;padding:2px 8px;border-radius:10px;font-weight:700">${items.length}</div>
+          <div style="font-size:12px;font-weight:800;color:${t.fg}">${t.emoji} ${t.label}</div>
+          <div style="font-size:11px;background:${t.bg};border:1px solid ${t.bd};color:${t.fg};padding:2px 8px;border-radius:10px;font-weight:700">${items.length}</div>
         </div>
         <div class="kcol-items" style="display:flex;flex-direction:column;gap:6px">`;
       if (!items.length) {
@@ -498,7 +515,7 @@ function _scriptWA(lead, inm) {
 
 function _renderLeadCard(l, contexto /* 'kanban' | 'inmueble' */) {
   const inm = l.inmueble || {};
-  const tip = _TIP()[l.tipificacion] || {};
+  const tip = { ...tipTono(l.tipificacion), ..._TIP()[l.tipificacion] };
   const canal = _CAN()[l.canal_origen] || {};
   const dias = Math.floor((Date.now() - new Date(l.fecha_ultima_actividad).getTime()) / 864e5);
   const urgent = dias > 3 ? '🔴' : dias > 1 ? '🟡' : '🟢';
@@ -525,10 +542,10 @@ function _renderLeadCard(l, contexto /* 'kanban' | 'inmueble' */) {
 
   // Header (nombre grande + teléfono prominente)
   const nombre = (l.nombre_completo || 'Sin nombre');
-  const borderColor = contexto === 'inmueble' ? tip.color : 'var(--brd)';
+  const borderColor = contexto === 'inmueble' ? tip.bd : 'var(--brd)';
 
   return `<div class="leadcard" ${dragAttr}
-    style="background:#fff;border:1px solid ${borderColor};${contexto==='inmueble'?'border-left:3px solid '+tip.color+';':''}border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;margin-bottom:${contexto==='kanban'?'0':'5px'}">
+    style="background:#fff;border:1px solid ${borderColor};${contexto==='inmueble'?'border-left:3px solid '+tip.fg+';':''}border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;margin-bottom:${contexto==='kanban'?'0':'5px'}">
     <div onclick="toggleLeadExp('${l.id}',event)" style="padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
       ${thumbHtml}
       <div style="flex:1;min-width:0">
@@ -661,7 +678,7 @@ function _renderVistaPorInmueble(leads, porTip) {
             <div style="font-size:12px;color:var(--sub);font-weight:600;margin-top:3px">${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>
             ${negStr ? `<div style="font-size:10.5px;color:var(--b700);font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.3px">${tieneVenta && tieneArriendo ? '💰 Venta · 🔑 Arriendo' : tieneArriendo ? '🔑 Arriendo' : tieneVenta ? '💰 Venta' : negStr}</div>` : ''}
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-              ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).filter(t => countsTip[t.id] > 0).map(t => `<span style="font-size:10px;font-weight:800;background:${t.color}22;color:${t.color};padding:2px 8px;border-radius:10px">${t.emoji} ${countsTip[t.id]}</span>`).join('')}
+              ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).filter(t => countsTip[t.id] > 0).map(t => `<span style="font-size:10px;font-weight:800;background:${t.bg};border:1px solid ${t.bd};color:${t.fg};padding:2px 8px;border-radius:10px">${t.emoji} ${countsTip[t.id]}</span>`).join('')}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
@@ -724,7 +741,7 @@ function _renderVistaPorInmueble(leads, porTip) {
       tipsConLeads.forEach(t => {
         const leadsTip = leadsFiltrados.filter(l => l.tipificacion === t.id);
         h += `<div style="margin-bottom:10px">
-          <div style="font-size:10px;font-weight:800;color:${t.color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-left:4px;border-left:3px solid ${t.color}">${t.emoji} ${t.label} (${leadsTip.length})</div>
+          <div style="font-size:10px;font-weight:800;color:${t.fg};text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-left:4px;border-left:3px solid ${t.fg}">${t.emoji} ${t.label} (${leadsTip.length})</div>
           <div style="display:flex;flex-direction:column;gap:5px">`;
         leadsTip.forEach(l => {
           // Inyectar inmueble en lead (por si viene incompleto del listado global)
@@ -951,7 +968,7 @@ window.abrirDetalleInteresado = async function(id) {
 };
 
 function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
-  const tip = _TIP()[lead.tipificacion] || {};
+  const tip = { ...tipTono(lead.tipificacion), ..._TIP()[lead.tipificacion] };
   const inm = lead.inmueble || {};
   const asignado = lead.asignado || {};
   const creador = lead.creador || {};
@@ -974,7 +991,7 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
           📱 ${lead.telefono || '—'}${lead.email ? ' · ✉️ ' + lead.email : ''}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-          <span style="font-size:10px;font-weight:800;background:${tip.color}22;color:${tip.color};padding:3px 9px;border-radius:10px">${tip.emoji} ${tip.label}</span>
+          <span style="font-size:10px;font-weight:800;${tipChipStyle(lead.tipificacion)};padding:3px 9px;border-radius:10px">${tip.emoji} ${tip.label}</span>
           <span style="font-size:10px;font-weight:700;background:var(--b50);color:var(--b700);padding:3px 9px;border-radius:10px">${canal.emoji || ''} ${canal.label || lead.canal_origen}</span>
           ${lead.urgencia ? `<span style="font-size:10px;font-weight:700;background:#f59e0b22;color:#b45309;padding:3px 9px;border-radius:10px">⚡ ${lead.urgencia}</span>` : ''}
         </div>

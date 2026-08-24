@@ -14,16 +14,42 @@ import { getSupabaseClient } from '../config/supabase.js';
 // CONSTANTES
 // ============================================================
 
+// Escala semántica de tipificación (diseño v3).
+//
+// Es una escala FIJA y deliberadamente independiente del color del tenant:
+// nunca deriva de --v2-primary. Así el tablero se lee igual con una marca
+// azul, naranja o roja, y dos etapas nunca colisionan con el color de marca.
+// Está calibrada sobre el sistema cálido (cream / ink / amber / green / red).
+//
+//   fg  texto y acentos (borde izquierdo, número del contador)
+//   bg  relleno suave del chip y de la cabecera de columna
+//   bd  borde del chip
+//
+// `color` se mantiene como alias de `fg` por compatibilidad con el código
+// que aún compone alphas al vuelo (`${t.color}22`).
 export const TIPIFICACIONES = {
-  nuevo:            { id:'nuevo',            label:'Nuevo',               color:'#3B82F6', emoji:'🔵', orden:1 },
-  contactado:       { id:'contactado',       label:'Contactado',          color:'#EAB308', emoji:'🟡', orden:2 },
-  visita_agendada:  { id:'visita_agendada',  label:'Visita Agendada',     color:'#F97316', emoji:'🟠', orden:3 },
-  visita_realizada: { id:'visita_realizada', label:'Visita Realizada',    color:'#8B5CF6', emoji:'🟣', orden:4 },
-  negociacion:      { id:'negociacion',      label:'En Negociación',      color:'#EF4444', emoji:'🔴', orden:5 },
-  cierre_ganado:    { id:'cierre_ganado',    label:'Cierre Ganado',       color:'#22C55E', emoji:'🟢', orden:6 },
-  cierre_perdido:   { id:'cierre_perdido',   label:'Cierre Perdido',      color:'#6B7280', emoji:'⚫', orden:7 },
-  en_seguimiento:   { id:'en_seguimiento',   label:'En Seguimiento',      color:'#9CA3AF', emoji:'⚪', orden:8 },
+  nuevo:            { id:'nuevo',            label:'Nuevo',            emoji:'🔵', orden:1, fg:'#24486b', bg:'#eaf0f7', bd:'#cddeef' },
+  contactado:       { id:'contactado',       label:'Contactado',       emoji:'🟡', orden:2, fg:'#8a5a00', bg:'#fbf3e3', bd:'#eeddb9' },
+  visita_agendada:  { id:'visita_agendada',  label:'Visita Agendada',  emoji:'🟠', orden:3, fg:'#9a3412', bg:'#fdefe6', bd:'#f6d3bd' },
+  visita_realizada: { id:'visita_realizada', label:'Visita Realizada', emoji:'🟣', orden:4, fg:'#533d78', bg:'#f1ecfa', bd:'#ded3ef' },
+  negociacion:      { id:'negociacion',      label:'En Negociación',   emoji:'🔴', orden:5, fg:'#a51c1c', bg:'#fef0f0', bd:'#f8cfcf' },
+  cierre_ganado:    { id:'cierre_ganado',    label:'Cierre Ganado',    emoji:'🟢', orden:6, fg:'#047857', bg:'#e6f7ef', bd:'#bfe8d5' },
+  cierre_perdido:   { id:'cierre_perdido',   label:'Cierre Perdido',   emoji:'⚫', orden:7, fg:'#5c574f', bg:'#f2ece0', bd:'#ddd4c2' },
+  en_seguimiento:   { id:'en_seguimiento',   label:'En Seguimiento',   emoji:'⚪', orden:8, fg:'#6b6760', bg:'#f7f2e9', bd:'#e8e0d2' },
 };
+
+for (const t of Object.values(TIPIFICACIONES)) t.color = t.fg;
+
+/** Tono de una tipificación, tolerante a ids desconocidos. */
+export function tipTono(id) {
+  return TIPIFICACIONES[id] || { fg:'#6b6760', bg:'#f7f2e9', bd:'#e8e0d2' };
+}
+
+/** Estilo inline del chip de tipificación: el mismo en tablero, ficha y lista. */
+export function tipChipStyle(id) {
+  const t = tipTono(id);
+  return `background:${t.bg};border:1px solid ${t.bd};color:${t.fg}`;
+}
 
 export const CANAL_ORIGEN = {
   whatsapp:  { label:'WhatsApp',  emoji:'💬' },
@@ -705,6 +731,8 @@ export async function leadsSinActividad(horas = 72, asesorId = null) {
 if (typeof window !== 'undefined') {
   window.TIPIFICACIONES = TIPIFICACIONES;
   window.CANAL_ORIGEN_LEAD = CANAL_ORIGEN;
+  window.tipTono = tipTono;
+  window.tipChipStyle = tipChipStyle;
   window.crearInteresado = crearInteresado;
   window.editarInteresado = editarInteresado;
   window.cambiarTipificacion = cambiarTipificacion;

@@ -1,0 +1,160 @@
+/* ══════════════════════════════════════════════════════════════════════
+   MI DÍA — vista por defecto de Interesados (diseño v3)
+
+   Usa los tokens del sistema (--cd, --brd, --tx, --sub) para que herede
+   el tema del tenant. Los colores de tipificación y de score llegan
+   inline desde mi-dia.js: son una escala semántica fija, deliberadamente
+   independiente del color de marca.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.md-wrap { display: flex; flex-direction: column; gap: 14px; }
+
+/* ─── Cabecera ─────────────────────────────────────────────────────── */
+
+.md-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 12px; padding: 2px 2px 6px;
+}
+.md-head-fecha {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  font-weight: 500; color: var(--sub);
+}
+.md-head-t {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 26px; font-weight: 800; letter-spacing: -.02em;
+  color: var(--tx); line-height: 1.1; margin-top: 2px;
+}
+.md-head-n {
+  font-size: 20px; font-weight: 800; color: var(--tx);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.md-head-n span {
+  display: block; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--sub);
+}
+
+/* ─── Grupo ────────────────────────────────────────────────────────── */
+
+.md-grupo {
+  background: var(--cd); border: 1px solid var(--brd);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
+}
+.md-grupo-h {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 11px;
+}
+.md-grupo-l {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  font-weight: 500; color: var(--sub);
+}
+.md-grupo-n {
+  font-size: 11.5px; font-weight: 700; color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+.md-grupo-b { display: flex; flex-direction: column; }
+
+/* ─── Tarjeta de lead ──────────────────────────────────────────────── */
+
+.md-lead {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; cursor: pointer;
+  border-top: 1px solid var(--brd);
+  transition: background .12s ease;
+}
+.md-lead:hover { background: color-mix(in oklab, var(--brd) 28%, transparent); }
+@supports not (color: color-mix(in oklab, red, blue)) {
+  .md-lead:hover { background: rgba(0, 0, 0, .03); }
+}
+
+.md-ini {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px;
+  display: grid; place-items: center;
+  font-size: 12.5px; font-weight: 800; letter-spacing: .02em;
+}
+
+.md-body { flex: 1 1 auto; min-width: 0; }
+.md-nombre {
+  font-size: 13.5px; font-weight: 700; color: var(--tx);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.md-hint {
+  font-size: 11.5px; color: var(--sub); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.md-meta {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 6px; flex-wrap: wrap;
+}
+.md-chip {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  white-space: nowrap;
+}
+.md-cod {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px; font-weight: 600; color: var(--sub);
+  padding: 2px 6px; border-radius: 6px;
+  background: color-mix(in oklab, var(--brd) 40%, transparent);
+  white-space: nowrap;
+}
+@supports not (color: color-mix(in oklab, red, blue)) {
+  .md-cod { background: rgba(0, 0, 0, .04); }
+}
+
+.md-right {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+}
+.md-score {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 4px 9px; border-radius: 8px; line-height: 1.1;
+}
+.md-score-n {
+  font-size: 15px; font-weight: 800;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.md-score-l {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
+}
+.md-cta {
+  padding: 7px 13px; border-radius: 9px; border: 1px solid var(--brd);
+  background: var(--cd); color: var(--tx);
+  font-size: 11.5px; font-weight: 700; text-decoration: none;
+  white-space: nowrap; transition: background .12s ease, border-color .12s ease;
+}
+.md-cta:hover { border-color: var(--b600); color: var(--b600); }
+
+/* ─── Vacío ────────────────────────────────────────────────────────── */
+
+.md-vacio {
+  text-align: center; padding: 48px 24px;
+  background: var(--cd); border: 1px solid var(--brd); border-radius: 14px;
+}
+.md-vacio-ic { font-size: 40px; line-height: 1; margin-bottom: 12px; }
+.md-vacio h3 {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 19px; font-weight: 700; color: var(--tx); margin: 0 0 6px;
+}
+.md-vacio p {
+  font-size: 13px; color: var(--sub); max-width: 380px;
+  margin: 0 auto 16px; line-height: 1.5;
+}
+.md-vacio-btn {
+  padding: 9px 18px; border-radius: 9px;
+  border: 1px solid var(--brd); background: var(--cd); color: var(--tx);
+  font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.md-vacio-btn:hover { border-color: var(--b600); color: var(--b600); }
+
+/* ─── Móvil ────────────────────────────────────────────────────────── */
+
+@media (max-width: 520px) {
+  .md-head-t { font-size: 22px; }
+  .md-lead { padding: 11px 13px; gap: 10px; }
+  .md-ini { width: 32px; height: 32px; font-size: 11.5px; }
+  /* El CTA pasa bajo el score para no comprimir el nombre. */
+  .md-right { flex-direction: column; align-items: flex-end; gap: 6px; }
+  .md-cta { padding: 6px 10px; font-size: 11px; }
+}
