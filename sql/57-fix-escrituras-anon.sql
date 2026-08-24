@@ -31,7 +31,12 @@
 --   policies TO authenticated los cubren y estas de anon se pueden
 --   quitar. Ver sql/38-supabase-auth-bridge.sql.
 --
--- STATUS: pendiente de ejecutar
+-- STATUS: APLICADA en producción el 2026-08-24
+--   Verificada desde fuera como rol anon (no desde el SQL Editor, que
+--   corre como service_role y se salta RLS):
+--     · las 6 tablas del flujo aceptan escritura
+--     · lead creado de punta a punta, con el trigger asignando el tenant
+--     · la consulta de control devuelve 0 tablas sin policy permisiva
 -- ============================================================
 
 BEGIN;
