@@ -34,3 +34,6 @@ npm-debug.log*
 # Temporary
 *.tmp
 *.bak
+
+# Temporales del script de respaldo (contienen listados de tablas)
+.bktmp/
