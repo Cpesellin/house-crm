@@ -226,7 +226,7 @@ window.rInteresados = async function() {
         <div class="cht">Interesados / Leads</div>
         <div class="chsb">${leads.length} leads ${esAdmin ? 'totales' : 'míos'}${vistaActual === 'mi_dia' ? ' · Lo que necesita atención hoy' : vistaActual === 'pipeline' ? ' · Pipeline con drag & drop' : ' · Agrupados por inmueble'}</div>
       </div></div>
-      <button onclick="abrirCrearInteresadoLibre()" style="padding:8px 14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer">+ Nuevo Lead</button>
+      <button onclick="abrirCrearInteresadoLibre()" style="padding:8px 14px;background:var(--b600);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer">+ Nuevo Lead</button>
     </div></div>`;
 
     // Toggle vista
@@ -514,77 +514,87 @@ function _scriptWA(lead, inm) {
 // ============================================================
 
 function _renderLeadCard(l, contexto /* 'kanban' | 'inmueble' */) {
-  const inm = l.inmueble || {};
-  const tip = { ...tipTono(l.tipificacion), ..._TIP()[l.tipificacion] };
+  const inm   = l.inmueble || {};
+  const tip   = { ...tipTono(l.tipificacion), ..._TIP()[l.tipificacion] };
   const canal = _CAN()[l.canal_origen] || {};
-  const dias = Math.floor((Date.now() - new Date(l.fecha_ultima_actividad).getTime()) / 864e5);
-  const urgent = dias > 3 ? '🔴' : dias > 1 ? '🟡' : '🟢';
+  const dias  = Math.floor((Date.now() - new Date(l.fecha_ultima_actividad).getTime()) / 864e5);
   const asesor = l.asignado?.nombre?.split(/\s+/).slice(0, 2).join(' ') || '';
-  const otrasTips = Object.values(_TIP()).filter(t => t.id !== l.tipificacion).sort((a,b) => a.orden - b.orden);
-  const exp = !!window._leadExp?.[l.id];
+  const exp    = !!window._leadExp?.[l.id];
+  const esInm  = contexto === 'inmueble';
 
-  // Foto inmueble solo en vista Kanban (en Por Inmueble el header ya la muestra)
-  let thumbHtml = '';
-  if (contexto === 'kanban') {
+  // Antigüedad: verde reciente, ámbar tibio, rojo frío. Misma escala
+  // semántica de la tipificación, no los rojos/verdes saturados de antes.
+  const edad = dias > 3  ? { c:'#a51c1c', b:'#fef0f0' }
+             : dias > 1  ? { c:'#8a5a00', b:'#fbf3e3' }
+             :             { c:'#047857', b:'#e6f7ef' };
+
+  // La foto sólo en Kanban: en Por Inmueble la cabecera ya la muestra.
+  let foto = '';
+  if (!esInm) {
     const f = _fotoInm(l.inmueble_id);
-    const e = _emoInm(inm.tipo);
-    thumbHtml = f
-      ? `<div style="width:42px;height:42px;border-radius:8px;background-image:url('${f}');background-size:cover;background-position:center;flex-shrink:0"></div>`
-      : `<div style="width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${e}</div>`;
+    foto = f
+      ? `<div class="lc-foto" style="background-image:url('${f}')"></div>`
+      : `<div class="lc-foto">${_emoInm(inm.tipo)}</div>`;
   }
 
-  // Script y URLs
   const script = _scriptWA(l, inm);
-  const waUrl = l.telefono ? _waUrl(l.telefono, script) : null;
+  const waUrl  = l.telefono ? _waUrl(l.telefono, script) : null;
   const telUrl = l.telefono ? _telUrl(l.telefono) : null;
+  const drag   = esInm ? '' : `draggable="true" ondragstart="onDragStartLead(event,'${l.id}')"`;
+  const nombre = (l.nombre_completo || 'Sin nombre').toLowerCase();
 
-  const dragAttr = contexto === 'kanban' ? `draggable="true" ondragstart="onDragStartLead(event,'${l.id}')"` : '';
+  // Chevron del select, teñido con el color de la etapa.
+  const chev = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5L6 8.5L10 4.5' stroke='${encodeURIComponent(tip.fg)}' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`;
 
-  // Header (nombre grande + teléfono prominente)
-  const nombre = (l.nombre_completo || 'Sin nombre');
-  const borderColor = contexto === 'inmueble' ? tip.bd : 'var(--brd)';
+  return `<div class="lc${esInm ? ' is-inm' : ''}" ${drag}>
+    <div class="lc-tira" style="background:${tip.fg}"></div>
 
-  return `<div class="leadcard" ${dragAttr}
-    style="background:#fff;border:1px solid ${borderColor};${contexto==='inmueble'?'border-left:3px solid '+tip.fg+';':''}border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;margin-bottom:${contexto==='kanban'?'0':'5px'}">
-    <div onclick="toggleLeadExp('${l.id}',event)" style="padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
-      ${thumbHtml}
-      <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:800;color:var(--tx);line-height:1.25;text-transform:capitalize">${nombre.toLowerCase()}</div>
-        <div style="font-size:13px;color:#1d4ed8;font-weight:700;margin-top:2px">📱 ${_fmtTel(l.telefono)}</div>
+    <div class="lc-top" onclick="toggleLeadExp('${l.id}',event)">
+      ${foto}
+      <div class="lc-id">
+        <div class="lc-nombre">${nombre}</div>
+        ${l.telefono
+          ? `<a class="lc-tel" href="${telUrl}" onclick="event.stopPropagation()">${_fmtTel(l.telefono)}</a>`
+          : '<div class="lc-tel">Sin teléfono</div>'}
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-        <div style="font-size:11px;font-weight:700;color:var(--sub)">${urgent} ${dias}d</div>
-        <div style="color:var(--sub);font-size:13px">${exp ? '▲' : '▼'}</div>
+      <div class="lc-edad" style="color:${edad.c}">
+        <span class="lc-punto" style="background:${edad.c}"></span>${dias}d
       </div>
     </div>
 
-    <div style="padding:0 12px 10px;display:flex;gap:6px">
+    <div class="lc-acc">
+      <select class="lc-etapa" title="Cambiar etapa"
+        style="background-color:${tip.bg};border:1px solid ${tip.bd};color:${tip.fg};background-image:${chev}"
+        onclick="event.stopPropagation()"
+        onchange="moverLeadDesdeTarjeta('${l.id}',this.value,event)">
+        ${Object.values(_TIP()).sort((a,b) => a.orden - b.orden)
+          .map(t => `<option value="${t.id}" ${t.id === l.tipificacion ? 'selected' : ''}>${t.label}</option>`).join('')}
+      </select>
       ${waUrl
-        ? `<a href="${waUrl}" target="_blank" onclick="event.stopPropagation()" style="flex:1;padding:9px;background:#25d366;color:#fff;font-size:12px;font-weight:700;text-align:center;border-radius:7px;text-decoration:none">💬 WhatsApp</a>`
-        : `<div style="flex:1;padding:9px;background:#e5e7eb;color:#9ca3af;font-size:12px;font-weight:700;text-align:center;border-radius:7px">Sin tel</div>`}
+        ? `<a class="lc-btn is-wa" href="${waUrl}" target="_blank" rel="noopener" title="WhatsApp" onclick="event.stopPropagation()">💬</a>`
+        : '<span class="lc-btn is-wa" aria-disabled="true" title="Sin teléfono">💬</span>'}
       ${telUrl
-        ? `<a href="${telUrl}" onclick="event.stopPropagation()" style="flex:1;padding:9px;background:#2563eb;color:#fff;font-size:12px;font-weight:700;text-align:center;border-radius:7px;text-decoration:none">📞 Llamar</a>`
-        : `<div style="flex:1;padding:9px;background:#e5e7eb;color:#9ca3af;font-size:12px;font-weight:700;text-align:center;border-radius:7px">—</div>`}
+        ? `<a class="lc-btn is-tel" href="${telUrl}" title="Llamar" onclick="event.stopPropagation()">📞</a>`
+        : '<span class="lc-btn is-tel" aria-disabled="true" title="Sin teléfono">📞</span>'}
+      <button class="lc-btn is-mas" title="${exp ? 'Ocultar detalle' : 'Ver detalle'}"
+        onclick="toggleLeadExp('${l.id}',event)">${exp ? '▲' : '▼'}</button>
     </div>
 
     ${exp ? `
-      <div style="padding:10px 12px;background:#f9fafb;border-top:1px solid var(--brd);display:flex;flex-direction:column;gap:7px">
-        <div style="font-size:11px;color:var(--sub);display:flex;gap:10px;flex-wrap:wrap">
+      <div class="lc-det">
+        <div class="lc-datos">
           ${asesor ? `<span>👤 ${asesor}</span>` : ''}
           ${canal.emoji ? `<span>${canal.emoji} ${canal.label || l.canal_origen}</span>` : ''}
           ${l.email ? `<span style="overflow:hidden;text-overflow:ellipsis;max-width:180px">✉️ ${l.email}</span>` : ''}
         </div>
-        ${contexto === 'kanban' && inm.codigo_house ? `<div style="font-size:11px;color:var(--b700);font-weight:700">🏠 ${inm.codigo_house} · ${inm.tipo || ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>` : ''}
-        <select onclick="event.stopPropagation()" onchange="moverLeadDesdeTarjeta('${l.id}',this.value,event);this.value=''" style="width:100%;padding:7px;border:1px dashed var(--brd);border-radius:6px;font-size:11px;background:#fff;color:var(--tx);cursor:pointer">
-          <option value="">⇄ Mover a…</option>
-          ${otrasTips.map(t => `<option value="${t.id}">${t.emoji} ${t.label}</option>`).join('')}
-        </select>
-        <div style="display:flex;gap:6px">
-          <button onclick="event.stopPropagation();abrirDetalleInteresado('${l.id}')" style="flex:1;padding:8px;background:#3b82f6;color:#fff;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer">📋 Ficha completa</button>
-          ${inm.id ? `<button onclick="abrirFichaInmueble('${inm.id}',event)" style="flex:1;padding:8px;background:var(--cd);color:var(--tx);font-size:11px;font-weight:700;border:1.5px solid var(--brd);border-radius:6px;cursor:pointer">🏠 Ver inmueble</button>` : ''}
+        ${!esInm && inm.codigo_house
+          ? `<div class="lc-inm">🏠 ${inm.codigo_house}${inm.tipo ? ' · ' + inm.tipo : ''}${inm.barrio ? ' · ' + inm.barrio : inm.ciudad ? ' · ' + inm.ciudad : ''}</div>`
+          : ''}
+        <div class="lc-det-acc">
+          <button onclick="event.stopPropagation();abrirDetalleInteresado('${l.id}')">Ficha completa</button>
+          ${inm.id ? `<button onclick="abrirFichaInmueble('${inm.id}',event)">Ver inmueble</button>` : ''}
         </div>
-      </div>
-    ` : ''}
+      </div>` : ''}
   </div>`;
 }
 
@@ -654,7 +664,7 @@ function _renderVistaPorInmueble(leads, porTip) {
     const emoFallback = _emoInm(inm.tipo);
     const thumbHtml = foto
       ? `<div style="width:72px;height:72px;border-radius:10px;background-image:url('${foto}');background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15)"></div>`
-      : `<div style="width:72px;height:72px;border-radius:10px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">${emoFallback}</div>`;
+      : `<div style="width:72px;height:72px;border-radius:10px;background:var(--b50);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">${emoFallback}</div>`;
 
     // Detectar negociaciones del inmueble (venta, arriendo o ambas)
     const inmD = (window.D || []).find(x => x.id === g.id) || inm;
@@ -669,7 +679,7 @@ function _renderVistaPorInmueble(leads, porTip) {
 
     // Header del inmueble (2 filas, limpio)
     h += `<div style="background:var(--cd);border:1.5px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-      <div onclick="toggleInmExp('${g.id}')" style="padding:12px 14px;cursor:pointer;background:linear-gradient(90deg,#eff6ff,transparent);border-left:4px solid #3b82f6">
+      <div onclick="toggleInmExp('${g.id}')" style="padding:12px 14px;cursor:pointer;border-left:4px solid var(--b600)">
         <!-- Fila 1: thumb + identidad + expand -->
         <div style="display:flex;gap:12px;align-items:flex-start">
           ${thumbHtml}
@@ -682,14 +692,14 @@ function _renderVistaPorInmueble(leads, porTip) {
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
-            <div style="background:#3b82f6;color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:12px">${g.count}</div>
+            <div style="background:var(--b600);color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:12px">${g.count}</div>
             <div style="font-size:16px;color:var(--sub);transform:rotate(${expandido?'0':'-90'}deg);transition:transform .2s">▼</div>
           </div>
         </div>
         <!-- Fila 2: botones de acción -->
         <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--brd)" onclick="event.stopPropagation()">
-          <button onclick="abrirFichaInmueble('${g.id}',event)" title="Ver ficha del inmueble" style="flex:1;padding:8px;background:#fff;color:var(--b700);border:1.5px solid var(--b200);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">🏠 Ficha</button>
-          <button onclick="abrirCrearInteresado('${g.id}')" style="flex:1;padding:8px;background:#3b82f6;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo lead</button>
+          <button onclick="abrirFichaInmueble('${g.id}',event)" title="Ver ficha del inmueble" style="flex:1;padding:8px;background:var(--cd);color:var(--tx);border:1px solid var(--brd);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">🏠 Ficha</button>
+          <button onclick="abrirCrearInteresado('${g.id}')" style="flex:1;padding:8px;background:var(--b600);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">+ Nuevo lead</button>
         </div>
       </div>`;
 
@@ -727,8 +737,8 @@ function _renderVistaPorInmueble(leads, porTip) {
       if (ambasNegs) {
         h += `<div style="display:flex;gap:4px;margin-bottom:10px;padding:3px;background:var(--b50);border-radius:8px">
           <button onclick="setTabInm('${g.id}','todos',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='todos'?'#fff':'transparent'};color:${tabActual==='todos'?'var(--b700)':'var(--sub)'};box-shadow:${tabActual==='todos'?'0 1px 3px rgba(0,0,0,.1)':'none'}">👥 Todos (${g.count})</button>
-          <button onclick="setTabInm('${g.id}','venta',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='venta'?'#fff':'transparent'};color:${tabActual==='venta'?'#2563eb':'var(--sub)'};box-shadow:${tabActual==='venta'?'0 1px 3px rgba(0,0,0,.1)':'none'}">💰 Venta (${countVenta})</button>
-          <button onclick="setTabInm('${g.id}','arriendo',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='arriendo'?'#fff':'transparent'};color:${tabActual==='arriendo'?'#ea580c':'var(--sub)'};box-shadow:${tabActual==='arriendo'?'0 1px 3px rgba(0,0,0,.1)':'none'}">🔑 Arriendo (${countArr})</button>
+          <button onclick="setTabInm('${g.id}','venta',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='venta'?'#fff':'transparent'};color:${tabActual==='venta'?'#24486b':'var(--sub)'};box-shadow:${tabActual==='venta'?'0 1px 3px rgba(0,0,0,.1)':'none'}">💰 Venta (${countVenta})</button>
+          <button onclick="setTabInm('${g.id}','arriendo',event)" style="flex:1;padding:7px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='arriendo'?'#fff':'transparent'};color:${tabActual==='arriendo'?'#9a3412':'var(--sub)'};box-shadow:${tabActual==='arriendo'?'0 1px 3px rgba(0,0,0,.1)':'none'}">🔑 Arriendo (${countArr})</button>
           ${countSin > 0 ? `<button onclick="setTabInm('${g.id}','sin_clasif',event)" style="padding:7px 10px;border:none;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;background:${tabActual==='sin_clasif'?'#fff':'transparent'};color:${tabActual==='sin_clasif'?'var(--sub)':'var(--sub)'}" title="Sin clasificar">❓ ${countSin}</button>` : ''}
         </div>`;
       }
@@ -899,7 +909,7 @@ function _renderModalCrear(inmuebleIdPre) {
 
       <div style="padding:14px 20px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:8px">
         <button onclick="document.getElementById('intOv').remove()" style="padding:10px 16px;background:var(--cd);border:1px solid var(--brd);border-radius:8px;font-weight:700;cursor:pointer;color:var(--tx)">Cancelar</button>
-        <button onclick="confirmarCrearInteresado()" style="padding:10px 18px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer">💾 Guardar Lead</button>
+        <button onclick="confirmarCrearInteresado()" style="padding:10px 18px;background:var(--b600);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer">💾 Guardar Lead</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
@@ -1005,7 +1015,7 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
         const e = _emoInm(inm.tipo);
         return f
           ? `<div style="width:64px;height:64px;border-radius:10px;background-image:url('${f}');background-size:cover;background-position:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)"></div>`
-          : `<div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${e}</div>`;
+          : `<div style="width:64px;height:64px;border-radius:10px;background:var(--b50);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${e}</div>`;
       })()}
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏠 Inmueble principal</div>
@@ -1036,8 +1046,8 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
           <div style="font-size:13px;font-weight:700;color:#78350f;margin-top:2px">${nom}</div>
           <div style="font-size:12px;color:#92400e;margin-top:1px">📱 ${tel}</div>
         </div>
-        <a href="${waUrl}" target="_blank" onclick="event.stopPropagation()" style="padding:8px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">💬 WhatsApp</a>
-        <a href="${telUrl}" onclick="event.stopPropagation()" style="padding:8px 14px;background:#2563eb;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📞 Llamar</a>
+        <a href="${waUrl}" target="_blank" onclick="event.stopPropagation()" style="padding:8px 14px;background:#047857;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">💬 WhatsApp</a>
+        <a href="${telUrl}" onclick="event.stopPropagation()" style="padding:8px 14px;background:var(--b600);color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📞 Llamar</a>
       </div>`;
     })()}
 
@@ -1046,7 +1056,7 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
         ${Object.values(_TIP()).sort((a,b)=>a.orden-b.orden).map(t => `<option value="${t.id}" ${t.id===lead.tipificacion?'selected':''}>${t.emoji} ${t.label}</option>`).join('')}
       </select>
       <button onclick="abrirAgendarVisitaLead('${lead.id}','${inm.id}')" style="padding:10px 14px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">📅 Agendar visita</button>
-      <button onclick="abrirNotaLead('${lead.id}')" style="padding:10px 14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">📝 Nueva nota</button>
+      <button onclick="abrirNotaLead('${lead.id}')" style="padding:10px 14px;background:var(--b600);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">📝 Nueva nota</button>
       ${window.userStore?.get()?.rol === 'admin' ? `<button onclick="confirmarEliminarLead('${lead.id}','${(lead.nombre_completo||'').replace(/'/g,'\\\'')}')" title="Eliminar lead" style="padding:10px 14px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;min-height:42px">🗑️ Eliminar</button>` : ''}
     </div>`;
 
@@ -1054,7 +1064,7 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
   if (visitas.length) {
     h += `<div style="padding:0 20px 10px"><div style="font-size:11px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📅 Visitas</div>`;
     visitas.forEach(v => {
-      const badges = { pendiente:['#f59e0b','pendiente'], realizada:['#22c55e','realizada'], cancelada:['#ef4444','cancelada'], no_asistio:['#6b7280','no asistió'], reprogramada:['#8b5cf6','reprogramada'] };
+      const badges = { pendiente:['#8a5a00','pendiente'], realizada:['#047857','realizada'], cancelada:['#ef4444','cancelada'], no_asistio:['#6b7280','no asistió'], reprogramada:['#8b5cf6','reprogramada'] };
       const [col,lbl] = badges[v.estado] || ['#6b7280',v.estado];
       h += `<div style="padding:8px 10px;background:var(--b50);border-radius:8px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div style="font-size:12px;color:var(--tx)">${v.fecha_visita} · ${v.hora_visita} · ${v.tipo_visita}</div>
@@ -1076,7 +1086,7 @@ function _pintarDetalle(ov, lead, hist, inmsAdic, visitas) {
     h += `<div style="position:relative;padding-left:18px;border-left:2px solid var(--brd)">`;
     hist.forEach(hh => {
       const ico = ICO[hh.tipo_actividad] || '•';
-      const desc = (hh.descripcion || '').replace(/</g,'&lt;').replace(/@(HOUSE-\d+|[a-zA-Z0-9_.]+)/g, '<span style="background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:4px;font-weight:700">@$1</span>');
+      const desc = (hh.descripcion || '').replace(/</g,'&lt;').replace(/@(HOUSE-\d+|[a-zA-Z0-9_.]+)/g, '<span style="background:#eaf0f7;color:#24486b;padding:1px 5px;border-radius:4px;font-weight:700">@$1</span>');
       h += `<div style="position:relative;padding:6px 0 12px 14px;margin-left:-2px">
         <div style="position:absolute;left:-23px;top:4px;width:26px;height:26px;background:var(--cd);border:2px solid var(--brd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">${ico}</div>
         <div style="font-size:12px;color:var(--tx);line-height:1.5">${desc}</div>
@@ -1112,17 +1122,21 @@ window.confirmarEliminarLead = async function(leadId, nombre) {
 window.moverLeadDesdeTarjeta = async function(leadId, nuevaTip, ev) {
   ev?.stopPropagation();
   if (!nuevaTip) return;
+  // El <select> ya muestra la etapa nueva por ser un control nativo. Si el
+  // cambio no llega a aplicarse hay que resincronizar, o la tarjeta miente.
+  const revertir = () => window.rInteresados();
   try {
     if (nuevaTip === 'cierre_ganado' || nuevaTip === 'cierre_perdido') {
       const ok = await (window.cfShow ? window.cfShow('🏆', `¿Mover a ${_TIP()[nuevaTip].label}?`, 'Esta acción cambia el estado del lead y queda registrada en el historial.') : window.confirm(`¿Mover a ${_TIP()[nuevaTip].label}?`));
-      if (!ok) return;
+      if (!ok) return revertir();
     }
     await window.cambiarTipificacion(leadId, nuevaTip);
     window.toast('✅ Movido a ' + _TIP()[nuevaTip].label);
     window.rInteresados();
   } catch (e) {
-    if (e.message === 'requiere_visita_realizada') window.toast('❌ Requiere visita realizada previa', 'terr');
+    if (e.message === 'requiere_visita_realizada') window.toast('❌ Requiere una visita realizada antes de cerrar', 'terr');
     else window.toast('Error: ' + (e.message || 'no se pudo mover'), 'terr');
+    revertir();
   }
 };
 
@@ -1162,7 +1176,7 @@ window.abrirNotaLead = function(leadId) {
     </div>
     <div style="padding:14px 20px;border-top:1px solid var(--brd);display:flex;justify-content:flex-end;gap:8px">
       <button onclick="document.getElementById('notaOv').remove()" style="padding:10px 16px;background:var(--cd);border:1px solid var(--brd);border-radius:8px;font-weight:700;color:var(--tx);cursor:pointer">Cancelar</button>
-      <button onclick="confirmarNota('${leadId}')" style="padding:10px 18px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer">Guardar</button>
+      <button onclick="confirmarNota('${leadId}')" style="padding:10px 18px;background:var(--b600);color:#fff;border:none;border-radius:8px;font-weight:800;cursor:pointer">Guardar</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
@@ -1283,9 +1297,9 @@ window.badgeInteresadosInmueble = function(inmuebleId) {
     if (!el) return;
     el.querySelector('.int-count').textContent = n;
     if (n > 0) {
-      el.style.background = '#3b82f6';
+      el.style.background = 'var(--b600)';
       el.style.color = '#fff';
-      el.style.borderColor = '#3b82f6';
+      el.style.borderColor = 'var(--b600)';
     }
   };
   setTimeout(async () => {
@@ -1308,7 +1322,7 @@ window.badgeInteresadosInmueble = function(inmuebleId) {
   }, 50);
   return `<button id="${id}" onclick="event.stopPropagation();abrirCrearInteresado('${inmuebleId}')"
     title="Ver/agregar interesados"
-    style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1.5px solid #3b82f6;background:#eff6ff;border-radius:8px;font-size:13px;font-weight:800;color:#1d4ed8;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(59,130,246,.08)">
+    style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--b600);background:var(--b50);border-radius:8px;font-size:13px;font-weight:800;color:var(--b700);cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(59,130,246,.08)">
     👤 <span class="int-count">0</span>
   </button>`;
 };

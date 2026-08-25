@@ -1,0 +1,136 @@
+/* ══════════════════════════════════════════════════════════════════════
+   TARJETA DE LEAD — Pipeline y Por Inmueble (diseño v3)
+
+   Reemplaza los nueve colores hardcodeados que traía la tarjeta inline
+   (#25d366, #2563eb, #1d4ed8, #3b82f6, #dbeafe…) por los tokens del
+   sistema, de modo que herede el tema del tenant.
+
+   Decisión de flujo: el cambio de etapa vive en la superficie de la
+   tarjeta, no dentro del acordeón. Antes exigía expandir → buscar el
+   select → elegir, y el resultado medible fue que nadie tipificaba: los
+   22 leads llevaban cuatro meses en "Nuevo".
+   ══════════════════════════════════════════════════════════════════════ */
+
+.lc {
+  background: var(--cd);
+  border: 1px solid var(--brd);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.lc:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, .07); }
+.lc[draggable="true"]:active { cursor: grabbing; }
+
+/* Franja de etapa: identifica la columna de un vistazo al sacar la
+   tarjeta de su contexto (Por Inmueble las mezcla). */
+.lc-tira { height: 3px; width: 100%; }
+
+/* ─── Cabecera ─────────────────────────────────────────────────────── */
+
+.lc-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px 8px; cursor: pointer;
+}
+.lc-foto {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 9px;
+  background-size: cover; background-position: center;
+  display: grid; place-items: center; font-size: 18px;
+  background-color: color-mix(in oklab, var(--brd) 45%, transparent);
+}
+@supports not (color: color-mix(in oklab, red, blue)) {
+  .lc-foto { background-color: rgba(0, 0, 0, .05); }
+}
+
+.lc-id { flex: 1 1 auto; min-width: 0; }
+.lc-nombre {
+  font-size: 13.5px; font-weight: 700; color: var(--tx); line-height: 1.25;
+  text-transform: capitalize;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lc-tel {
+  display: inline-block; margin-top: 1px;
+  font-size: 12.5px; font-weight: 600; color: var(--sub);
+  font-variant-numeric: tabular-nums; text-decoration: none;
+}
+.lc-tel:hover { color: var(--b600); }
+
+.lc-edad {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.lc-punto { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+/* ─── Fila de acción: etapa + contacto ─────────────────────────────── */
+
+.lc-acc {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px 10px;
+}
+
+/* El selector de etapa ES el chip: un clic y cambia. Sin acordeón. */
+.lc-etapa {
+  flex: 1 1 auto; min-width: 0;
+  appearance: none; -webkit-appearance: none;
+  padding: 6px 22px 6px 9px;
+  border-radius: 8px; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 700;
+  text-overflow: ellipsis;
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  background-size: 9px;
+}
+.lc-etapa:focus { outline: 2px solid var(--b600); outline-offset: 1px; }
+
+.lc-btn {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 34px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--brd); background: var(--cd);
+  font-size: 14px; line-height: 1; text-decoration: none; cursor: pointer;
+  transition: border-color .12s ease, background .12s ease;
+}
+.lc-btn:hover { border-color: currentColor; }
+.lc-btn.is-wa   { color: #047857; }
+.lc-btn.is-tel  { color: #24486b; }
+.lc-btn.is-mas  { color: var(--sub); font-size: 13px; }
+.lc-btn[aria-disabled="true"] { opacity: .38; pointer-events: none; }
+
+/* ─── Detalle desplegado ───────────────────────────────────────────── */
+
+.lc-det {
+  padding: 10px 12px;
+  border-top: 1px solid var(--brd);
+  background: color-mix(in oklab, var(--brd) 22%, transparent);
+  display: flex; flex-direction: column; gap: 8px;
+}
+@supports not (color: color-mix(in oklab, red, blue)) {
+  .lc-det { background: rgba(0, 0, 0, .025); }
+}
+.lc-datos {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 11px; color: var(--sub);
+}
+.lc-datos span { display: inline-flex; align-items: center; gap: 3px; }
+.lc-inm {
+  font-size: 11px; font-weight: 700; color: var(--tx);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.lc-det-acc { display: flex; gap: 6px; }
+.lc-det-acc button {
+  flex: 1; padding: 7px 8px; border-radius: 7px;
+  border: 1px solid var(--brd); background: var(--cd); color: var(--tx);
+  font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.lc-det-acc button:hover { border-color: var(--b600); color: var(--b600); }
+
+/* ─── Por Inmueble ─────────────────────────────────────────────────── */
+
+/* Ahí la tarjeta se lista bajo la cabecera del inmueble, que ya muestra
+   la foto: sin miniatura y con separación entre tarjetas. */
+.lc.is-inm { margin-bottom: 6px; }
+.lc.is-inm .lc-foto { display: none; }
+
+@media (max-width: 520px) {
+  .lc-top { padding: 9px 10px 7px; gap: 9px; }
+  .lc-acc { padding: 0 10px 9px; }
+  .lc-foto { width: 36px; height: 36px; }
+}

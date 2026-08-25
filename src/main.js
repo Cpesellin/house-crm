@@ -8,6 +8,7 @@ import './styles/tokens-v2.css';
 import './styles/modals-v2.css';
 import './styles/sections-v2.css';
 import './styles/mi-dia.css';
+import './styles/lead-card.css';
 import './config/cloudinary.js';
 import './utils/sanitizer.js';
 import './core/notifications.js';
