@@ -47,8 +47,32 @@ export function renderStep4(container) {
   window._reg = registration;
 
   setTimeout(() => {
-    registration._pendingFotos = [];
-    initFotoUpload('fotoUpReg', r => registration.addPendingFoto(r), 0);
+    // Este paso se re-renderiza al tocar cualquier amenidad, y cada render
+    // rehace el innerHTML — con lo que el preview de fotos desaparecía y el
+    // usuario creía que no se habían subido. Las fotos nunca se perdían (viven
+    // en el store), pero sin verlas nadie confía en el formulario.
+    //
+    // La línea `registration._pendingFotos = []` que había aquí escribía sobre
+    // el objeto público, no sobre el estado, así que además de engañosa no
+    // hacía nada. Se elimina.
+    const yaSubidas = registration.getPendingFotos();
+    initFotoUpload('fotoUpReg', r => registration.addPendingFoto(r), yaSubidas.length);
+
+    // Repintar las miniaturas de lo ya subido.
+    const prev = document.getElementById('fotoUpReg_prev');
+    if (prev && yaSubidas.length) {
+      // removePendingFoto filtra por url, no por índice.
+      prev.innerHTML = yaSubidas.map(f =>
+        `<div class="foto-prev-item"><img src="${f.thumb || f.url}">` +
+        `<button class="foto-del" type="button" data-url="${String(f.url).replace(/"/g, '&quot;')}">✕</button></div>`
+      ).join('');
+      prev.querySelectorAll('.foto-del').forEach(b => {
+        b.addEventListener('click', () => {
+          registration.removePendingFoto(b.dataset.url);
+          renderStep4(container);
+        });
+      });
+    }
   }, 0);
 }
 

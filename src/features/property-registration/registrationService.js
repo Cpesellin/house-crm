@@ -36,30 +36,51 @@ export async function submitProperty() {
 
   const payload = registration.buildPayload(user.id);
 
+  // ── 1. Lo único crítico: crear el inmueble ────────────────────────
+  // Va en su propio try. Antes, este insert compartía bloque con las
+  // notificaciones y la recarga de inventario, así que un fallo POSTERIOR
+  // devolvía success:false pese a que el inmueble ya existía. El usuario
+  // reintentaba y quedaba duplicado — así nacieron HOUSE-245 y HOUSE-246.
+  let newInm;
   try {
-    const { data: newInm, error } = await SB
+    const { data, error } = await SB
       .from('inmuebles')
       .insert(payload)
       .select()
       .single();
-
     if (error) throw error;
+    newInm = data;
+  } catch (e) {
+    const msg = e?.message || 'Error registrando inmueble';
+    registration.setStatus('error', msg);
+    return { success: false, error: msg };
+  }
 
-    // Save pending photos
+  // ── 2. Desde aquí el inmueble YA EXISTE ───────────────────────────
+  // Nada de lo que sigue puede convertir la operación en un fracaso:
+  // se reporta lo que falle, pero el resultado es éxito igual.
+  const avisos = [];
+
+  try {
     const fotos = registration.getPendingFotos();
-    if (fotos.length > 0 && newInm) {
-      for (let i = 0; i < fotos.length; i++) {
-        await SB.from('fotos').insert({
-          inmueble_id: newInm.id,
-          url: fotos[i].url,
-          url_thumb: fotos[i].thumb,
-          origen: 'cloudinary',
-          tipo: fotos[i].tipo || 'imagen',
-          orden: i,
-        });
-      }
+    if (fotos.length > 0) {
+      const filas = fotos.map((f, i) => ({
+        inmueble_id: newInm.id,
+        url: f.url,
+        url_thumb: f.thumb,
+        origen: 'cloudinary',
+        tipo: f.tipo || 'imagen',
+        orden: i,
+      }));
+      const { error } = await SB.from('fotos').insert(filas);
+      if (error) throw error;
     }
+  } catch (e) {
+    console.error('[registro] fotos:', e);
+    avisos.push('El inmueble quedó creado, pero las fotos no se guardaron. Agrégalas desde su ficha.');
+  }
 
+  try {
     // Generate notifications (EXACT original logic)
     const desc = (fd.tipo || 'Inmueble') + ' en ' + (fd.ciudad || '?');
     const precio = fd.precioVenta
@@ -90,19 +111,29 @@ export async function submitProperty() {
       }
     }
 
-    registration.setStatus('success');
-    registration.reset();
-
-    // Reload inventory
-    if (typeof window !== 'undefined' && window.load) window.load();
-
-    return { success: true, propertyId: newInm.id, houseCode: newInm.codigo_house };
-
   } catch (e) {
-    const msg = e?.message || 'Error registrando inmueble';
-    registration.setStatus('error', msg);
-    return { success: false, error: msg };
+    console.error('[registro] notificaciones:', e);
+    avisos.push('El inmueble quedó creado, pero no se pudo avisar al equipo.');
   }
+
+  // ── 3. Cerrar el wizard ───────────────────────────────────────────
+  // Fuera de todo try anterior: pase lo que pase arriba, el botón tiene
+  // que salir de "Enviando…" y el formulario limpiarse.
+  registration.setStatus('success');
+  registration.reset();
+
+  try {
+    if (typeof window !== 'undefined' && window.load) await window.load();
+  } catch (e) {
+    console.error('[registro] recarga de inventario:', e);
+  }
+
+  return {
+    success: true,
+    propertyId: newInm.id,
+    houseCode: newInm.codigo_house,
+    avisos,
+  };
 }
 
 // Backward compat

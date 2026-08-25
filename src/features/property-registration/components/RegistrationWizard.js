@@ -113,10 +113,30 @@ class RegistrationWizard {
     }
 
     // Step 5: Submit
-    const result = await submitProperty();
+    // Guard contra doble envío: sin él, un segundo clic (o un Enter) mientras
+    // el primero está en vuelo crea el inmueble dos veces.
+    if (this._enviando) return;
+    this._enviando = true;
+
+    let result;
+    try {
+      result = await submitProperty();
+    } catch (e) {
+      // submitProperty no debería lanzar, pero si lo hiciera el botón se
+      // quedaría en "Enviando…" para siempre.
+      console.error('[registro] excepción no controlada:', e);
+      result = { success: false, error: e?.message || 'Error inesperado' };
+      registration.setStatus('error', result.error);
+    } finally {
+      this._enviando = false;
+    }
+
     if (result.success) {
       if (typeof window !== 'undefined' && window.toast) {
-        window.toast('✅ Inmueble registrado');
+        window.toast('✅ Inmueble registrado' + (result.houseCode ? ' · ' + result.houseCode : ''));
+        // Lo que falló después de crearlo se avisa aparte: el inmueble
+        // existe, así que no es un error, pero el usuario debe enterarse.
+        (result.avisos || []).forEach(a => window.toast('⚠️ ' + a, 'twarn'));
       }
       this._onComplete(result);
     } else {
