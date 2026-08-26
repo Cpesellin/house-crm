@@ -8,7 +8,7 @@
     {
       "source": "/arriendos",
       "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
-      "destination": "/arriendos.html"
+      "destination": "/api/arriendos"
     },
     {
       "source": "/vender",

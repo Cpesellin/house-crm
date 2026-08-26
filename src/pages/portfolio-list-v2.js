@@ -413,10 +413,30 @@ function renderCard(p) {
 // ═══════════════════════════════════════════════════════════════════
 // MAIN RENDERER
 // ═══════════════════════════════════════════════════════════════════
+/**
+ * Lee el filtro de negociación de la URL, para que un enlace compartido
+ * abra ya filtrado. Soporta `#/arriendos`, `#/portafolio?deal=arriendo` y
+ * el alias `?deal=venta`. Sin parámetro, no toca el filtro elegido.
+ */
+function _dealDesdeUrl() {
+  const h = (location.hash || '').toLowerCase();
+  if (h.includes('/arriendos')) return 'arriendo';
+  if (h.includes('/ventas')) return 'venta';
+  const q = h.split('?')[1];
+  if (q) {
+    const d = new URLSearchParams(q).get('deal');
+    if (DEAL_CYCLE.includes(d)) return d;
+  }
+  return null;
+}
+
 async function renderPortfolioListV2() {
   const root = document.getElementById('sec-portfolio-list');
   if (!root) return;
   root.classList.add('v2-page', 'pl');
+
+  const dealUrl = _dealDesdeUrl();
+  if (dealUrl) state.deal = dealUrl;
 
   // Skeleton inicial
   root.innerHTML = `
