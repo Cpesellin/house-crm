@@ -184,7 +184,14 @@ export async function load() {
     } catch(e) {}
     const _FIN = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
     sSt('ok', window.D.filter(p => !_FIN.includes(p.estado)).length + ' inmuebles');
-    render(window.D);
+    // Igual que en la ruta completa: respetar el filtro activo en vez de
+    // pintar todo el inventario. Esta es la ruta rápida (datos en caché).
+    if (typeof window.doSearch === 'function') {
+      window.doSearch();
+      if (typeof window.updatePills === 'function') window.updatePills();
+    } else {
+      render(window.D);
+    }
     uSt();
     if(window.renderAccOpts)window.renderAccOpts();
     if(window.populateAsesorFilter)window.populateAsesorFilter();
@@ -328,7 +335,23 @@ export async function load() {
     const FINAL_S = window.FINAL_STATES || ['Arrendado', 'Vendido', 'Retirado'];
     const activeCount = D.filter(p => !FINAL_S.includes(p.estado)).length;
     sSt('ok', '✅ ' + activeCount + ' propiedades');
-    render(D);
+
+    // Repintar respetando lo que el usuario tenga puesto.
+    //
+    // `render(D)` pinta la lista COMPLETA, así que cada recarga borraba el
+    // filtro activo. Se nota al depurar el inventario: con "Arriendo"
+    // puesto, retirar un inmueble llamaba a load() y devolvía la lista sin
+    // filtrar, obligando a re-aplicarlo en cada operación.
+    //
+    // doSearch() reaplica filtros, búsqueda y orden, y termina llamando a
+    // render(). Sin nada puesto equivale a render(D), así que sirve para
+    // ambos casos.
+    if (typeof window.doSearch === 'function') {
+      window.doSearch();
+      if (typeof window.updatePills === 'function') window.updatePills();
+    } else {
+      render(D);
+    }
     renderWelcome();
 
     // Hero float removed — only welcome banner shows
