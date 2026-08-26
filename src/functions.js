@@ -374,7 +374,20 @@ window.shareInm = function(id) {
 
 const fD = {tipo:'',negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:'',barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:''};
 let fS = 1;
-const fLb=['Lo esencial','Propietario','Características','Amenidades','Revisar'];
+const fLb=['Lo esencial','Propietario','Características','Amenidades','Fotos','Revisar'];
+// Número de pasos derivado de las etiquetas: añadir uno no obliga a cazar
+// el literal por todo el archivo (así se desincronizó el rótulo "Paso x/5").
+const fTot = fLb.length;
+
+// Fotos subidas a Cloudinary que aún no se han asociado a un inmueble:
+// se insertan en la tabla `fotos` al publicar.
+//
+// Nunca estuvo declarada: existía sólo porque el paso de Amenidades hacía
+// `_pendingFotos=[]` en cada render, lo que la creaba como global implícita
+// — y de paso BORRABA las fotos ya subidas, que es la razón por la que los
+// inmuebles se registraban sin ninguna. Al quitar ese reseteo, nadie la
+// creaba. Aquí queda declarada una sola vez, y sólo se vacía al publicar.
+let _pendingFotos = [];
 const fTp=[{id:'Casa',i:'🏠'},{id:'Apartamento',i:'🏢'},{id:'Apartaestudio',i:'🏬'},{id:'Finca',i:'🌾'},{id:'Local comercial',i:'🏪'},{id:'Oficina',i:'💼'},{id:'Lote',i:'🌳'},{id:'Casa campestre',i:'🌿'},{id:'Bodega',i:'🏭'},{id:'Penthouse',i:'👑'}];
 const fAP=[{id:'parqueadero',l:'Parqueo',i:'🚗'},{id:'ascensor',l:'Ascensor',i:'🛗'},{id:'piscina',l:'Piscina',i:'🏊'},{id:'gimnasio',l:'Gimnasio',i:'🏋️'},{id:'zonas_verdes',l:'Zonas V.',i:'🌿'},{id:'seguridad',l:'Seguridad',i:'🛡️'},{id:'salon_comunal',l:'Salón',i:'🎉'},{id:'terraza',l:'Terraza',i:'☀️'}];
 const fAX=[{id:'cancha_tennis',l:'Tenis',i:'🎾'},{id:'cancha_futbol',l:'Fútbol',i:'⚽'},{id:'sauna',l:'Sauna',i:'🧖'},{id:'juegos_ninos',l:'Juegos',i:'🎠'},{id:'bbq',l:'BBQ',i:'🔥'},{id:'coworking',l:'Cowork',i:'💻'},{id:'pet_friendly',l:'Pet',i:'🐕'},{id:'cuarto_util',l:'Útil',i:'📦'},{id:'lavanderia',l:'Lavand.',i:'🧺'},{id:'deposito',l:'Depósito',i:'🗄️'}];
@@ -399,13 +412,13 @@ window.tgAm = function(id){const i=fD.amenidades.indexOf(id);if(i>-1)fD.amenidad
 window.iForm = function(){try{const m=JSON.parse(localStorage.getItem('hcrm_fmem')||'{}');if(m.ciudad&&!fD.ciudad)fD.ciudad=m.ciudad;if(m.tipo&&!fD.tipo)fD.tipo=m.tipo;}catch(e){}window.rFS();};
 
 window.rFS = function(){
-  document.getElementById('fsl').textContent=`Paso ${fS}/5 · ${fLb[fS-1]}`;
-  let d='';for(let i=1;i<=5;i++)d+=`<div class="pd ${i===fS?'act':i<fS?'dn':''}"></div>`;
+  document.getElementById('fsl').textContent=`Paso ${fS}/${fTot} · ${fLb[fS-1]}`;
+  let d='';for(let i=1;i<=fTot;i++)d+=`<div class="pd ${i===fS?'act':i<fS?'dn':''}"></div>`;
   document.getElementById('fdt').innerHTML=d;
   document.getElementById('fp').style.display=fS>1?'flex':'none';
-  document.getElementById('fn').textContent=fS<5?'Continuar →':'✓ Publicar';
+  document.getElementById('fn').textContent=fS<fTot?'Continuar →':'✓ Publicar';
   const c=document.getElementById('fc');
-  if(fS===1)rF1(c);else if(fS===2)rF2(c);else if(fS===3)rF3(c);else if(fS===4)rF4(c);else{c.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub)">Generando código...</div>';rF5(c);}
+  if(fS===1)rF1(c);else if(fS===2)rF2(c);else if(fS===3)rF3(c);else if(fS===4)rF4(c);else if(fS===5)rFotos(c);else{c.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub)">Generando código...</div>';rF5(c);}
 };
 
 async function rF1(c){const nxt=await nextHouseCode();let h=`<div style="background:var(--b50);border:2px solid var(--b200);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:9px;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:1px">ID INMUEBLE</div><div style="font-family:monospace;font-size:20px;font-weight:800;color:var(--b700);margin-top:2px">${nxt}</div></div><button type="button" style="padding:6px 12px;border:1.5px solid var(--b200);border-radius:6px;background:var(--cd);font-size:11px;font-weight:700;color:var(--b600);cursor:pointer" onclick="navigator.clipboard.writeText('${nxt}');toast('📋 Copiado')">📋</button></div>`;
@@ -426,8 +439,56 @@ c.innerHTML=h;}
 
 function rF4(c){let h='<div class="ff"><label class="ffl">Amenidades</label><div class="amg">';fAP.forEach(a=>{h+=`<button class="amb ${fD.amenidades.includes(a.id)?'on':''}" onclick="tgAm('${a.id}')"><div class="ami">${a.i}</div>${a.l}</button>`;});
 h+='</div><div class="cps">';fAX.forEach(a=>{h+=`<div class="ch ${fD.amenidades.includes(a.id)?'on':''}" onclick="tgAm('${a.id}')">${a.i} ${a.l}</div>`;});
-h+=`</div></div><div class="ff"><label class="ffl">📷 Fotos</label><div id="fotoUpReg"></div></div><div class="ff"><label class="ffl">Descripción del inmueble <span style="font-size:10px;font-weight:600;color:var(--b600);background:var(--b50);padding:2px 8px;border-radius:10px;margin-left:6px">👁️ Visible para clientes</span></label><textarea class="ffi" style="min-height:80px;resize:vertical" placeholder="Describe lo más atractivo del inmueble: ubicación, vista, acabados, cercanía a servicios..." onchange="fD.observaciones=this.value">${fD.observaciones}</textarea><div style="font-size:10px;color:var(--sub);margin-top:4px">Este texto se mostrará en la página pública del inmueble.</div></div>`;
-c.innerHTML=h;_pendingFotos=[];if(typeof window.initFotoUpload==='function')window.initFotoUpload('fotoUpReg',r=>{_pendingFotos.push(r);},0);}
+h+=`</div></div><div class="ff"><label class="ffl">Descripción del inmueble <span style="font-size:10px;font-weight:600;color:var(--b600);background:var(--b50);padding:2px 8px;border-radius:10px;margin-left:6px">👁️ Visible para clientes</span></label><textarea class="ffi" style="min-height:80px;resize:vertical" placeholder="Describe lo más atractivo del inmueble: ubicación, vista, acabados, cercanía a servicios..." onchange="fD.observaciones=this.value">${fD.observaciones}</textarea><div style="font-size:10px;color:var(--sub);margin-top:4px">Este texto se mostrará en la página pública del inmueble.</div></div>`;
+c.innerHTML=h;}
+
+// ─── Paso 5: FOTOS ───────────────────────────────────────────────────
+// Antes el subidor estaba al final del paso de Amenidades, y peor: ese
+// paso hacía `_pendingFotos=[]` en cada render, así que tocar cualquier
+// amenidad BORRABA las fotos ya subidas. Por eso los inmuebles se
+// registraban sin ninguna. Aquí es un paso propio y nada se resetea.
+function rFotos(c){
+  c.innerHTML=`<div class="ff">
+    <label class="ffl">📷 Fotos y videos del inmueble</label>
+    <div style="font-size:11.5px;color:var(--sub);margin:4px 0 10px;line-height:1.45">
+      Es lo primero que ve un cliente y lo que se muestra al compartir por
+      WhatsApp. La primera foto será la portada.
+    </div>
+    <div id="fotoUpReg"></div>
+  </div>
+  <div id="fotoAviso" style="margin-top:14px"></div>`;
+
+  if(typeof window.initFotoUpload==='function'){
+    window.initFotoUpload('fotoUpReg', r=>{ _pendingFotos.push(r); _avisoFotos(); }, _pendingFotos.length);
+  }
+  _repintarFotos();
+  _avisoFotos();
+}
+
+// El paso se re-renderiza con cada cambio, y el innerHTML se rehace: sin
+// esto las miniaturas desaparecen aunque las fotos sigan en memoria.
+function _repintarFotos(){
+  const prev=document.getElementById('fotoUpReg_prev');
+  if(!prev||!_pendingFotos.length)return;
+  prev.innerHTML=_pendingFotos.map((f,i)=>
+    `<div class="foto-prev-item"><img src="${f.thumb||f.url}" alt="Foto ${i+1}">`+
+    (i===0?'<span class="foto-portada">Portada</span>':'')+
+    `<button class="foto-del" type="button" data-i="${i}">✕</button></div>`).join('');
+  prev.querySelectorAll('.foto-del').forEach(b=>{
+    b.addEventListener('click',()=>{
+      _pendingFotos.splice(+b.dataset.i,1);
+      rFotos(document.getElementById('fc'));
+    });
+  });
+}
+
+function _avisoFotos(){
+  const el=document.getElementById('fotoAviso'); if(!el)return;
+  const n=_pendingFotos.length;
+  el.innerHTML=n
+    ? `<div style="padding:10px 12px;border-radius:10px;background:#e6f7ef;border:1px solid #bfe8d5;color:#047857;font-size:12.5px;font-weight:600">✓ ${n} ${n===1?'archivo listo':'archivos listos'} para publicar</div>`
+    : `<div style="padding:10px 12px;border-radius:10px;background:#fbf3e3;border:1px solid #eeddb9;color:#8a5a00;font-size:12.5px;line-height:1.45">Puedes continuar sin fotos, pero el inmueble no se podrá mostrar en el portafolio hasta que las agregues desde su ficha.</div>`;
+}
 
 async function rF5(c){const nl=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';const nxt=await nextHouseCode();
 c.innerHTML=`<div style="background:var(--b50);border:2px solid var(--b200);border-radius:9px;padding:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:20px">${emo(fD.tipo)}</span><span class="cod-badge" style="font-size:13px;padding:4px 10px">${nxt}</span></div><div style="font-family:Fraunces,serif;font-size:18px;font-weight:700;color:var(--b800)">${fD.tipo||'Sin tipo'}</div><div style="font-size:10px;color:var(--sub);margin-top:2px">📍 ${fD.direccion}, ${fD.ciudad}</div>${fD.precioVenta?`<div style="font-family:Fraunces,serif;font-size:16px;font-weight:700;color:var(--b700);margin-top:4px">${fm(+fD.precioVenta)}</div>`:''}${fD.precioArriendo?`<div style="font-size:13px;font-weight:700;color:#065f46;margin-top:2px">${fm(+fD.precioArriendo)}/mes</div>`:''}<div style="display:flex;gap:3px;margin-top:6px;flex-wrap:wrap"><span class="sp">${nl}</span>${fD.habitaciones?`<span class="sp">🛏️${fD.habitaciones}</span>`:''}${fD.banos?`<span class="sp">🚿${fD.banos}</span>`:''}${fD.area?`<span class="sp">📐${fD.area}m²</span>`:''}</div></div><div style="font-size:10px;color:var(--sub);margin-top:6px">👤 ${fD.nombre} · ${fD.telefono}</div>`;}
@@ -435,7 +496,10 @@ c.innerHTML=`<div style="background:var(--b50);border:2px solid var(--b200);bord
 window.fPr = function(){if(fS>1){fS--;window.rFS();}};
 
 window.fNx = async function(){
-  if(fS<5){fS++;window.rFS();return;}
+  if(fS<fTot){fS++;window.rFS();return;}
+  // Sin este guard, un segundo clic mientras el primero está en vuelo crea
+  // el inmueble dos veces (así aparecieron HOUSE-245 y HOUSE-246).
+  if(window._publicando)return; window._publicando=true;
   const btn=document.getElementById('fn');btn.disabled=true;btn.textContent='Enviando...';
   try{localStorage.setItem('hcrm_fmem',JSON.stringify({ciudad:fD.ciudad,tipo:fD.tipo}));}catch(e){}
   const neg=fD.negociacion==='AMBAS'?'Venta y Arriendo':fD.negociacion==='VENTA'?'Venta':'Arriendo';
@@ -457,13 +521,26 @@ window.fNx = async function(){
     error=res.error;break;
   }
   if(!error&&newInm){
-    if(_pendingFotos.length>0){for(let i=0;i<_pendingFotos.length;i++){await SB().from('fotos').insert({inmueble_id:newInm.id,url:_pendingFotos[i].url,url_thumb:_pendingFotos[i].thumb,origen:'cloudinary',tipo:_pendingFotos[i].tipo||'imagen',orden:i});}_pendingFotos=[];}
+    // El inmueble YA existe. Si las fotos fallan se avisa, pero no se
+    // reporta como fracaso: si no, el asesor reintenta y lo duplica.
+    if(_pendingFotos.length>0){
+      try{
+        const filas=_pendingFotos.map((f,i)=>({inmueble_id:newInm.id,url:f.url,url_thumb:f.thumb,origen:'cloudinary',tipo:f.tipo||'imagen',orden:i}));
+        const rf=await SB().from('fotos').insert(filas);
+        if(rf.error)throw rf.error;
+      }catch(ef){
+        console.error('[registro] fotos:',ef);
+        window.toast('⚠️ El inmueble quedó creado, pero las fotos no se guardaron. Agrégalas desde su ficha.','twarn');
+      }
+      _pendingFotos=[];
+    }
     const desc2=(fD.tipo||'Inmueble')+' en '+(fD.ciudad||'?');
     await window.noti('inmueble_nuevo','info','🆕 '+u.nombre+' registró: '+desc2,u.nombre+' registró nuevo '+desc2,null,'all',newInm.id);
     window.toast('✅ Inmueble registrado');
     const lastC=fD.ciudad,lastT=fD.tipo;Object.assign(fD,{tipo:lastT,negociacion:'VENTA',precioVenta:'',precioArriendo:'',direccion:'',ciudad:lastC,barrio:'',nombre:'',telefono:'',email:'',area:120,areaTotal:'',estrato:0,habitaciones:3,banos:2,parqueos:1,caracteristicas:[],amenidades:[],observaciones:''});
     fS=1;window.rFS();window.load();window.go('inv');
   }else window.toast(error?.message||'Error','terr');
+  window._publicando=false;
   btn.disabled=false;btn.textContent='✓ Publicar';
 };
 
