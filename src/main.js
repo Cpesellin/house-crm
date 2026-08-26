@@ -20,6 +20,7 @@ import './load.js';
 import './sections.js';
 import './functions.js';
 import './domains/inmuebles/orden.js';
+import './domains/inmuebles/estado.js';
 import './domains/leads/mi-dia.js';
 import './interesados-ui.js';
 import './pages/property-detail-v2.js';

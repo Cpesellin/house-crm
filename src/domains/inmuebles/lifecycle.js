@@ -20,6 +20,7 @@
  */
 
 import { getSupabaseClient } from '../../config/supabase.js';
+import { actualizarEstadoInmueble } from './estado.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
@@ -43,7 +44,8 @@ window.chgE = async function (id, e) {
   const desc = descInm(p);
   const u = U();
   const capNom = p?.captador?.nombre || '?';
-  await SB().from('inmuebles').update({ estado: e, fecha_estado: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id);
+  const r = await actualizarEstadoInmueble(id, e);
+  if (!r.ok) { window.toast('❌ ' + r.error, 'terr'); return; }
   await SB().from('historial').insert({ inmueble_id: id, usuario_id: u.id, accion: 'cambio_estado', campo: 'estado', valor_nuevo: e });
   if (FINAL_STATES.includes(e)) {
     await window.noti('cambio_estado', 'verde', '⛔ Cierre: ' + desc + ' → ' + e, u.nombre + ' cerró ' + desc + '. Captador: ' + capNom, null, 'all', id);
@@ -123,7 +125,8 @@ window.quickMove = async function (id, estado) {
     const ok = await window.cfShow('⛔', '¿Mover a ' + estado + '?', 'Este inmueble dejará de aparecer en el inventario.\nSe notificará al administrador para revisión.');
     if (!ok) return;
   }
-  await SB().from('inmuebles').update({ estado, fecha_estado: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id);
+  const r = await actualizarEstadoInmueble(id, estado);
+  if (!r.ok) { window.toast('❌ ' + r.error, 'terr'); return; }
   await SB().from('historial').insert({ inmueble_id: id, usuario_id: u.id, accion: 'cambio_estado', campo: 'estado', valor_nuevo: estado });
   if (estado === 'Verificar Disponibilidad') {
     await window.noti('verificar', 'rojo', '🔍 ' + u.nombre + ' solicita verificar: ' + desc, u.nombre + ' necesita saber si tu ' + desc + ' sigue disponible.', capEmail, null, id);
@@ -186,7 +189,7 @@ window.responderSol = async function (solId, respuesta) {
   const nota = prompt('Nota de respuesta (opcional):', respuesta === 'si' ? 'Disponible para visita' : 'Ya no está disponible') || '';
   await SB().from('solicitudes').update({ estado: estados[respuesta], nota_respuesta: nota, respondido_at: new Date().toISOString() }).eq('id', solId);
   if (respuesta === 'si') {
-    await SB().from('inmuebles').update({ estado: 'Aún Disponible', fecha_estado: new Date().toISOString() }).eq('id', sol.inmueble_id);
+    await actualizarEstadoInmueble(sol.inmueble_id, 'Aún Disponible');
     await window.noti('cambio_estado', 'verde', '✅ ' + u.nombre + ' confirmó: ' + desc + ' disponible', u.nombre + ' confirmó a ' + sol.solicitante?.nombre, solEmail, null, sol.inmueble_id);
   } else {
     await window.noti('cambio_estado', 'rojo', '❌ ' + desc + ' no disponible', u.nombre + ' indicó que ' + desc + ' ya no está disponible.', solEmail, null, sol.inmueble_id);

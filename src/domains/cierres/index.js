@@ -24,6 +24,7 @@
  */
 
 import { getSupabaseClient } from '../../config/supabase.js';
+import { actualizarEstadoInmueble } from '../inmuebles/estado.js';
 
 // ─── Shortcuts locales ───────────────────────────────────────────────
 const SB = () => getSupabaseClient();
@@ -274,9 +275,10 @@ window._guardarCierre = async function (inmId, tipo) {
 
   // 3. Move inmueble a Vendido/Arrendado
   const estado = tipo === 'venta' ? 'Vendido' : 'Arrendado';
-  await SB().from('inmuebles').update({
-    estado, fecha_estado: new Date().toISOString(), updated_at: new Date().toISOString(),
-  }).eq('id', inmId);
+  // Ésta es la escritura crítica del cierre: si falla, el negocio queda
+  // registrado pero el inmueble sigue publicado como disponible.
+  const rEstado = await actualizarEstadoInmueble(inmId, estado);
+  if (!rEstado.ok) throw new Error('No se pudo marcar el inmueble como ' + estado + ': ' + rEstado.error);
   await SB().from('historial').insert({
     inmueble_id: inmId, usuario_id: u.id, accion: 'cambio_estado',
     campo: 'estado', valor_nuevo: estado,

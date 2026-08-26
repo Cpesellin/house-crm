@@ -834,7 +834,7 @@ window.confirmarMasivo = async function() {
   const u = U();
   try {
     for (const id of ids) {
-      await SB().from('inmuebles').update({ estado: 'Aún Disponible', fecha_estado: now, updated_at: now }).eq('id', id);
+      await window.actualizarEstadoInmueble(id, 'Aún Disponible');
     }
     await window.noti('cambio_estado', 'verde', '✅ ' + u.nombre + ' confirmó ' + ids.length + ' arriendos disponibles', u.nombre + ' verificó disponibilidad de ' + ids.length + ' inmuebles de arriendo.', null, 'admin', null);
     window._selectedArriendos.clear();
