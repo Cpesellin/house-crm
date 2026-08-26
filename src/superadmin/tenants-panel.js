@@ -13,22 +13,19 @@
  */
 
 import { getSupabaseClient } from '../config/supabase.js';
+import { esSuperadmin as _esSuperadminRPC } from '../core/superadmin-check.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-/** Chequea si el usuario logueado es superadmin (admin de House) */
+/** Chequea si el usuario logueado es superadmin (admin de House).
+ *  El filtro por rol se mantiene aquí — evita consultar para quien de
+ *  todos modos no puede serlo — y la consulta va al helper memorizado. */
 export async function esSuperadmin() {
   const u = U();
   if (!u || u.rol !== 'admin') return false;
-  try {
-    const { data } = await SB().rpc('is_superadmin');
-    return data === true;
-  } catch (e) {
-    console.warn('[superadmin] is_superadmin failed:', e);
-    return false;
-  }
+  return _esSuperadminRPC();
 }
 
 /** Render de la tabla de tenants + botones de acción */

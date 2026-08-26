@@ -21,6 +21,7 @@ import './sections.js';
 import './functions.js';
 import './domains/inmuebles/orden.js';
 import './domains/inmuebles/estado.js';
+import { iniciarDetectorDeVersion } from './core/version-check.js';
 import './domains/leads/mi-dia.js';
 import './interesados-ui.js';
 import './pages/property-detail-v2.js';
@@ -208,6 +209,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await initApp(appContainer);
   initRouter();
+
+  // Avisa si el navegador está ejecutando un bundle viejo por caché.
+  iniciarDetectorDeVersion();
 
   // Apply pre-filter if /arriendos URL
   if (window._preFilterArriendo) {

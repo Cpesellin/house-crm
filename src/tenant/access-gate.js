@@ -11,6 +11,7 @@
  */
 
 import { getCurrentTenant } from './current.js';
+import { esSuperadmin } from '../core/superadmin-check.js';
 import { getSupabaseClient } from '../config/supabase.js';
 
 const SB = () => getSupabaseClient();
@@ -43,15 +44,10 @@ function showBlockScreen(tenant) {
     </div>`;
 }
 
-/** Chequea si el usuario es superadmin de House (no debe bloquearse) */
-async function isSuperadminSafe() {
-  try {
-    const { data } = await SB().rpc('is_superadmin');
-    return data === true;
-  } catch (e) {
-    return false;
-  }
-}
+/** Chequea si el usuario es superadmin de House (no debe bloquearse).
+ *  Delega en el helper memorizado: este gate corre en un intervalo y
+ *  antes disparaba un 404 por cada vuelta. */
+const isSuperadminSafe = esSuperadmin;
 
 /** Chequea el estado de acceso del tenant activo */
 async function checkAccess() {
