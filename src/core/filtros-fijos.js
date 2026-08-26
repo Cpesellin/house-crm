@@ -19,7 +19,8 @@
 const SELECTOR_TOPBAR = 'header, .v2-topbar';
 
 let _sf = null;
-let _obs = null;
+let _hueco = null;
+let _fijada = false;
 
 /** Altura de la barra superior, si es que está fijada. */
 function altoTopbar() {
@@ -39,24 +40,83 @@ function ajustar() {
 }
 
 /**
- * Marca `.pegado` cuando la barra alcanza su tope. Se usa un centinela de
- * 1px justo encima: cuando deja de verse, la barra está pegada. Es más
- * barato y preciso que escuchar el scroll.
+ * Fija la barra con `position: fixed` en cuanto el scroll la alcanza.
+ *
+ * Se descarta `position: sticky` a propósito. Es frágil de formas que no
+ * se ven al inspeccionar: basta un ancestro con `overflow` distinto de
+ * visible, un `transform`, un `contain`, o que el contenedor padre termine
+ * antes que la lista, para que la barra se vaya con el scroll — y cada
+ * perfil (visitante, asesor, gerente) monta un DOM ligeramente distinto,
+ * así que puede funcionar para uno y fallar para otro. Eso es justo lo
+ * que estaba pasando.
+ *
+ * `fixed` se ancla al viewport y no depende de nada de lo anterior. El
+ * coste es tener que reservar el hueco que la barra deja en el flujo, o la
+ * página daría un salto al fijarse; de eso se encarga el espaciador.
  */
 function vigilarPegado() {
   _sf = document.getElementById('stickyFilters');
-  if (!_sf || _obs) return;
+  if (!_sf || _hueco) return;
 
-  const centinela = document.createElement('div');
-  centinela.setAttribute('aria-hidden', 'true');
-  centinela.style.cssText = 'height:1px;margin:0;padding:0;pointer-events:none';
-  _sf.parentNode.insertBefore(centinela, _sf);
+  // Espaciador: ocupa el sitio de la barra cuando ésta pasa a fixed, para
+  // que la página no dé un salto al fijarse.
+  _hueco = document.createElement('div');
+  _hueco.id = 'filtrosHueco';
+  _hueco.setAttribute('aria-hidden', 'true');
+  _hueco.style.cssText = 'display:none;padding:0;margin:0';
+  _sf.parentNode.insertBefore(_hueco, _sf);
 
-  _obs = new IntersectionObserver(
-    ([e]) => _sf.classList.toggle('pegado', !e.isIntersecting),
-    { threshold: [0], rootMargin: `-${altoTopbar()}px 0px 0px 0px` }
-  );
-  _obs.observe(centinela);
+  // Se comprueba en el scroll en vez de con IntersectionObserver: el
+  // espaciador desplaza al propio centinela que el observer vigila, así que
+  // al volver arriba no re-disparaba y la barra se quedaba fijada tapando
+  // la cabecera. Comparar posiciones no tiene ese problema.
+  let pendiente = false;
+  const alScroll = () => {
+    if (pendiente) return;
+    pendiente = true;
+    requestAnimationFrame(() => { pendiente = false; evaluar(); });
+  };
+  window.addEventListener('scroll', alScroll, { passive: true });
+  evaluar();
+}
+
+/** Punto del documento donde empieza la barra, sin contar si está fijada. */
+function anclaDocumento() {
+  if (_fijada) {
+    // Fijada, la referencia es el hueco que ocupa su sitio.
+    return _hueco.getBoundingClientRect().top + window.scrollY;
+  }
+  return _sf.getBoundingClientRect().top + window.scrollY;
+}
+
+function evaluar() {
+  if (!_sf || !_hueco) return;
+  const tope = altoTopbar();
+  const debeFijarse = window.scrollY >= anclaDocumento() - tope;
+  if (debeFijarse === _fijada) {
+    if (_fijada) { _sf.style.top = tope + 'px'; }  // por si cambió la topbar
+    return;
+  }
+  _fijada = debeFijarse;
+
+  if (debeFijarse) {
+    // Medir ANTES de sacarla del flujo, o el ancho sale mal.
+    const r = _sf.getBoundingClientRect();
+    _hueco.style.height = Math.round(r.height) + 'px';
+    _hueco.style.display = 'block';
+    _sf.style.position = 'fixed';
+    _sf.style.top = tope + 'px';
+    _sf.style.left = Math.round(r.left) + 'px';
+    _sf.style.width = Math.round(r.width) + 'px';
+    _sf.classList.add('pegado');
+  } else {
+    _hueco.style.display = 'none';
+    _sf.style.position = '';
+    _sf.style.top = '';
+    _sf.style.left = '';
+    _sf.style.width = '';
+    _sf.classList.remove('pegado');
+  }
 }
 
 export function iniciarFiltrosFijos() {
@@ -65,12 +125,20 @@ export function iniciarFiltrosFijos() {
   vigilarPegado();
 
   // La barra superior cambia de alto al rotar o al cambiar de vista.
-  window.addEventListener('resize', ajustar, { passive: true });
+  // Al rotar o redimensionar cambia el ancho: se suelta y se vuelve a
+  // evaluar con la geometría nueva.
+  window.addEventListener('resize', () => {
+    ajustar();
+    if (_fijada) { _fijada = false; _hueco.style.display = 'none';
+      _sf.style.position = ''; _sf.style.top = ''; _sf.style.left = ''; _sf.style.width = ''; }
+    evaluar();
+  }, { passive: true });
   window.addEventListener('hashchange', () => setTimeout(ajustar, 60));
 }
 
 if (typeof window !== 'undefined') {
   window.ajustarFiltrosFijos = ajustar;
+  window.evaluarFiltrosFijos = evaluar;
 }
 
 export default { iniciarFiltrosFijos };
