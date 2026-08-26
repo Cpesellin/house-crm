@@ -1,0 +1,107 @@
+/* ══════════════════════════════════════════════════════════════════════
+   PIPELINE — escritorio en columnas, móvil en lista (diseño v3, opción B)
+
+   En escritorio el tablero sigue siendo un kanban horizontal con drag &
+   drop. En móvil eso obliga a arrastrar de lado por ocho columnas de
+   280px, y los asesores trabajan desde el teléfono.
+
+   La opción B del mockup convierte el tablero en UNA lista vertical con
+   las etapas como encabezados y un selector fijo arriba: el embudo entero
+   se ve de un scroll y ninguna etapa queda escondida.
+
+   Se descartó la opción A (carrusel de columnas) por los datos reales:
+   con 22 leads en "Nuevo" y las otras siete etapas vacías, el carrusel
+   obliga a pasar por siete pantallas en blanco.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Contenedor ───────────────────────────────────────────────────── */
+
+.kb {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  min-height: 450px;
+}
+
+.kcol {
+  flex: 0 0 280px;
+  background: var(--cd);
+  border: 1px solid var(--brd);
+  border-radius: 10px;
+  padding: 10px;
+}
+.kcol-h {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.kcol-t { font-size: 12px; font-weight: 800; }
+.kcol-n {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px;
+}
+.kcol-items { display: flex; flex-direction: column; gap: 6px; }
+.kcol-vacia {
+  padding: 18px; text-align: center;
+  font-size: 11px; color: var(--sub); opacity: .6;
+}
+
+/* Selector de etapas: sólo tiene sentido en la lista móvil. */
+.kb-nav { display: none; }
+
+/* ─── Móvil: de columnas a lista ───────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .kb {
+    flex-direction: column;
+    overflow-x: visible;
+    min-height: 0;
+    gap: 14px;
+  }
+
+  /* Cada columna pasa a ser una sección de la lista. El borde superior
+     de color se convierte en borde izquierdo, que en vertical lee mejor. */
+  .kcol {
+    flex: 1 1 auto;
+    width: 100%;
+    border-top-width: 1px !important;
+    border-left-width: 4px;
+    border-left-style: solid;
+    scroll-margin-top: 64px; /* para que el ancla no quede bajo el selector */
+  }
+
+  /* Una etapa sin leads no aporta nada en una lista vertical: sólo
+     alarga el scroll. En escritorio sí se muestra, porque es el hueco
+     donde se sueltan las tarjetas al arrastrar. */
+  .kcol.is-vacia { display: none; }
+
+  /* Selector fijo: chips con contador que saltan a cada etapa. */
+  .kb-nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 8px 2px;
+    margin-bottom: 4px;
+    background: var(--bg);
+    scrollbar-width: none;
+  }
+  .kb-nav::-webkit-scrollbar { display: none; }
+
+  .kb-nav a {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 11px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 700;
+    text-decoration: none; white-space: nowrap;
+  }
+  .kb-nav a.is-vacia { opacity: .45; }
+  .kb-nav a b { font-variant-numeric: tabular-nums; font-weight: 800; }
+}
+
+/* En escritorio la lista vuelve a ser tablero: nada que ocultar. */
+@media (min-width: 768px) {
+  .kcol.is-vacia { display: block; }
+}

@@ -291,20 +291,33 @@ window.rInteresados = async function() {
 
     // Kanban columnas (solo las 5 principales del pipeline; 6-8 más compactas al final)
     const cols = ['nuevo','contactado','visita_agendada','visita_realizada','negociacion','cierre_ganado','cierre_perdido','en_seguimiento'];
-    h += `<div id="kanbanScroll" style="display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;min-height:450px">`;
+
+    // Selector de etapas: sólo visible en móvil (CSS), donde el tablero se
+    // convierte en una lista vertical y hace falta poder saltar de etapa.
+    h += `<div class="kb-nav">`;
+    cols.forEach(cid => {
+      const t = _TIP()[cid];
+      const n = (porTip[cid] || []).length;
+      h += `<a href="#kcol-${cid}" class="${n ? '' : 'is-vacia'}"
+        style="background:${t.bg};border:1px solid ${t.bd};color:${t.fg}"
+        onclick="event.preventDefault();document.getElementById('kcol-${cid}')?.scrollIntoView({behavior:'smooth',block:'start'})">${t.label} <b>${n}</b></a>`;
+    });
+    h += `</div>`;
+
+    h += `<div id="kanbanScroll" class="kb">`;
     cols.forEach(cid => {
       const t = _TIP()[cid];
       const items = porTip[cid] || [];
-      h += `<div class="kcol" data-tip="${cid}"
-          style="flex:0 0 280px;background:var(--cd);border:1px solid var(--brd);border-top:4px solid ${t.fg};border-radius:10px;padding:10px"
+      h += `<div class="kcol${items.length ? '' : ' is-vacia'}" id="kcol-${cid}" data-tip="${cid}"
+          style="border-top:4px solid ${t.fg};border-left-color:${t.fg}"
           ondrop="onDropLead(event,'${cid}')" ondragover="event.preventDefault();this.style.background='${t.bg}'" ondragleave="this.style.background=''">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:800;color:${t.fg}">${t.emoji} ${t.label}</div>
-          <div style="font-size:11px;background:${t.bg};border:1px solid ${t.bd};color:${t.fg};padding:2px 8px;border-radius:10px;font-weight:700">${items.length}</div>
+        <div class="kcol-h">
+          <div class="kcol-t" style="color:${t.fg}">${t.emoji} ${t.label}</div>
+          <div class="kcol-n" style="background:${t.bg};border:1px solid ${t.bd};color:${t.fg}">${items.length}</div>
         </div>
-        <div class="kcol-items" style="display:flex;flex-direction:column;gap:6px">`;
+        <div class="kcol-items">`;
       if (!items.length) {
-        h += `<div style="padding:18px;text-align:center;font-size:11px;color:var(--sub);opacity:.6">—</div>`;
+        h += `<div class="kcol-vacia">—</div>`;
       } else {
         items.forEach(l => {
           const inm = l.inmueble || {};
