@@ -11,6 +11,7 @@ import './styles/mi-dia.css';
 import './styles/lead-card.css';
 import './styles/pipeline-movil.css';
 import './styles/orden.css';
+import './styles/ficha-movil.css';
 import './config/cloudinary.js';
 import './utils/sanitizer.js';
 import './core/notifications.js';

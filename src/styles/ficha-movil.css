@@ -1,0 +1,154 @@
+/* ══════════════════════════════════════════════════════════════════════
+   FICHA INTERNA DEL INMUEBLE — móvil
+
+   La ficha se diseñó para escritorio: cabecera en una fila, pestañas, y
+   un rail lateral de 290px. En el teléfono eso daba:
+
+     · 169px de cromo fijo (cabecera 109 + pestañas 60) antes de ver nada,
+       en una pantalla de 812 — una quinta parte perdida
+     · el rail apilado AL FINAL, con lo que el precio —el dato que un
+       asesor mira primero— quedaba a 269px de scroll
+     · botones por debajo del mínimo táctil de 44px
+     · pestañas con scroll horizontal sin ninguna pista de que hay más
+
+   Aquí se reordena para el pulgar: precio y acciones primero, cabecera
+   compacta, y todo lo tocable a 44px.
+
+   Sólo aplica en el modal interno (.oM2), no en la ficha pública.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+
+  /* ─── Cabecera: de 109px a dos líneas apretadas ─────────────────── */
+
+  html[data-design="v2"] .oM2-head {
+    padding: 10px 14px !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+  }
+  html[data-design="v2"] .oM2-head h2 {
+    font-size: 16px !important;
+    line-height: 1.2;
+  }
+  /* Código, tipo y estado en una sola línea que no se parte. */
+  html[data-design="v2"] .oM2-id-top {
+    flex-wrap: nowrap !important;
+    overflow: hidden;
+  }
+  html[data-design="v2"] .oM2-id-top > span:first-child { flex: 0 0 auto; }
+  html[data-design="v2"] .oM2-id-top > h2 {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Las acciones se apilan a la derecha; el texto "Editar" sobra porque
+     el icono ya lo dice y el ancho es lo escaso. */
+  html[data-design="v2"] .oM2-head-acc {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 6px !important;
+  }
+  html[data-design="v2"] .oM2-head-acc > button {
+    min-width: 44px; min-height: 44px;
+    padding: 0 12px !important;
+  }
+  html[data-design="v2"] #oM2Estado {
+    order: 2; font-size: 10.5px !important;
+  }
+
+  /* ─── Pestañas: dejar ver que hay más a la derecha ───────────────── */
+
+  html[data-design="v2"] #oM2Tabs {
+    padding: 0 14px !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    /* Degradado al borde: indica scroll sin ocupar sitio. */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
+            mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
+  }
+  html[data-design="v2"] #oM2Tabs::-webkit-scrollbar { display: none; }
+  html[data-design="v2"] #oM2Tabs button {
+    height: 46px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+  }
+
+  /* ─── El giro importante: precio y acciones ARRIBA ───────────────── */
+
+  /* El rail lleva el precio y la gestión del inmueble. En vertical va
+     antes del detalle: es lo que se consulta y se cambia sobre la marcha,
+     no el final de una lectura. */
+  html[data-design="v2"] .oM2-rail {
+    order: -1;
+    padding: 14px 14px 16px !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--v2-line);
+    background: var(--v2-paper) !important;
+    gap: 10px !important;
+  }
+  html[data-design="v2"] .oM2-cont {
+    padding: 14px 14px 96px !important;
+  }
+
+  /* El precio manda: es lo primero que se mira al abrir. */
+  html[data-design="v2"] .oM2-precio {
+    padding: 12px 14px !important;
+  }
+  html[data-design="v2"] .oM2-precio [style*="font-size:22px"] {
+    font-size: 26px !important;
+  }
+
+  /* ─── Todo lo tocable, a 44px ────────────────────────────────────── */
+
+  html[data-design="v2"] .oM2 input:not([type="hidden"]),
+  html[data-design="v2"] .oM2 select {
+    min-height: 44px !important;
+    /* Por debajo de 16px, iOS hace zoom al enfocar y descuadra el modal. */
+    font-size: max(16px, 1em) !important;
+  }
+  html[data-design="v2"] .oM2 textarea {
+    min-height: 88px !important;
+    font-size: max(16px, 1em) !important;
+  }
+  html[data-design="v2"] .oM2 button { min-height: 44px; }
+
+  /* Los campos en dos columnas no caben: una sola. */
+  html[data-design="v2"] .oM2-cont [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ─── Barra de guardar ───────────────────────────────────────────── */
+
+  /* La barra pasa a dos filas: el aviso completo arriba, los botones
+     abajo. En una sola fila el texto se comprimía hasta partirse palabra
+     por palabra y el aviso quedaba ilegible. */
+  html[data-design="v2"] #oM2Barra {
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom)) !important;
+    gap: 8px 10px !important;
+    flex-wrap: wrap !important;
+    align-items: center;
+  }
+  /* El punto ámbar es decorativo y aquí sólo roba ancho. */
+  html[data-design="v2"] #oM2Barra > span:first-child { display: none !important; }
+  /* El bloque de texto ocupa la fila entera. */
+  html[data-design="v2"] #oM2Barra > div {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+  }
+  /* Y los dos botones se reparten la siguiente. */
+  html[data-design="v2"] #oM2Barra > button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 46px;
+    height: 46px !important;
+    padding: 0 12px !important;
+    white-space: nowrap;
+  }
+}
+
+/* Pantallas muy estrechas: el estado pasa bajo el título en vez de
+   comprimir el nombre del tipo hasta hacerlo ilegible. */
+@media (max-width: 380px) {
+  html[data-design="v2"] .oM2-id-top { flex-wrap: wrap !important; }
+  html[data-design="v2"] .oM2-head h2 { font-size: 15px !important; }
+}

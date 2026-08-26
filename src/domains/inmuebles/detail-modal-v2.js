@@ -374,7 +374,7 @@ function renderRail(p, perm) {
   </div>`;
 
   return `
-    <div style="${CARD}">
+    <div class="oM2-precio" style="${CARD}">
       <div style="${LABEL};margin-bottom:6px">Precio</div>
       ${st.editando ? precioEdicion : precioLectura}
     </div>
@@ -489,9 +489,9 @@ function pintar() {
 
   mbd.innerHTML = `<div class="oM2" style="display:flex;flex-direction:column;flex:1;min-height:0;background:var(--v2-cream);position:relative">
 
-    <div style="flex-shrink:0;padding:14px 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div style="min-width:0;flex:1">
-        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+    <div class="oM2-head" style="flex-shrink:0;padding:14px 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div class="oM2-id" style="min-width:0;flex:1">
+        <div class="oM2-id-top" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
           ${p.codigo_house ? `<span style="font-family:var(--v2-font-mono);font-size:12px;font-weight:500;color:var(--v2-primary);background:var(--v2-primary-soft);padding:3px 8px;border-radius:6px">${esc(p.codigo_house)}</span>` : ''}
           <h2 style="margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em">${esc(p.tipo || 'Inmueble')}</h2>
           <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:${estadoColor.bg};color:${estadoColor.fg};font-size:12px;font-weight:700"><span style="width:6px;height:6px;border-radius:999px;background:${estadoColor.dot}"></span>${esc(p.estado || '—')}</span>
@@ -501,7 +501,7 @@ function pintar() {
           ${perm.verDirReal && p.direccion ? `<span style="font-size:11px;font-weight:700;color:var(--v2-amber);background:var(--v2-amber-soft);padding:2px 7px;border-radius:5px">🔒 real</span>` : ''}
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div class="oM2-head-acc" style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <span id="oM2Estado" style="font-size:11.5px;color:var(--v2-ink-4)"></span>
         ${perm.puedeEditar ? `<button onclick="window._oM2Editar()" style="height:38px;padding:0 16px;border-radius:10px;border:1.5px solid ${st.editando ? 'var(--v2-primary)' : 'var(--v2-line-3)'};background:${st.editando ? 'var(--v2-primary-soft)' : 'var(--v2-paper)'};color:${st.editando ? 'var(--v2-primary)' : 'var(--v2-ink)'};font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px">${st.editando ? icon('check', 15) + 'Editando' : icon('area', 15) + 'Editar'}</button>` : ''}
         <button onclick="window.cm&&window.cm()" aria-label="Cerrar" style="width:38px;height:38px;border-radius:10px;border:1px solid var(--v2-line);background:var(--v2-paper);cursor:pointer;display:grid;place-items:center;color:var(--v2-ink-3)">${icon('close', 17)}</button>
@@ -511,7 +511,7 @@ function pintar() {
     <div id="oM2Tabs" style="flex-shrink:0;padding:0 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;gap:2px;overflow-x:auto">${renderTabsBar(perm)}</div>
 
     <div class="oM2-body" style="flex:1;display:flex;min-height:0;overflow:hidden">
-      <div style="flex:1;min-width:0;overflow-y:auto;padding:20px 20px 80px">
+      <div class="oM2-cont" style="flex:1;min-width:0;overflow-y:auto;padding:20px 20px 80px">
         ${panel('resumen', tabResumen(p, perm))}
         ${panel('fotos', tabFotos(p, perm))}
         ${perm.verPropietario || perm.propietarioBloqueado ? panel('propietario', tabPropietario(p, perm)) : ''}
