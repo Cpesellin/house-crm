@@ -389,6 +389,11 @@ window.doSearch = function () {
       return true;
     });
   }
+  // El orden se aplica al final, sobre la lista ya filtrada.
+  if (typeof window.ordenarInmuebles === 'function') {
+    list = window.ordenarInmuebles(list, window._ordenActual);
+  }
+
   window.render(list);
 };
 

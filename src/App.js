@@ -208,6 +208,7 @@ function renderShell(container) {
       <button class="pill pill-off" id="pillAsesor" onclick="togglePanel('asesor')" style="display:none"><span style="font-size:15px">👤</span><span id="pillAseTxt">Asesores</span><svg class="pill-chev" id="chevAsesor" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5L5 6.5L8 3.5" stroke="#8b7e6e" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>
       <button class="pill pill-off" id="myToggle" onclick="toggleMis()" style="color:#1a4f8b;border-color:#d0dff2">📌 Míos</button>
       <button class="pill pill-off" id="favToggle" onclick="toggleFavFilter()" style="color:#b91c3a;border-color:#f5d0d7">♡ Favs</button>
+      <div class="orden-wrap" id="ordenWrap"></div>
     </div>
 
     <!-- PANELS (inside sticky so they follow pills) -->

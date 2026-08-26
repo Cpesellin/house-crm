@@ -15,6 +15,7 @@
  */
 
 import { getSupabaseClient } from '../config/supabase.js';
+import { soloPublicos } from '../core/visibilidad-publica.js';
 import '../styles/tokens-v2.css';
 import '../styles/portfolio-app-v2.css';
 
@@ -91,7 +92,7 @@ const state = {
 // DATA
 async function fetchPortfolio() {
   if (Array.isArray(window.D) && window.D.length) {
-    return window.D.filter((p) => !p.eliminado && p.estado !== 'Retirado');
+    return soloPublicos(window.D);
   }
   try {
     const { data } = await SB()

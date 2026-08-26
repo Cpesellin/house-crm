@@ -18,6 +18,7 @@
  */
 
 import { getSupabaseClient } from '../config/supabase.js';
+import { esVisiblePublico } from '../core/visibilidad-publica.js';
 import '../styles/tokens-v2.css';
 import '../styles/property-detail-v2.css';
 
@@ -835,12 +836,18 @@ async function renderPropertyDetailV2() {
     console.error('[v2] fetch error', e);
   }
 
-  if (!p) {
+  // Un enlace compartido por WhatsApp sobrevive a la venta del inmueble.
+  // Sin este guard, la ficha seguía mostrándose como si estuviera libre.
+  const yaNoDisponible = p && !esVisiblePublico(p);
+
+  if (!p || yaNoDisponible) {
     root.innerHTML = `
       ${renderTopBar(null)}
       <div class="pd-empty">
-        <h2>No encontramos esta propiedad</h2>
-        <p style="color:var(--v2-ink-3)">Es posible que ya no esté disponible.</p>
+        <h2>${yaNoDisponible ? 'Este inmueble ya no está disponible' : 'No encontramos esta propiedad'}</h2>
+        <p style="color:var(--v2-ink-3)">${yaNoDisponible
+          ? 'Se cerró el negocio. Tenemos otros inmuebles que pueden interesarte.'
+          : 'Es posible que ya no esté disponible.'}</p>
         <a class="pd-cta-primary" style="display:inline-flex;margin-top:16px;text-decoration:none" href="#/portafolio">Ver portafolio</a>
       </div>
     `;
