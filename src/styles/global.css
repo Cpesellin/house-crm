@@ -205,6 +205,8 @@ body.dark .vb{background:linear-gradient(135deg,#3d3520,#5a4a2a);color:#d4a853}b
 .foto-prev{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .foto-prev-item{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1.5px solid var(--brd)}
 .foto-prev-item img{width:100%;height:100%;object-fit:cover}
+/* La primera foto es la portada: la que se ve al compartir por WhatsApp. */
+.foto-portada{position:absolute;left:0;right:0;bottom:0;padding:2px 0;text-align:center;font-size:8.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.62)}
 .foto-prev-item .foto-del{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(239,68,68,.9);color:#fff;border:none;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .foto-progress{height:4px;background:var(--g200);border-radius:2px;margin-top:6px;overflow:hidden}
 .foto-progress span{display:block;height:100%;background:var(--b500);border-radius:2px;transition:width .3s}

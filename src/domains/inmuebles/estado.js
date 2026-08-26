@@ -82,13 +82,40 @@ function traducir(msg = '') {
     return 'La base no permite este cambio de estado todavía. Falta aplicar la migración sql/58.';
   }
   if (/inmueble_no_encontrado/.test(msg)) return 'No se encontró el inmueble.';
+  if (/eliminar_inmueble/.test(msg))     return 'La base no permite eliminar todavía. Falta aplicar sql/60.';
   if (/estado_invalido/.test(msg))       return 'Ese estado no es válido.';
   return msg || 'No se pudo cambiar el estado';
 }
 
+/**
+ * Da de baja un inmueble (borrado lógico). Bloqueado por la misma causa
+ * que el cambio de estado: la policy de lectura de anon exige
+ * `eliminado = false`, así que al marcarlo la fila deja de ser legible
+ * para quien la escribe. Pasa por la función de sql/60.
+ */
+export async function eliminarInmuebleSeguro(id) {
+  if (!id) return { ok: false, error: 'falta el inmueble' };
+
+  const { error } = await SB().rpc('eliminar_inmueble', { p_id: id });
+  if (!error) return { ok: true, viaRpc: true };
+
+  const noExiste = /function .*eliminar_inmueble.* does not exist|PGRST202|42883/i
+    .test(`${error.message || ''} ${error.code || ''}`);
+  if (!noExiste) return { ok: false, error: traducir(error.message) };
+
+  console.warn('[estado] eliminar_inmueble no está en la base; usando UPDATE directo. Corre sql/60.');
+  const { error: e2 } = await SB()
+    .from('inmuebles')
+    .update({ eliminado: true, fecha_eliminacion: new Date().toISOString() })
+    .eq('id', id);
+  if (e2) return { ok: false, error: traducir(e2.message) };
+  return { ok: true, viaRpc: false };
+}
+
 if (typeof window !== 'undefined') {
   window.actualizarEstadoInmueble = actualizarEstadoInmueble;
+  window.eliminarInmuebleSeguro = eliminarInmuebleSeguro;
   window.ESTADOS_INMUEBLE = ESTADOS_INMUEBLE;
 }
 
-export default { actualizarEstadoInmueble, ESTADOS_INMUEBLE };
+export default { actualizarEstadoInmueble, eliminarInmuebleSeguro, ESTADOS_INMUEBLE };

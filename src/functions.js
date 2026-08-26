@@ -791,7 +791,7 @@ window.confirmarGestorDel = async function(id) {
   const capEmail = p?.captador?.usuario || p?.captador?.email || '';
   const u = U();
   try {
-    await SB().from('inmuebles').update({ eliminado: true, fecha_eliminacion: new Date().toISOString() }).eq('id', id);
+    await window.eliminarInmuebleSeguro(id);
     await SB().from('historial').insert({ inmueble_id: id, usuario_id: u.id, accion: 'eliminacion_gestor', campo_modificado: 'eliminado', valor_anterior: 'false', valor_nuevo: motivo + (nota ? ' — ' + nota : '') });
     await window.noti('cambio_estado', 'rojo', '🗑️ ' + u.nombre + ' eliminó: ' + desc, u.nombre + ' (gestor arriendos) eliminó ' + desc + ' de ' + capNom + '. Motivo: ' + motivo, capEmail, null, id);
     await window.noti('cambio_estado', 'rojo', '🗑️ Eliminado por gestor: ' + desc, u.nombre + ' eliminó ' + desc + ' de ' + capNom + '. Motivo: ' + motivo, null, 'admin', id);
@@ -1973,7 +1973,7 @@ window.eliminarMiInmueble = async function(id) {
   const desc=(p.tipo||'Inmueble')+' en '+(p.ciudad||'?');
   const ok=await window.cfShow('🗑️','¿Eliminar '+desc+'?','Se retirará de la plataforma. Recuperas 1 espacio de publicación.');
   if(!ok)return;
-  await SB().from('inmuebles').update({eliminado:true,fecha_eliminacion:new Date().toISOString()}).eq('id',id);
+  await window.eliminarInmuebleSeguro(id);
   await window.noti('cambio_estado','info','🗑️ Asesor externo eliminó: '+desc,u.nombre+' eliminó su '+desc,null,'admin',id);
   window.toast('🗑️ Inmueble eliminado · 1 espacio liberado');
   window.renderMisInmueblesExt();

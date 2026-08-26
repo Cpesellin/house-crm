@@ -20,7 +20,7 @@
  */
 
 import { getSupabaseClient } from '../../config/supabase.js';
-import { actualizarEstadoInmueble } from './estado.js';
+import { actualizarEstadoInmueble, eliminarInmuebleSeguro } from './estado.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
@@ -68,7 +68,8 @@ window.eliminarInm = async function (id) {
   const ok = await window.cfShow('🗑️', '¿Eliminar?', 'Se moverá a la papelera.');
   if (!ok) return;
   const u = U();
-  await SB().from('inmuebles').update({ eliminado: true, eliminado_por: u.id, fecha_eliminacion: new Date().toISOString() }).eq('id', id);
+  const rDel = await eliminarInmuebleSeguro(id);
+  if (!rDel.ok) { window.toast('❌ ' + rDel.error, 'terr'); return; }
   await SB().from('historial').insert({ inmueble_id: id, usuario_id: u.id, accion: 'eliminacion' });
   window.toast('🗑️ Enviado a papelera');
   window.load();

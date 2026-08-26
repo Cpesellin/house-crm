@@ -9,7 +9,11 @@ import { inventory, propertyEmoji, formatMoney } from '../inventory/inventorySto
 
 // ─── Constants (identical to original) ───────────────────────────
 
-export const STEP_LABELS = ['Lo esencial', 'Propietario', 'Características', 'Amenidades', 'Revisar'];
+export const STEP_LABELS = ['Lo esencial', 'Propietario', 'Características', 'Amenidades', 'Fotos', 'Revisar'];
+
+/** Número de pasos del wizard. Derivado de STEP_LABELS para que añadir un
+ *  paso no exija cazar el número 5 por media docena de archivos. */
+export const TOTAL_STEPS = STEP_LABELS.length;
 
 export const PROPERTY_TYPES = [
   { id: 'Casa', emoji: '🏠' }, { id: 'Apartamento', emoji: '🏢' },
@@ -102,7 +106,7 @@ function _saveMemory() {
 
 const registration = {
 
-  STEP_LABELS, PROPERTY_TYPES, AMENITIES_PRIMARY, AMENITIES_EXTRA, CARACTERISTICAS,
+  STEP_LABELS, TOTAL_STEPS, PROPERTY_TYPES, AMENITIES_PRIMARY, AMENITIES_EXTRA, CARACTERISTICAS,
 
   init() { _loadMemory(); _notify(); },
 
@@ -113,11 +117,11 @@ const registration = {
   getState()     { return { step: _state.step, formData: { ..._state.formData }, pendingFotos: [..._state.pendingFotos], status: _state.status, error: _state.error }; },
 
   setStep(n) {
-    if (n >= 1 && n <= 5) { _state.step = n; _notify(); }
+    if (n >= 1 && n <= TOTAL_STEPS) { _state.step = n; _notify(); }
   },
 
   nextStep() {
-    if (_state.step < 5) { _state.step++; _notify(); }
+    if (_state.step < TOTAL_STEPS) { _state.step++; _notify(); }
   },
 
   prevStep() {

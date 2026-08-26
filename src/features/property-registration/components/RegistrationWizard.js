@@ -1,19 +1,21 @@
 /**
  * HOUSE CRM — RegistrationWizard Component
  *
- * Container for the 5-step property registration wizard.
+ * Container for the property registration wizard (pasos en STEP_LABELS).
  * Replaces: iForm(), rFS(), fPr(), fNx()
  */
 
-import { registration, STEP_LABELS } from '../registrationStore.js';
+import { registration, STEP_LABELS, TOTAL_STEPS } from '../registrationStore.js';
 import { submitProperty } from '../registrationService.js';
 import { renderStep1 } from './steps/Step1Essential.js';
 import { renderStep2 } from './steps/Step2Owner.js';
 import { renderStep3 } from './steps/Step3Features.js';
 import { renderStep4 } from './steps/Step4Amenities.js';
+import { renderStep5Fotos } from './steps/Step5Fotos.js';
 import { renderStep5 } from './steps/Step5Review.js';
 
-const STEP_RENDERERS = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5];
+// Índice = número de paso. Fotos entra como 5 y Revisar pasa a 6.
+const STEP_RENDERERS = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5Fotos, renderStep5];
 
 class RegistrationWizard {
   /**
@@ -52,13 +54,13 @@ class RegistrationWizard {
 
     // Step label
     if (this._stepLabel) {
-      this._stepLabel.textContent = `Paso ${step}/5 · ${STEP_LABELS[step - 1]}`;
+      this._stepLabel.textContent = `Paso ${step}/${TOTAL_STEPS} · ${STEP_LABELS[step - 1]}`;
     }
 
     // Progress dots
     if (this._dots) {
       let d = '';
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
         d += `<div class="pd ${i === step ? 'act' : i < step ? 'dn' : ''}"></div>`;
       }
       this._dots.innerHTML = d;
@@ -76,7 +78,7 @@ class RegistrationWizard {
         this._nextBtn.textContent = 'Enviando...';
       } else {
         this._nextBtn.disabled = false;
-        this._nextBtn.textContent = step < 5 ? 'Continuar →' : '✓ Publicar';
+        this._nextBtn.textContent = step < TOTAL_STEPS ? 'Continuar →' : '✓ Publicar';
       }
     }
 
@@ -107,12 +109,12 @@ class RegistrationWizard {
       return;
     }
 
-    if (step < 5) {
+    if (step < TOTAL_STEPS) {
       registration.nextStep();
       return;
     }
 
-    // Step 5: Submit
+    // Último paso: publicar
     // Guard contra doble envío: sin él, un segundo clic (o un Enter) mientras
     // el primero está en vuelo crea el inmueble dos veces.
     if (this._enviando) return;
