@@ -98,6 +98,13 @@ export function iniciarDetectorDeVersion() {
   _actual = bundleActual();
   if (!_actual) return;
 
+  // Comprobar AL ARRANCAR, no sólo cada cinco minutos. El caso más común es
+  // justo éste: se abre la app con el index.html cacheado y se está
+  // ejecutando la versión de ayer desde el primer segundo. Esperar cinco
+  // minutos a avisar es esperar cinco minutos de más.
+  // Se deja un respiro para no competir con la carga inicial de datos.
+  setTimeout(comprobar, 2500);
+
   _timer = setInterval(comprobar, CADA);
 
   // Volver a la pestaña es el momento natural para enterarse.
