@@ -1,0 +1,83 @@
+/* ══════════════════════════════════════════════════════════════════════
+   BARRA DE FILTROS — fija y completa
+
+   Los filtros ya eran sticky, pero en el teléfono la barra medía 789px de
+   contenido dentro de 362px visibles: más de la mitad quedaba fuera, sin
+   ninguna pista de que existiera. El chip de orden —el de "mayor / menor
+   precio"— empezaba en el píxel 632, así que en la práctica no existía.
+
+   Estar fijo no sirve si lo que está fijo no se ve. Aquí las píldoras
+   pasan a envolverse en varias filas en vez de esconderse tras un scroll
+   lateral: ocupan un poco más de alto, y a cambio están TODAS a la vista.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* El desplazamiento vertical del sticky lo fija JS según la barra superior
+   real; 54px es el valor histórico y queda de reserva. */
+.sticky-filters {
+  top: var(--sticky-top, 54px) !important;
+}
+
+/* Sombra sólo cuando está pegado: separa los filtros del contenido que
+   pasa por debajo sin ensuciar la vista en reposo. */
+.sticky-filters.pegado {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .09);
+}
+
+@media (max-width: 767px) {
+
+  /* Todas las píldoras visibles, en las filas que hagan falta. */
+  .pill-bar {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    gap: 6px !important;
+    padding: 10px 12px !important;
+    row-gap: 6px !important;
+  }
+
+  /* Compactas: sin esto son cuatro filas y 196px de barra fija, que en un
+     teléfono se come casi una cuarta parte de la pantalla.
+     Ojo con el selector: bajo el diseño v2 el bridge renombra .pill a
+     .v2-pill y cambia el emoji por un SVG, así que apuntar sólo a .pill
+     no surte ningún efecto. Se cubren las dos. */
+  .pill, .v2-pill {
+    padding: 7px 10px !important;
+    font-size: 12.5px !important;
+    gap: 4px !important;
+    border-radius: 10px !important;
+    min-height: 38px;   /* sigue siendo cómodo de tocar */
+  }
+
+  /* El icono ocupa ancho y no dice nada que el texto no diga ya.
+     En escritorio se conserva. */
+  .pill > span[style*="font-size:15px"],
+  .v2-pill > [data-v2-icon] { display: none !important; }
+
+  /* El chevron tampoco: la píldora ya se ve pulsable. */
+  .pill .pill-chev,
+  .v2-pill .pill-chev,
+  .v2-pill > svg:last-child { display: none !important; }
+
+  /* El chip de orden es un filtro más y no debe quedar descolgado. Su
+     etiqueta larga ("Más recientes") se recorta: el símbolo ⇅ y el estado
+     activo bastan para saber qué hace. */
+  .orden-wrap { display: inline-flex; }
+  #pillOrden span {
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  /* Los paneles que se abren bajo las píldoras necesitan poder crecer sin
+     empujar la lista fuera de la pantalla. */
+  .sticky-filters .fpanel {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+/* En pantallas muy estrechas, tres filas antes que recortar texto. */
+@media (max-width: 380px) {
+  .pill, .v2-pill { padding: 7px 8px !important; font-size: 12px !important; }
+}

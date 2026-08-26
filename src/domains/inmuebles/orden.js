@@ -76,10 +76,17 @@ export function renderSelectorOrden() {
   const o = ORDENES[actual] || ORDENES.reciente;
   const activo = actual !== 'reciente';
 
+  // En reposo dice "Ordenar", no "Más recientes": ese texto ya lo usa el
+  // filtro por antigüedad de publicación (#tiempoBtn), y dos controles con
+  // la misma etiqueta haciendo cosas distintas se confunden. Al elegir un
+  // orden concreto sí se muestra cuál está puesto.
+  const etiqueta = activo ? o.label : 'Ordenar';
+
   return `<div class="orden-wrap">
     <button class="pill ${activo ? 'pill-on' : 'pill-off'}" id="pillOrden"
+      title="Ordenar los resultados"
       onclick="event.stopPropagation();toggleMenuOrden()">
-      <span>⇅ ${o.label}</span>
+      <span>⇅ ${etiqueta}</span>
     </button>
     <div class="orden-menu" id="ordenMenu" hidden>
       ${Object.values(ORDENES).map(x => `

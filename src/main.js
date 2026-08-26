@@ -12,6 +12,7 @@ import './styles/lead-card.css';
 import './styles/pipeline-movil.css';
 import './styles/orden.css';
 import './styles/ficha-movil.css';
+import './styles/filtros-fijos.css';
 import './config/cloudinary.js';
 import './utils/sanitizer.js';
 import './core/notifications.js';
@@ -23,6 +24,7 @@ import './functions.js';
 import './domains/inmuebles/orden.js';
 import './domains/inmuebles/estado.js';
 import { iniciarDetectorDeVersion } from './core/version-check.js';
+import { iniciarFiltrosFijos } from './core/filtros-fijos.js';
 import './domains/leads/mi-dia.js';
 import './interesados-ui.js';
 import './pages/property-detail-v2.js';
@@ -213,6 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Avisa si el navegador está ejecutando un bundle viejo por caché.
   iniciarDetectorDeVersion();
+  iniciarFiltrosFijos();
 
   // Apply pre-filter if /arriendos URL
   if (window._preFilterArriendo) {
