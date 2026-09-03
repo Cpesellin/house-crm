@@ -1,0 +1,103 @@
+/* ══════════════════════════════════════════════════════════════════════
+   PORTAFOLIO EN EL TELÉFONO — que se sienta una app, no una web encogida
+
+   Medido a 390px: desde el borde superior hasta el primer inmueble había
+   577px, la MITAD de la pantalla. El reparto era
+
+     banner de visitante   53px
+     cabecera + métricas  249px   ← el grueso
+     filtros              117px
+
+   con lo que sólo entraba una tarjeta y media. En un buscador de
+   inmuebles, lo que tiene que verse son inmuebles.
+
+   Aquí la cabecera se comprime: el título baja de tamaño, las cuatro
+   métricas pasan de tarjetas apiladas a una tira de una sola línea, y el
+   banner de visitante se reduce. La información sigue estando toda.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+
+  /* ─── Altura estable ─────────────────────────────────────────────── */
+
+  /* 100vh en móvil equivale a la pantalla SIN la barra del navegador, así
+     que el layout salta cada vez que ésta aparece o se esconde al hacer
+     scroll. dvh mide el alto real disponible en cada momento. */
+  html[data-design="v2"] .v2-page.pl,
+  html[data-design="v2"] .v2-page.app { min-height: 100dvh; }
+
+  /* ─── Banner de visitante ────────────────────────────────────────── */
+
+  html[data-design="v2"] #visitorTopBanner {
+    padding: 8px 12px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* ─── Cabecera del inventario ────────────────────────────────────── */
+
+  /* El markup es todo divs con estilo inline y sin clases, así que se les
+     añadieron clases (inv-h-*) en App.js para poder ajustarlos desde aquí.
+     Sin eso, cualquier selector semántico no engancha nada. */
+
+  /* Los selectores llevan el prefijo html[data-design="v2"] a propósito:
+     tokens-v2.css fija estos tamaños con !important y ese prefijo, así que
+     una clase suelta pierde por especificidad aunque también use
+     !important. Hay que igualar el peso del selector, no sólo repetir la
+     marca de importancia. */
+
+  html[data-design="v2"] #invHeader { padding: 11px 14px 12px !important; }
+
+  /* El título ocupaba una línea entera para decir algo que se entiende
+     igual dos tamaños más abajo. */
+  html[data-design="v2"] #invHeader .inv-h-titulo {
+    font-size: 19px !important;
+    margin-bottom: 1px !important;
+  }
+  /* En el teléfono, lo decorativo cede el sitio a los inmuebles:
+       · el chip "Actualizado hoy · Pereira y Eje Cafetero" (28px)
+       · el subtítulo "Encuentra el inmueble perfecto para ti" (20px)
+     Son 48px que en escritorio dan aire y aquí cuestan media tarjeta. El
+     título y las métricas se quedan: eso sí es información. */
+  html[data-design="v2"] #invHeader .inv-h-sub { display: none !important; }
+  html[data-design="v2"] #invHeader > div:nth-child(2) > div:first-child {
+    display: none !important;
+  }
+
+  /* Las cuatro métricas: misma información, un tercio del alto. */
+  html[data-design="v2"] #invHeader .inv-h-stats {
+    margin-top: 9px !important;
+    gap: 5px !important;
+  }
+  html[data-design="v2"] #invHeader .inv-h-stat {
+    padding: 6px 4px !important;
+    border-radius: 9px !important;
+  }
+  html[data-design="v2"] #invHeader .inv-h-n {
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+  }
+  html[data-design="v2"] #invHeader .inv-h-l {
+    font-size: 8.5px !important;
+    letter-spacing: .3px !important;
+  }
+
+  /* ─── Lista ──────────────────────────────────────────────────────── */
+
+  /* Hueco para que el menú inferior no tape los botones de la última
+     tarjeta ("Ver detalle" / "Me interesa"). */
+  html[data-design="v2"] #res {
+    padding: 12px 12px calc(84px + env(safe-area-inset-bottom)) !important;
+    gap: 12px;
+  }
+
+  /* La fila "N inmuebles · Ordenar" no necesita tanto aire. */
+  html[data-design="v2"] #selBar,
+  html[data-design="v2"] .sel-bar { padding: 0 14px 8px !important; }
+}
+
+/* Teléfonos pequeños: el título cede un poco más antes que las métricas,
+   que son el dato útil. */
+@media (max-width: 380px) {
+  html[data-design="v2"] #invHeader h1,
+  html[data-design="v2"] #invHeader .v2-h1 { font-size: 19px !important; }
+}

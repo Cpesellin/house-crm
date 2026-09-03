@@ -13,6 +13,7 @@ import './styles/pipeline-movil.css';
 import './styles/orden.css';
 import './styles/ficha-movil.css';
 import './styles/filtros-fijos.css';
+import './styles/movil-app.css';
 import './config/cloudinary.js';
 import './utils/sanitizer.js';
 import './core/notifications.js';
