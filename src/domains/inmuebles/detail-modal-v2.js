@@ -757,12 +757,55 @@ function montarUpload() {
   const cont = document.getElementById('fotoUpModal');
   if (!cont || cont.dataset.montado === '1') return;
   if (typeof window.initFotoUpload === 'function') {
-    window.initFotoUpload('fotoUpModal', (r) => {
-      window._pendingFotos = window._pendingFotos || [];
-      window._pendingFotos.push(r);
-      window._oM2Touch('fotos');
-    }, st.fotos.length);
+    // Se guarda AL SUBIR, no al pulsar "Guardar cambios".
+    //
+    // Antes la foto quedaba en una cola y sólo se escribía si el asesor
+    // pulsaba Guardar. Como el preview ya la mostraba, parecía guardada: se
+    // cerraba el modal y se perdía sin ningún aviso. Nadie espera que subir
+    // una foto no la guarde. Si sobra, se quita desde la propia rejilla.
+    window.initFotoUpload('fotoUpModal', (r) => guardarFotoSubida(r), st.fotos.length);
     cont.dataset.montado = '1';
+  }
+}
+
+/**
+ * Inserta de inmediato una foto recién subida a Cloudinary.
+ * Si falla, la deja en la cola para que "Guardar cambios" lo reintente:
+ * es preferible un segundo intento a perderla en silencio.
+ */
+async function guardarFotoSubida(r) {
+  const inmId = st.p?.id;
+  if (!inmId || !r?.url) return;
+
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('fotos')
+      .insert({
+        inmueble_id: inmId,
+        url: r.url,
+        url_thumb: r.thumb,
+        origen: 'cloudinary',
+        tipo: r.tipo || 'imagen',
+        orden: st.fotos.length,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    st.fotos = [...st.fotos, data];
+    if (st.p) st.p.fotos = st.fotos;
+    const enD = (window.D || []).find((x) => x.id === inmId);
+    if (enD) enD.fotos = st.fotos;
+
+    pintar();
+    if (window.toast) window.toast('📷 Foto guardada');
+  } catch (e) {
+    console.error('[fotos] guardado inmediato:', e);
+    // Reserva: que la recoja el guardado normal en vez de perderse.
+    window._pendingFotos = window._pendingFotos || [];
+    window._pendingFotos.push(r);
+    window._oM2Touch('fotos');
+    if (window.toast) window.toast('⚠️ La foto no se guardó todavía; pulsá "Guardar cambios"', 'twarn');
   }
 }
 
