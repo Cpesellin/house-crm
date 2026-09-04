@@ -485,7 +485,7 @@ window.abrirFichaInmueble = function(inmuebleId, ev) {
     if (window.toast) window.toast('Inmueble no encontrado en tu inventario actual', 'terr');
     return;
   }
-  if (typeof window.oM === 'function') window.oM(idx);
+  if (typeof window.oM === 'function') window.oM(inmuebleId);
 };
 
 // Formato de teléfono colombiano: 3146772347 → 314 677 2347

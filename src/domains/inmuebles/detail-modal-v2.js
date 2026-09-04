@@ -449,12 +449,24 @@ function renderRail(p, perm) {
 // ══════════════════════════════════════════════════════════════════════
 // Render principal
 // ══════════════════════════════════════════════════════════════════════
-export function oMv2(idx) {
-  const p = D()[idx];
-  if (!p) return;
+/**
+ * @param {string|number} ref  id del inmueble (preferido) o índice en D.
+ * El índice se acepta sólo por compatibilidad: window.D se recarga y las
+ * posiciones se desplazan, con lo que se acaba editando otro inmueble.
+ * Ver la nota en window.oM (detail-modal.js).
+ */
+export function oMv2(ref) {
+  const lista = D();
+  const p = typeof ref === 'string'
+    ? lista.find((x) => x.id === ref)
+    : lista[ref];
+  if (!p) {
+    if (window.toast) window.toast('No se encontró el inmueble; recargá la lista', 'terr');
+    return;
+  }
 
   st.p = p;
-  st.idx = idx;
+  st.idx = typeof ref === 'number' ? ref : lista.indexOf(p);
   st.tab = 'resumen';
   st.editando = false;
   st.cambios = new Set();

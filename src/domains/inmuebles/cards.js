@@ -158,7 +158,7 @@ export function render(ls) {
     } else {
       const _badgeI = typeof window.badgeInteresadosInmueble === 'function'
         ? window.badgeInteresadosInmueble(p.id) : '';
-      actBtn = `<div style="display:flex;gap:6px;align-items:center"><button class="vb" style="flex:1" onclick="oM&&oM(${idx})">Ver detalle →</button>${_badgeI}</div>`;
+      actBtn = `<div style="display:flex;gap:6px;align-items:center"><button class="vb" style="flex:1" onclick="oM&&oM('${p.id}')">Ver detalle →</button>${_badgeI}</div>`;
     }
 
     const ptbHtml = _isExt ? '' : `<div class="ptb">${m2 ? '<span class="pp ppok">M²✓</span>' : '<span class="pp ppno">M²</span>'}${fr ? '<span class="pp ppok">FR✓</span>' : '<span class="pp ppno">FR</span>'}</div>`;

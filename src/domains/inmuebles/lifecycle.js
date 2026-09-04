@@ -105,8 +105,11 @@ window.delFoto = async function (fotoId, inmId) {
   await SB().from('fotos').delete().eq('id', fotoId);
   window.toast('📷 Eliminada');
   window.load();
-  const idx = D().findIndex((p) => p.id === inmId);
-  if (idx >= 0) setTimeout(() => window.oM(idx), 500);
+  // Se reabre por ID, no por posición: load() es asíncrono y no se espera,
+  // así que el índice se calcularía sobre la lista VIEJA y 500ms después se
+  // usaría contra la NUEVA. Ese desfase es el que mandó nueve fotos al
+  // inmueble equivocado.
+  setTimeout(() => window.oM(inmId), 500);
 };
 
 // ══════════════════════════════════════════════════════════════════════

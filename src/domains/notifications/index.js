@@ -29,8 +29,7 @@ const D = () => window.D || [];
 
 // ─── Handler chico de sec.1: abrir modal desde alerta de inmueble ────
 window.openAlertInm = function (id) {
-  const idx = D().findIndex((p) => p.id === id);
-  if (idx > -1 && window.oM) window.oM(idx);
+  if (window.oM) window.oM(id);
 };
 
 // ─── Toggle del dropdown ─────────────────────────────────────────────
@@ -236,10 +235,12 @@ window.handleNotifClick = async function (notifId, accionTipo, accionDestino, ac
   switch (accionTipo) {
     case 'abrir_inmueble':
       if (accionDestino) {
-        const idx = (window.D || []).findIndex((p) => p.id === accionDestino);
-        if (idx > -1) {
+        const existe = (window.D || []).some((p) => p.id === accionDestino);
+        if (existe) {
           if (window.go) window.go('inv');
-          setTimeout(() => window.oM && window.oM(idx), 200);
+          // Por id: entre este setTimeout y su disparo, la lista puede
+          // recargarse y correr las posiciones.
+          setTimeout(() => window.oM && window.oM(accionDestino), 200);
         } else if (window.go) {
           window.go('inv');
         }
@@ -282,10 +283,10 @@ window.handleNotifClick = async function (notifId, accionTipo, accionDestino, ac
     case 'abrir_inmueble_nuevo':
     case 'abrir_perfil_nuevo':
       if (accionTipo === 'abrir_inmueble_nuevo' && accionDestino) {
-        const idx2 = (window.D || []).findIndex((p) => p.id === accionDestino);
-        if (idx2 > -1) {
+        const existe2 = (window.D || []).some((p) => p.id === accionDestino);
+        if (existe2) {
           if (window.go) window.go('inv');
-          setTimeout(() => window.oM && window.oM(idx2), 200);
+          setTimeout(() => window.oM && window.oM(accionDestino), 200);
           break;
         }
       }

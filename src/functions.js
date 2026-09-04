@@ -276,7 +276,7 @@ window.saveAll = async function(id) {
 
   const{error}=await SB().from('inmuebles').update(cambios).eq('id',id);
   if(!error){
-    if(_pendingFotos.length>0){for(let i=0;i<_pendingFotos.length;i++){await SB().from('fotos').insert({inmueble_id:id,url:_pendingFotos[i].url,url_thumb:_pendingFotos[i].thumb,origen:'cloudinary',tipo:_pendingFotos[i].tipo||'imagen',orden:i});}_pendingFotos=[];}
+    if((window._pendingFotos||[]).length>0){for(let i=0;i<window._pendingFotos.length;i++){await SB().from('fotos').insert({inmueble_id:id,url:window._pendingFotos[i].url,url_thumb:window._pendingFotos[i].thumb,origen:'cloudinary',tipo:window._pendingFotos[i].tipo||'imagen',orden:i});}window._pendingFotos=[];}
     window.toast('✅ Inmueble actualizado');_modalDirty=false;window.load();window.cmForce();
   }else window.toast('Error: '+error.message,'terr');
 };
@@ -380,14 +380,20 @@ const fLb=['Lo esencial','Propietario','Características','Amenidades','Fotos','
 const fTot = fLb.length;
 
 // Fotos subidas a Cloudinary que aún no se han asociado a un inmueble:
-// se insertan en la tabla `fotos` al publicar.
+// se insertan en la tabla `fotos` al publicar (alta) o al guardar (ficha).
 //
-// Nunca estuvo declarada: existía sólo porque el paso de Amenidades hacía
-// `_pendingFotos=[]` en cada render, lo que la creaba como global implícita
-// — y de paso BORRABA las fotos ya subidas, que es la razón por la que los
-// inmuebles se registraban sin ninguna. Al quitar ese reseteo, nadie la
-// creaba. Aquí queda declarada una sola vez, y sólo se vacía al publicar.
-let _pendingFotos = [];
+// Vive en `window` A PROPÓSITO, y no como variable de módulo. La ficha del
+// inmueble (domains/inmuebles/detail-modal-v2.js) acumula ahí lo que se
+// sube desde el modal, y `saveAll` —que está en este archivo— lo lee al
+// guardar. Si cada lado tiene su propia variable, las fotos se acumulan en
+// una y se leen de la otra: se suben, se ven en el preview, y al guardar no
+// queda ninguna. Pasó el 2026-09-04 con HOUSE-257.
+//
+// Antes existía sólo como global implícita, creada por el `_pendingFotos=[]`
+// que el paso de Amenidades ejecutaba en cada render — y que de paso
+// BORRABA las fotos ya subidas. Ese reseteo se eliminó; la variable queda
+// declarada una sola vez, y sólo se vacía al guardar.
+window._pendingFotos = window._pendingFotos || [];
 const fTp=[{id:'Casa',i:'🏠'},{id:'Apartamento',i:'🏢'},{id:'Apartaestudio',i:'🏬'},{id:'Finca',i:'🌾'},{id:'Local comercial',i:'🏪'},{id:'Oficina',i:'💼'},{id:'Lote',i:'🌳'},{id:'Casa campestre',i:'🌿'},{id:'Bodega',i:'🏭'},{id:'Penthouse',i:'👑'}];
 const fAP=[{id:'parqueadero',l:'Parqueo',i:'🚗'},{id:'ascensor',l:'Ascensor',i:'🛗'},{id:'piscina',l:'Piscina',i:'🏊'},{id:'gimnasio',l:'Gimnasio',i:'🏋️'},{id:'zonas_verdes',l:'Zonas V.',i:'🌿'},{id:'seguridad',l:'Seguridad',i:'🛡️'},{id:'salon_comunal',l:'Salón',i:'🎉'},{id:'terraza',l:'Terraza',i:'☀️'}];
 const fAX=[{id:'cancha_tennis',l:'Tenis',i:'🎾'},{id:'cancha_futbol',l:'Fútbol',i:'⚽'},{id:'sauna',l:'Sauna',i:'🧖'},{id:'juegos_ninos',l:'Juegos',i:'🎠'},{id:'bbq',l:'BBQ',i:'🔥'},{id:'coworking',l:'Cowork',i:'💻'},{id:'pet_friendly',l:'Pet',i:'🐕'},{id:'cuarto_util',l:'Útil',i:'📦'},{id:'lavanderia',l:'Lavand.',i:'🧺'},{id:'deposito',l:'Depósito',i:'🗄️'}];
@@ -459,7 +465,7 @@ function rFotos(c){
   <div id="fotoAviso" style="margin-top:14px"></div>`;
 
   if(typeof window.initFotoUpload==='function'){
-    window.initFotoUpload('fotoUpReg', r=>{ _pendingFotos.push(r); _avisoFotos(); }, _pendingFotos.length);
+    window.initFotoUpload('fotoUpReg', r=>{ window._pendingFotos.push(r); _avisoFotos(); }, window._pendingFotos.length);
   }
   _repintarFotos();
   _avisoFotos();
@@ -469,14 +475,14 @@ function rFotos(c){
 // esto las miniaturas desaparecen aunque las fotos sigan en memoria.
 function _repintarFotos(){
   const prev=document.getElementById('fotoUpReg_prev');
-  if(!prev||!_pendingFotos.length)return;
-  prev.innerHTML=_pendingFotos.map((f,i)=>
+  if(!prev||!window._pendingFotos.length)return;
+  prev.innerHTML=window._pendingFotos.map((f,i)=>
     `<div class="foto-prev-item"><img src="${f.thumb||f.url}" alt="Foto ${i+1}">`+
     (i===0?'<span class="foto-portada">Portada</span>':'')+
     `<button class="foto-del" type="button" data-i="${i}">✕</button></div>`).join('');
   prev.querySelectorAll('.foto-del').forEach(b=>{
     b.addEventListener('click',()=>{
-      _pendingFotos.splice(+b.dataset.i,1);
+      window._pendingFotos.splice(+b.dataset.i,1);
       rFotos(document.getElementById('fc'));
     });
   });
@@ -484,7 +490,7 @@ function _repintarFotos(){
 
 function _avisoFotos(){
   const el=document.getElementById('fotoAviso'); if(!el)return;
-  const n=_pendingFotos.length;
+  const n=window._pendingFotos.length;
   el.innerHTML=n
     ? `<div style="padding:10px 12px;border-radius:10px;background:#e6f7ef;border:1px solid #bfe8d5;color:#047857;font-size:12.5px;font-weight:600">✓ ${n} ${n===1?'archivo listo':'archivos listos'} para publicar</div>`
     : `<div style="padding:10px 12px;border-radius:10px;background:#fbf3e3;border:1px solid #eeddb9;color:#8a5a00;font-size:12.5px;line-height:1.45">Puedes continuar sin fotos, pero el inmueble no se podrá mostrar en el portafolio hasta que las agregues desde su ficha.</div>`;
@@ -523,16 +529,16 @@ window.fNx = async function(){
   if(!error&&newInm){
     // El inmueble YA existe. Si las fotos fallan se avisa, pero no se
     // reporta como fracaso: si no, el asesor reintenta y lo duplica.
-    if(_pendingFotos.length>0){
+    if(window._pendingFotos.length>0){
       try{
-        const filas=_pendingFotos.map((f,i)=>({inmueble_id:newInm.id,url:f.url,url_thumb:f.thumb,origen:'cloudinary',tipo:f.tipo||'imagen',orden:i}));
+        const filas=window._pendingFotos.map((f,i)=>({inmueble_id:newInm.id,url:f.url,url_thumb:f.thumb,origen:'cloudinary',tipo:f.tipo||'imagen',orden:i}));
         const rf=await SB().from('fotos').insert(filas);
         if(rf.error)throw rf.error;
       }catch(ef){
         console.error('[registro] fotos:',ef);
         window.toast('⚠️ El inmueble quedó creado, pero las fotos no se guardaron. Agrégalas desde su ficha.','twarn');
       }
-      _pendingFotos=[];
+      window._pendingFotos=[];
     }
     const desc2=(fD.tipo||'Inmueble')+' en '+(fD.ciudad||'?');
     await window.noti('inmueble_nuevo','info','🆕 '+u.nombre+' registró: '+desc2,u.nombre+' registró nuevo '+desc2,null,'all',newInm.id);

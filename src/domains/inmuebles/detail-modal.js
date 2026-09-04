@@ -137,14 +137,37 @@ window.cardNav = function (cid, dir) {
 // ══════════════════════════════════════════════════════════════════════
 
 let _modalDirty = false;
-let _pendingFotos = [];
+// Compartida con saveAll() (functions.js) a través de window: si cada lado
+// tiene su copia, las fotos se acumulan aquí y al guardar se lee un array
+// vacío. Ver la nota extendida en functions.js.
+window._pendingFotos = window._pendingFotos || [];
 let _cmBusy = false;
 Object.defineProperty(window, '_cmBusy', { get() { return _cmBusy; }, set(v) { _cmBusy = v; } });
 window._modalDirtyReset = function () { _modalDirty = false; _cmBusy = false; };
 
-window.oM = function (idx) {
-  const p = D()[idx];
-  if (!p) return;
+/**
+ * Abre la ficha del inmueble.
+ *
+ * @param {string|number} ref  id del inmueble (preferido) o índice en D.
+ *
+ * Acepta índice sólo por compatibilidad con las llamadas antiguas, y es
+ * justo lo que provocó el fallo del 2026-09-04: window.D se recarga cada
+ * vez que se registra un inmueble o cambia un estado, y un inmueble nuevo
+ * entra POR DELANTE, corriendo todas las posiciones. El asesor abría
+ * HOUSE-257, y para cuando tocaba, D[idx] ya era HOUSE-258: nueve fotos
+ * acabaron en el inmueble equivocado.
+ *
+ * Con el id no hay ventana de desincronización posible.
+ */
+window.oM = function (ref) {
+  const lista = D();
+  const p = typeof ref === 'string'
+    ? lista.find((x) => x.id === ref)
+    : lista[ref];
+  if (!p) {
+    if (window.toast) window.toast('No se encontró el inmueble; recargá la lista', 'terr');
+    return;
+  }
   const u = U();
   const esMio = u && p.captador_id === u.id;
   const esP = u && (u.rol === 'admin' || u.rol === 'oficina');
@@ -354,10 +377,10 @@ window.oM = function (idx) {
   window.ldAn(p.id);
 
   if (canEdit) {
-    _pendingFotos = [];
+    window._pendingFotos = [];
     setTimeout(() => {
       if (typeof window.initFotoUpload === 'function') {
-        window.initFotoUpload('fotoUpModal', (r) => { _pendingFotos.push(r); _modalDirty = true; }, fotos.length);
+        window.initFotoUpload('fotoUpModal', (r) => { window._pendingFotos.push(r); _modalDirty = true; }, fotos.length);
       }
       const mbd = document.getElementById('mbd');
       if (mbd) {

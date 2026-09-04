@@ -236,11 +236,11 @@ export function renderV2(ls) {
     } else {
       const badgeInt = typeof window.badgeInteresadosInmueble === 'function'
         ? window.badgeInteresadosInmueble(p.id) : '';
-      actBtn = `<button class="v2-btn v2-btn-ghost" style="flex:1" onclick="event.stopPropagation();window.oM&&window.oM(${idx})">Ver detalle</button>${badgeInt}`;
+      actBtn = `<button class="v2-btn v2-btn-ghost" style="flex:1" onclick="event.stopPropagation();window.oM&&window.oM('${p.id}')">Ver detalle</button>${badgeInt}`;
     }
 
     // ── Card ───────────────────────────────────────────────────────
-    return `<article class="v2-card" onclick="${_isExt ? `window.showPublicView&&window.showPublicView('${p.id}')` : `window.oM&&window.oM(${idx})`}">
+    return `<article class="v2-card" onclick="${_isExt ? `window.showPublicView&&window.showPublicView('${p.id}')` : `window.oM&&window.oM('${p.id}')`}">
       <div class="v2-card-media">
         ${media}
         <div style="position:absolute;top:11px;left:11px;display:flex;gap:6px;pointer-events:none;flex-wrap:wrap;max-width:calc(100% - 110px)">
