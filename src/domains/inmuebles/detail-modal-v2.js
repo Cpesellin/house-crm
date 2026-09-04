@@ -27,6 +27,7 @@
  */
 
 import { icon } from '../../ui/icons.js';
+import { getSupabaseClient } from '../../config/supabase.js';
 
 const U = () => window.userStore?.get();
 const D = () => window.D || [];
@@ -44,6 +45,9 @@ const st = {
   guardando: false,
   fotos: [],
   galIdx: 0,
+  // Modo selección de fotos: borrar de una en una pedía una confirmación
+  // por foto y recargaba el inventario entero cada vez.
+  selFotos: null,   // null = modo normal; Set = modo selección
 };
 
 // ══════════════════════════════════════════════════════════════════════
@@ -208,20 +212,43 @@ function tabFotos(p, perm) {
     </div>`;
   }
 
-  const grid = st.fotos.map((f, i) => `
-    <div class="foto-prev-item foto-sortable" draggable="true" data-foto-id="${f.id}" data-foto-idx="${i}" data-inm-id="${p.id}" style="position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;border:1px solid var(--v2-line);background:var(--v2-cream-3);cursor:grab">
-      <img src="${esc(_cld(f.url_thumb || f.url, 300))}" style="width:100%;height:100%;object-fit:cover;pointer-events:none">
-      ${i === 0 ? `<span style="position:absolute;top:6px;left:6px;background:var(--v2-primary);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">Portada</span>` : ''}
+  const seleccionando = st.selFotos !== null;
+
+  const grid = st.fotos.map((f, i) => {
+    const marcada = seleccionando && st.selFotos.has(f.id);
+    // En modo selección la tarjeta entera es el objetivo táctil: acertar a
+    // una casilla de 20px con el pulgar es justo lo que se quiere evitar.
+    const clic = seleccionando
+      ? `onclick="window._oM2TogglFoto('${f.id}')"`
+      : '';
+    return `
+    <div class="foto-prev-item${seleccionando ? '' : ' foto-sortable'}" ${seleccionando ? '' : 'draggable="true"'}
+      data-foto-id="${f.id}" data-foto-idx="${i}" data-inm-id="${p.id}" ${clic}
+      style="position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;border:${marcada ? '2px solid var(--v2-primary)' : '1px solid var(--v2-line)'};background:var(--v2-cream-3);cursor:${seleccionando ? 'pointer' : 'grab'}">
+      <img src="${esc(_cld(f.url_thumb || f.url, 300))}" style="width:100%;height:100%;object-fit:cover;pointer-events:none${marcada ? ';opacity:.55' : ''}">
+      ${i === 0 && !seleccionando ? `<span style="position:absolute;top:6px;left:6px;background:var(--v2-primary);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">Portada</span>` : ''}
+      ${seleccionando ? `<span style="position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:${marcada ? 'var(--v2-primary)' : 'rgba(255,255,255,.92)'};color:${marcada ? '#fff' : 'var(--v2-ink-4)'};border:1px solid ${marcada ? 'var(--v2-primary)' : 'var(--v2-line-3)'}">${marcada ? icon('check', 14) : ''}</span>` : ''}
       <span style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${i + 1}</span>
-      ${perm.puedeEditar ? `<button onclick="event.stopPropagation();window.delFoto&&window.delFoto('${f.id}','${p.id}')" aria-label="Eliminar foto" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:999px;background:rgba(255,255,255,.94);border:none;cursor:pointer;display:grid;place-items:center;color:var(--v2-red)">${icon('close', 14)}</button>` : ''}
-    </div>`).join('');
+      ${perm.puedeEditar && !seleccionando ? `<button onclick="event.stopPropagation();window.delFoto&&window.delFoto('${f.id}','${p.id}')" aria-label="Eliminar foto" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:999px;background:rgba(255,255,255,.94);border:none;cursor:pointer;display:grid;place-items:center;color:var(--v2-red)">${icon('close', 14)}</button>` : ''}
+    </div>`;
+  }).join('');
+
+  const nSel = seleccionando ? st.selFotos.size : 0;
+  const BTN = 'height:36px;padding:0 13px;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer';
 
   return `<div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
-      <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="min-width:0">
         <div style="font-size:15px;font-weight:700">Fotos <span style="color:var(--v2-ink-3);font-weight:500">· ${st.fotos.length}</span></div>
-        ${perm.puedeEditar ? `<div style="font-size:12px;color:var(--v2-ink-3);margin-top:2px">Arrastrá para reordenar. La primera es la portada.</div>` : ''}
+        ${perm.puedeEditar ? `<div style="font-size:12px;color:var(--v2-ink-3);margin-top:2px">${seleccionando ? 'Tocá las fotos que querés eliminar.' : 'Arrastrá para reordenar. La primera es la portada.'}</div>` : ''}
       </div>
+      ${perm.puedeEditar ? (seleccionando ? `
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+          <button onclick="window._oM2SelTodas()" style="${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)">${nSel === st.fotos.length ? 'Ninguna' : 'Todas'}</button>
+          <button onclick="window._oM2SelModo(false)" style="${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)">Cancelar</button>
+          <button onclick="window._oM2BorrarSel()" ${nSel ? '' : 'disabled'} style="${BTN};border:none;background:${nSel ? 'var(--v2-red)' : 'var(--v2-line-3)'};color:#fff;cursor:${nSel ? 'pointer' : 'default'}">Eliminar${nSel ? ' (' + nSel + ')' : ''}</button>
+        </div>` : `
+        <button onclick="window._oM2SelModo(true)" style="${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)">Seleccionar</button>`) : ''}
     </div>
     <div id="fotoSortWrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">${grid}</div>
     ${perm.puedeEditar ? `<div style="margin-top:16px" id="fotoUpModal"></div>` : ''}
@@ -569,6 +596,71 @@ window._oM2Touch = function (id, esPrecio) {
     if (aviso) aviso.style.display = 'flex';
   }
   actualizarBarra();
+};
+
+// ── Selección múltiple de fotos ──────────────────────────────────────
+//
+// Borrar de una en una pedía una confirmación por foto Y recargaba el
+// inventario entero reabriendo el modal cada vez. Diez fotos eran diez
+// confirmaciones y diez recargas.
+
+/** Entra o sale del modo selección. */
+window._oM2SelModo = function (activar) {
+  st.selFotos = activar ? new Set() : null;
+  pintar();
+};
+
+/** Marca o desmarca una foto. */
+window._oM2TogglFoto = function (id) {
+  if (!st.selFotos) return;
+  if (st.selFotos.has(id)) st.selFotos.delete(id);
+  else st.selFotos.add(id);
+  pintar();
+};
+
+/** Todas o ninguna, según lo que falte. */
+window._oM2SelTodas = function () {
+  if (!st.selFotos) return;
+  const todas = st.selFotos.size === st.fotos.length;
+  st.selFotos = new Set(todas ? [] : st.fotos.map((f) => f.id));
+  pintar();
+};
+
+/** Borra las seleccionadas: una confirmación, una consulta. */
+window._oM2BorrarSel = async function () {
+  if (!st.selFotos || !st.selFotos.size) return;
+  const ids = [...st.selFotos];
+  const n = ids.length;
+  const borraTodas = n === st.fotos.length;
+
+  const ok = await window.cfShow(
+    '🗑️',
+    n === 1 ? '¿Eliminar la foto?' : `¿Eliminar ${n} fotos?`,
+    borraTodas
+      ? 'Se eliminan TODAS las fotos del inmueble. Sin ellas no se puede mostrar en el portafolio ni compartir por WhatsApp. Es permanente.'
+      : 'La eliminación es permanente. Si borrás la primera, la portada pasa a ser la siguiente.'
+  );
+  if (!ok) return;
+
+  try {
+    const { error } = await getSupabaseClient().from('fotos').delete().in('id', ids);
+    if (error) throw error;
+
+    // Se actualiza el estado en memoria en vez de recargar el inventario
+    // completo: recargar reabría el modal y perdía la pestaña y el scroll.
+    st.fotos = st.fotos.filter((f) => !st.selFotos.has(f.id));
+    if (st.p) st.p.fotos = st.fotos;
+    const enD = (window.D || []).find((x) => x.id === st.p?.id);
+    if (enD) enD.fotos = st.fotos;
+
+    st.selFotos = null;
+    st.galIdx = 0;
+    pintar();
+    window.toast(n === 1 ? '📷 Foto eliminada' : `📷 ${n} fotos eliminadas`);
+  } catch (e) {
+    console.error('[fotos] borrado múltiple:', e);
+    window.toast('❌ No se pudieron eliminar: ' + (e.message || 'error'), 'terr');
+  }
 };
 
 window._oM2Copiar = function (txt) {
