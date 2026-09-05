@@ -18,6 +18,7 @@
  */
 
 import { userStore } from './user.js';
+import { getSupabaseClient } from '../config/supabase.js';
 
 // ─── Environment variables ───────────────────────────────────────
 // Vite: import.meta.env.VITE_*
@@ -76,24 +77,24 @@ if (typeof window !== 'undefined' && typeof location !== 'undefined') {
 
 // ─── Supabase client (lazy singleton) ────────────────────────────
 
-let _sb = null;
-
+// Un único cliente en toda la app (ver config/supabase.js).
+//
+// Antes este módulo creaba el suyo con createClient(). Como el resto de la
+// aplicación usaba el de config/supabase.js, quedaban DOS motores de sesión
+// vivos sobre la misma llave de almacenamiento, y el propio SDK lo avisaba:
+//
+//   Multiple GoTrueClient instances detected in the same browser context.
+//   ...may produce undefined behavior when used concurrently under the same
+//   storage key.
+//
+// El daño concreto: al renovarse el token, Supabase lo ROTA — el anterior
+// queda inservible. Con dos clientes, los dos intentan renovar a la vez; uno
+// lo consigue y el otro se queda con un token ya gastado, recibe "Invalid
+// Refresh Token: Already Used" y cierra la sesión. Por eso al actualizar la
+// app te sacaba de la cuenta: es justo el momento en que todo arranca a la
+// vez y toca renovar.
 function getSB() {
-  if (_sb) return _sb;
-
-  if (!SUPA_URL || !SUPA_KEY) {
-    throw new Error(
-      '[auth] Missing Supabase credentials. ' +
-      'Set VITE_SUPA_URL and VITE_SUPA_KEY in .env or window.__ENV__'
-    );
-  }
-
-  if (typeof window.supabase === 'undefined') {
-    throw new Error('[auth] Supabase JS SDK not loaded. Include the CDN script before this module.');
-  }
-
-  _sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-  return _sb;
+  return getSupabaseClient();
 }
 
 /**

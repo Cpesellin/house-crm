@@ -26,7 +26,20 @@ export function getSupabaseClient() {
     throw new Error('[supabase] SDK not loaded');
   }
 
-  _client = window.supabase.createClient(url, key);
+  // Este es el ÚNICO cliente de la aplicación. No crear otro con
+  // createClient() en ningún módulo: dos clientes comparten la llave de
+  // almacenamiento de la sesión, compiten al renovar el token y acaban
+  // cerrando la sesión del usuario (ver el comentario en core/auth.js).
+  //
+  // Las opciones van explícitas aunque coincidan con las de por defecto:
+  // de ellas depende que la sesión sobreviva a una recarga, y un cambio
+  // silencioso en el valor por defecto del SDK devolvería el problema.
+  _client = window.supabase.createClient(url, key, {
+    auth: {
+      persistSession: true,     // guardar la sesión (localStorage)
+      autoRefreshToken: true,   // renovarla antes de que caduque
+    },
+  });
   return _client;
 }
 
