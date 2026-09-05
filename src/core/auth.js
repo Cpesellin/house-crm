@@ -553,6 +553,22 @@ export function getCurrentUser() {
 
 let _initialized = false;
 
+// Restaurar la sesión exige red (renovar el token + leer `usuarios`), así
+// que initAuth() no puede saber de forma síncrona si hay sesión: cuando
+// devuelve, la restauración apenas ha empezado.
+//
+// Antes devolvía sólo `hasSession`, leído en ese instante, y por tanto
+// SIEMPRE falso para quien entra con Supabase Auth. App.js lo tomaba por
+// visitante: ocultaba el login, reescribía la ruta a #/portafolio y
+// cargaba el inventario público. Eso era "me sacó de la cuenta".
+//
+// Se notaba al actualizar porque con la caché fría esas idas y vueltas
+// tardan más y la rama de visitante gana la carrera sin discusión.
+//
+// `lista` resuelve con el usuario restaurado (o null si no había sesión),
+// para que el arranque pueda esperar antes de decidir.
+let _restauracion = Promise.resolve(null);
+
 /**
  * Initialize the auth system.
  * - Restores session from sessionStorage
@@ -569,7 +585,7 @@ let _initialized = false;
 export function initAuth(options = {}) {
   if (_initialized) {
     console.warn('[auth] Already initialized');
-    return { hasSession: !!userStore.get() };
+    return { hasSession: !!userStore.get(), sesionPendiente: false, lista: _restauracion };
   }
   _initialized = true;
   console.log('[auth] initAuth() starting...');
@@ -640,7 +656,7 @@ export function initAuth(options = {}) {
     })();
   } else {
     // 2. Flujo normal: restaurar sesión Supabase o legacy
-    (async () => {
+    _restauracion = (async () => {
       try {
         const SB = getSB();
         const { data } = await SB.auth.getSession();
@@ -649,7 +665,7 @@ export function initAuth(options = {}) {
           if (userData) {
             console.log('[auth] Session restored from Supabase Auth:', userData.nombre);
             _emitAuth(AUTH_EVENTS.SESSION_RESTORED, userData);
-            return;
+            return userData;
           }
         }
       } catch (e) { console.warn('[auth] Supabase getSession failed:', e); }
@@ -670,10 +686,12 @@ export function initAuth(options = {}) {
           console.warn('[auth] ⚠️ Sesión legacy detectada sin Supabase Auth → forzar re-login');
           userStore.clear();
           // No emitir SESSION_RESTORED para que la app muestre la pantalla de login
-          return;
+          return null;
         }
         _emitAuth(AUTH_EVENTS.SESSION_RESTORED, u);
+        return u;
       }
+      return null;
     })();
   }
 
@@ -729,7 +747,12 @@ export function initAuth(options = {}) {
   console.log('[auth] Initializing Google One Tap...');
   _initGoogle(options);
 
-  return { hasSession: !!userStore.get() };
+  return {
+    hasSession: !!userStore.get(),
+    // ¿Merece la pena esperar a `lista` antes de dar a nadie por visitante?
+    sesionPendiente: userStore.hayGuardada(),
+    lista: _restauracion,
+  };
 }
 
 function _initGoogle(options) {

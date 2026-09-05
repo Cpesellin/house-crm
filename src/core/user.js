@@ -140,6 +140,35 @@ const userStore = {
     return restored;
   },
 
+  /**
+   * ¿Hay indicios de una sesión guardada? Instantáneo y sin red.
+   *
+   * Sirve para decidir en el arranque si merece la pena ESPERAR a que
+   * termine la restauración (que sí toca la red) antes de dar al usuario
+   * por visitante. Mira las dos despensas:
+   *
+   *   · sessionStorage 'hcrm'          → sesión de esta pestaña
+   *   · localStorage 'sb-…-auth-token' → sesión de Supabase Auth, que es
+   *     la que sobrevive a cerrar el navegador
+   *
+   * Decir "sí" de más sólo cuesta una espera corta; decir "no" de menos
+   * manda a la pantalla pública a alguien que sí tenía su cuenta abierta.
+   *
+   * @returns {boolean}
+   */
+  hayGuardada() {
+    try {
+      if (sessionStorage.getItem(STORAGE_KEY)) return true;
+    } catch (e) { /* almacenamiento bloqueado */ }
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) return true;
+      }
+    } catch (e) { /* almacenamiento bloqueado */ }
+    return false;
+  },
+
   // ── Role checks ──────────────────────────────────────────────
 
   isAdmin() {

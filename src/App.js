@@ -537,9 +537,29 @@ export async function initApp(container) {
     });
 
     // Init auth (restores session + starts Google One Tap)
-    const { hasSession } = initAuth();
+    const { hasSession, sesionPendiente, lista } = initAuth();
 
-    if (hasSession) {
+    // Restaurar la sesión toca la red, así que al volver de initAuth() casi
+    // nunca ha terminado. Decidir aquí mismo mandaba a la rama de visitante
+    // a quien SÍ tenía su cuenta abierta, y esa rama reescribe la ruta a
+    // #/portafolio y carga el inventario público: por eso al actualizar
+    // parecía que la app te cerraba la sesión.
+    //
+    // Sólo se espera si hay indicios de sesión guardada; un visitante de
+    // verdad no espera nada. El tope de 8s evita quedarse en blanco si la
+    // red no responde: se sigue como visitante y, si la sesión llega más
+    // tarde, SESSION_RESTORED coloca la app en su sitio igualmente.
+    let usuario = hasSession ? window.userStore?.get() : null;
+    if (!usuario && sesionPendiente) {
+      console.log('[App] Hay sesión guardada — esperando a restaurarla…');
+      usuario = await Promise.race([
+        lista.catch(() => null),
+        new Promise((r) => setTimeout(() => r(null), 8000)),
+      ]);
+      console.log('[App] Sesión restaurada:', usuario ? usuario.nombre : 'no');
+    }
+
+    if (usuario) {
       sApp();
     } else {
       // Auth progresiva — "Browse-first": los visitantes NO ven el overlay de login.
