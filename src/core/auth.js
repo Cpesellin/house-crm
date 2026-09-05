@@ -681,8 +681,29 @@ export function initAuth(options = {}) {
         // Forzamos logout para que tenga que loguearse de nuevo y obtener
         // una sesión real de Supabase Auth.
         const u = userStore.get();
-        const tokenLooksLegacy = !u?.token || u.token.startsWith('cred:') || u.token.startsWith('google:');
-        if (tokenLooksLegacy) {
+
+        // 'google:' NO entra aquí, y esa era la causa de que entrar con
+        // Google te sacara en cada recarga.
+        //
+        // El login con Google no puede crear una sesión de Supabase: el
+        // proveedor está DESHABILITADO en el proyecto (auth/v1/settings
+        // devuelve "google": false, y signInWithIdToken responde
+        // provider_disabled). Así que guarda un token de apaño
+        // 'google:<email>'... que este mismo bloque tomaba por sesión
+        // huérfana y borraba. Resultado: cierre de sesión garantizado en
+        // cada arranque, no intermitente.
+        //
+        // Volver a la pantalla de login no arreglaba nada — el siguiente
+        // login con Google dejaba el mismo token. Y esa sesión sí funciona:
+        // es exactamente con la que se trabaja tras entrar.
+        //
+        // El arreglo de fondo es habilitar Google en Supabase Auth y usar
+        // signInWithIdToken(); mientras tanto, no echar a nadie.
+        const esCredLegacy = !u?.token || u.token.startsWith('cred:');
+        if (u?.token?.startsWith('google:')) {
+          console.warn('[auth] Sesión de Google sin Supabase Auth (proveedor deshabilitado) — se mantiene');
+        }
+        if (esCredLegacy) {
           console.warn('[auth] ⚠️ Sesión legacy detectada sin Supabase Auth → forzar re-login');
           userStore.clear();
           // No emitir SESSION_RESTORED para que la app muestre la pantalla de login
