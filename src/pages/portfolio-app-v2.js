@@ -997,22 +997,15 @@ async function renderPortfolioAppV2() {
 
   // Share desde la card. ?v=<timestamp> fuerza re-scrapeo de WhatsApp si
   // se modificó el inmueble.
+  // Delega en domains/sharing, que arma la ficha completa (precio, área,
+  // alcobas, baños, garajes) dentro del mensaje.
+  //
+  // Aquí había una copia propia que compartía { title, url } sin cuerpo:
+  // llegaba el enlace pelado. Cuatro vistas tenían su propia versión del
+  // mismo botón y sólo una mandaba la ficha, así que lo que recibía el
+  // cliente dependía de desde dónde se hubiera compartido.
   window._v2appShare = async (code, title) => {
-    const v = String(Date.now()).slice(-6);
-    const url = location.origin + '/ver/' + encodeURIComponent(code) + '?v=' + v;
-    const text = `${title || 'Inmueble'} - Inmobiliaria House`;
-    if (navigator.share) {
-      try { await navigator.share({ title: text, url }); return; } catch (e) {
-        if (e && e.name === 'AbortError') return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      if (window.toast) window.toast('🔗 Link copiado al portapapeles');
-      else alert('Link copiado: ' + url);
-    } catch {
-      prompt('Copia el link:', url);
-    }
+    if (typeof window.shareInmueble === 'function') return window.shareInmueble(code, title);
   };
 }
 

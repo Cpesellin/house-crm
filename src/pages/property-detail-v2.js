@@ -1015,14 +1015,13 @@ async function renderPropertyDetailV2() {
   };
 
   // Share + favorite. ?v=<timestamp> fuerza re-scrapeo de WhatsApp.
+  // Delega en domains/sharing (ver la nota en portfolio-app-v2.js).
+  // Se le pasa `p` porque en la ficha pública window.D puede no traer
+  // este inmueble, y sin datos el mensaje se quedaría sin la ficha.
   window._v2Share = async () => {
-    const v = String(Date.now()).slice(-6);
-    const url = location.origin + '/ver/' + encodeURIComponent(p.codigo_house || p.id) + '?v=' + v;
-    const text = `${p.tipo || 'Inmueble'} en ${p.barrio || p.ciudad || ''} - Inmobiliaria House`;
-    if (navigator.share) {
-      try { await navigator.share({ title: text, url }); } catch {}
-    } else {
-      try { await navigator.clipboard.writeText(url); window.toast && window.toast('🔗 Link copiado'); } catch {}
+    const title = `${p.tipo || 'Inmueble'} en ${p.barrio || p.ciudad || ''}`;
+    if (typeof window.shareInmueble === 'function') {
+      return window.shareInmueble(p.codigo_house || p.id, title, p);
     }
   };
   window._v2ToggleFav = () => {

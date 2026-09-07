@@ -14,14 +14,34 @@
 import { getCurrentTenant } from '../../tenant/current.js';
 
 /**
- * Genera la URL compartible del inmueble con cache-buster.
+ * Genera la URL compartible del inmueble.
  * Pura (sin side effects) — testeable en aislamiento.
+ *
+ * El `?v=` sale de la ÚLTIMA MODIFICACIÓN del inmueble, no de la hora de
+ * compartir. Es lo que api/ver.js dice desde siempre ("el botón Compartir
+ * agrega ?v=updated_at"), pero el código ponía Date.now() y eso generaba
+ * una URL distinta en cada envío.
+ *
+ * La diferencia importa: WhatsApp guarda la vista previa por URL. Con una
+ * URL nueva cada vez, nunca la tiene y debe ir a buscarla — y si no le da
+ * tiempo antes de que pulses enviar, el mensaje sale sin foto. Con la
+ * fecha de modificación, compartir el mismo inmueble repite la URL y la
+ * vista previa aparece al instante; y si el inmueble cambia (otra foto,
+ * otro precio) la URL cambia sola y se vuelve a leer.
+ *
+ * @param {string} codeOrId
+ * @param {string} [origin]
+ * @param {string} [version] - updated_at del inmueble (ISO)
  */
-export function buildShareUrl(codeOrId, origin) {
+export function buildShareUrl(codeOrId, origin, version) {
   if (!codeOrId) return null;
   const base = origin || location.origin;
-  const cacheBuster = String(Date.now()).slice(-6);
-  return base + '/ver/' + encodeURIComponent(codeOrId) + '?v=' + cacheBuster;
+  // Sólo dígitos y acotado: de '2026-09-05T14:05:02.123Z' salen los que
+  // cambian cuando el inmueble cambia.
+  const v = version
+    ? String(version).replace(/\D/g, '').slice(2, 14)
+    : String(Date.now()).slice(-6);
+  return base + '/ver/' + encodeURIComponent(codeOrId) + '?v=' + v;
 }
 
 /**
@@ -135,15 +155,17 @@ function buscarInmueble(codeOrId) {
  *   2. clipboard.writeText() (desktop)
  *   3. prompt() (último recurso)
  */
-export async function shareInmueble(codeOrId, title) {
+export async function shareInmueble(codeOrId, title, inmueble) {
   if (!codeOrId) return;
-
-  const url = buildShareUrl(codeOrId);
 
   // Con los datos del inmueble se manda la ficha completa; sin ellos
   // (una tarjeta de otra vista, la lista aún sin cargar) se cae al
   // título de siempre en vez de no compartir nada.
-  const p = buscarInmueble(codeOrId);
+  //
+  // `inmueble` lo pasan las vistas que ya lo tienen cargado (la ficha de
+  // detalle), donde window.D puede no contenerlo.
+  const p = inmueble || buscarInmueble(codeOrId);
+  const url = buildShareUrl(codeOrId, null, p && (p.updated_at || p.created_at));
   const text = p ? buildShareMessage(p) : buildShareText(title);
 
   // El enlace va DENTRO del texto, no en el campo `url`.
@@ -156,6 +178,12 @@ export async function shareInmueble(codeOrId, title) {
   // Por eso el enlace es la última línea: la vista previa se dibuja
   // arriba del mensaje, y el texto se lee de corrido hasta el enlace.
   const completo = text + '\n' + url;
+
+  // Se pide la página del preview antes de abrir el menú de compartir.
+  // No esperamos la respuesta: sólo deja la página caliente en el CDN
+  // para que, cuando WhatsApp la pida, la reciba de inmediato en vez de
+  // esperar a que se genere. Si falla, no cambia nada.
+  try { fetch(url, { mode: 'no-cors', cache: 'no-store' }).catch(() => {}); } catch (e) { /* noop */ }
 
   // 1) Web Share API nativa (móvil)
   if (navigator.share) {
