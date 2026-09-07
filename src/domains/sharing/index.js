@@ -146,22 +146,40 @@ export async function shareInmueble(codeOrId, title) {
   const p = buscarInmueble(codeOrId);
   const text = p ? buildShareMessage(p) : buildShareText(title);
 
-  // 1) Web Share API nativa. WhatsApp pega la URL al final del texto,
-  //    por eso el mensaje termina en "Más información y fotos:".
+  // El enlace va DENTRO del texto, no en el campo `url`.
+  //
+  // Al compartir con { text, url } por separado, WhatsApp se queda sólo
+  // con la url y tira el texto: llegaba el enlace pelado y la ficha no
+  // aparecía. Mandando todo junto en `text` llega el mensaje completo, y
+  // WhatsApp igual detecta el enlace y arma la vista previa con la foto.
+  //
+  // Por eso el enlace es la última línea: la vista previa se dibuja
+  // arriba del mensaje, y el texto se lee de corrido hasta el enlace.
+  const completo = text + '\n' + url;
+
+  // 1) Web Share API nativa (móvil)
   if (navigator.share) {
     try {
-      await navigator.share({ title: buildShareText(title), text, url });
+      await navigator.share({ title: buildShareText(title), text: completo });
       trackShare(codeOrId, 'native');
       return;
     } catch (e) {
       // Usuario canceló — no es error real
       if (e && e.name === 'AbortError') return;
+      // Algún navegador puede rechazar compartir sin `url`; se reintenta
+      // con la forma clásica antes de caer al portapapeles.
+      try {
+        await navigator.share({ title: buildShareText(title), text, url });
+        trackShare(codeOrId, 'native');
+        return;
+      } catch (e2) {
+        if (e2 && e2.name === 'AbortError') return;
+      }
     }
   }
 
   // 2) Clipboard (escritorio): se copia el mensaje ENTERO, no sólo el
   //    enlace, para poder pegarlo tal cual en WhatsApp Web.
-  const completo = text + '\n' + url;
   try {
     await navigator.clipboard.writeText(completo);
     if (window.toast) window.toast('🔗 Mensaje copiado — pégalo en WhatsApp');
