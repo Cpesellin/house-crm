@@ -96,7 +96,32 @@ function tituloPreview(p) {
   return precio ? cabeza + ' - ' + precio : cabeza;
 }
 
+// Segunda línea de la vista previa.
+//
+// Repetía la ficha (precio, alcobas, baños, m², estrato) — exactamente lo
+// mismo que el mensaje lista debajo en viñetas, así que el lector veía dos
+// veces los mismos datos y ninguna aportaba nada.
+//
+// Cuando el inmueble tiene descripción para el cliente se usa ésa: cuenta
+// lo que las viñetas no pueden (el sector, el condominio, los acabados) y
+// es lo que hace que alguien abra el enlace. Sin descripción se mantiene la
+// ficha, que es mejor que dejar la línea vacía.
+function resumenComercial(p) {
+  const d = String(p.descripcion_cliente == null ? '' : p.descripcion_cliente)
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (d.length < 40) return '';           // demasiado corta para aportar
+  if (d.length <= 180) return d;
+  // Cortar en el último espacio para no partir una palabra.
+  const cortado = d.slice(0, 180);
+  const sp = cortado.lastIndexOf(' ');
+  return (sp > 120 ? cortado.slice(0, sp) : cortado) + '…';
+}
+
 function descripcionInmueble(p) {
+  const comercial = resumenComercial(p);
+  if (comercial) return comercial;
+
   const det = [];
   if (p.habitaciones) det.push(p.habitaciones + ' hab');
   if (p.banos) det.push(p.banos + (Number(p.banos) === 1 ? ' baño' : ' baños'));
@@ -198,7 +223,7 @@ export default async function handler(req, res) {
     const sbUrl = env.url.replace(/\/+$/, '') +
       '/rest/v1/inmuebles?' + filter +
       '&eliminado=eq.false' +
-      '&select=id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,parqueaderos,area_construida,estrato,updated_at,fotos(url,url_thumb,orden,id)' +
+      '&select=id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,parqueaderos,area_construida,estrato,descripcion_cliente,updated_at,fotos(url,url_thumb,orden,id)' +
       '&limit=1';
 
     let p = null;
