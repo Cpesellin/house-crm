@@ -126,7 +126,7 @@ export async function loadPublic(limit) {
   const SB = getSupabaseClient();
   try {
     let q = SB.from('inmuebles')
-      .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,codigo_house,descripcion_cliente,estado,origen,captador_id,estado_revision,created_at,captador:usuarios!captador_id(id,nombre,telefono_contacto),fotos(url,url_thumb,orden)')
+      .select('id,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,parqueaderos,area_construida,estrato,codigo_house,descripcion_cliente,estado,origen,captador_id,estado_revision,created_at,captador:usuarios!captador_id(id,nombre,telefono_contacto),fotos(url,url_thumb,orden)')
       .eq('eliminado', false)
       .eq('estado_revision', 'aprobado')
       .in('estado', ['Disponible', 'Aún Disponible'])

@@ -62,10 +62,45 @@ function tituloInmueble(p) {
   return ubic ? (tipo + ' en ' + ubic) : tipo;
 }
 
+// Título del preview. En WhatsApp es la línea en negrita bajo la foto y
+// muchas veces lo único que se lee antes de decidir si abrir el enlace,
+// así que lleva lo que decide: qué es, cuántas alcobas, dónde y CUÁNTO.
+// Antes decía sólo "Apartamento en Álamos" y el precio quedaba escondido
+// en la descripción.
+function tituloPreview(p) {
+  const tipo = String(p.tipo || 'Inmueble').toUpperCase();
+  const neg = String(p.negociacion || '').toLowerCase();
+  const accion = neg.includes('arriendo') && !neg.includes('venta') ? 'EN ARRIENDO'
+    : neg.includes('venta') && !neg.includes('arriendo') ? 'EN VENTA'
+    : 'EN VENTA Y ARRIENDO';
+
+  const hab = p.habitaciones
+    ? p.habitaciones + (Number(p.habitaciones) === 1 ? ' HABITACIÓN' : ' HABITACIONES')
+    : '';
+
+  // Recortado: hay ciudades guardadas con espacios de sobra ('Pereira ')
+  // y aparecían en el título como "REBECA, PEREIRA ".
+  const ubic = [p.barrio, p.ciudad]
+    .map(function (s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); })
+    .filter(Boolean).join(', ').toUpperCase();
+
+  // Un precio a secas se lee como precio de venta. Si el que mostramos es
+  // el arriendo lleva "/mes", que si no un local en venta Y arriendo
+  // aparenta venderse por el valor de un mes.
+  const arriendo = fmtCOP(p.precio_arriendo);
+  const venta = fmtCOP(p.precio_venta);
+  const precio = neg.includes('arriendo') && arriendo ? arriendo + '/mes'
+    : venta || (arriendo ? arriendo + '/mes' : '');
+
+  const cabeza = [tipo, accion, hab, ubic && '· ' + ubic].filter(Boolean).join(' ');
+  return precio ? cabeza + ' - ' + precio : cabeza;
+}
+
 function descripcionInmueble(p) {
   const det = [];
   if (p.habitaciones) det.push(p.habitaciones + ' hab');
-  if (p.banos) det.push(p.banos + ' baños');
+  if (p.banos) det.push(p.banos + (Number(p.banos) === 1 ? ' baño' : ' baños'));
+  if (p.parqueaderos) det.push(p.parqueaderos + (p.parqueaderos === 1 ? ' garaje' : ' garajes'));
   if (p.area_construida) det.push(p.area_construida + ' m²');
   if (p.estrato) det.push('Estrato ' + p.estrato);
   return [precioTxt(p), det.join(' · ')].filter(Boolean).join(' — ');
@@ -95,9 +130,15 @@ function renderHTML(opts) {
     '<meta property="og:image" content="' + i + '">' +
     '<meta property="og:image:url" content="' + i + '">' +
     '<meta property="og:image:secure_url" content="' + i + '">' +
-    '<meta property="og:image:width" content="1200">' +
-    '<meta property="og:image:height" content="630">' +
-    '<meta property="og:image:type" content="image/jpeg">' +
+    // Sólo se declara el tamaño cuando lo garantizamos: la transformación
+    // de Cloudinary devuelve exactamente 1200x630. Para una foto servida
+    // desde otro sitio (las viejas de Google Drive) anunciar esa medida es
+    // mentirle al scraper y el preview puede salir recortado o pequeño.
+    (opts.sizedOG
+      ? '<meta property="og:image:width" content="1200">' +
+        '<meta property="og:image:height" content="630">' +
+        '<meta property="og:image:type" content="image/jpeg">'
+      : '') +
     '<meta property="og:image:alt" content="' + altText + '">' +
     '<meta property="og:locale" content="es_CO">' +
     '<meta property="og:site_name" content="Inmobiliaria House">' +
@@ -157,7 +198,7 @@ export default async function handler(req, res) {
     const sbUrl = env.url.replace(/\/+$/, '') +
       '/rest/v1/inmuebles?' + filter +
       '&eliminado=eq.false' +
-      '&select=id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,area_construida,estrato,updated_at,fotos(url,url_thumb,orden,id)' +
+      '&select=id,codigo_house,tipo,negociacion,ciudad,barrio,direccion_publica,precio_venta,precio_arriendo,habitaciones,banos,parqueaderos,area_construida,estrato,updated_at,fotos(url,url_thumb,orden,id)' +
       '&limit=1';
 
     let p = null;
@@ -190,6 +231,8 @@ export default async function handler(req, res) {
       : [];
     const rawImg = fotos.length ? (fotos[0].url || fotos[0].url_thumb) : null;
     const ogImage = rawImg ? cloudinaryOG(rawImg) : FALLBACK_OG;
+    // Sólo Cloudinary nos deja fijar el encuadre a 1200x630.
+    const sizedOG = ogImage.indexOf('res.cloudinary.com/') !== -1;
 
     // Canonical = URL "linda" estable (lo que ven WhatsApp/Facebook al scrapear).
     // RedirectTo = ficha v2 con hash route (lo que el navegador del humano carga).
@@ -198,9 +241,10 @@ export default async function handler(req, res) {
     const redirectTo = SITE_URL + '/#/p/' + encodeURIComponent(codeForUrl);
 
     const html = renderHTML({
-      title: tituloInmueble(p) + ' · Inmobiliaria House',
+      title: tituloPreview(p),
       description: descripcionInmueble(p),
       image: ogImage,
+      sizedOG: sizedOG,
       imageAlt: tituloInmueble(p) + ' - foto del inmueble',
       canonical: canonical,
       redirectTo: redirectTo,
