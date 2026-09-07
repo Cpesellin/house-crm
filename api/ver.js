@@ -251,10 +251,26 @@ export default async function handler(req, res) {
     });
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    // Cache CDN corto para que cambios de fotos se reflejen rápido
-    // (WhatsApp luego cachea 30 días en cliente, eso no podemos controlarlo
-    // pero el botón "Compartir" agrega ?v=updated_at para invalidar).
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
+    // Generar esta página en frío cuesta ~3,5s (arranque de la función +
+    // consulta a la base). WhatsApp no espera tanto: si al pedirla no la
+    // encuentra lista, el mensaje sale sin foto.
+    //
+    // Con ?v= la URL ya identifica una versión concreta del inmueble (el
+    // botón Compartir la arma con updated_at), así que su contenido no
+    // puede quedar desactualizado: si el inmueble cambia, cambia la URL.
+    // Por eso se guarda un día entero y sólo el primero en compartir paga
+    // la espera — y ni ése, porque compartir pide la página de antemano.
+    //
+    // Sin ?v= (alguien escribió la dirección a mano) se mantiene el
+    // caché corto: esa URL no distingue versiones.
+    const versionada = !!(req.query && req.query.v);
+    res.setHeader(
+      'Cache-Control',
+      versionada
+        ? 'public, s-maxage=86400, stale-while-revalidate=604800'
+        : 'public, s-maxage=60, stale-while-revalidate=300'
+    );
     return res.status(200).send(html);
 
   } catch (e) {
