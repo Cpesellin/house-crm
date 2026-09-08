@@ -56,7 +56,16 @@ function mostrarAviso() {
   el.setAttribute('role', 'status');
   el.style.cssText =
     'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));' +
-    'z-index:99999;display:flex;align-items:center;gap:12px;padding:11px 14px;' +
+    // z-index por debajo de los modales a propósito.
+    //
+    // Con 99999 este aviso se plantaba encima de todo, y la ficha de un
+    // inmueble pone su barra de "Guardar cambios" justo ahí abajo: el
+    // aviso la tapaba y parecía que no existía botón de guardar.
+    //
+    // Avisar de una versión nueva nunca es más urgente que lo que el
+    // usuario está haciendo. Si hay un modal abierto, el aviso espera
+    // detrás; sigue estando al cerrarlo.
+    'z-index:60;display:flex;align-items:center;gap:12px;padding:11px 14px;' +
     'background:#2c2520;color:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.28);' +
     'font-family:inherit;font-size:13px;max-width:min(92vw,420px)';
   el.innerHTML =

@@ -542,7 +542,7 @@ function pintar() {
       </div>
       <div class="oM2-head-acc" style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <span id="oM2Estado" style="font-size:11.5px;color:var(--v2-ink-4)"></span>
-        ${perm.puedeEditar ? `<button onclick="window._oM2Editar()" style="height:38px;padding:0 16px;border-radius:10px;border:1.5px solid ${st.editando ? 'var(--v2-primary)' : 'var(--v2-line-3)'};background:${st.editando ? 'var(--v2-primary-soft)' : 'var(--v2-paper)'};color:${st.editando ? 'var(--v2-primary)' : 'var(--v2-ink)'};font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px">${st.editando ? icon('check', 15) + 'Editando' : icon('area', 15) + 'Editar'}</button>` : ''}
+        ${perm.puedeEditar ? `<button id="oM2BtnEditar" onclick="window._oM2Editar()" style="height:38px;padding:0 16px;border-radius:10px;border:1.5px solid ${st.editando ? 'var(--v2-primary)' : 'var(--v2-line-3)'};background:${st.editando ? 'var(--v2-primary-soft)' : 'var(--v2-paper)'};color:${st.editando ? 'var(--v2-primary)' : 'var(--v2-ink)'};font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px">${etiquetaEdicion()}</button>` : ''}
         <button onclick="window.cm&&window.cm()" aria-label="Cerrar" style="width:38px;height:38px;border-radius:10px;border:1px solid var(--v2-line);background:var(--v2-paper);cursor:pointer;display:grid;place-items:center;color:var(--v2-ink-3)">${icon('close', 17)}</button>
       </div>
     </div>
@@ -583,7 +583,36 @@ window._oM2Tab = function (id) {
   if (id === 'fotos') setTimeout(montarUpload, 60);
 };
 
-window._oM2Editar = function () {
+/**
+ * Texto del botón de edición. Dice lo que va a pasar al pulsarlo.
+ *
+ * Decía "Editando", que no es una acción sino un estado, y el asesor lo
+ * pulsaba esperando que guardara — es lo natural: si "Editar" abre la
+ * edición, el mismo botón debería cerrarla dejando los cambios.
+ */
+function etiquetaEdicion() {
+  if (!st.editando) return icon('area', 15) + 'Editar';
+  if (st.cambios.size) return icon('check', 15) + 'Guardar';
+  return icon('check', 15) + 'Listo';
+}
+
+/**
+ * Abre la edición, o la cierra GUARDANDO lo que haya pendiente.
+ *
+ * Antes sólo alternaba el modo y repintaba. Como pintar() vuelve a dibujar
+ * los campos con los valores guardados, todo lo que el asesor hubiera
+ * escrito se perdía sin avisar — y él pulsaba ese botón justo creyendo que
+ * era el guardado. De ahí "no quedan las modificaciones que uno hace
+ * dentro de un inmueble".
+ */
+window._oM2Editar = async function () {
+  if (st.editando && st.cambios.size) {
+    await window._oM2Guardar();
+    // Si el guardado falló, los cambios siguen ahí: no se sale de la
+    // edición, que sería perderlos.
+    if (st.cambios.size) return;
+  }
+
   st.editando = !st.editando;
   pintar();
   // pintar() re-renderiza todos los tabs, así que los contenedores de
@@ -735,6 +764,11 @@ window._oM2Guardar = async function () {
 };
 
 function actualizarBarra() {
+  // El botón de la cabecera pasa a "Guardar" en cuanto hay algo pendiente,
+  // para que se vea qué hace antes de pulsarlo.
+  const btnEd = document.getElementById('oM2BtnEditar');
+  if (btnEd) btnEd.innerHTML = etiquetaEdicion();
+
   const barra = document.getElementById('oM2Barra');
   if (!barra) return;
   const n = st.cambios.size;
