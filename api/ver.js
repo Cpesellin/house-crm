@@ -62,6 +62,11 @@ function tituloInmueble(p) {
   return ubic ? (tipo + ' en ' + ubic) : tipo;
 }
 
+// NOTA: tituloPreview() y descripcionInmueble() están sin usar desde que
+// la tarjeta se dejó sólo con la foto (el mensaje ya lleva la ficha en
+// viñetas). Se conservan porque devolver el titular a la tarjeta es
+// cambiar las dos líneas del renderHTML de más abajo.
+//
 // Título del preview. En WhatsApp es la línea en negrita bajo la foto y
 // muchas veces lo único que se lee antes de decidir si abrir el enlace,
 // así que lleva lo que decide: qué es, cuántas alcobas, dónde y CUÁNTO.
@@ -151,7 +156,9 @@ function renderHTML(opts) {
     '<meta property="og:type" content="website">' +
     '<meta property="og:url" content="' + u + '">' +
     '<meta property="og:title" content="' + t + '">' +
-    '<meta property="og:description" content="' + d + '">' +
+    // La descripción se omite si viene vacía: WhatsApp deja entonces esa
+    // línea fuera de la tarjeta en vez de pintarla en blanco.
+    (d ? '<meta property="og:description" content="' + d + '">' : '') +
     '<meta property="og:image" content="' + i + '">' +
     '<meta property="og:image:url" content="' + i + '">' +
     '<meta property="og:image:secure_url" content="' + i + '">' +
@@ -170,7 +177,7 @@ function renderHTML(opts) {
     // Twitter Card (también lo usan algunos clientes)
     '<meta name="twitter:card" content="summary_large_image">' +
     '<meta name="twitter:title" content="' + t + '">' +
-    '<meta name="twitter:description" content="' + d + '">' +
+    (d ? '<meta name="twitter:description" content="' + d + '">' : '') +
     '<meta name="twitter:image" content="' + i + '">' +
     '<meta name="twitter:image:alt" content="' + altText + '">' +
     // Redirect humano (los bots ignoran refresh y JS)
@@ -266,8 +273,18 @@ export default async function handler(req, res) {
     const redirectTo = SITE_URL + '/#/p/' + encodeURIComponent(codeForUrl);
 
     const html = renderHTML({
-      title: tituloPreview(p),
-      description: descripcionInmueble(p),
+      // La tarjeta se queda con la foto y nada más.
+      //
+      // Antes llevaba el titular con el precio y una segunda línea con la
+      // ficha; el mensaje repite las dos cosas justo debajo, en viñetas.
+      // Ver dos veces lo mismo no aporta y alarga el mensaje.
+      //
+      // No se deja el título en blanco del todo: sin ningún título
+      // WhatsApp puede decidir no dibujar la tarjeta, y con ella se iría
+      // la foto. Se pone la marca, que es lo único que el texto de abajo
+      // no repite.
+      title: 'Inmobiliaria House',
+      description: '',
       image: ogImage,
       sizedOG: sizedOG,
       imageAlt: tituloInmueble(p) + ' - foto del inmueble',
