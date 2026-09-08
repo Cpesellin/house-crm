@@ -665,6 +665,8 @@ window._oM2BorrarSel = async function () {
     const enD = (window.D || []).find((x) => x.id === st.p?.id);
     if (enD) enD.fotos = st.fotos;
 
+    tocarInmueble(st.p?.id);
+
     st.selFotos = null;
     st.galIdx = 0;
     pintar();
@@ -791,6 +793,30 @@ function montarUpload() {
 }
 
 /**
+ * Marca el inmueble como modificado al cambiar sus fotos.
+ *
+ * Las fotos viven en su propia tabla, así que cambiarlas no tocaba
+ * `inmuebles.updated_at`: HOUSE-260 cambió las 30 fotos por 12 y siguió
+ * figurando como modificado el día anterior.
+ *
+ * Importa porque el enlace que se comparte lleva esa fecha como versión.
+ * Si no cambia, el enlace es el mismo de antes y WhatsApp devuelve la
+ * vista previa que ya tenía guardada — con la foto vieja.
+ *
+ * No se espera la respuesta ni se avisa si falla: es un dato de apoyo, y
+ * la foto (que es lo que importa) ya quedó guardada.
+ */
+function tocarInmueble(inmId) {
+  try {
+    getSupabaseClient()
+      .from('inmuebles')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', inmId)
+      .then(null, () => {});
+  } catch (e) { /* noop */ }
+}
+
+/**
  * Inserta de inmediato una foto recién subida a Cloudinary.
  * Si falla, la deja en la cola para que "Guardar cambios" lo reintente:
  * es preferible un segundo intento a perderla en silencio.
@@ -821,6 +847,7 @@ async function guardarFotoSubida(r) {
     if (st.p) st.p.fotos = st.fotos;
     const enD = (window.D || []).find((x) => x.id === inmId);
     if (enD) enD.fotos = st.fotos;
+    tocarInmueble(inmId);
 
     pintar();
     // pintar() reemplaza el contenedor del subidor, así que hay que

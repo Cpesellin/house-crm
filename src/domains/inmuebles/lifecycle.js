@@ -118,6 +118,14 @@ window.delFoto = async function (fotoId, inmId) {
     inm.fotos = inm.fotos.filter((f) => f.id !== fotoId);
   }
 
+  // Las fotos viven en otra tabla, así que borrarlas no marcaba el
+  // inmueble como modificado. El enlace que se comparte usa esa fecha
+  // como versión: sin cambiarla, WhatsApp reutiliza la vista previa que
+  // ya tenía guardada, con la foto que acabás de borrar.
+  try {
+    await SB().from('inmuebles').update({ updated_at: new Date().toISOString() }).eq('id', inmId);
+  } catch (e) { /* la foto ya se borró; esto es de apoyo */ }
+
   window.toast('📷 Eliminada');
 
   // Si la ficha v2 está abierta, se actualiza en el sitio.
