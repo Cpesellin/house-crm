@@ -675,6 +675,28 @@ window._oM2BorrarSel = async function () {
   }
 };
 
+/**
+ * Quita del sitio una foto borrada desde la X, sin recargar ni reabrir.
+ *
+ * Devuelve true si esta ficha se hizo cargo, para que delFoto() no siga
+ * con el camino viejo (load() + reabrir) que apagaba el modo edición y
+ * dejaba la lista desfasada.
+ */
+window._oM2FotoBorrada = function (fotoId) {
+  const abierta = document.getElementById('mdl')?.style.display === 'flex';
+  if (!abierta || !st.p || !st.fotos.some((f) => f.id === fotoId)) return false;
+
+  st.fotos = st.fotos.filter((f) => f.id !== fotoId);
+  st.p.fotos = st.fotos;
+  const enD = (window.D || []).find((x) => x.id === st.p.id);
+  if (enD) enD.fotos = st.fotos;
+
+  st.galIdx = 0;
+  pintar();
+  setTimeout(montarUpload, 60);
+  return true;
+};
+
 window._oM2Copiar = function (txt) {
   navigator.clipboard?.writeText(txt).then(
     () => window.toast?.('📋 Copiado'),
@@ -786,7 +808,10 @@ async function guardarFotoSubida(r) {
         url_thumb: r.thumb,
         origen: 'cloudinary',
         tipo: r.tipo || 'imagen',
-        orden: st.fotos.length,
+        // Al final de las que ya hay, no en la posición nº "cuántas hay":
+        // si la lista viene desfasada, contar da un puesto YA ocupado y
+        // quedan dos fotos con el mismo orden (le pasó a HOUSE-109).
+        orden: st.fotos.reduce((m, f) => Math.max(m, Number(f.orden) || 0), -1) + 1,
       })
       .select()
       .single();
@@ -798,6 +823,10 @@ async function guardarFotoSubida(r) {
     if (enD) enD.fotos = st.fotos;
 
     pintar();
+    // pintar() reemplaza el contenedor del subidor, así que hay que
+    // volver a montarlo: si no, tras guardar una tanda el botón de subir
+    // queda muerto y hay que cambiar de pestaña para recuperarlo.
+    setTimeout(montarUpload, 60);
     if (window.toast) window.toast('📷 Foto guardada');
   } catch (e) {
     console.error('[fotos] guardado inmediato:', e);

@@ -102,8 +102,43 @@ window.reasignarCap = async function (id) {
 window.delFoto = async function (fotoId, inmId) {
   const ok = await window.cfShow('🗑️', '¿Eliminar foto?', 'Permanente.');
   if (!ok) return;
-  await SB().from('fotos').delete().eq('id', fotoId);
+
+  try {
+    const { error } = await SB().from('fotos').delete().eq('id', fotoId);
+    if (error) throw error;
+  } catch (e) {
+    console.error('[fotos] borrado:', e);
+    window.toast('❌ No se pudo eliminar: ' + (e.message || 'error'), 'terr');
+    return;
+  }
+
+  // Se quita de la lista en memoria para que nadie la siga viendo.
+  const inm = (window.D || []).find((x) => x.id === inmId);
+  if (inm && Array.isArray(inm.fotos)) {
+    inm.fotos = inm.fotos.filter((f) => f.id !== fotoId);
+  }
+
   window.toast('📷 Eliminada');
+
+  // Si la ficha v2 está abierta, se actualiza en el sitio.
+  //
+  // Antes esto hacía load() + reabrir la ficha 500ms después, y de ahí
+  // salían los tres problemas que reportó el asesor al cambiar las fotos:
+  //
+  //   · Reabrir la ficha apaga el modo edición (oMv2 pone editando=false),
+  //     así que tras borrar una foto desaparecía el botón de guardar.
+  //   · load() es asíncrono y no se esperaba: a los 500ms la lista todavía
+  //     traía la foto borrada, y las nuevas se insertaban con el mismo
+  //     `orden` que una existente (HOUSE-109 quedó con orden [0,0,1,…]).
+  //   · Ese load() aterrizaba tarde y reemplazaba el inventario con lo que
+  //     el servidor devolvió ANTES de subir las fotos nuevas: se veían un
+  //     momento y desaparecían, como si no se hubieran guardado.
+  //
+  // El borrado múltiple ya se resolvía así; a la X de cada foto nunca se
+  // le aplicó.
+  if (typeof window._oM2FotoBorrada === 'function' && window._oM2FotoBorrada(fotoId)) return;
+
+  // Ficha clásica: conserva el comportamiento de siempre.
   window.load();
   // Se reabre por ID, no por posición: load() es asíncrono y no se espera,
   // así que el índice se calcularía sobre la lista VIEJA y 500ms después se
