@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Publicamos tu inmueble por ti — Inmobiliaria House · Pereira</title>
+  <meta name="description" content="Nosotros nos encargamos de exponer tu inmueble: ficha profesional, marketplace propio, portales, difusión por WhatsApp y red de asesores. Calle 14 #14-09, Pereira.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://inmobiliariahouse.com.co/publicamos">
+  <meta property="og:title" content="Publicamos tu inmueble por ti — Inmobiliaria House">
+  <meta property="og:description" content="Tú no persigues compradores. Nosotros exponemos tu inmueble donde lo ven quienes de verdad compran, y filtramos a los curiosos.">
+  <meta property="og:image" content="https://inmobiliariahouse.com.co/img/og-publicamos.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_CO">
+  <meta property="og:site_name" content="Inmobiliaria House · Pereira">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Publicamos tu inmueble por ti — Inmobiliaria House">
+  <meta name="twitter:description" content="Ficha profesional, marketplace propio, portales y difusión dirigida. Pereira y el Eje Cafetero.">
+  <meta name="twitter:image" content="https://inmobiliariahouse.com.co/img/og-publicamos.jpg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ══════════════════════════════════════════════════════════════════
+       Paleta: el azul de la marca (el del letrero y el logo) sobre los
+       cremas que ya usa /vender, para que las dos landings se reconozcan
+       como del mismo sitio. El verde queda sólo para confirmaciones.
+       ══════════════════════════════════════════════════════════════════ */
+    :root{
+      --azul:#122d4f;        /* marca */
+      --azul-2:#1b4272;      /* hover / degradados */
+      --azul-soft:#eef2f8;
+      --crema:#faf8f4;
+      --crema-2:#f5f2ec;
+      --linea:#e8e2d8;
+      --tinta:#1a1a1a;
+      --tinta-2:#5a5550;
+      --tinta-3:#8a837c;
+      --verde:#1a6b4a;
+      --oro:#c8912a;
+      --wa:#25D366;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Bricolage Grotesque',system-ui,sans-serif;
+      background:var(--crema);color:var(--tinta);
+      -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    }
+    .fr{font-family:'Fraunces',Georgia,serif}
+    .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+    a{color:inherit}
+    img{max-width:100%;display:block}
+
+    /* ─── Tipografía de titulares ─────────────────────────────────── */
+    h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;line-height:1.03;letter-spacing:-.02em}
+    h2{font-size:clamp(26px,4.4vw,42px);font-weight:800;line-height:1.1;letter-spacing:-.015em}
+    h3{font-size:19px;font-weight:800;line-height:1.25}
+    .lead{font-size:clamp(16px,2.1vw,19px);line-height:1.62;color:var(--tinta-2)}
+
+    .kicker{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 15px;border-radius:100px;
+      background:var(--azul-soft);color:var(--azul);
+      font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    }
+
+    /* ─── Botones ─────────────────────────────────────────────────── */
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:9px;
+      padding:16px 28px;border-radius:14px;border:none;cursor:pointer;
+      font-family:inherit;font-size:16px;font-weight:700;text-decoration:none;
+      transition:transform .25s,box-shadow .25s,background .25s,border-color .25s;
+    }
+    .btn-wa{background:var(--wa);color:#0a2e17}
+    .btn-wa:hover{background:#1fbb59;transform:translateY(-2px);box-shadow:0 10px 26px #25d36640}
+    .btn-main{background:var(--azul);color:#fff}
+    .btn-main:hover{background:var(--azul-2);transform:translateY(-2px);box-shadow:0 10px 26px #122d4f38}
+    .btn-ghost{background:#fff;color:var(--azul);border:1.5px solid var(--linea)}
+    .btn-ghost:hover{border-color:var(--azul);background:var(--azul-soft)}
+    .btn:focus-visible{outline:3px solid var(--azul);outline-offset:3px}
+
+    /* ─── Cabecera ────────────────────────────────────────────────── */
+    header{
+      position:sticky;top:0;z-index:50;
+      background:#faf8f4e8;backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--linea);
+    }
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0}
+    .marca{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none}
+    .marca img{width:32px;height:32px;object-fit:contain}
+    .nav-acc{display:flex;align-items:center;gap:9px}
+    .nav .btn{padding:11px 17px;font-size:14px}
+
+    /* ─── Hero ────────────────────────────────────────────────────── */
+    .hero{padding:56px 0 20px}
+    .hero-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:52px;align-items:center}
+    .hero h1{margin:18px 0 18px}
+    .hero h1 em{font-style:normal;color:var(--azul);position:relative;white-space:nowrap}
+    .hero h1 em::after{
+      content:'';position:absolute;left:0;right:0;bottom:.06em;height:.16em;
+      background:var(--oro);opacity:.32;border-radius:3px;
+    }
+    .hero-cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+
+    /* Foto de la fachada. El marco inclinado y la sombra la separan del
+       fondo crema; el pie con la dirección la ancla a un lugar real. */
+    .foto{position:relative}
+    .foto figure{
+      border-radius:22px;overflow:hidden;border:1px solid var(--linea);
+      box-shadow:0 26px 60px #122d4f24;transform:rotate(-1.1deg);background:#fff;
+    }
+    .foto img{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
+    .foto figcaption{
+      display:flex;align-items:center;gap:9px;
+      padding:13px 17px;background:#fff;border-top:1px solid var(--linea);
+      font-size:13.5px;font-weight:600;color:var(--tinta-2);
+    }
+
+    /* ─── Cifras ──────────────────────────────────────────────────── */
+    .cifras{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+      background:var(--linea);border:1px solid var(--linea);
+      border-radius:18px;overflow:hidden;margin:44px 0 8px;
+    }
+    .cifra{background:#fff;padding:22px 18px;text-align:center}
+    .cifra b{display:block;font-family:'Fraunces',Georgia,serif;font-size:30px;font-weight:900;color:var(--azul);line-height:1}
+    .cifra span{display:block;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--tinta-3);letter-spacing:.03em}
+
+    /* ─── Secciones ───────────────────────────────────────────────── */
+    section{padding:66px 0}
+    .sec-head{max-width:660px;margin-bottom:40px}
+    .sec-head h2{margin:15px 0 14px}
+    .oscuro{background:var(--azul);color:#faf8f4}
+    .oscuro .kicker{background:#ffffff1f;color:#fff}
+    .oscuro .lead{color:#faf8f4b8}
+    .oscuro h2{color:#fff}
+
+    /* ─── Proceso de exposición ───────────────────────────────────── */
+    /* Línea vertical que une los pasos: se lee como un recorrido, no
+       como seis tarjetas suertas. */
+    .pasos{position:relative;display:grid;gap:16px}
+    .pasos::before{
+      content:'';position:absolute;left:25px;top:34px;bottom:34px;width:2px;
+      background:linear-gradient(#ffffff42,#ffffff14);
+    }
+    .paso{
+      position:relative;display:grid;grid-template-columns:52px 1fr;gap:20px;
+      align-items:start;padding:19px 22px 19px 0;
+    }
+    .paso-n{
+      width:52px;height:52px;border-radius:15px;flex-shrink:0;
+      background:var(--crema);color:var(--azul);
+      display:grid;place-items:center;
+      font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:900;
+      box-shadow:0 6px 20px #0000002e;position:relative;z-index:1;
+    }
+    .paso h3{color:#fff;margin-bottom:7px}
+    .paso p{font-size:15px;line-height:1.62;color:#faf8f4b0}
+    .paso .nota{
+      display:inline-block;margin-top:11px;padding:5px 11px;border-radius:8px;
+      background:#ffffff14;font-size:12.5px;font-weight:600;color:#fff;
+    }
+
+    /* ─── Tarjetas ────────────────────────────────────────────────── */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .card{
+      background:#fff;border:1px solid var(--linea);border-radius:19px;padding:26px;
+      transition:transform .3s,box-shadow .3s,border-color .3s;
+    }
+    .card:hover{transform:translateY(-3px);box-shadow:0 16px 38px #1a1a1a0d;border-color:#122d4f2e}
+    .card .ic{
+      width:44px;height:44px;border-radius:12px;background:var(--azul-soft);
+      display:grid;place-items:center;font-size:21px;margin-bottom:15px;
+    }
+    .card h3{margin-bottom:8px}
+    .card p{font-size:14.5px;line-height:1.6;color:var(--tinta-2)}
+
+    /* ─── Trayectoria ─────────────────────────────────────────────── */
+    .tray{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+    .lista{display:grid;gap:15px;margin-top:24px}
+    .lista li{display:flex;gap:12px;align-items:flex-start;list-style:none;font-size:15.5px;line-height:1.55;color:var(--tinta-2)}
+    .lista .tic{
+      width:23px;height:23px;border-radius:50%;background:#e6f4ec;color:var(--verde);
+      display:grid;place-items:center;flex-shrink:0;font-size:12px;font-weight:900;margin-top:1px;
+    }
+
+    /* ─── Contacto ────────────────────────────────────────────────── */
+    .contacto{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+    .cont-card{
+      background:#fff;border:1px solid var(--linea);border-radius:18px;padding:24px;
+      text-decoration:none;display:block;transition:transform .3s,box-shadow .3s,border-color .3s;
+    }
+    .cont-card:hover{transform:translateY(-3px);box-shadow:0 16px 38px #1a1a1a0d;border-color:#122d4f2e}
+    .cont-card .et{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tinta-3)}
+    .cont-card .vl{font-size:17px;font-weight:800;margin-top:7px;color:var(--azul);word-break:break-word}
+    .cont-card .sb{font-size:13.5px;color:var(--tinta-2);margin-top:5px}
+
+    .cierre{
+      background:linear-gradient(135deg,var(--azul),var(--azul-2));
+      border-radius:26px;padding:clamp(34px,5vw,58px);text-align:center;color:#fff;
+    }
+    .cierre h2{color:#fff;margin-bottom:15px}
+    .cierre p{font-size:17px;line-height:1.6;color:#ffffffc4;max-width:520px;margin:0 auto 30px}
+    .cierre .btn-ghost{background:#ffffff1a;color:#fff;border-color:#ffffff40}
+    .cierre .btn-ghost:hover{background:#ffffff2b;border-color:#fff}
+
+    footer{padding:38px 0;border-top:1px solid var(--linea);margin-top:66px}
+    .foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--tinta-3)}
+    /* Los enlaces del pie median 17px de alto: en un teléfono eso se falla
+       más de lo que se acierta. El relleno los lleva a una zona pulsable
+       sin cambiar cómo se ven. */
+    .foot a{display:inline-block;padding:7px 2px;color:var(--azul);font-weight:600;text-decoration:none}
+    .foot a:hover{text-decoration:underline}
+
+    /* Botón flotante de WhatsApp: en el teléfono el contacto no debería
+       exigir volver al final de la página. */
+    .flota{
+      position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:60;
+      display:none;align-items:center;gap:8px;
+      background:var(--wa);color:#0a2e17;border-radius:100px;
+      padding:14px 20px;font-weight:800;font-size:15px;text-decoration:none;
+      box-shadow:0 10px 30px #25d36659;
+    }
+
+    /* ─── Teléfono ────────────────────────────────────────────────── */
+    @media(max-width:900px){
+      .hero-grid,.tray{grid-template-columns:1fr;gap:34px}
+      .grid-2,.grid-3,.contacto{grid-template-columns:1fr}
+      .foto figure{transform:none}
+      section{padding:48px 0}
+      .hero{padding:34px 0 8px}
+      .nav-acc .solo-desk{display:none}
+      /* 44px es el mínimo cómodo para el pulgar; el botón se quedaba en 39. */
+      .nav .btn{min-height:44px;padding:12px 18px}
+      .marca{min-height:44px}
+      .flota{display:inline-flex}
+      footer{margin-bottom:74px}
+      .pasos::before{left:21px}
+      .paso{grid-template-columns:44px 1fr;gap:15px;padding:15px 0}
+      .paso-n{width:44px;height:44px;font-size:18px;border-radius:13px}
+    }
+    @media(max-width:420px){
+      .cifras{grid-template-columns:1fr;border-radius:16px}
+      .cifra{padding:16px}
+      .cifra b{font-size:26px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *{animation:none!important;transition:none!important}
+      html{scroll-behavior:auto}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="marca" href="/">
+      <img src="/img/logo.png" alt="">
+      <span>Inmobiliaria&nbsp;House</span>
+    </a>
+    <div class="nav-acc">
+      <a class="btn btn-ghost solo-desk" href="/#/portafolio">Ver inmuebles</a>
+      <a class="btn btn-wa" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+        WhatsApp
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ HERO ═══════════════════════════ -->
+<div class="wrap hero">
+  <div class="hero-grid">
+    <div>
+      <span class="kicker">Publicación con exposición</span>
+      <h1>Tú no persigues compradores. <em>Nosotros publicamos</em> por ti.</h1>
+      <p class="lead">
+        Deja tu inmueble en nuestras manos y nosotros lo preparamos, lo
+        exponemos donde lo ven quienes de verdad compran, y filtramos a los
+        curiosos antes de que te llamen.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-main" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+          Quiero que publiquen mi inmueble
+        </a>
+        <a class="btn btn-ghost" href="/#/portafolio">Ver nuestro marketplace</a>
+      </div>
+    </div>
+
+    <div class="foto">
+      <figure>
+        <img src="/img/oficina-lg.jpg"
+             srcset="/img/oficina-sm.jpg 800w, /img/oficina-lg.jpg 1536w"
+             sizes="(max-width:900px) 100vw, 520px"
+             width="1536" height="1024"
+             alt="Fachada de la oficina de Inmobiliaria House en Pereira, con el letrero sobre la entrada">
+        <figcaption>
+          <span aria-hidden="true">📍</span>
+          Calle 14 #14-09 · Pereira, Risaralda
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <!-- Las tres cifras salen del portafolio real. No se repite ninguna en
+       la foto: verlo dos veces en la misma pantalla no aporta nada. -->
+  <div class="cifras">
+    <div class="cifra"><b>173</b><span>INMUEBLES EN CARTERA</span></div>
+    <div class="cifra"><b>22</b><span>MUNICIPIOS DEL EJE</span></div>
+    <div class="cifra"><b>3</b><span>VENTA · ARRIENDO · VACACIONAL</span></div>
+  </div>
+</div>
+
+<!-- ════════════════════════ CÓMO EXPONEMOS ════════════════════════ -->
+<section class="oscuro" id="como">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">El trabajo que hacemos</span>
+      <h2>Cómo exponemos tu inmueble</h2>
+      <p class="lead">
+        Publicar no es subir tres fotos y esperar. Éste es el recorrido que
+        sigue tu inmueble desde que nos lo entregas, igual si es para venta
+        o para arriendo.
+      </p>
+    </div>
+
+    <div class="pasos">
+      <div class="paso">
+        <div class="paso-n">1</div>
+        <div>
+          <h3>Visitamos y levantamos la ficha</h3>
+          <p>
+            Vamos al inmueble, tomamos las fotos y medimos lo que importa:
+            área, alcobas, baños, garajes, estrato, administración. Esa ficha
+            es la que después convence o descarta a un comprador, así que se
+            arma bien desde el principio.
+          </p>
+        </div>
+      </div>
+
+      <div class="paso">
+        <div class="paso-n">2</div>
+        <div>
+          <h3>Protegemos tu dirección</h3>
+          <p>
+            Publicamos el sector y las fotos del interior, nunca la dirección
+            exacta ni la fachada. Quien quiera verlo pasa por nosotros: no
+            llega gente sola a tu puerta.
+          </p>
+          <span class="nota">Tú decides qué se muestra</span>
+        </div>
+      </div>
+
+      <div class="paso">
+        <div class="paso-n">3</div>
+        <div>
+          <h3>Entra a nuestro marketplace</h3>
+          <p>
+            Tu inmueble entra al portafolio de House, donde lo encuentran
+            quienes ya vienen buscando en Pereira y el Eje Cafetero, con
+            filtros por ciudad, tipo, precio y modalidad.
+          </p>
+        </div>
+      </div>
+
+      <div class="paso">
+        <div class="paso-n">4</div>
+        <div>
+          <h3>Lo difundimos por WhatsApp con ficha completa</h3>
+          <p>
+            Cada inmueble tiene un enlace propio que, al compartirlo, llega
+            con la foto grande y la ficha en el mensaje: precio, área,
+            alcobas, baños y garaje. Nuestros asesores lo mueven por sus
+            contactos y tú puedes reenviarlo igual.
+          </p>
+          <span class="nota">El mismo enlace sirve para toda la red</span>
+        </div>
+      </div>
+
+      <div class="paso">
+        <div class="paso-n">5</div>
+        <div>
+          <h3>Lo abrimos a la red de asesores y comisionistas</h3>
+          <p>
+            No depende de una sola persona vendiendo. Tu inmueble queda
+            visible para los asesores de House y para comisionistas
+            externos, con la comisión repartida y registrada, de modo que a
+            todos les conviene moverlo.
+          </p>
+        </div>
+      </div>
+
+      <div class="paso">
+        <div class="paso-n">6</div>
+        <div>
+          <h3>Filtramos y acompañamos cada visita</h3>
+          <p>
+            Registramos a cada interesado y le hacemos seguimiento. Al
+            inmueble sólo llega quien tiene con qué, y siempre acompañado por
+            un asesor de House. Tú recibes el reporte, no las veinte llamadas.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ TRAYECTORIA ════════════════════════ -->
+<section>
+  <div class="wrap tray">
+    <div>
+      <span class="kicker">Quiénes somos</span>
+      <h2>Una inmobiliaria con oficina, no un aviso en internet</h2>
+      <p class="lead">
+        Inmobiliaria House trabaja Pereira y el Eje Cafetero desde una
+        oficina abierta al público en el centro de la ciudad. Puedes venir,
+        sentarte y preguntar por tu inmueble mirando a alguien a la cara —
+        algo que un portal no te ofrece.
+      </p>
+      <ul class="lista">
+        <!-- Sin repetir el 173 de la tira de cifras: aquí se dice qué HAY
+             en esa cartera, no cuánto. -->
+        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Todo tipo de inmueble</b>: apartamentos, casas, casas campestres, fincas, lotes, locales y oficinas.</span></li>
+        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Pereira y Dosquebradas</b> como núcleo, con presencia en 22 municipios del Eje Cafetero.</span></li>
+        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Venta, arriendo y alquiler vacacional</b>, con contrato y acompañamiento en cada paso.</span></li>
+        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Equipo de asesores propio</b> más una red de comisionistas aliados.</span></li>
+      </ul>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns:1fr">
+      <div class="card">
+        <div class="ic" aria-hidden="true">🏢</div>
+        <h3>Nos puedes visitar</h3>
+        <p>Calle 14 #14-09, Pereira. Sin cita: si estás por el centro, entra y pregunta.</p>
+      </div>
+      <div class="card">
+        <div class="ic" aria-hidden="true">🤝</div>
+        <h3>Un responsable con nombre</h3>
+        <p>Tu inmueble queda a cargo de un asesor concreto, no de un buzón de correo.</p>
+      </div>
+      <div class="card">
+        <div class="ic" aria-hidden="true">📋</div>
+        <h3>Todo queda registrado</h3>
+        <p>Cada interesado, cada visita y cada oferta se anota. Puedes pedir el estado cuando quieras.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════ QUÉ RECIBES ══════════════════════════ -->
+<section style="background:var(--crema-2)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">Qué incluye</span>
+      <h2>Lo que recibes al dejarnos publicar</h2>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="ic" aria-hidden="true">📸</div>
+        <h3>Ficha profesional</h3>
+        <p>Fotos y datos técnicos completos, listos para que un comprador decida sin llamarte a preguntar lo básico.</p>
+      </div>
+      <div class="card">
+        <div class="ic" aria-hidden="true">🌐</div>
+        <h3>Exposición múltiple</h3>
+        <p>Marketplace propio, portales inmobiliarios, difusión por WhatsApp y la red de asesores y comisionistas.</p>
+      </div>
+      <div class="card">
+        <div class="ic" aria-hidden="true">🛡️</div>
+        <h3>Filtro de interesados</h3>
+        <p>Nosotros atendemos, calificamos y acompañamos. A ti te llega el resumen de lo que va pasando.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ CONTACTO ═══════════════════════════ -->
+<section id="contacto">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">Hablemos</span>
+      <h2>Cuéntanos qué tienes para publicar</h2>
+      <p class="lead">
+        Escríbenos por WhatsApp con la dirección y el tipo de inmueble, o
+        pásate por la oficina. La valoración inicial no tiene costo.
+      </p>
+    </div>
+
+    <div class="contacto">
+      <a class="cont-card" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+        <div class="et">WhatsApp</div>
+        <div class="vl">310 592 2763</div>
+        <div class="sb">La vía más rápida. Respondemos en horario de oficina.</div>
+      </a>
+      <a class="cont-card" href="mailto:info@inmobiliariahouse.com?subject=Quiero%20publicar%20mi%20inmueble">
+        <div class="et">Correo</div>
+        <div class="vl">info@inmobiliariahouse.com</div>
+        <div class="sb">Para enviarnos documentos, fotos o la escritura.</div>
+      </a>
+      <a class="cont-card" href="https://www.google.com/maps/search/?api=1&query=Calle+14+%2314-09+Pereira+Risaralda" target="_blank" rel="noopener">
+        <div class="et">Oficina</div>
+        <div class="vl">Calle 14 #14-09</div>
+        <div class="sb">Pereira, Risaralda. Abierta al público.</div>
+      </a>
+    </div>
+
+    <div class="cierre" style="margin-top:44px">
+      <h2>¿Lo publicamos nosotros?</h2>
+      <p>
+        Tú entregas el inmueble; nosotros lo preparamos, lo exponemos y te
+        traemos compradores reales. También puedes mirar primero cómo se ve
+        el portafolio por dentro.
+      </p>
+      <div class="hero-cta" style="justify-content:center">
+        <a class="btn btn-wa" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+          Escribir por WhatsApp
+        </a>
+        <a class="btn btn-ghost" href="/#/portafolio">Entrar al marketplace</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 Inmobiliaria House · Calle 14 #14-09, Pereira, Risaralda</span>
+    <span>
+      <a href="https://wa.me/573105922763" target="_blank" rel="noopener">310 592 2763</a>
+      &nbsp;·&nbsp;
+      <a href="mailto:info@inmobiliariahouse.com">info@inmobiliariahouse.com</a>
+    </span>
+  </div>
+</footer>
+
+<a class="flota" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+  <span aria-hidden="true">💬</span> Escríbenos
+</a>
+
+</body>
+</html>

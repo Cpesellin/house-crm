@@ -14,6 +14,10 @@
       "source": "/vender",
       "destination": "/vender.html"
     },
+    {
+      "source": "/publicamos",
+      "destination": "/publicamos.html"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
