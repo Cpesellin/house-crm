@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
   <title>Publicamos tu inmueble por ti — Inmobiliaria House · Pereira</title>
-  <meta name="description" content="Nosotros nos encargamos de exponer tu inmueble: ficha profesional, marketplace propio, portales, difusión por WhatsApp y red de asesores. Calle 14 #14-09, Pereira.">
+  <meta name="description" content="Nosotros exponemos tu inmueble: ficha profesional, marketplace propio, difusión por WhatsApp y red de asesores. Calle 14 #14-09, Pereira. Más que inmuebles, creamos hogares.">
+  <meta name="theme-color" content="#0d2a52">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://inmobiliariahouse.com.co/publicamos">
@@ -17,238 +18,318 @@
   <meta property="og:site_name" content="Inmobiliaria House · Pereira">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Publicamos tu inmueble por ti — Inmobiliaria House">
-  <meta name="twitter:description" content="Ficha profesional, marketplace propio, portales y difusión dirigida. Pereira y el Eje Cafetero.">
+  <meta name="twitter:description" content="Ficha profesional, marketplace propio y difusión dirigida. Pereira y el Eje Cafetero.">
   <meta name="twitter:image" content="https://inmobiliariahouse.com.co/img/og-publicamos.jpg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 
   <style>
     /* ══════════════════════════════════════════════════════════════════
-       Paleta: el azul de la marca (el del letrero y el logo) sobre los
-       cremas que ya usa /vender, para que las dos landings se reconozcan
-       como del mismo sitio. El verde queda sólo para confirmaciones.
+       SISTEMA VISUAL — tomado de las piezas de la inmobiliaria
+       ══════════════════════════════════════════════════════════════════
+       De los flyers de House se conservan los cinco rasgos que los hacen
+       reconocibles, y se aplican aquí con el mismo criterio:
+
+         · Azul marino dominante con azul claro para lo que debe resaltar
+           (el precio, la palabra clave del titular, los iconos).
+         · Cortes diagonales entre bloques, no bordes rectos.
+         · Mayúsculas muy espaciadas para los rótulos y los lemas.
+         · Iconos de línea con el número arriba y la etiqueta debajo,
+           separados por filetes verticales.
+         · Un acento manuscrito por pieza. Uno, no tres: es un remate,
+           y repetido deja de destacar.
+
+       Montserrat cubre desde el titular extra-negro hasta el rótulo
+       espaciado, que es justo el rango que usan las piezas.
        ══════════════════════════════════════════════════════════════════ */
     :root{
-      --azul:#122d4f;        /* marca */
-      --azul-2:#1b4272;      /* hover / degradados */
-      --azul-soft:#eef2f8;
-      --crema:#faf8f4;
-      --crema-2:#f5f2ec;
-      --linea:#e8e2d8;
-      --tinta:#1a1a1a;
-      --tinta-2:#5a5550;
-      --tinta-3:#8a837c;
-      --verde:#1a6b4a;
-      --oro:#c8912a;
+      --marino:#0d2a52;
+      --marino-2:#133a6b;
+      --marino-3:#1b4d8a;
+      --claro:#8fc4f0;      /* azul claro de acento */
+      --claro-2:#b8dcf7;
+      --claro-3:#e8f3fc;    /* fondos suaves */
+      --blanco:#ffffff;
+      --gris:#f4f7fb;
+      --tinta:#0f1b2d;
+      --tinta-2:#4a5a70;
+      --tinta-3:#8394a8;
+      --linea:#dde6f0;
       --wa:#25D366;
+      --alto-cta:76px;      /* alto de la barra fija del móvil */
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth}
+    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     body{
-      font-family:'Bricolage Grotesque',system-ui,sans-serif;
-      background:var(--crema);color:var(--tinta);
+      font-family:'Montserrat',system-ui,sans-serif;
+      background:var(--blanco);color:var(--tinta);
       -webkit-font-smoothing:antialiased;overflow-x:hidden;
     }
-    .fr{font-family:'Fraunces',Georgia,serif}
-    .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
-    a{color:inherit}
     img{max-width:100%;display:block}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1140px;margin:0 auto;padding:0 20px}
 
-    /* ─── Tipografía de titulares ─────────────────────────────────── */
-    h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;line-height:1.03;letter-spacing:-.02em}
-    h2{font-size:clamp(26px,4.4vw,42px);font-weight:800;line-height:1.1;letter-spacing:-.015em}
-    h3{font-size:19px;font-weight:800;line-height:1.25}
-    .lead{font-size:clamp(16px,2.1vw,19px);line-height:1.62;color:var(--tinta-2)}
+    /* ─── Rótulos y titulares ─────────────────────────────────────── */
+    /* El espaciado ancho es la firma de las piezas; sin él el rótulo
+       parece un texto pequeño cualquiera. */
+    .rotulo{
+      font-size:11.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+      color:var(--claro);line-height:1.7;
+    }
+    .rotulo.oscuro{color:var(--marino-3)}
+    h1{font-size:clamp(38px,9vw,68px);font-weight:900;line-height:.98;letter-spacing:-.025em}
+    h2{font-size:clamp(28px,5.6vw,46px);font-weight:800;line-height:1.06;letter-spacing:-.02em}
+    h3{font-size:17.5px;font-weight:800;line-height:1.3;letter-spacing:-.01em}
+    .azul{color:var(--claro)}
+    .lead{font-size:clamp(15.5px,4vw,18.5px);line-height:1.62;color:var(--tinta-2);font-weight:500}
 
-    .kicker{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:7px 15px;border-radius:100px;
-      background:var(--azul-soft);color:var(--azul);
-      font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    /* Acento manuscrito, como el "Vive la tranquilidad de Cerritos" */
+    .manu{
+      font-family:'Dancing Script',cursive;font-weight:700;
+      font-size:clamp(22px,6vw,30px);line-height:1.15;color:var(--claro-2);
+    }
+    .manu::after{
+      content:'';display:block;width:74px;height:2px;margin-top:7px;
+      background:var(--claro);border-radius:2px;opacity:.7;
+    }
+
+    /* ─── Píldora de etiqueta (el "ARRIENDO" de las piezas) ───────── */
+    .pill{
+      display:inline-block;background:var(--claro-2);color:var(--marino);
+      padding:9px 20px;border-radius:100px;
+      font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
     }
 
     /* ─── Botones ─────────────────────────────────────────────────── */
     .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:9px;
-      padding:16px 28px;border-radius:14px;border:none;cursor:pointer;
-      font-family:inherit;font-size:16px;font-weight:700;text-decoration:none;
-      transition:transform .25s,box-shadow .25s,background .25s,border-color .25s;
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      min-height:54px;padding:15px 26px;border-radius:14px;border:none;cursor:pointer;
+      font-family:inherit;font-size:15.5px;font-weight:800;letter-spacing:.01em;
+      transition:transform .22s,box-shadow .22s,background .22s,border-color .22s;
     }
-    .btn-wa{background:var(--wa);color:#0a2e17}
-    .btn-wa:hover{background:#1fbb59;transform:translateY(-2px);box-shadow:0 10px 26px #25d36640}
-    .btn-main{background:var(--azul);color:#fff}
-    .btn-main:hover{background:var(--azul-2);transform:translateY(-2px);box-shadow:0 10px 26px #122d4f38}
-    .btn-ghost{background:#fff;color:var(--azul);border:1.5px solid var(--linea)}
-    .btn-ghost:hover{border-color:var(--azul);background:var(--azul-soft)}
-    .btn:focus-visible{outline:3px solid var(--azul);outline-offset:3px}
+    .btn-wa{background:var(--wa);color:#08301a}
+    .btn-wa:hover{background:#1fbb59;transform:translateY(-2px);box-shadow:0 12px 28px #25d36647}
+    .btn-claro{background:var(--claro-2);color:var(--marino)}
+    .btn-claro:hover{background:var(--claro);transform:translateY(-2px)}
+    .btn-linea{background:transparent;color:#fff;border:1.6px solid #ffffff59}
+    .btn-linea:hover{border-color:#fff;background:#ffffff14}
+    .btn-marino{background:var(--marino);color:#fff}
+    .btn-marino:hover{background:var(--marino-2);transform:translateY(-2px);box-shadow:0 12px 28px #0d2a5233}
+    .btn:focus-visible{outline:3px solid var(--claro);outline-offset:3px}
+
+    /* ─── Marca ───────────────────────────────────────────────────── */
+    .marca{display:flex;align-items:center;gap:11px}
+    .marca svg{flex-shrink:0}
+    .marca-tx b{
+      display:block;font-size:19px;font-weight:900;letter-spacing:.16em;line-height:1;color:#fff;
+    }
+    .marca-tx span{
+      display:block;font-size:8.5px;font-weight:600;letter-spacing:.34em;
+      color:var(--claro);margin-top:3px;
+    }
+
+    /* ─── Bloque marino con corte diagonal ────────────────────────── */
+    .marino{
+      position:relative;
+      background:linear-gradient(160deg,var(--marino) 0%,var(--marino-2) 58%,var(--marino-3) 100%);
+      color:#fff;overflow:hidden;
+    }
+    /* Formas de fondo: dan profundidad sin competir con el texto. */
+    .marino::before{
+      content:'';position:absolute;top:-18%;right:-12%;width:62%;height:70%;
+      background:radial-gradient(circle at 60% 40%,#ffffff17,transparent 68%);
+      pointer-events:none;
+    }
+    .diagonal{
+      position:absolute;left:0;right:0;bottom:-1px;height:clamp(42px,7vw,86px);
+      background:var(--blanco);
+      clip-path:polygon(0 100%,100% 0,100% 100%);
+    }
 
     /* ─── Cabecera ────────────────────────────────────────────────── */
-    header{
-      position:sticky;top:0;z-index:50;
-      background:#faf8f4e8;backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--linea);
-    }
-    .nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0}
-    .marca{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none}
-    .marca img{width:32px;height:32px;object-fit:contain}
-    .nav-acc{display:flex;align-items:center;gap:9px}
-    .nav .btn{padding:11px 17px;font-size:14px}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 0 0}
+    .top-lema{max-width:210px}
+    .lugar{display:flex;align-items:center;gap:7px;justify-content:flex-end;text-align:right}
+    .lugar b{font-size:15.5px;font-weight:800;line-height:1.15;display:block}
+    .lugar span{font-size:10px;font-weight:600;letter-spacing:.2em;color:var(--claro);text-transform:uppercase}
 
     /* ─── Hero ────────────────────────────────────────────────────── */
-    .hero{padding:56px 0 20px}
-    .hero-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:52px;align-items:center}
-    .hero h1{margin:18px 0 18px}
-    .hero h1 em{font-style:normal;color:var(--azul);position:relative;white-space:nowrap}
-    .hero h1 em::after{
-      content:'';position:absolute;left:0;right:0;bottom:.06em;height:.16em;
-      background:var(--oro);opacity:.32;border-radius:3px;
-    }
-    .hero-cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+    .hero{padding:30px 0 clamp(58px,10vw,110px)}
+    .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(26px,4vw,58px);align-items:center;margin-top:34px}
+    .hero h1{margin:16px 0 15px}
+    .hero .lead{color:#dbe6f4}
+    .hero-cta{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
 
-    /* Foto de la fachada. El marco inclinado y la sombra la separan del
-       fondo crema; el pie con la dirección la ancla a un lugar real. */
-    .foto{position:relative}
-    .foto figure{
-      border-radius:22px;overflow:hidden;border:1px solid var(--linea);
-      box-shadow:0 26px 60px #122d4f24;transform:rotate(-1.1deg);background:#fff;
-    }
-    .foto img{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
-    .foto figcaption{
+    /* Foto con marco y pie, como las fotos con rótulo de los flyers */
+    .fotoc{position:relative;border-radius:20px;overflow:hidden;box-shadow:0 24px 54px #0000004d;background:#0b2244}
+    .fotoc img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+    .fotoc .pie{
+      position:absolute;left:12px;bottom:12px;right:12px;
       display:flex;align-items:center;gap:9px;
-      padding:13px 17px;background:#fff;border-top:1px solid var(--linea);
-      font-size:13.5px;font-weight:600;color:var(--tinta-2);
+      background:#0d2a52e6;backdrop-filter:blur(6px);
+      border-radius:12px;padding:11px 14px;
     }
+    .fotoc .pie b{font-size:13.5px;font-weight:800;line-height:1.25}
+    .fotoc .pie span{display:block;font-size:9.5px;font-weight:600;letter-spacing:.18em;color:var(--claro);text-transform:uppercase;margin-top:2px}
 
-    /* ─── Cifras ──────────────────────────────────────────────────── */
-    .cifras{
-      display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
-      background:var(--linea);border:1px solid var(--linea);
-      border-radius:18px;overflow:hidden;margin:44px 0 8px;
+    /* ─── Tira de datos con iconos de línea ───────────────────────── */
+    /* Copia el patrón de las fichas: icono, número grande, etiqueta
+       pequeña, filete vertical entre columnas. */
+    .datos{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      background:#fff;border:1px solid var(--linea);border-radius:20px;
+      box-shadow:0 16px 40px #0d2a520f;overflow:hidden;
+      margin:-46px auto 0;position:relative;z-index:2;max-width:820px;
     }
-    .cifra{background:#fff;padding:22px 18px;text-align:center}
-    .cifra b{display:block;font-family:'Fraunces',Georgia,serif;font-size:30px;font-weight:900;color:var(--azul);line-height:1}
-    .cifra span{display:block;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--tinta-3);letter-spacing:.03em}
+    .dato{padding:22px 14px;text-align:center;position:relative}
+    .dato + .dato::before{
+      content:'';position:absolute;left:0;top:24%;bottom:24%;width:1px;background:var(--linea);
+    }
+    .dato svg{margin:0 auto 8px;display:block;color:var(--marino-3)}
+    .dato b{display:block;font-size:26px;font-weight:900;color:var(--marino);line-height:1}
+    .dato span{
+      display:block;margin-top:5px;font-size:10px;font-weight:600;
+      letter-spacing:.13em;text-transform:uppercase;color:var(--tinta-3);
+    }
 
     /* ─── Secciones ───────────────────────────────────────────────── */
-    section{padding:66px 0}
-    .sec-head{max-width:660px;margin-bottom:40px}
-    .sec-head h2{margin:15px 0 14px}
-    .oscuro{background:var(--azul);color:#faf8f4}
-    .oscuro .kicker{background:#ffffff1f;color:#fff}
-    .oscuro .lead{color:#faf8f4b8}
-    .oscuro h2{color:#fff}
+    section{padding:clamp(50px,8vw,86px) 0}
+    .sec-head{max-width:680px}
+    .sec-head h2{margin:13px 0 14px}
+    .centro{margin-left:auto;margin-right:auto;text-align:center}
 
-    /* ─── Proceso de exposición ───────────────────────────────────── */
-    /* Línea vertical que une los pasos: se lee como un recorrido, no
-       como seis tarjetas suertas. */
-    .pasos{position:relative;display:grid;gap:16px}
-    .pasos::before{
-      content:'';position:absolute;left:25px;top:34px;bottom:34px;width:2px;
-      background:linear-gradient(#ffffff42,#ffffff14);
-    }
+    /* ─── Pasos ───────────────────────────────────────────────────── */
+    .pasos{display:grid;gap:14px;margin-top:38px}
     .paso{
-      position:relative;display:grid;grid-template-columns:52px 1fr;gap:20px;
-      align-items:start;padding:19px 22px 19px 0;
+      display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;
+      background:#fff;border:1px solid var(--linea);border-radius:18px;padding:20px;
+      transition:transform .25s,box-shadow .25s,border-color .25s;
     }
+    .paso:hover{transform:translateY(-3px);box-shadow:0 18px 40px #0d2a5214;border-color:#8fc4f0}
     .paso-n{
-      width:52px;height:52px;border-radius:15px;flex-shrink:0;
-      background:var(--crema);color:var(--azul);
-      display:grid;place-items:center;
-      font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:900;
-      box-shadow:0 6px 20px #0000002e;position:relative;z-index:1;
+      width:56px;height:56px;border-radius:16px;
+      background:linear-gradient(150deg,var(--marino),var(--marino-3));
+      color:#fff;display:grid;place-items:center;
+      font-size:21px;font-weight:900;letter-spacing:-.02em;
     }
-    .paso h3{color:#fff;margin-bottom:7px}
-    .paso p{font-size:15px;line-height:1.62;color:#faf8f4b0}
-    .paso .nota{
-      display:inline-block;margin-top:11px;padding:5px 11px;border-radius:8px;
-      background:#ffffff14;font-size:12.5px;font-weight:600;color:#fff;
+    .paso h3{margin-bottom:7px;color:var(--marino)}
+    .paso p{font-size:14.5px;line-height:1.62;color:var(--tinta-2);font-weight:500}
+    .paso .marca-nota{
+      display:inline-block;margin-top:10px;padding:6px 12px;border-radius:8px;
+      background:var(--claro-3);color:var(--marino-3);
+      font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
     }
+    @media(min-width:760px){.pasos{grid-template-columns:1fr 1fr}}
+
+    /* ─── Simulación del mensaje de WhatsApp ──────────────────────── */
+    /* Enseña el resultado en vez de describirlo: así llega el inmueble
+       cuando un asesor lo comparte. */
+    .wa-demo{
+      max-width:352px;margin:0 auto;background:#0b141a;
+      border-radius:20px;padding:14px;box-shadow:0 26px 60px #0000005e;
+    }
+    .wa-burbuja{background:#005c4b;border-radius:12px;padding:7px;color:#e9edef}
+    .wa-prev{background:#ffffff1c;border-radius:9px;overflow:hidden;margin-bottom:7px}
+    /* height:auto es imprescindible: sin él manda el atributo height="420"
+       del HTML y la foto sale vertical (293x420) en vez de panorámica,
+       porque aspect-ratio no se aplica si el alto ya está resuelto. */
+    .wa-prev img{width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover}
+    .wa-prev .meta{padding:9px 11px}
+    .wa-prev .meta b{display:block;font-size:12.5px;font-weight:700;line-height:1.3}
+    .wa-prev .meta span{display:block;font-size:11px;color:#ffffff9e;margin-top:3px}
+    .wa-tx{padding:5px 7px 3px;font-size:13px;line-height:1.55;font-weight:500}
+    .wa-tx .t{font-weight:800;display:block;margin-bottom:7px}
+    .wa-tx ul{list-style:none;margin:0 0 9px}
+    .wa-tx li{padding-left:2px}
+    .wa-tx .lk{color:#8fd0ff;word-break:break-all;font-size:12px}
+    .wa-hora{text-align:right;font-size:10px;color:#ffffff8a;padding:2px 5px 0}
 
     /* ─── Tarjetas ────────────────────────────────────────────────── */
-    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
     .card{
-      background:#fff;border:1px solid var(--linea);border-radius:19px;padding:26px;
-      transition:transform .3s,box-shadow .3s,border-color .3s;
+      background:#fff;border:1px solid var(--linea);border-radius:18px;padding:24px;
+      transition:transform .25s,box-shadow .25s,border-color .25s;
     }
-    .card:hover{transform:translateY(-3px);box-shadow:0 16px 38px #1a1a1a0d;border-color:#122d4f2e}
+    .card:hover{transform:translateY(-3px);box-shadow:0 18px 40px #0d2a5214;border-color:#8fc4f0}
     .card .ic{
-      width:44px;height:44px;border-radius:12px;background:var(--azul-soft);
-      display:grid;place-items:center;font-size:21px;margin-bottom:15px;
+      width:46px;height:46px;border-radius:13px;background:var(--claro-3);
+      display:grid;place-items:center;margin-bottom:14px;color:var(--marino-3);
     }
-    .card h3{margin-bottom:8px}
-    .card p{font-size:14.5px;line-height:1.6;color:var(--tinta-2)}
+    .card h3{margin-bottom:7px;color:var(--marino)}
+    .card p{font-size:14px;line-height:1.6;color:var(--tinta-2);font-weight:500}
 
     /* ─── Trayectoria ─────────────────────────────────────────────── */
-    .tray{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-    .lista{display:grid;gap:15px;margin-top:24px}
-    .lista li{display:flex;gap:12px;align-items:flex-start;list-style:none;font-size:15.5px;line-height:1.55;color:var(--tinta-2)}
-    .lista .tic{
-      width:23px;height:23px;border-radius:50%;background:#e6f4ec;color:var(--verde);
-      display:grid;place-items:center;flex-shrink:0;font-size:12px;font-weight:900;margin-top:1px;
+    .tray{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,4vw,56px);align-items:center}
+    .checks{display:grid;gap:13px;margin-top:24px;list-style:none}
+    .checks li{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.55;color:var(--tinta-2);font-weight:500}
+    .checks b{color:var(--tinta);font-weight:800}
+    .checks .tic{
+      width:22px;height:22px;border-radius:50%;background:var(--claro-3);color:var(--marino-3);
+      display:grid;place-items:center;flex-shrink:0;margin-top:2px;
     }
 
     /* ─── Contacto ────────────────────────────────────────────────── */
-    .contacto{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
-    .cont-card{
-      background:#fff;border:1px solid var(--linea);border-radius:18px;padding:24px;
-      text-decoration:none;display:block;transition:transform .3s,box-shadow .3s,border-color .3s;
+    .cont{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}
+    .cont a{
+      display:block;background:#ffffff12;border:1px solid #ffffff26;border-radius:18px;padding:22px;
+      transition:transform .25s,background .25s,border-color .25s;
     }
-    .cont-card:hover{transform:translateY(-3px);box-shadow:0 16px 38px #1a1a1a0d;border-color:#122d4f2e}
-    .cont-card .et{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tinta-3)}
-    .cont-card .vl{font-size:17px;font-weight:800;margin-top:7px;color:var(--azul);word-break:break-word}
-    .cont-card .sb{font-size:13.5px;color:var(--tinta-2);margin-top:5px}
+    .cont a:hover{transform:translateY(-3px);background:#ffffff1f;border-color:var(--claro)}
+    .cont .et{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--claro)}
+    .cont .vl{font-size:17px;font-weight:800;margin-top:8px;word-break:break-word;line-height:1.25}
+    .cont .sb{font-size:13px;color:#ffffffa8;margin-top:6px;font-weight:500;line-height:1.5}
 
-    .cierre{
-      background:linear-gradient(135deg,var(--azul),var(--azul-2));
-      border-radius:26px;padding:clamp(34px,5vw,58px);text-align:center;color:#fff;
+    /* ─── Pie ─────────────────────────────────────────────────────── */
+    footer{background:var(--marino);color:#fff;padding:34px 0}
+    .foot{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+    .foot .lema{
+      font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--claro);
     }
-    .cierre h2{color:#fff;margin-bottom:15px}
-    .cierre p{font-size:17px;line-height:1.6;color:#ffffffc4;max-width:520px;margin:0 auto 30px}
-    .cierre .btn-ghost{background:#ffffff1a;color:#fff;border-color:#ffffff40}
-    .cierre .btn-ghost:hover{background:#ffffff2b;border-color:#fff}
+    .foot .dir{font-size:12.5px;color:#ffffff9e;font-weight:500;line-height:1.9}
+    /* Los enlaces del pie median 15px de alto; con relleno entran en una
+       zona que el pulgar acierta sin cambiar cómo se ven. */
+    .foot .dir a{display:inline-block;padding:8px 2px}
 
-    footer{padding:38px 0;border-top:1px solid var(--linea);margin-top:66px}
-    .foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--tinta-3)}
-    /* Los enlaces del pie median 17px de alto: en un teléfono eso se falla
-       más de lo que se acierta. El relleno los lleva a una zona pulsable
-       sin cambiar cómo se ven. */
-    .foot a{display:inline-block;padding:7px 2px;color:var(--azul);font-weight:600;text-decoration:none}
-    .foot a:hover{text-decoration:underline}
-
-    /* Botón flotante de WhatsApp: en el teléfono el contacto no debería
-       exigir volver al final de la página. */
-    .flota{
-      position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:60;
-      display:none;align-items:center;gap:8px;
-      background:var(--wa);color:#0a2e17;border-radius:100px;
-      padding:14px 20px;font-weight:800;font-size:15px;text-decoration:none;
-      box-shadow:0 10px 30px #25d36659;
+    /* ═══════════════════════════ TELÉFONO ═══════════════════════════
+       Las piezas de House se ven en el celular, así que ésta es la
+       vista principal, no una reducción de la de escritorio.
+       ════════════════════════════════════════════════════════════════ */
+    /* Barra fija de contacto: en el móvil el botón de acción no debería
+       depender de que el visitante llegue al final de la página. */
+    .cta-fija{
+      position:fixed;left:0;right:0;bottom:0;z-index:80;display:none;
+      padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+      background:#0d2a52f2;backdrop-filter:blur(12px);
+      border-top:1px solid #ffffff1f;
     }
+    .cta-fija .btn{width:100%}
 
-    /* ─── Teléfono ────────────────────────────────────────────────── */
     @media(max-width:900px){
-      .hero-grid,.tray{grid-template-columns:1fr;gap:34px}
-      .grid-2,.grid-3,.contacto{grid-template-columns:1fr}
-      .foto figure{transform:none}
-      section{padding:48px 0}
-      .hero{padding:34px 0 8px}
-      .nav-acc .solo-desk{display:none}
-      /* 44px es el mínimo cómodo para el pulgar; el botón se quedaba en 39. */
-      .nav .btn{min-height:44px;padding:12px 18px}
-      .marca{min-height:44px}
-      .flota{display:inline-flex}
-      footer{margin-bottom:74px}
-      .pasos::before{left:21px}
-      .paso{grid-template-columns:44px 1fr;gap:15px;padding:15px 0}
-      .paso-n{width:44px;height:44px;font-size:18px;border-radius:13px}
+      .hero-grid,.tray{grid-template-columns:1fr}
+      .grid3,.cont{grid-template-columns:1fr}
+      .datos{grid-template-columns:repeat(3,1fr);margin:-34px 16px 0}
+      .dato{padding:16px 6px}
+      .dato b{font-size:21px}
+      .dato span{font-size:8.5px;letter-spacing:.09em}
+      .top-lema{display:none}          /* el lema vuelve en el pie */
+      .cta-fija{display:block}
+      body{padding-bottom:var(--alto-cta)}
+      .hero{padding:22px 0 clamp(46px,12vw,74px)}
+      .hero-cta .btn{width:100%}
+      .foot{flex-direction:column;align-items:flex-start;gap:10px}
     }
-    @media(max-width:420px){
-      .cifras{grid-template-columns:1fr;border-radius:16px}
-      .cifra{padding:16px}
-      .cifra b{font-size:26px}
+    @media(max-width:600px){
+      /* La foto pasa a formato vertical: es como se mira en el teléfono
+         y así el inmueble se ve, no se adivina. */
+      .fotoc img{aspect-ratio:4/5}
+      .marca-tx b{font-size:17px}
+      .lugar b{font-size:13.5px}
+      .lugar span{font-size:8.5px;letter-spacing:.14em}
+      .paso{grid-template-columns:46px 1fr;gap:14px;padding:17px}
+      .paso-n{width:46px;height:46px;border-radius:13px;font-size:18px}
+      .wa-demo{max-width:100%}
     }
     @media(prefers-reduced-motion:reduce){
       *{animation:none!important;transition:none!important}
@@ -258,70 +339,99 @@
 </head>
 <body>
 
-<header>
-  <div class="wrap nav">
-    <a class="marca" href="/">
-      <img src="/img/logo.png" alt="">
-      <span>Inmobiliaria&nbsp;House</span>
-    </a>
-    <div class="nav-acc">
-      <a class="btn btn-ghost solo-desk" href="/#/portafolio">Ver inmuebles</a>
-      <a class="btn btn-wa" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
-        WhatsApp
-      </a>
-    </div>
-  </div>
-</header>
-
-<!-- ═══════════════════════════════ HERO ═══════════════════════════ -->
-<div class="wrap hero">
-  <div class="hero-grid">
-    <div>
-      <span class="kicker">Publicación con exposición</span>
-      <h1>Tú no persigues compradores. <em>Nosotros publicamos</em> por ti.</h1>
-      <p class="lead">
-        Deja tu inmueble en nuestras manos y nosotros lo preparamos, lo
-        exponemos donde lo ven quienes de verdad compran, y filtramos a los
-        curiosos antes de que te llamen.
-      </p>
-      <div class="hero-cta">
-        <a class="btn btn-main" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
-          Quiero que publiquen mi inmueble
+<!-- ════════════════════════════ HERO ═════════════════════════════ -->
+<div class="marino">
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <a class="marca" href="/" aria-label="Inmobiliaria House — inicio">
+          <svg width="38" height="38" viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><rect x="13" y="18" width="6" height="9"/>
+          </svg>
+          <span class="marca-tx"><b>HOUSE</b><span>INMOBILIARIA</span></span>
         </a>
-        <a class="btn btn-ghost" href="/#/portafolio">Ver nuestro marketplace</a>
+        <div class="rotulo top-lema" style="margin-top:14px">Propiedades que elevan tu estilo de vida</div>
+      </div>
+      <div class="lugar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--claro)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span><b>Pereira, Risaralda</b><span>Eje Cafetero</span></span>
       </div>
     </div>
 
-    <div class="foto">
-      <figure>
-        <img src="/img/oficina-lg.jpg"
-             srcset="/img/oficina-sm.jpg 800w, /img/oficina-lg.jpg 1536w"
-             sizes="(max-width:900px) 100vw, 520px"
-             width="1536" height="1024"
-             alt="Fachada de la oficina de Inmobiliaria House en Pereira, con el letrero sobre la entrada">
-        <figcaption>
-          <span aria-hidden="true">📍</span>
-          Calle 14 #14-09 · Pereira, Risaralda
-        </figcaption>
-      </figure>
+    <div class="hero">
+      <span class="pill">Publicación con exposición</span>
+      <div class="hero-grid" style="margin-top:22px">
+        <div>
+          <h1>Tú no persigues compradores.<br><span class="azul">Nosotros publicamos</span> por ti.</h1>
+          <p class="lead">
+            Deja tu inmueble en nuestras manos: lo preparamos, lo exponemos
+            donde lo ven quienes de verdad compran y filtramos a los curiosos
+            antes de que te llamen.
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-wa" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.96L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.4 1.3-1.94 1.35-.54.05-1.05.24-3.55-.74-3.02-1.19-4.9-4.32-5.05-4.52-.15-.2-1.2-1.6-1.2-3.05s.76-2.16 1.03-2.46c.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.7.66.5.24.58.81 1.98.88 2.12.07.15.12.32.02.52-.1.2-.15.32-.29.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.76 1.25 1.62 2.03 1.11.99 2.04 1.3 2.34 1.45.3.15.47.13.65-.08.17-.2.74-.86.94-1.16.2-.3.4-.25.66-.15.27.1 1.68.79 1.97.94.29.15.48.22.55.35.07.12.07.72-.17 1.4Z"/></svg>
+              Quiero que publiquen mi inmueble
+            </a>
+            <a class="btn btn-linea" href="/#/portafolio">Ver nuestro marketplace</a>
+          </div>
+        </div>
+
+        <div>
+          <figure class="fotoc">
+            <img src="/img/oficina-lg.jpg"
+                 srcset="/img/oficina-sm.jpg 800w, /img/oficina-lg.jpg 1536w"
+                 sizes="(max-width:900px) 100vw, 520px"
+                 width="1536" height="1024"
+                 alt="Fachada de la oficina de Inmobiliaria House en Pereira, con el letrero sobre la entrada">
+            <figcaption class="pie">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--claro)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span><b>Calle 14 #14-09</b><span>Oficina abierta al público</span></span>
+            </figcaption>
+          </figure>
+          <div class="manu" style="margin-top:20px">Más que inmuebles,<br>creamos hogares</div>
+        </div>
+      </div>
     </div>
   </div>
+  <div class="diagonal" aria-hidden="true"></div>
+</div>
 
-  <!-- Las tres cifras salen del portafolio real. No se repite ninguna en
-       la foto: verlo dos veces en la misma pantalla no aporta nada. -->
-  <div class="cifras">
-    <div class="cifra"><b>173</b><span>INMUEBLES EN CARTERA</span></div>
-    <div class="cifra"><b>22</b><span>MUNICIPIOS DEL EJE</span></div>
-    <div class="cifra"><b>3</b><span>VENTA · ARRIENDO · VACACIONAL</span></div>
+<!-- ══════════════════════ TIRA DE DATOS ══════════════════════════ -->
+<div class="wrap">
+  <!-- Las tres cifras salen de consultar el portafolio, no son estimaciones. -->
+  <div class="datos">
+    <div class="dato">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10 12 3l9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>
+      </svg>
+      <b>173</b><span>Inmuebles en cartera</span>
+    </div>
+    <div class="dato">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+      <b>22</b><span>Municipios del Eje</span>
+    </div>
+    <div class="dato">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/>
+      </svg>
+      <b>3</b><span>Venta · Arriendo · Vacacional</span>
+    </div>
   </div>
 </div>
 
-<!-- ════════════════════════ CÓMO EXPONEMOS ════════════════════════ -->
-<section class="oscuro" id="como">
+<!-- ═══════════════════════ CÓMO EXPONEMOS ════════════════════════ -->
+<section>
   <div class="wrap">
     <div class="sec-head">
-      <span class="kicker">El trabajo que hacemos</span>
-      <h2>Cómo exponemos tu inmueble</h2>
+      <div class="rotulo oscuro">El trabajo que hacemos</div>
+      <h2 style="color:var(--marino)">Cómo exponemos tu inmueble</h2>
       <p class="lead">
         Publicar no es subir tres fotos y esperar. Éste es el recorrido que
         sigue tu inmueble desde que nos lo entregas, igual si es para venta
@@ -334,117 +444,131 @@
         <div class="paso-n">1</div>
         <div>
           <h3>Visitamos y levantamos la ficha</h3>
-          <p>
-            Vamos al inmueble, tomamos las fotos y medimos lo que importa:
-            área, alcobas, baños, garajes, estrato, administración. Esa ficha
-            es la que después convence o descarta a un comprador, así que se
-            arma bien desde el principio.
-          </p>
+          <p>Vamos al inmueble, tomamos las fotos y medimos lo que importa: área, alcobas, baños, garajes, estrato y administración. Esa ficha es la que después convence o descarta a un comprador.</p>
         </div>
       </div>
-
       <div class="paso">
         <div class="paso-n">2</div>
         <div>
           <h3>Protegemos tu dirección</h3>
-          <p>
-            Publicamos el sector y las fotos del interior, nunca la dirección
-            exacta ni la fachada. Quien quiera verlo pasa por nosotros: no
-            llega gente sola a tu puerta.
-          </p>
-          <span class="nota">Tú decides qué se muestra</span>
+          <p>Publicamos el sector y las fotos del interior, nunca la dirección exacta ni la fachada. Quien quiera verlo pasa por nosotros: no llega gente sola a tu puerta.</p>
+          <span class="marca-nota">Tú decides qué se muestra</span>
         </div>
       </div>
-
       <div class="paso">
         <div class="paso-n">3</div>
         <div>
           <h3>Entra a nuestro marketplace</h3>
-          <p>
-            Tu inmueble entra al portafolio de House, donde lo encuentran
-            quienes ya vienen buscando en Pereira y el Eje Cafetero, con
-            filtros por ciudad, tipo, precio y modalidad.
-          </p>
+          <p>Tu inmueble entra al portafolio de House, donde lo encuentran quienes ya vienen buscando en Pereira y el Eje Cafetero, con filtros por ciudad, tipo, precio y modalidad.</p>
         </div>
       </div>
-
       <div class="paso">
         <div class="paso-n">4</div>
         <div>
-          <h3>Lo difundimos por WhatsApp con ficha completa</h3>
-          <p>
-            Cada inmueble tiene un enlace propio que, al compartirlo, llega
-            con la foto grande y la ficha en el mensaje: precio, área,
-            alcobas, baños y garaje. Nuestros asesores lo mueven por sus
-            contactos y tú puedes reenviarlo igual.
-          </p>
-          <span class="nota">El mismo enlace sirve para toda la red</span>
+          <h3>Lo difundimos por WhatsApp</h3>
+          <p>Cada inmueble tiene su propio enlace y llega con la foto grande y la ficha dentro del mensaje. Nuestros asesores lo mueven por sus contactos y tú puedes reenviarlo igual.</p>
+          <span class="marca-nota">Un enlace para toda la red</span>
         </div>
       </div>
-
       <div class="paso">
         <div class="paso-n">5</div>
         <div>
-          <h3>Lo abrimos a la red de asesores y comisionistas</h3>
-          <p>
-            No depende de una sola persona vendiendo. Tu inmueble queda
-            visible para los asesores de House y para comisionistas
-            externos, con la comisión repartida y registrada, de modo que a
-            todos les conviene moverlo.
-          </p>
+          <h3>Lo abre la red de asesores</h3>
+          <p>No depende de una sola persona vendiendo. Queda visible para los asesores de House y para comisionistas externos, con la comisión repartida y registrada.</p>
         </div>
       </div>
-
       <div class="paso">
         <div class="paso-n">6</div>
         <div>
-          <h3>Filtramos y acompañamos cada visita</h3>
-          <p>
-            Registramos a cada interesado y le hacemos seguimiento. Al
-            inmueble sólo llega quien tiene con qué, y siempre acompañado por
-            un asesor de House. Tú recibes el reporte, no las veinte llamadas.
-          </p>
+          <h3>Filtramos y acompañamos las visitas</h3>
+          <p>Registramos a cada interesado y le hacemos seguimiento. Al inmueble sólo llega quien tiene con qué, siempre con un asesor de House. Tú recibes el reporte, no las veinte llamadas.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════════ TRAYECTORIA ════════════════════════ -->
+<!-- ═════════════════════ DEMO DE WHATSAPP ════════════════════════ -->
+<section class="marino" style="padding-top:clamp(46px,7vw,76px)">
+  <div class="wrap">
+    <div class="sec-head centro">
+      <div class="rotulo">Así llega a los interesados</div>
+      <h2>Tu inmueble, listo para compartir</h2>
+      <p class="lead" style="color:#dbe6f4">
+        No es un enlace pelado. Va la foto, el precio y la ficha completa
+        dentro del mensaje, para que se lea aunque no se abra nada.
+      </p>
+    </div>
+
+    <!-- Ejemplo fijo con un inmueble real del portafolio: enseña el
+         formato mejor que describirlo. -->
+    <div class="wa-demo" style="margin-top:34px">
+      <div class="wa-burbuja">
+        <div class="wa-prev">
+          <img src="https://res.cloudinary.com/dfelsbmbo/image/upload/w_800,h_420,c_fill,g_auto,q_auto:good,f_auto/v1788818215/fichas_inmobiliarias/njdkzsgnkrni9pu7rn1k.jpg"
+               width="800" height="420" loading="lazy"
+               alt="Ejemplo de vista previa: casa campestre en Cerritos, Pereira">
+          <div class="meta">
+            <b>Inmobiliaria House</b>
+            <span>www.inmobiliariahouse.com.co</span>
+          </div>
+        </div>
+        <div class="wa-tx">
+          <span class="t">CASA EN ARRIENDO · CERRITOS, PEREIRA</span>
+          <ul>
+            <li>• Precio: $18.000.000/mes</li>
+            <li>• Área: 450 m²</li>
+            <li>• 4 habitaciones</li>
+            <li>• 7 baños</li>
+            <li>• 1 garaje</li>
+            <li>• Estrato 6</li>
+          </ul>
+          Inmobiliaria House<br>
+          Más información y fotos:<br>
+          <span class="lk">inmobiliariahouse.com.co/ver/HOUSE-259</span>
+        </div>
+        <div class="wa-hora">5:33 p. m. ✓✓</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ QUIÉNES SOMOS ═════════════════════════ -->
 <section>
   <div class="wrap tray">
     <div>
-      <span class="kicker">Quiénes somos</span>
-      <h2>Una inmobiliaria con oficina, no un aviso en internet</h2>
+      <div class="rotulo oscuro">Quiénes somos</div>
+      <h2 style="color:var(--marino);margin:13px 0 14px">Una inmobiliaria con oficina, no un aviso en internet</h2>
       <p class="lead">
         Inmobiliaria House trabaja Pereira y el Eje Cafetero desde una
-        oficina abierta al público en el centro de la ciudad. Puedes venir,
-        sentarte y preguntar por tu inmueble mirando a alguien a la cara —
-        algo que un portal no te ofrece.
+        oficina abierta al público. Puedes venir, sentarte y preguntar por tu
+        inmueble mirando a alguien a la cara — algo que un portal no te da.
       </p>
-      <ul class="lista">
-        <!-- Sin repetir el 173 de la tira de cifras: aquí se dice qué HAY
-             en esa cartera, no cuánto. -->
-        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Todo tipo de inmueble</b>: apartamentos, casas, casas campestres, fincas, lotes, locales y oficinas.</span></li>
-        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Pereira y Dosquebradas</b> como núcleo, con presencia en 22 municipios del Eje Cafetero.</span></li>
-        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Venta, arriendo y alquiler vacacional</b>, con contrato y acompañamiento en cada paso.</span></li>
-        <li><span class="tic" aria-hidden="true">✓</span> <span><b>Equipo de asesores propio</b> más una red de comisionistas aliados.</span></li>
+      <ul class="checks">
+        <li><span class="tic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span><b>Todo tipo de inmueble</b>: apartamentos, casas, casas campestres, fincas, lotes, locales y oficinas.</span></li>
+        <li><span class="tic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span><b>Pereira y Dosquebradas</b> como núcleo, con presencia en 22 municipios del Eje Cafetero.</span></li>
+        <li><span class="tic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span><b>Venta, arriendo y alquiler vacacional</b>, con contrato y acompañamiento en cada paso.</span></li>
+        <li><span class="tic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span><b>Equipo de asesores propio</b> más una red de comisionistas aliados.</span></li>
       </ul>
     </div>
 
-    <div class="grid-2" style="grid-template-columns:1fr">
+    <div class="grid3" style="grid-template-columns:1fr;margin-top:0">
       <div class="card">
-        <div class="ic" aria-hidden="true">🏢</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M8 8V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3"/><path d="M8 13h8"/></svg></div>
         <h3>Nos puedes visitar</h3>
         <p>Calle 14 #14-09, Pereira. Sin cita: si estás por el centro, entra y pregunta.</p>
       </div>
       <div class="card">
-        <div class="ic" aria-hidden="true">🤝</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/></svg></div>
         <h3>Un responsable con nombre</h3>
         <p>Tu inmueble queda a cargo de un asesor concreto, no de un buzón de correo.</p>
       </div>
       <div class="card">
-        <div class="ic" aria-hidden="true">📋</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M9 12h6M9 16h4"/></svg></div>
         <h3>Todo queda registrado</h3>
         <p>Cada interesado, cada visita y cada oferta se anota. Puedes pedir el estado cuando quieras.</p>
       </div>
@@ -452,26 +576,26 @@
   </div>
 </section>
 
-<!-- ═════════════════════════ QUÉ RECIBES ══════════════════════════ -->
-<section style="background:var(--crema-2)">
+<!-- ════════════════════════ QUÉ RECIBES ══════════════════════════ -->
+<section style="background:var(--gris)">
   <div class="wrap">
-    <div class="sec-head">
-      <span class="kicker">Qué incluye</span>
-      <h2>Lo que recibes al dejarnos publicar</h2>
+    <div class="sec-head centro">
+      <div class="rotulo oscuro">Qué incluye</div>
+      <h2 style="color:var(--marino)">Lo que recibes al dejarnos publicar</h2>
     </div>
-    <div class="grid-3">
+    <div class="grid3">
       <div class="card">
-        <div class="ic" aria-hidden="true">📸</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.4"/><path d="M8 6l1.4-2h5.2L16 6"/></svg></div>
         <h3>Ficha profesional</h3>
         <p>Fotos y datos técnicos completos, listos para que un comprador decida sin llamarte a preguntar lo básico.</p>
       </div>
       <div class="card">
-        <div class="ic" aria-hidden="true">🌐</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/></svg></div>
         <h3>Exposición múltiple</h3>
-        <p>Marketplace propio, portales inmobiliarios, difusión por WhatsApp y la red de asesores y comisionistas.</p>
+        <p>Marketplace propio, difusión por WhatsApp y la red de asesores y comisionistas trabajando el mismo inmueble.</p>
       </div>
       <div class="card">
-        <div class="ic" aria-hidden="true">🛡️</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.4 8.2-8 9.6C7.4 20.2 4 17 4 12V6l8-3Z"/><path d="M9.2 12.2l2 2 3.6-3.8"/></svg></div>
         <h3>Filtro de interesados</h3>
         <p>Nosotros atendemos, calificamos y acompañamos. A ti te llega el resumen de lo que va pasando.</p>
       </div>
@@ -479,67 +603,74 @@
   </div>
 </section>
 
-<!-- ═══════════════════════════ CONTACTO ═══════════════════════════ -->
-<section id="contacto">
+<!-- ═════════════════════════ CONTACTO ════════════════════════════ -->
+<section class="marino" id="contacto">
   <div class="wrap">
-    <div class="sec-head">
-      <span class="kicker">Hablemos</span>
+    <div class="sec-head centro">
+      <div class="rotulo">Hablemos</div>
       <h2>Cuéntanos qué tienes para publicar</h2>
-      <p class="lead">
+      <p class="lead" style="color:#dbe6f4">
         Escríbenos por WhatsApp con la dirección y el tipo de inmueble, o
         pásate por la oficina. La valoración inicial no tiene costo.
       </p>
     </div>
 
-    <div class="contacto">
-      <a class="cont-card" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+    <div class="cont">
+      <a href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
         <div class="et">WhatsApp</div>
         <div class="vl">310 592 2763</div>
         <div class="sb">La vía más rápida. Respondemos en horario de oficina.</div>
       </a>
-      <a class="cont-card" href="mailto:info@inmobiliariahouse.com?subject=Quiero%20publicar%20mi%20inmueble">
+      <a href="mailto:info@inmobiliariahouse.com?subject=Quiero%20publicar%20mi%20inmueble">
         <div class="et">Correo</div>
         <div class="vl">info@inmobiliariahouse.com</div>
         <div class="sb">Para enviarnos documentos, fotos o la escritura.</div>
       </a>
-      <a class="cont-card" href="https://www.google.com/maps/search/?api=1&query=Calle+14+%2314-09+Pereira+Risaralda" target="_blank" rel="noopener">
+      <a href="https://www.google.com/maps/search/?api=1&query=Calle+14+%2314-09+Pereira+Risaralda" target="_blank" rel="noopener">
         <div class="et">Oficina</div>
         <div class="vl">Calle 14 #14-09</div>
         <div class="sb">Pereira, Risaralda. Abierta al público.</div>
       </a>
     </div>
 
-    <div class="cierre" style="margin-top:44px">
-      <h2>¿Lo publicamos nosotros?</h2>
-      <p>
-        Tú entregas el inmueble; nosotros lo preparamos, lo exponemos y te
-        traemos compradores reales. También puedes mirar primero cómo se ve
-        el portafolio por dentro.
-      </p>
+    <div style="text-align:center;margin-top:38px">
       <div class="hero-cta" style="justify-content:center">
         <a class="btn btn-wa" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
-          Escribir por WhatsApp
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.96L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.4 1.3-1.94 1.35-.54.05-1.05.24-3.55-.74-3.02-1.19-4.9-4.32-5.05-4.52-.15-.2-1.2-1.6-1.2-3.05s.76-2.16 1.03-2.46c.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.7.66.5.24.58.81 1.98.88 2.12.07.15.12.32.02.52-.1.2-.15.32-.29.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.76 1.25 1.62 2.03 1.11.99 2.04 1.3 2.34 1.45.3.15.47.13.65-.08.17-.2.74-.86.94-1.16.2-.3.4-.25.66-.15.27.1 1.68.79 1.97.94.29.15.48.22.55.35.07.12.07.72-.17 1.4Z"/></svg>
+          Escríbenos por WhatsApp
         </a>
-        <a class="btn btn-ghost" href="/#/portafolio">Entrar al marketplace</a>
+        <a class="btn btn-claro" href="/#/portafolio">Entrar al marketplace</a>
       </div>
+      <div class="manu" style="margin-top:30px;display:inline-block;text-align:left">Tu próximo hogar<br>te espera</div>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <span>© 2026 Inmobiliaria House · Calle 14 #14-09, Pereira, Risaralda</span>
-    <span>
-      <a href="https://wa.me/573105922763" target="_blank" rel="noopener">310 592 2763</a>
+    <div class="marca">
+      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 14 16 4l12 10"/><path d="M7 13v14h18V13"/><rect x="13" y="18" width="6" height="9"/>
+      </svg>
+      <span class="marca-tx"><b>HOUSE</b><span>INMOBILIARIA</span></span>
+    </div>
+    <div class="lema">Más que inmuebles, creamos hogares</div>
+    <div class="dir">
+      Calle 14 #14-09, Pereira · Risaralda<br>
+      <a href="https://wa.me/573105922763" target="_blank" rel="noopener" style="color:var(--claro-2);font-weight:700">310 592 2763</a>
       &nbsp;·&nbsp;
-      <a href="mailto:info@inmobiliariahouse.com">info@inmobiliariahouse.com</a>
-    </span>
+      <a href="mailto:info@inmobiliariahouse.com" style="color:var(--claro-2);font-weight:700">info@inmobiliariahouse.com</a>
+    </div>
   </div>
 </footer>
 
-<a class="flota" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
-  <span aria-hidden="true">💬</span> Escríbenos
-</a>
+<!-- Barra fija sólo en móvil -->
+<div class="cta-fija">
+  <a class="btn btn-wa" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20que%20publiquen%20mi%20inmueble" target="_blank" rel="noopener">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.96L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.4 1.3-1.94 1.35-.54.05-1.05.24-3.55-.74-3.02-1.19-4.9-4.32-5.05-4.52-.15-.2-1.2-1.6-1.2-3.05s.76-2.16 1.03-2.46c.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.7.66.5.24.58.81 1.98.88 2.12.07.15.12.32.02.52-.1.2-.15.32-.29.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.76 1.25 1.62 2.03 1.11.99 2.04 1.3 2.34 1.45.3.15.47.13.65-.08.17-.2.74-.86.94-1.16.2-.3.4-.25.66-.15.27.1 1.68.79 1.97.94.29.15.48.22.55.35.07.12.07.72-.17 1.4Z"/></svg>
+    Agenda tu visita por WhatsApp
+  </a>
+</div>
 
 </body>
 </html>
