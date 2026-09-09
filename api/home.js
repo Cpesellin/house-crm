@@ -164,7 +164,27 @@ export default async function handler(req, res) {
       } catch (e) { /* el conteo es un adorno, no un requisito */ }
 
       const ciudad = t.ciudad ? String(t.ciudad).trim() : '';
-      const cruda = t.og_imagen_url || t.hero_foto_url || null;
+
+      // Imagen, en orden de preferencia:
+      //
+      //   1. og_imagen_url — la que el inquilino subió a mano.
+      //   2. /img/og-<slug>.jpg — la miniatura COMPUESTA (foto + panel de
+      //      marca + logo + lema + contacto). Es la buena: una foto
+      //      recortada a secas no dice de quién es ni cómo contactarlo.
+      //      Se comprueba con un HEAD para no anunciar un 404: si el
+      //      inquilino no tiene la suya, se pasa al siguiente paso.
+      //   3. hero_foto_url recortada a 1200x630 por Cloudinary.
+      //   4. La genérica del sitio.
+      let compuesta = null;
+      if (t.slug) {
+        const ruta = 'https://' + host + '/img/og-' + t.slug + '.jpg';
+        try {
+          const h = await fetch(ruta, { method: 'HEAD' });
+          if (h.ok) compuesta = ruta;
+        } catch (e) { /* sin miniatura propia; sigue al recorte */ }
+      }
+
+      const cruda = t.og_imagen_url || compuesta || t.hero_foto_url || null;
       const img = og1200(cruda);
 
       datos = {
@@ -176,8 +196,13 @@ export default async function handler(req, res) {
         imagen: img || ('https://' + host + '/img/og-image.png'),
         sitio: t.nombre,
         canonical,
-        // La medida sólo se garantiza cuando Cloudinary hizo el recorte.
-        tieneMedida: !!(img && img.indexOf('res.cloudinary.com/') !== -1),
+        // La medida se declara sólo cuando la garantizamos: el recorte de
+        // Cloudinary y la miniatura compuesta miden 1200x630 exactos.
+        // Para cualquier otra imagen no se declara: anunciar una medida
+        // que no es descuadra la vista previa.
+        tieneMedida: !!(img && (
+          img.indexOf('res.cloudinary.com/') !== -1 || img === compuesta
+        )),
       };
     }
   } catch (e) {
