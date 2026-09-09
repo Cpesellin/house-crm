@@ -36,6 +36,17 @@
 --   políticas RLS. Se revisa aparte, no a ciegas junto con esto.
 -- ══════════════════════════════════════════════════════════════════════
 
+-- ESTADO 2026-09-09: ejecutado, entraron 8 de las 10 funciones.
+--   Se cortó antes del último tramo (54-multitenant-mejoras, que empieza
+--   en la línea 528 de 658). Las dos que faltaban —check_slug_available y
+--   cron_alertar_trials_venciendo— se entregaron aparte en
+--   APLICAR-panel-saas-parte2.sql.
+--
+--   Lección para la próxima: un archivo de 26 KB en el SQL Editor puede
+--   quedarse a medias sin avisar. Mejor por bloques y verificando.
+--
+-- ══════════════════════════════════════════════════════════════════════
+
 
 
 -- ══════════════════════════════════════════════════════════════════════
