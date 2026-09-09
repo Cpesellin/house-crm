@@ -12,13 +12,30 @@
    flechas sólo aparecen donde hay ratón.
    ══════════════════════════════════════════════════════════════════════ */
 
+/* ─── Color: UNO configurable, el resto derivado ────────────────────
+ *
+ * El home es de marca blanca: sirve a cualquier inmobiliaria de la
+ * plataforma. Sólo `--color-primario` viene del inquilino (lo pone
+ * tenant/branding.js desde su ficha); los demás tonos se calculan.
+ *
+ * Consecuencia: el diseño NO puede depender de que el color sea azul.
+ * Con un verde o un vinotinto debe seguir funcionando, y por eso los
+ * grises quedan fijos y el verde de WhatsApp también — ése es de
+ * WhatsApp, no de la marca.
+ *
+ * El respaldo #0d2a52 es el azul de las piezas de House, para cuando la
+ * variable aún no está puesta (primer pintado antes de applyBranding).
+ */
 #sec-home {
-  --hm-marino: #0d2a52;
-  --hm-marino-2: #133a6b;
-  --hm-marino-3: #1b4d8a;
-  --hm-claro: #8fc4f0;
-  --hm-claro-2: #b8dcf7;
-  --hm-claro-3: #e8f3fc;
+  --hm-marino:   var(--color-primario, #0d2a52);
+  --hm-marino-2: color-mix(in srgb, var(--hm-marino) 88%, #fff);
+  --hm-marino-3: color-mix(in srgb, var(--hm-marino) 76%, #fff);
+  --hm-marino-osc: color-mix(in srgb, var(--hm-marino) 74%, #000);
+  --hm-claro:   color-mix(in srgb, var(--hm-marino) 42%, #fff);
+  --hm-claro-2: color-mix(in srgb, var(--hm-marino) 26%, #fff);
+  --hm-claro-3: color-mix(in srgb, var(--hm-marino) 9%,  #fff);
+
+  /* Neutros fijos: no se derivan de la marca. */
   --hm-linea: #dde6f0;
   --hm-tinta: #0f1b2d;
   --hm-tinta-2: #4a5a70;
@@ -38,7 +55,7 @@
 .hm-rotulo.claro { color: var(--hm-claro); }
 
 #homeC h2 {
-  font-size: clamp(23px, 4.6vw, 34px); font-weight: 800;
+  font-size: clamp(23px, 4.6vw, 34px); font-weight: 700;
   line-height: 1.1; letter-spacing: -.02em; color: var(--hm-marino);
   margin: 6px 0 0;
 }
@@ -52,11 +69,32 @@
 
 /* ─── Buscador protagonista ─────────────────────────────────────────── */
 
+/* Degradado radial tomado del diseño (medido: 130% 100% at 50% -10%).
+   Es el estado sin fotografía, y también el respaldo de la variante con
+   foto: si la imagen no carga, el hero sigue legible en vez de romperse. */
 .hm-hero {
-  background: linear-gradient(160deg, var(--hm-marino) 0%, var(--hm-marino-2) 60%, var(--hm-marino-3) 100%);
-  color: #fff; padding: 34px 18px 30px; position: relative; overflow: hidden;
+  background: radial-gradient(130% 100% at 50% -10%,
+    var(--hm-marino-3) 0%, var(--hm-marino) 52%, var(--hm-marino-osc) 100%);
+  color: #fff; padding: 34px 18px 52px; position: relative; overflow: hidden;
 }
-.hm-hero::before {
+/* Variante con fotografía a sangre. La imagen va en un pseudo-elemento y
+   el velo encima se arma CON EL COLOR DE MARCA, no con negro: un velo
+   negro apaga la foto y despega el hero del resto de la identidad. */
+.hm-hero.con-foto { background: var(--hm-marino); }
+.hm-hero.con-foto::after {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background-image: var(--hm-hero-foto);
+  background-size: cover; background-position: center;
+}
+.hm-hero.con-foto::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--hm-marino) 74%, transparent) 0%,
+    color-mix(in srgb, var(--hm-marino) 52%, transparent) 45%,
+    color-mix(in srgb, var(--hm-marino) 86%, transparent) 100%);
+}
+.hm-hero.con-foto .hm-hero-in { position: relative; z-index: 2; }
+.hm-hero:not(.con-foto)::before {
   content: ''; position: absolute; top: -20%; right: -14%;
   width: 64%; height: 74%;
   background: radial-gradient(circle at 60% 40%, #ffffff17, transparent 68%);
@@ -76,14 +114,14 @@
 .hm-tabs { display: flex; gap: 7px; margin: 20px 0 12px; flex-wrap: wrap; }
 .hm-tab {
   display: inline-flex; align-items: center; gap: 7px;
-  min-height: 42px; padding: 9px 16px; border-radius: 100px;
+  min-height: 44px; padding: 9px 18px; border-radius: 999px;
   border: 1.5px solid #ffffff36; background: #ffffff12; color: #fff;
   font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
   transition: background .2s, border-color .2s, color .2s;
 }
 .hm-tab b { font-weight: 800; opacity: .7; font-size: 12px; }
 .hm-tab:hover { background: #ffffff22; }
-.hm-tab.is-on { background: var(--hm-claro-2); color: var(--hm-marino); border-color: var(--hm-claro-2); }
+.hm-tab.is-on { background: #fff; color: var(--hm-marino); border-color: #fff; }
 .hm-tab.is-on b { opacity: .65; }
 
 .hm-buscador {
@@ -93,24 +131,24 @@
 }
 .hm-buscador select,
 .hm-buscador input {
-  min-height: 50px; padding: 0 14px; border: 1px solid var(--hm-linea);
-  border-radius: 11px; background: #fff; color: var(--hm-tinta);
+  min-height: 52px; padding: 0 14px; border: 1px solid var(--hm-linea);
+  border-radius: 10px; background: var(--hm-gris); color: var(--hm-tinta);
   font-family: inherit; font-size: 15px; font-weight: 500; width: 100%;
 }
 .hm-buscador select { cursor: pointer; }
 .hm-buscador input::placeholder { color: var(--hm-tinta-3); }
 .hm-buscador select:focus, .hm-buscador input:focus {
   outline: none; border-color: var(--hm-marino-3);
-  box-shadow: 0 0 0 3px #1b4d8a24;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hm-marino) 18%, transparent);
 }
 .hm-btn-buscar {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 50px; padding: 0 22px; border: none; border-radius: 11px;
-  background: var(--hm-marino); color: #fff;
+  min-height: 52px; padding: 0 22px; border: none; border-radius: 10px;
+  background: var(--hm-marino-3); color: #fff;
   font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
   transition: background .2s;
 }
-.hm-btn-buscar:hover { background: var(--hm-marino-3); }
+.hm-btn-buscar:hover { background: var(--hm-marino); }
 
 /* Atajo por código: los asesores comparten HOUSE-xxx todo el día. */
 .hm-codigo { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
@@ -204,7 +242,7 @@
 /* El precio primero y grande: es el dato por el que se descarta o se
    sigue mirando. */
 .hm-precio {
-  font-size: 19px; font-weight: 900; color: var(--hm-marino);
+  font-size: 20px; font-weight: 800; color: var(--hm-marino);
   line-height: 1.1; letter-spacing: -.02em;
 }
 .hm-precio span { font-size: 12.5px; font-weight: 700; color: var(--hm-tinta-3); }
@@ -340,4 +378,21 @@
 
 @media (prefers-reduced-motion: reduce) {
   #homeC *, .hm-carr { transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ─── Frase descriptiva de la tarjeta ───────────────────────────────── */
+/* Va al final, como en el diseño y como lo hace la referencia: primero
+   cuánto cuesta y dónde queda; qué es, de último. */
+.hm-frase {
+  margin-top: 8px; font-size: 13.5px; font-weight: 700; line-height: 1.35;
+  color: var(--hm-tinta);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ─── Lema del inquilino (acento manuscrito) ────────────────────────── */
+/* UNO por página. Si el inquilino no tiene lema, no se pinta nada. */
+.hm-lema {
+  font-family: 'Dancing Script', cursive; font-weight: 700;
+  font-size: clamp(21px, 5vw, 28px); line-height: 1.15;
+  color: var(--hm-claro-2); text-align: center; margin: 26px auto 0;
 }

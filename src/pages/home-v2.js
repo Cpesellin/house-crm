@@ -41,6 +41,7 @@
  */
 
 import { icon } from '../ui/icons.js';
+import { getCurrentTenant } from '../tenant/current.js';
 
 const D = () => window.D || [];
 const norm = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
@@ -165,11 +166,21 @@ function tarjeta(p) {
   const modo = esArriendo(p) && !esVenta(p) ? 'En arriendo'
     : esVenta(p) && !esArriendo(p) ? 'En venta' : 'Venta o arriendo';
 
+  // Singular cuando toca: la maqueta mostraba "1 baños", y es el mismo
+  // descuido que ya habíamos corregido en el mensaje de WhatsApp.
+  const pl = (n, uno, varios) => `${n} ${Number(n) === 1 ? uno : varios}`;
   const especs = [
-    p.habitaciones ? `${p.habitaciones} hab` : '',
-    p.banos ? `${p.banos} baños` : '',
+    p.habitaciones ? pl(p.habitaciones, 'alcoba', 'alcobas') : '',
+    p.banos ? pl(p.banos, 'baño', 'baños') : '',
     p.area_construida ? `${p.area_construida} m²` : '',
   ].filter(Boolean).join(' · ');
+
+  // Frase descriptiva al final, como en el diseño: al ojo le sirve más
+  // cuánto cuesta y dónde queda antes de qué es.
+  const modoTx = esArriendo(p) && !esVenta(p) ? 'en arriendo'
+    : esVenta(p) && !esArriendo(p) ? 'en venta' : 'en venta o arriendo';
+  const donde = titulo(p.barrio) || titulo(p.ciudad);
+  const frase = `${titulo(p.tipo) || 'Inmueble'} ${modoTx}${donde ? ' en ' + donde : ''}`;
 
   const ref = esc(p.codigo_house || p.id);
 
@@ -184,9 +195,9 @@ function tarjeta(p) {
     </div>
     <div class="hm-card-body">
       <div class="hm-precio">${esc(pr.txt)}<span>${esc(pr.suf)}</span></div>
-      <div class="hm-tipo">${esc(titulo(p.tipo))}</div>
-      <div class="hm-ubic">${icon('pin', 12)}${esc(ubic || 'Pereira')}</div>
+      <div class="hm-ubic">${icon('pin', 12)}${esc(ubic)}</div>
       ${especs ? `<div class="hm-especs">${esc(especs)}</div>` : ''}
+      <div class="hm-frase">${esc(frase)}</div>
     </div>
   </article>`;
 }
@@ -210,6 +221,26 @@ export function renderHomeV2(container) {
   if (!cont) return;
 
   const c = conteos();
+
+  // ── Marca del inquilino ────────────────────────────────────────────
+  //
+  // Nada de "Pereira" ni "Inmobiliaria House" escrito aquí: el home es de
+  // marca blanca y un inquilino de Bucaramanga no puede leer "Eje
+  // Cafetero". Todo sale de su ficha, con respaldos por si un campo está
+  // vacío (los inquilinos nuevos entran con lo mínimo).
+  const t = getCurrentTenant() || {};
+  const marca = {
+    nombre: t.nombre || 'Inmobiliaria',
+    ciudad: t.ciudad || '',
+    lema: t.lema || '',
+    heroFoto: t.hero_foto_url || '',
+  };
+  // El titular admite la ciudad como variable, y funciona sin ella: nunca
+  // se mete el nombre del inquilino dentro de la frase, porque con un
+  // nombre largo se rompe.
+  const titular = marca.ciudad
+    ? `Encuentra tu inmueble en <span>${esc(marca.ciudad)}</span>`
+    : 'Encuentra tu próximo inmueble';
   const d = D();
 
   // Sólo con foto: una portada de marcadores grises no vende. Los demás
@@ -232,10 +263,11 @@ export function renderHomeV2(container) {
 
   cont.innerHTML = `
   <!-- ═══════════════════ BUSCADOR PROTAGONISTA ═══════════════════ -->
-  <section class="hm-hero">
+  <section class="hm-hero${marca.heroFoto ? ' con-foto' : ''}"
+           ${marca.heroFoto ? `style="--hm-hero-foto:url('${esc(marca.heroFoto)}')"` : ''}>
     <div class="hm-hero-in">
-      <h1 class="hm-h1">Encuentra tu inmueble en <span>Pereira</span><br>y el Eje Cafetero</h1>
-      <p class="hm-sub">${c.total} inmuebles verificados, con asesor que te acompaña.</p>
+      <h1 class="hm-h1">${titular}</h1>
+      <p class="hm-sub">${c.total} ${c.total === 1 ? 'inmueble verificado' : 'inmuebles verificados'}, con asesor que te acompaña.</p>
 
       <!-- Modalidad con el conteo real: prometer una pestaña de arriendo
            llena cuando hay 9 se descubre al primer clic. -->
@@ -357,9 +389,10 @@ export function renderHomeV2(container) {
       <div class="hm-vent">
         <span class="hm-vent-ic">${icon('pin', 20)}</span>
         <h3>Tenemos oficina</h3>
-        <p>Calle 14 #14-09, Pereira. Puedes venir, sentarte y preguntar mirando a alguien a la cara.</p>
+        <p>${esc(t.direccion || marca.ciudad || 'Nuestra oficina')}. Puedes venir, sentarte y preguntar mirando a alguien a la cara.</p>
       </div>
     </div>
+    ${marca.lema ? `<div class="hm-lema">${esc(marca.lema)}</div>` : ''}
     <div class="hm-cta-fila">
       <a class="hm-btn-claro" href="/publicamos">Quiero que publiquen mi inmueble</a>
       <a class="hm-btn-linea" href="https://wa.me/573105922763?text=Hola%2C%20quiero%20asesor%C3%ADa" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>

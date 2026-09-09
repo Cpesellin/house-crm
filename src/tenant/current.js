@@ -48,7 +48,12 @@ const DEFAULT_TENANT = Object.freeze({
   direccion: 'Calle 14 #14-09, Pereira, Risaralda',
   email: 'info@inmobiliariahouse.com',
   lema: 'Más que inmuebles, creamos hogares',
-  hero_foto_url: null,
+  // Foto del hero: HOUSE-109, casa campestre en Pereira al atardecer.
+  // Elegida a mano entre las candidatas del portafolio — el hero es la
+  // única imagen que no puede fallar, y automatizar la elección habría
+  // puesto un cuarto de lavado en la portada (pasó al revisar candidatas).
+  // Recortada a 1600x900 con encuadre automático y formato negociado.
+  hero_foto_url: 'https://res.cloudinary.com/dfelsbmbo/image/upload/w_1600,h_900,c_fill,g_auto,q_auto:good,f_auto/v1776981590/fichas_inmobiliarias/hxbvfxdvfjetdfigucgp.png',
   og_imagen_url: null,
   horario: null,
   redes: {},
