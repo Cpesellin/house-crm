@@ -4,25 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="referrer" content="no-referrer">
-  <title>House · Asesores Inmobiliarios | Pereira, Colombia</title>
-  <meta name="description" content="Tu hogar ideal te espera. Venta y arriendo de casas, apartamentos, fincas y locales en Pereira, Dosquebradas y el Eje Cafetero. Asesoría personalizada.">
+  <title>Inmobiliaria House · Inmuebles en Pereira y el Eje Cafetero</title>
+  <meta name="description" content="Casas, apartamentos, fincas y locales en Pereira, Dosquebradas y el Eje Cafetero. Verificamos cada inmueble y acompañamos cada visita. Oficina en Calle 14 #14-09.">
 
   <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+  <!-- Vista previa al compartir la raíz.
+       Va aquí, estática, y NO en /api/home, porque en Vercel el sistema de
+       archivos gana sobre las reescrituras: existe este index.html, así que
+       la regla de user-agent para "/" nunca se aplica. Con /arriendos y
+       /ver/:ref sí funciona, porque ahí no hay ningún archivo.
+       /api/home queda escrita y probada para cuando el multi-tenant exija
+       vista previa por inquilino; entonces hará falta middleware, que sí
+       corre antes del sistema de archivos.
+       La descripción no lleva conteos: en un archivo estático un "174
+       inmuebles" queda viejo y nadie lo nota. -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://inmobiliariahouse.com.co">
-  <meta property="og:title" content="House · Asesores Inmobiliarios">
-  <meta property="og:description" content="Tu hogar ideal te espera. Casas, apartamentos, fincas y locales en Pereira y el Eje Cafetero. Venta y arriendo con asesoría personalizada.">
-  <meta property="og:image" content="https://inmobiliariahouse.com.co/img/og-image.png">
+  <meta property="og:url" content="https://www.inmobiliariahouse.com.co/">
+  <meta property="og:title" content="Inmobiliaria House · Inmuebles en Pereira y el Eje Cafetero">
+  <meta property="og:description" content="Verificamos cada inmueble, filtramos a los interesados y acompañamos cada visita hasta la firma. Oficina en Calle 14 #14-09, Pereira. WhatsApp 310 592 2763.">
+  <meta property="og:image" content="https://www.inmobiliariahouse.com.co/img/og-house.jpg">
+  <meta property="og:image:secure_url" content="https://www.inmobiliariahouse.com.co/img/og-house.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:alt" content="Inmobiliaria House · Calle 14 #14-09, Pereira">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="es_CO">
-  <meta property="og:site_name" content="House Asesores Inmobiliarios">
+  <meta property="og:site_name" content="Inmobiliaria House">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="House · Asesores Inmobiliarios">
-  <meta name="twitter:description" content="Tu hogar ideal te espera. Venta y arriendo en Pereira y el Eje Cafetero.">
-  <meta name="twitter:image" content="https://inmobiliariahouse.com.co/img/og-image.png">
+  <meta name="twitter:title" content="Inmobiliaria House · Inmuebles en Pereira y el Eje Cafetero">
+  <meta name="twitter:description" content="Verificamos, filtramos y acompañamos. Venta y arriendo en Pereira y el Eje Cafetero.">
+  <meta name="twitter:image" content="https://www.inmobiliariahouse.com.co/img/og-house.jpg">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/img/logo.png">
