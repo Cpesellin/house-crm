@@ -424,8 +424,84 @@ export function renderHomeV2(container) {
     ['hmCarrNuevos', 'hmCarrArr'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.scrollLeft = 0;
+      autoAvance(id);
     });
   });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// Avance automático de los carruseles
+// ══════════════════════════════════════════════════════════════════════
+//
+// Un carrusel que se mueve solo es útil —enseña que hay más inventario sin
+// que nadie toque nada— y es insoportable si se mueve cuando no debe. Las
+// cinco reglas que lo hacen llevadero:
+//
+//   1. Si el sistema pide menos movimiento (prefers-reduced-motion), no
+//      avanza. No es un adorno negociable: hay gente a la que le marea.
+//   2. Se detiene con el ratón encima o con el foco dentro. Nadie quiere
+//      que la tarjeta se le escape mientras la lee.
+//   3. Si la persona lo mueve con el dedo o la rueda, se calla. Ya está
+//      mirando: seguir empujando es pelearse con ella.
+//   4. No corre si no está en pantalla, ni con la pestaña en segundo
+//      plano. Mover algo que nadie ve sólo gasta batería.
+//   5. Al llegar al final vuelve al principio, para que no quede muerto.
+
+const AUTO_MS = 4500;
+const _timers = new Map();
+
+function pararAuto(id) {
+  const t = _timers.get(id);
+  if (t) { clearInterval(t.timer); t.io?.disconnect(); _timers.delete(id); }
+}
+
+function autoAvance(id) {
+  // rHome() se llama varias veces (al arrancar y al llegar los datos), así
+  // que hay que limpiar el temporizador anterior o se acumulan y el
+  // carrusel empieza a saltar de dos en dos.
+  pararAuto(id);
+
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  if (el.querySelectorAll('.hm-card').length < 3) return;  // sin nada que rotar
+
+  const est = { pausado: false, visible: false, rendido: false };
+
+  const avanzar = () => {
+    if (est.pausado || est.rendido || !est.visible || document.hidden) return;
+    const t = el.querySelector('.hm-card');
+    const paso = t ? t.getBoundingClientRect().width + 14 : 300;
+    // ¿Queda sitio a la derecha? El margen de 8px evita que un redondeo
+    // deje el carrusel a un pixel del final y no vuelva nunca.
+    const fin = el.scrollWidth - el.clientWidth - 8;
+    el.scrollTo({ left: el.scrollLeft >= fin ? 0 : el.scrollLeft + paso, behavior: 'smooth' });
+  };
+
+  const pausa = () => { est.pausado = true; };
+  const sigue = () => { est.pausado = false; };
+  el.addEventListener('pointerenter', pausa);
+  el.addEventListener('pointerleave', sigue);
+  el.addEventListener('focusin', pausa);
+  el.addEventListener('focusout', sigue);
+
+  // Gesto de la persona: se rinde y no vuelve a moverse en esta visita.
+  const rendirse = () => { est.rendido = true; };
+  el.addEventListener('touchstart', rendirse, { passive: true });
+  el.addEventListener('wheel', rendirse, { passive: true });
+
+  let io = null;
+  if (typeof IntersectionObserver === 'function') {
+    io = new IntersectionObserver(
+      (ent) => { est.visible = ent.some((e) => e.isIntersecting); },
+      { threshold: 0.35 }
+    );
+    io.observe(el);
+  } else {
+    est.visible = true;   // sin soporte, se asume visible
+  }
+
+  _timers.set(id, { timer: setInterval(avanzar, AUTO_MS), io, est });
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -509,6 +585,10 @@ if (typeof window !== 'undefined') {
   window._hmScroll = function (id, dir) {
     const el = document.getElementById(id);
     if (!el) return;
+    // Pulsar la flecha es un gesto igual que deslizar: el avance
+    // automático se calla y deja de empujar mientras se mira.
+    const auto = _timers.get(id);
+    if (auto?.est) auto.est.rendido = true;
     // Se desplaza el ancho de una tarjeta más el hueco.
     const t = el.querySelector('.hm-card');
     const paso = t ? t.getBoundingClientRect().width + 14 : 300;
