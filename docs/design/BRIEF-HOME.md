@@ -596,3 +596,164 @@ Se listan para no repetirlos. Todos son reales y costaron tiempo:
    resultado tienen que salir del mismo criterio.
 6. **Vista previa de WhatsApp que repetía la ficha** del mensaje de abajo.
    Cada parte debe aportar algo distinto.
+
+---
+
+## 13. ARQUITECTURA MULTI-INQUILINO — el home es de marca blanca
+
+**Esto es un requisito, no una mejora futura.** El mismo home tiene que
+servir para Inmobiliaria House y para cualquier otra inmobiliaria que
+entre a la plataforma, con **su nombre, su logo, su color y su propio
+dominio**. Si el diseño se hace pensando en House, cada alta nueva será
+una cirugía.
+
+### 13.1 Qué ya existe (no hay que inventarlo)
+
+La plataforma resuelve el inquilino en este orden:
+
+1. `?tenant=slug` — para pruebas y previsualizaciones
+2. **Subdominio** — `arias.plataforma.com` → inquilino `arias`
+3. **Dominio propio** — se busca el hostname en la ficha del inquilino
+4. Si nada coincide, cae en House
+
+Y ya existe un mecanismo de marca que sustituye valores en el DOM:
+
+```html
+<img data-brand="logo">              <!-- src y alt del inquilino -->
+<span data-brand="nombre"></span>    <!-- razón social -->
+<a data-brand="whatsapp"></a>        <!-- teléfono con enlace armado -->
+```
+
+más variables CSS: `--color-primario` y `--b600`.
+
+**El diseño debe usar ese mecanismo.** Todo lo que sea de marca va marcado
+con `data-brand`, nunca escrito en el HTML.
+
+### 13.2 Datos que el inquilino aporta hoy
+
+| Campo | House | Notas |
+|---|---|---|
+| `nombre` | Inmobiliaria House | longitud variable |
+| `slug` | house | subdominio |
+| `logo_url` | *vacío* | cae en `/img/logo.png` |
+| `color_primario` | `#1d4ed8` | ⚠️ ver 13.5 |
+| `telefono` | +573105922763 | |
+| `ciudad` | Pereira | |
+| `email_admin` | info@… | |
+| `direccion` | *vacío* | ⚠️ ver 13.5 |
+| `metadata.dominio_custom` | inmobiliariahouse.com.co | |
+
+### 13.3 Las cinco reglas de diseño que esto impone
+
+**a) El nombre es de longitud variable.**
+Va desde "House" (5 caracteres) hasta "Inmobiliaria Arias & Asociados"
+(30). El diseño debe verse bien en los dos extremos.
+→ En la cabecera: una línea, sin recorte hasta 24 caracteres; de ahí en
+adelante puntos suspensivos. En el teléfono el logo solo, sin texto, si
+pasa de 18.
+→ **Nunca meter el nombre dentro de una frase de titular.** "Bienvenido a
+Inmobiliaria House" se rompe con un nombre largo; "Encuentra tu inmueble"
+no.
+
+**b) El logo tiene proporción desconocida.**
+Uno traerá un cuadrado, otro un rectángulo apaisado tres veces más ancho.
+→ Definir un **hueco de tamaño fijo** y encajar dentro con
+`object-fit: contain`: `max-height 40px`, `max-width 170px` en escritorio;
+`36px × 140px` en el teléfono. Centrado vertical.
+→ **El diseño debe funcionar sin logo**: si el inquilino no subió ninguno,
+se muestra la inicial del nombre en un cuadro con el color de marca. Hoy
+House no tiene logo cargado en su ficha.
+
+**c) El color es del inquilino; la estructura no.**
+Sólo hay **un** color configurable: `color_primario`. De él se derivan los
+tonos:
+
+```css
+--marca:       var(--color-primario);
+--marca-osc:   color-mix(in srgb, var(--marca) 78%, #000);   /* hover, degradados */
+--marca-claro: color-mix(in srgb, var(--marca) 26%, #fff);   /* acentos, píldoras */
+--marca-suave: color-mix(in srgb, var(--marca)  8%, #fff);   /* fondos de icono */
+```
+
+Lo que **NO** se deriva y queda fijo para todos:
+- Los grises y neutros (texto, bordes, fondos alternos)
+- El verde de WhatsApp (`#25D366`): es de WhatsApp, no de la marca
+- Los colores de estado (disponible, arrendado, vendido)
+
+→ Consecuencia: **el diseño no puede depender de que el color sea azul
+marino.** Debe verse bien con un verde, un vinotinto o un naranja. Si una
+composición sólo funciona en azul, está mal resuelta.
+→ Y el **velo del hero** se arma con el color de marca, no con un azul
+escrito a mano: `color-mix(in srgb, var(--marca) 72%, transparent)`.
+
+**d) Ninguna cifra ni ciudad escrita en el HTML.**
+"174 inmuebles", "Pereira", "Eje Cafetero": todo sale del inquilino y de
+sus datos. Un inquilino de Bucaramanga no puede ver "Eje Cafetero".
+→ El titular debe admitir la ciudad como variable:
+*"Inmuebles verificados en **{ciudad}**"*.
+
+**e) Las secciones se degradan solas.**
+Un inquilino nuevo entra con 5 inmuebles, no con 174. El diseño debe
+especificar qué se ve:
+- Carrusel con menos de 4 fichas con foto → **no se pinta la sección**
+- Sin sectores con 3+ inmuebles → **no se pinta "explora por sector"**
+- Sin arriendos → **no se pinta la pestaña ni la sección de arriendo**
+- Inquilino con 0 inmuebles → el hero y el bloque de confianza se
+  mantienen; el resto desaparece y el buscador queda igual
+
+Entregar **el estado "inquilino nuevo con 5 fichas"** como pantalla aparte.
+Es el que van a ver todos los clientes nuevos el primer día, y hoy nadie
+lo ha diseñado.
+
+### 13.4 Dominio propio — qué implica para el diseño
+
+Cuando el inquilino corre en su dominio:
+- La vista previa de WhatsApp debe llevar **su** nombre, **su** logo y
+  **su** imagen, no la de House.
+- Por eso la miniatura 1200×630 **no puede ser un archivo fijo**: se
+  compone con el logo y la foto del inquilino, o se genera desde su mejor
+  fotografía.
+→ Entregar la miniatura como **plantilla**: dónde va el logo, dónde el
+texto, qué pasa con un logo cuadrado y con uno apaisado.
+- Y el pie no puede decir "Inmobiliaria House": va `data-brand="nombre"`.
+
+### 13.5 Dos huecos en los datos — los cierro yo, no son de diseño
+
+Los anoto aquí para que quede constancia de que el diseño depende de ellos:
+
+1. **`color_primario` de House es `#1d4ed8`**, un azul que **no es el de
+   sus propias piezas** (`#0d2a52`). Si el home lee ese campo, el home de
+   House saldría del color equivocado. Hay que corregir el dato.
+2. **`direccion` está vacía** y `logo_url` también. El home muestra la
+   dirección de la oficina y el logo: ambos deben pasar a ser **campos
+   obligatorios al dar de alta** un inquilino.
+
+Y hay campos que el home necesita y el modelo aún no tiene. Los agrego yo:
+
+| Campo | Para qué |
+|---|---|
+| `lema` | el manuscrito ("Más que inmuebles, creamos hogares") |
+| `hero_foto_url` | la fotografía del hero, elegida a mano |
+| `og_imagen_url` | la miniatura de WhatsApp |
+| `horario` | "Lun a vie 8–6, sáb 9–1" |
+| `redes` | Instagram, Facebook |
+
+**Para el diseño:** trata esos cinco como si ya existieran. Si alguno
+falta, la sección correspondiente debe poder omitirse sin dejar un hueco.
+
+### 13.6 Cómo se prueba
+
+El diseño se valida con **tres inquilinos imaginarios**, y conviene
+entregar el home en los tres estados:
+
+| | Inquilino A | Inquilino B | Inquilino C |
+|---|---|---|---|
+| Nombre | House | Arias & Asociados Inmobiliaria | Vive |
+| Logo | ninguno (inicial) | apaisado 3:1 | cuadrado |
+| Color | `#0d2a52` azul marino | `#166534` verde | `#7c2d12` vinotinto |
+| Ciudad | Pereira | Bucaramanga | Medellín |
+| Inmuebles | 174 | 12 | 3 |
+| Dominio | propio | subdominio | subdominio |
+
+Si el home se ve bien en los tres, está bien resuelto. Si sólo se ve bien
+en el primero, es un home de House disfrazado de plataforma.
