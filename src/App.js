@@ -570,9 +570,19 @@ export async function initApp(container) {
       const wantsLogin = params.get('login') === '1' || params.get('reg') === '1';
       if (!wantsLogin) {
         document.getElementById('lov').style.display = 'none';
-        // Default visitor lands on /portafolio
+        // El visitante que llega al dominio a secas ve el HOME, y la URL
+        // se queda limpia: `inmobiliariahouse.com.co`, sin `#/`.
+        //
+        // Antes esto reescribía el hash a '#/portafolio', así que la
+        // portada era la lista completa —173 tarjetas seguidas, 38.143px
+        // de alto— y el dominio nunca aparecía sin almohadilla. Un
+        // dominio con `#/` se ve a medio hacer al compartirlo.
+        //
+        // Con hash explícito (alguien entra a #/portafolio o a un
+        // inmueble) se respeta: sólo se toma el home cuando no se pidió
+        // nada concreto.
         if (!hash || hash === 'inv') {
-          location.hash = '#/portafolio';
+          if (typeof window.go === 'function') window.go('inicio', { sinHash: true });
         }
       }
       // Init visitor state (localStorage tracking)
@@ -588,6 +598,11 @@ export async function initApp(container) {
           try { window._applyVisitorChrome && window._applyVisitorChrome(); } catch(e) {}
           // Render cards with full CRM inventory filters
           if (typeof window.rInv === 'function') window.rInv();
+          // Y repintar el HOME: se pintó al arrancar, cuando window.D
+          // todavía estaba vacío, así que salía con "Todos 0 · Venta 0" y
+          // sin carruseles. Sus conteos se calculan al pintar, así que en
+          // cuanto hay datos hay que volver a pintarlo.
+          if (typeof window.rHome === 'function') window.rHome();
           if (typeof window.uSt === 'function') window.uSt();
           if (typeof window.populateAsesorFilter === 'function') window.populateAsesorFilter();
         }).catch(e => console.error('[Visitor loadPublic]', e));

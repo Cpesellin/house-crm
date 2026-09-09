@@ -119,8 +119,11 @@ function getCurrentRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const key = hash.split('/')[0] || '';
   if (ROUTES[key]) return key;
-  // Default based on user type
+  // Sin hash y sin sesión: el home. Evita el parpadeo de la lista de
+  // inventario antes de que el arranque decida, y deja el dominio limpio.
   const user = window.userStore?.get();
+  if (!user && !key) return 'inicio';
+  // Default based on user type
   const tipo = user?.tipo_usuario || 'interno';
   if (tipo === 'publico') return 'portafolio';
   return 'inv';
@@ -136,7 +139,14 @@ function getCurrentRoute() {
  * the sidebar active state, invokes the route's render function, and scrolls
  * to the top of the page.
  */
-function navigateTo(route) {
+/**
+ * @param {string} route
+ * @param {{sinHash?: boolean}} [opts] - sinHash muestra la sección SIN
+ *   escribir location.hash. Lo usa el home: la portada tiene que vivir en
+ *   `inmobiliariahouse.com.co` a secas, no en `…/#/inicio`. Un dominio con
+ *   almohadilla se ve a medio hacer cuando se comparte por WhatsApp.
+ */
+function navigateTo(route, opts) {
   // Normalise: strip leading #/ if someone passes the full hash
   route = (route || 'inv').replace(/^#\/?/, '');
 
@@ -192,7 +202,7 @@ function navigateTo(route) {
   // p.ej. #/p/HOUSE-178), lo dejamos tal cual para no perder los params.
   const desired = `#/${route}`;
   const currentRouteKey = location.hash.replace(/^#\/?/, '').split('/')[0];
-  if (currentRouteKey !== route) {
+  if (!opts?.sinHash && currentRouteKey !== route) {
     location.hash = desired;
     // hashchange listener will call navigateTo again, so bail here
     return;
@@ -261,14 +271,18 @@ function init() {
     navigateTo(getCurrentRoute());
   });
 
-  // If the DOM is already loaded, navigate to the initial hash immediately.
-  // Otherwise wait for DOMContentLoaded.
+  // Arranque. Si NO hay hash, el visitante escribió el dominio a secas:
+  // se pinta sin escribir hash para que la URL se quede limpia
+  // (`inmobiliariahouse.com.co`, no `…/#/inicio`). Con hash explícito se
+  // navega normal.
+  const arrancar = () => {
+    const sinHash = !location.hash.replace(/^#\/?/, '');
+    navigateTo(getCurrentRoute(), sinHash ? { sinHash: true } : undefined);
+  };
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      navigateTo(getCurrentRoute());
-    });
+    document.addEventListener('DOMContentLoaded', arrancar);
   } else {
-    navigateTo(getCurrentRoute());
+    arrancar();
   }
 }
 

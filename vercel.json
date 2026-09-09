@@ -11,6 +11,11 @@
       "destination": "/api/arriendos"
     },
     {
+      "source": "/",
+      "has": [{ "type": "header", "key": "user-agent", "value": "(?i)whatsapp|facebookexternalhit|telegrambot|twitterbot|linkedinbot|slackbot|discordbot" }],
+      "destination": "/api/home"
+    },
+    {
       "source": "/vender",
       "destination": "/vender.html"
     },
