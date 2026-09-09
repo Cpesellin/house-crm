@@ -21,9 +21,8 @@
  *
  *   Lo que NO se copia, y por qué:
  *
- *     · Su pestaña de Arriendo funciona con miles de fichas; aquí hay 9.
- *       Las pestañas muestran el conteo real para no prometer inventario
- *       que no existe.
+ *     · Su pestaña de Arriendo funciona con miles de fichas; aquí hay 10.
+ *       Las pestañas van SIN cantidad para el público (ver más abajo).
  *     · Su bloque de ciudades (Bogotá, Medellín, Cali…) no tiene
  *       equivalente: sólo tres ciudades pasan de 3 inmuebles. Se cambia
  *       por sectores, que es como se busca en Pereira.
@@ -37,7 +36,17 @@
  *
  * TODOS LOS CONTEOS SE CALCULAN AL PINTAR
  *   Nada de números escritos a mano: salen de window.D en cada render, así
- *   que no se quedan viejos cuando el portafolio cambia.
+ *   que no se quedan viejos cuando el portafolio cambia. Y como el
+ *   contenido rota solo (los últimos ingresos cambian al publicar), las
+ *   tarjetas se generan siempre desde los datos: ninguna referencia a un
+ *   inmueble concreto vive en el código.
+ *
+ * LAS CANTIDADES NO SON PÚBLICAS
+ *   Decidido el 2026-09-09: el visitante no ve cuántos inmuebles hay en
+ *   venta ni en arriendo. Es información del negocio, y con 163 ventas
+ *   contra 10 arriendos además juega en contra. Las cifras se muestran
+ *   sólo con sesión interna; el equipo las sigue viendo dentro del
+ *   marketplace.
  */
 
 import { icon } from '../ui/icons.js';
@@ -222,6 +231,16 @@ export function renderHomeV2(container) {
 
   const c = conteos();
 
+  // ¿Se muestran las cantidades? Sólo con sesión interna.
+  //
+  // Para el público las cifras se ocultan a propósito: decirle a un
+  // cliente —o a la competencia— que hay 163 en venta y 10 en arriendo es
+  // información del negocio, y encima juega en contra. El dato sigue
+  // estando dentro del marketplace, para el equipo.
+  const u = window.userStore?.get();
+  const verCifras = !!u && (u.tipo_usuario || 'interno') === 'interno';
+  const cifra = (n) => (verCifras ? `<b>${n}</b>` : '');
+
   // ── Marca del inquilino ────────────────────────────────────────────
   //
   // Nada de "Pereira" ni "Inmobiliaria House" escrito aquí: el home es de
@@ -267,26 +286,26 @@ export function renderHomeV2(container) {
            ${marca.heroFoto ? `style="--hm-hero-foto:url('${esc(marca.heroFoto)}')"` : ''}>
     <div class="hm-hero-in">
       <h1 class="hm-h1">${titular}</h1>
-      <p class="hm-sub">${c.total} ${c.total === 1 ? 'inmueble verificado' : 'inmuebles verificados'}, con asesor que te acompaña.</p>
+      <p class="hm-sub">${verCifras ? `${c.total} ${c.total === 1 ? 'inmueble verificado' : 'inmuebles verificados'}, con asesor que te acompaña.` : 'Inmuebles verificados, con un asesor que te acompaña hasta la firma.'}</p>
 
       <!-- Modalidad con el conteo real: prometer una pestaña de arriendo
            llena cuando hay 9 se descubre al primer clic. -->
       <div class="hm-tabs" role="tablist" aria-label="Modalidad">
         <button class="hm-tab is-on" role="tab" aria-selected="true" data-neg="" onclick="window._hmTab(this)">
-          Todos <b>${c.total}</b>
+          Todos ${cifra(c.total)}
         </button>
         <button class="hm-tab" role="tab" aria-selected="false" data-neg="venta" onclick="window._hmTab(this)">
-          Venta <b>${c.venta}</b>
+          Venta ${cifra(c.venta)}
         </button>
         <button class="hm-tab" role="tab" aria-selected="false" data-neg="arriendo" onclick="window._hmTab(this)">
-          Arriendo <b>${c.arriendo}</b>
+          Arriendo ${cifra(c.arriendo)}
         </button>
       </div>
 
       <div class="hm-buscador">
         <select id="hmTipo" aria-label="Tipo de inmueble">
           <option value="">Cualquier tipo</option>
-          ${c.tipos.map(([t, n]) => `<option value="${esc(t)}">${esc(t)} (${n})</option>`).join('')}
+          ${c.tipos.map(([t, n]) => `<option value="${esc(t)}">${esc(t)}${verCifras ? ` (${n})` : ''}</option>`).join('')}
         </select>
         <input id="hmTexto" type="search" placeholder="Barrio, sector o palabra clave"
                aria-label="Barrio, sector o palabra clave"
@@ -331,7 +350,7 @@ export function renderHomeV2(container) {
     <div class="hm-chips">
       ${c.sectores.map(([b, n]) => `
         <button class="hm-chip" onclick="window._hmSector('${esc(b)}')">
-          ${icon('pin', 14)}<span>${esc(b)}</span><b>${n}</b>
+          ${icon('pin', 14)}<span>${esc(b)}</span>${cifra(n)}
         </button>`).join('')}
     </div>
   </section>` : ''}
@@ -348,7 +367,7 @@ export function renderHomeV2(container) {
       ${c.tipos.map(([t, n]) => `
         <button class="hm-tipo-card" onclick="window._hmTipo('${esc(t)}')">
           <span class="hm-tipo-ic">${icon(tipoIcono[t] || 'home', 22)}</span>
-          <span class="hm-tipo-tx"><b>${esc(t)}</b><span>${n} ${n === 1 ? 'inmueble' : 'inmuebles'}</span></span>
+          <span class="hm-tipo-tx"><b>${esc(t)}</b><span>${verCifras ? `${n} ${n === 1 ? 'inmueble' : 'inmuebles'}` : 'Ver disponibles'}</span></span>
         </button>`).join('')}
     </div>
   </section>
@@ -361,7 +380,7 @@ export function renderHomeV2(container) {
         <div class="hm-rotulo">Para vivir ya</div>
         <h2>En arriendo</h2>
       </div>
-      <button class="hm-vertodo" onclick="window._hmTab(null,'arriendo')">Ver los ${c.arriendo} ${icon('chevronRight', 15)}</button>
+      <button class="hm-vertodo" onclick="window._hmTab(null,'arriendo')">Ver ${verCifras ? c.arriendo + ' ' : ''}arriendos ${icon('chevronRight', 15)}</button>
     </div>
     ${carrusel('hmCarrArr', arriendos)}
   </section>` : ''}
@@ -456,8 +475,22 @@ if (typeof window !== 'undefined') {
   };
 
   window._hmAbrir = function (ref) {
-    if (typeof window.oM === 'function') window.oM(ref);
-    else location.hash = '#/p/' + encodeURIComponent(ref);
+    // El visitante va a la ficha PÚBLICA por ruta; el asesor con sesión,
+    // a la ficha del CRM.
+    //
+    // Antes llamaba siempre a window.oM, que es la ficha interna: con un
+    // visitante no hacía absolutamente nada — ni modal, ni navegación, ni
+    // error en consola. Pulsar una tarjeta del home no llevaba a ninguna
+    // parte. (showPublicView tampoco sirve: deja la página sin ninguna
+    // sección visible.)
+    //
+    // La ruta #/p/<código> es la misma que se comparte por WhatsApp, así
+    // que es la que está probada de verdad.
+    if (window.userStore?.get() && typeof window.oM === 'function') {
+      window.oM(ref);
+      return;
+    }
+    location.hash = '#/p/' + encodeURIComponent(ref);
   };
 
   window._hmPorCodigo = function () {

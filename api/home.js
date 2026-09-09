@@ -150,19 +150,9 @@ export default async function handler(req, res) {
       || tenants.find((x) => x.slug === 'house') || tenants[0];
 
     if (t) {
-      // 2) Conteo real de inmuebles visibles de ese inquilino.
-      let total = null;
-      try {
-        const r = await fetch(
-          env.url.replace(/\/+$/, '') +
-          `/rest/v1/inmuebles?select=id&eliminado=is.false&inmobiliaria_id=eq.${t.id}`,
-          { headers: { apikey: env.key, Authorization: 'Bearer ' + env.key, Prefer: 'count=exact', Range: '0-0' } }
-        );
-        const cr = r.headers.get('content-range') || '';
-        const n = parseInt(cr.split('/')[1], 10);
-        if (!isNaN(n)) total = n;
-      } catch (e) { /* el conteo es un adorno, no un requisito */ }
-
+      // Ya no se cuentan los inmuebles: la descripción no lleva
+      // cantidades (son información del negocio), así que pedir el
+      // conteo era una petición de red para nada.
       const ciudad = t.ciudad ? String(t.ciudad).trim() : '';
 
       // Imagen, en orden de preferencia:
@@ -189,9 +179,11 @@ export default async function handler(req, res) {
 
       datos = {
         titulo: t.nombre + (ciudad ? ' · Inmuebles en ' + ciudad : ' · Inmuebles en venta y arriendo'),
+        // Sin cantidades: el visitante no ve cuántos inmuebles hay en
+        // venta ni en arriendo — es información del negocio. Misma
+        // decisión que en el home.
         descripcion:
-          (total ? total + (total === 1 ? ' inmueble verificado. ' : ' inmuebles verificados. ') : '') +
-          'Verificamos cada ficha, filtramos a los interesados y acompañamos cada visita' +
+          'Verificamos cada inmueble, filtramos a los interesados y acompañamos cada visita hasta la firma' +
           (ciudad ? ' en ' + ciudad + '.' : '.'),
         imagen: img || ('https://' + host + '/img/og-image.png'),
         sitio: t.nombre,
