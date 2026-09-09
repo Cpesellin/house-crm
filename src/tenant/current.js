@@ -26,14 +26,32 @@ import { getSupabaseClient } from '../config/supabase.js';
 //   - Feature flag OFF
 //   - Detección de subdominio falla
 //   - RPC retorna NULL
+// ⚠️ Con el multi-tenant APAGADO (que es el estado actual) la app nunca
+// consulta la base: usa SIEMPRE este objeto. O sea que corregir la ficha
+// en Supabase no cambia nada si no se corrige también aquí.
+//
+// Pasó exactamente eso: la ficha tenía color_primario '#1d4ed8', un azul
+// que no es el de las piezas de la marca ('#0d2a52'). Se corrigió en la
+// base y el home habría seguido saliendo del color equivocado, porque el
+// valor real venía de esta constante.
+//
+// Regla: este objeto debe reflejar la ficha de House en la base. Si se
+// cambia allá, se cambia aquí.
 const DEFAULT_TENANT = Object.freeze({
   id: 'house',
   slug: 'house',
   nombre: 'Inmobiliaria House',
-  color_primario: '#1d4ed8',
+  color_primario: '#0d2a52',
   logo_url: '/img/logo.png',
   telefono: '+573105922763',
   ciudad: 'Pereira',
+  direccion: 'Calle 14 #14-09, Pereira, Risaralda',
+  email: 'info@inmobiliariahouse.com',
+  lema: 'Más que inmuebles, creamos hogares',
+  hero_foto_url: null,
+  og_imagen_url: null,
+  horario: null,
+  redes: {},
   dominio_custom: 'inmobiliariahouse.com.co',
   acceso: { permitido: true, estado: 'activa', grace_hasta: null },
 });
