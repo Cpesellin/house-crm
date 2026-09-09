@@ -22,6 +22,8 @@
  * inline y el resto del CRM legacy.
  */
 
+import { MUNICIPIOS, claveBusqueda } from '../../data/municipios-colombia.js';
+
 // ─── Shortcuts (mismo patrón que functions.js) ───────────────────────
 const U = () => window.userStore?.get();
 const D = () => window.D || [];
@@ -48,12 +50,40 @@ const NEG_OPTS = [
   { v: 'arriendo', l: 'Arrendar', e: '🔑', d: 'En arriendo', c: '#d97706' },
   { v: 'ambas', l: 'Las dos', e: '🔄', d: 'Ver todo', c: '#7c3aed' },
 ];
-const CIU_OPTS = [
-  { v: 'Pereira', e: '🏙️', d: 'Centro, Pinares, Álamos, Cuba...' },
-  { v: 'Dosquebradas', e: '🌆', d: 'La Pradera, Camilo Torres...' },
-  { v: 'Santa Rosa', e: '🌿', d: 'Centro, Termales, veredas' },
-  { v: 'Cerritos', e: '🌳', d: 'Condominios, fincas, campestre' },
-];
+// El filtro de ciudad ya no lleva una lista escrita a mano.
+//
+// Tenía cuatro entradas fijas y una de ellas, Cerritos, no es una ciudad
+// sino un corregimiento de Pereira: aparecía compitiendo con el municipio
+// del que forma parte. Y para una plataforma multi-inmobiliaria, cuatro
+// ciudades del Eje Cafetero no sirven de nada.
+//
+// Ahora se arma en dos capas:
+//   1. Las ciudades que el portafolio TIENE, con su conteo, arriba.
+//   2. Los 1.122 municipios del país, que aparecen al escribir.
+//
+// CIU_OPTS se conserva porque portfolio-app-v2 lo lee; se deriva de los
+// datos para que no vuelva a existir una lista inventada.
+const CIU_EMOJI = { Pereira: '🏙️', Dosquebradas: '🌆', Armenia: '🌄', Manizales: '⛰️', 'Bogotá, D.C.': '🏛️', Medellín: '🌇', Cali: '🌴', Cartagena: '🏖️' };
+
+/** Ciudades presentes en el portafolio, de más a menos inmuebles. */
+function ciudadesConInventario() {
+  const m = new Map();
+  D().forEach((p) => {
+    const v = String(p.ciudad || '').replace(/\s+/g, ' ').trim();
+    if (!v) return;
+    m.set(v, (m.get(v) || 0) + 1);
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([v, n]) => ({ v, n }));
+}
+
+const CIU_OPTS = [];
+window.__refrescarCiuOpts = function () {
+  CIU_OPTS.length = 0;
+  ciudadesConInventario().forEach((c) => {
+    CIU_OPTS.push({ v: c.v, e: CIU_EMOJI[c.v] || '📍', d: `${c.n} ${c.n === 1 ? 'inmueble' : 'inmuebles'}` });
+  });
+  return CIU_OPTS;
+};
 const TIPO_OPTS = [
   { v: 'Apartamento', e: '🏢', l: 'Apto' },
   { v: 'Apartaestudio', e: '🏬', l: 'Apartaestudio' },
@@ -99,6 +129,84 @@ function fmShort(n) {
   return '$' + n.toLocaleString();
 }
 
+// ─── Panel de ciudad ──────────────────────────────────────────────────
+//
+// Dos capas: lo que hay en cartera arriba (que es lo que el 99% busca) y
+// el resto del país al escribir. Recorrer 1.122 municipios con el dedo no
+// es una opción, así que el panel se abre con el foco en el buscador.
+
+/** Fila de una ciudad. `sub` es el conteo o el departamento. */
+function filaCiudad(nombre, sub, emoji) {
+  const s = F.ciu.has(nombre);
+  const seguro = String(nombre).replace(/'/g, "\\'");
+  return `<button class="fopt-ciu${s ? ' sel' : ''}" onclick="pillToggle('ciu','${seguro}')">
+    <span style="font-size:22px">${emoji || '📍'}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:15px;font-weight:800;color:${s ? '#1a4f8b' : '#3a3530'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nombre}</div>
+      <div style="font-size:12px;color:#a8977f;margin-top:1px">${sub}</div>
+    </div>
+    ${s ? '<div class="fopt-check-ciu">✓</div>' : ''}
+  </button>`;
+}
+
+function renderPanelCiudad(q) {
+  // Se refresca aquí para que portfolio-app-v2, que lee CIU_OPTS, no vea
+  // una lista vacía ni una desactualizada.
+  window.__refrescarCiuOpts();
+
+  const texto = (q == null ? (document.getElementById('ciuBuscar')?.value || '') : q);
+  const k = claveBusqueda(texto);
+
+  const conInv = ciudadesConInventario();
+  let cuerpo = '';
+
+  if (!k) {
+    cuerpo = conInv.length
+      ? `<div class="ciu-grupo">En nuestro portafolio</div>` +
+        conInv.map((c) => filaCiudad(c.v, `${c.n} ${c.n === 1 ? 'inmueble' : 'inmuebles'}`, CIU_EMOJI[c.v])).join('') +
+        `<div class="ciu-nota">Escribe para buscar entre los 1.122 municipios del país</div>`
+      : `<div class="ciu-nota">Escribe el nombre de un municipio</div>`;
+  } else {
+    // Primero las que tenemos y coinciden: si alguien escribe "per" le
+    // interesa antes Pereira con 111 inmuebles que Peraltas sin ninguno.
+    const propias = conInv.filter((c) => claveBusqueda(c.v).includes(k));
+    const propiasSet = new Set(propias.map((c) => claveBusqueda(c.v)));
+    const resto = MUNICIPIOS
+      .filter((m) => claveBusqueda(m.municipio).includes(k) && !propiasSet.has(claveBusqueda(m.municipio)))
+      .slice(0, 40);
+
+    cuerpo =
+      (propias.length
+        ? `<div class="ciu-grupo">En nuestro portafolio</div>` +
+          propias.map((c) => filaCiudad(c.v, `${c.n} ${c.n === 1 ? 'inmueble' : 'inmuebles'}`, CIU_EMOJI[c.v])).join('')
+        : '') +
+      (resto.length
+        ? `<div class="ciu-grupo">Otros municipios</div>` +
+          resto.map((m) => filaCiudad(m.municipio, m.departamento, CIU_EMOJI[m.municipio])).join('')
+        : '') +
+      (!propias.length && !resto.length
+        ? `<div class="ciu-nota">Ningún municipio coincide con “${texto}”</div>`
+        : '');
+  }
+
+  return `<div class="fpanel">
+    <div class="fpanel-title">¿En qué ciudad buscas?</div>
+    <input id="ciuBuscar" class="ciu-buscar" type="search" autocomplete="off"
+      placeholder="Buscar municipio…" value="${String(texto).replace(/"/g, '&quot;')}"
+      oninput="window._ciuFiltrar(this.value)">
+    <div class="ciu-lista">${cuerpo}</div>
+  </div>`;
+}
+
+/** Repinta sólo la lista, para no perder el foco ni lo escrito. */
+window._ciuFiltrar = function (v) {
+  const cont = document.querySelector('#panelCiudad .ciu-lista');
+  if (!cont) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderPanelCiudad(v);
+  cont.innerHTML = tmp.querySelector('.ciu-lista').innerHTML;
+};
+
 // ─── Toggle panel ─────────────────────────────────────────────────────
 window.togglePanel = function (name) {
   if (window._panelCloseTimer) {
@@ -122,7 +230,10 @@ function renderPanel(name) {
   if (name === 'neg') {
     el.innerHTML = `<div class="fpanel"><div class="fpanel-title">¿Qué estás buscando?</div><div style="display:flex;gap:8px">${NEG_OPTS.map((o) => { const s = F.neg.has(o.v); return `<button class="fopt-neg${s ? ' sel' : ''}" onclick="pillToggle('neg','${o.v}')" style="${s ? 'border-color:' + o.c + ';background:' + o.c + '0c' : ''}"><span style="font-size:30px">${o.e}</span><span style="font-size:15px;font-weight:800;color:${s ? o.c : '#3a3530'}">${o.l}</span><span style="font-size:11px;color:#a8977f">${o.d}</span>${s ? `<div class="fopt-check" style="background:${o.c}">✓</div>` : ''}</button>`; }).join('')}</div></div>`;
   } else if (name === 'ciudad') {
-    el.innerHTML = `<div class="fpanel"><div class="fpanel-title">¿En qué ciudad buscas?</div><div style="display:flex;flex-direction:column;gap:6px">${CIU_OPTS.map((c) => { const s = F.ciu.has(c.v); return `<button class="fopt-ciu${s ? ' sel' : ''}" onclick="pillToggle('ciu','${c.v}')"><span style="font-size:24px">${c.e}</span><div style="flex:1"><div style="font-size:16px;font-weight:800;color:${s ? '#1a4f8b' : '#3a3530'}">${c.v}</div><div style="font-size:12px;color:#a8977f;margin-top:1px">${c.d}</div></div>${s ? '<div class="fopt-check-ciu">✓</div>' : ''}</button>`; }).join('')}</div></div>`;
+    el.innerHTML = renderPanelCiudad();
+    // El foco va al buscador: el panel se abre para escribir, no para
+    // recorrer 1.122 municipios con el dedo.
+    setTimeout(() => document.getElementById('ciuBuscar')?.focus(), 40);
   } else if (name === 'tipo') {
     el.innerHTML = `<div class="fpanel"><div class="fpanel-title">¿Qué tipo de inmueble?</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${TIPO_OPTS.map((t) => { const s = F.tipo.has(t.v); return `<button class="fopt-tipo${s ? ' sel' : ''}" onclick="pillToggle('tipo','${t.v}')"><span style="font-size:28px">${t.e}</span><span style="font-size:13px;font-weight:800;color:${s ? '#d4a853' : '#5a5550'}">${t.l}</span></button>`; }).join('')}</div></div>`;
   } else if (name === 'precio') {
