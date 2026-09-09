@@ -13,6 +13,7 @@ import './styles/pipeline-movil.css';
 import './styles/orden.css';
 import './styles/ficha-movil.css';
 import './styles/filtros-fijos.css';
+import './styles/home-v2.css';
 import './styles/movil-app.css';
 import './config/cloudinary.js';
 import './utils/sanitizer.js';
@@ -31,6 +32,7 @@ import './interesados-ui.js';
 import './pages/property-detail-v2.js';
 import './pages/portfolio-list-v2.js';
 import './pages/portfolio-app-v2.js';
+import './pages/home-v2.js';
 // NUEVA ESTRUCTURA — módulos por dominio (scaffolding multi-tenant)
 import { initTenant } from './tenant/current.js';
 import { applyBranding, applyAccessBanner } from './tenant/branding.js';

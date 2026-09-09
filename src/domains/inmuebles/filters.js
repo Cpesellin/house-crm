@@ -33,7 +33,7 @@ const eA = window.eA || ((p) => {
 const eA2 = window.eA2 || ((p) => eV(p) && eA(p));
 
 // ─── Estado global ────────────────────────────────────────────────────
-const F = { neg: new Set(), ciu: new Set(), tipo: new Set() };
+const F = { neg: new Set(), ciu: new Set(), tipo: new Set(), barrio: new Set() };
 window.F = F;
 window._myFilter = false;
 // window._favFilterActive lo inicializa domains/favoritos (idempotente)
@@ -208,6 +208,10 @@ window.renderSel = function () {
   F.neg.forEach((v) => { const o = NEG_OPTS.find((x) => x.v === v); chips.push({ key: 'n-' + v, label: o ? o.e + ' ' + o.l : v, remove: `pillToggle('neg','${v}')` }); });
   F.ciu.forEach((v) => { chips.push({ key: 'c-' + v, label: '📍 ' + v, remove: `pillToggle('ciu','${v}')` }); });
   F.tipo.forEach((v) => { const o = TIPO_OPTS.find((x) => x.v === v); chips.push({ key: 't-' + v, label: o ? o.l : v, remove: `pillToggle('tipo','${v}')` }); });
+  // El sector no tiene panel propio (llega desde los chips del home), pero
+  // sí tiene que verse y poder quitarse: aterrizar en una lista filtrada
+  // sin señal de por qué desconcierta.
+  if (F.barrio) F.barrio.forEach((v) => { chips.push({ key: 'b-' + v, label: '🏘️ ' + v, remove: `pillToggle('barrio','${v}')` }); });
   if (window._asesorFilter) { const a = D().find((p) => p.captador_id === window._asesorFilter)?.captador; chips.push({ key: 'ase', label: '👤 ' + (a?.nombre || 'Asesor'), remove: "pickAsesor('" + window._asesorFilter + "')" }); }
   const arMn = parsePriceInput('arMin'), arMx = parsePriceInput('arMax');
   if (arMn > 0 || arMx > 0) chips.push({ key: 'arr', label: '💰 ' + (fmShort(arMn) || '$0') + '-' + (arMx ? fmShort(arMx) : '∞'), remove: "document.getElementById('arMin').value='';document.getElementById('arMax').value='';renderSel();doSearch()" });
@@ -378,6 +382,23 @@ window.doSearch = function () {
       }
       if (F.ciu.size > 0 && !Array.from(F.ciu).some((x) => c.includes(x.toLowerCase()))) return false;
       if (F.tipo.size > 0 && !Array.from(F.tipo).some((x) => t.includes(x.toLowerCase()))) return false;
+      // Filtro por sector (barrio). Lo usan los chips del home.
+      //
+      // Hacía falta uno exacto: los chips llevaban el nombre del sector al
+      // buscador de texto, que además mira la descripción, así que el chip
+      // decía "Cerritos 5" y devolvía 10 — cuatro de ellos sólo mencionan
+      // Cerritos en el texto comercial. Un chip de sector tiene que
+      // significar inmuebles EN ese sector.
+      //
+      // Se comparan normalizados (espacios colapsados y sin mayúsculas)
+      // porque los datos traen 'Cerritos', 'CERRITOS' y 'Cerritos ': el
+      // chip los agrupa como uno, y el filtro tiene que agruparlos igual
+      // o el conteo del chip no cuadraría con lo que devuelve.
+      if (F.barrio && F.barrio.size > 0) {
+        const nb = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase();
+        const b = nb(p.barrio);
+        if (!Array.from(F.barrio).some((x) => b === nb(x))) return false;
+      }
       if (arMin > 0 && (pa <= 0 || pa < arMin)) return false;
       if (arMax > 0 && (pa <= 0 || pa > arMax)) return false;
       if (vnMin > 0 && (pv <= 0 || pv < vnMin)) return false;

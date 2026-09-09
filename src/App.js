@@ -282,6 +282,7 @@ function renderShell(container) {
 <div class="sec" id="sec-propietarios"><div style="max-width:600px;margin:0 auto;padding:0 0 60px" id="propietariosc"></div></div>
 <div class="sec" id="sec-referidos-landing"><div style="max-width:600px;margin:0 auto;padding:0 0 60px" id="referidosLandingC"></div></div>
 <div class="sec" id="sec-landing-roles"><div style="max-width:500px;margin:0 auto;padding:0 0 60px" id="landingRolesC"></div></div>
+<div class="sec" id="sec-home"><div id="homeC"></div></div>
 <div class="sec" id="sec-referir"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F91D}</div><div><div class="cht">Referir Inmueble</div><div class="chsb">Gana hasta 10% del canon</div></div></div></div><div class="cdb" id="sec-referir-content"></div></div></div></div>
 <div class="sec" id="sec-misref"><div style="max-width:800px;margin:0 auto;padding:10px 14px 60px" id="sec-misref-content"></div></div>
 <div class="sec" id="sec-mis-inm"><div style="max-width:1300px;margin:0 auto;padding:10px 14px 60px" id="misinmc"></div></div>

@@ -1,0 +1,343 @@
+/* ══════════════════════════════════════════════════════════════════════
+   HOME — portada del portafolio
+   ══════════════════════════════════════════════════════════════════════
+
+   Paleta tomada de las piezas gráficas de la inmobiliaria (los flyers de
+   Cerritos y Molivento): azul marino dominante, azul claro para lo que
+   debe resaltar, mayúsculas espaciadas en los rótulos. Es la misma
+   decisión que en /publicamos, para que la portada y la landing se
+   reconozcan como del mismo sitio.
+
+   El teléfono manda: los carruseles se deslizan con el dedo y las
+   flechas sólo aparecen donde hay ratón.
+   ══════════════════════════════════════════════════════════════════════ */
+
+#sec-home {
+  --hm-marino: #0d2a52;
+  --hm-marino-2: #133a6b;
+  --hm-marino-3: #1b4d8a;
+  --hm-claro: #8fc4f0;
+  --hm-claro-2: #b8dcf7;
+  --hm-claro-3: #e8f3fc;
+  --hm-linea: #dde6f0;
+  --hm-tinta: #0f1b2d;
+  --hm-tinta-2: #4a5a70;
+  --hm-tinta-3: #8394a8;
+  --hm-gris: #f4f7fb;
+}
+
+#homeC { font-family: 'Montserrat', system-ui, sans-serif; }
+#homeC *, #homeC *::before, #homeC *::after { box-sizing: border-box; }
+
+/* ─── Rótulos y titulares ───────────────────────────────────────────── */
+
+.hm-rotulo {
+  font-size: 11px; font-weight: 700; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--hm-marino-3); line-height: 1.6;
+}
+.hm-rotulo.claro { color: var(--hm-claro); }
+
+#homeC h2 {
+  font-size: clamp(23px, 4.6vw, 34px); font-weight: 800;
+  line-height: 1.1; letter-spacing: -.02em; color: var(--hm-marino);
+  margin: 6px 0 0;
+}
+#homeC h3 {
+  font-size: 16px; font-weight: 800; line-height: 1.3;
+  letter-spacing: -.01em; margin: 0 0 6px;
+}
+
+.hm-sub { font-size: 15px; line-height: 1.6; color: var(--hm-tinta-2); font-weight: 500; margin: 10px 0 0; }
+.hm-sub.claro { color: #dbe6f4; }
+
+/* ─── Buscador protagonista ─────────────────────────────────────────── */
+
+.hm-hero {
+  background: linear-gradient(160deg, var(--hm-marino) 0%, var(--hm-marino-2) 60%, var(--hm-marino-3) 100%);
+  color: #fff; padding: 34px 18px 30px; position: relative; overflow: hidden;
+}
+.hm-hero::before {
+  content: ''; position: absolute; top: -20%; right: -14%;
+  width: 64%; height: 74%;
+  background: radial-gradient(circle at 60% 40%, #ffffff17, transparent 68%);
+  pointer-events: none;
+}
+.hm-hero-in { max-width: 880px; margin: 0 auto; position: relative; }
+
+.hm-h1 {
+  font-size: clamp(26px, 6.6vw, 42px); font-weight: 900;
+  line-height: 1.06; letter-spacing: -.025em; margin: 0;
+}
+.hm-h1 span { color: var(--hm-claro); }
+.hm-hero .hm-sub { color: #cfe0f2; }
+
+/* Pestañas de modalidad. Llevan el conteo real a propósito: una pestaña
+   que promete inventario y muestra nueve se descubre al primer clic. */
+.hm-tabs { display: flex; gap: 7px; margin: 20px 0 12px; flex-wrap: wrap; }
+.hm-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 42px; padding: 9px 16px; border-radius: 100px;
+  border: 1.5px solid #ffffff36; background: #ffffff12; color: #fff;
+  font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.hm-tab b { font-weight: 800; opacity: .7; font-size: 12px; }
+.hm-tab:hover { background: #ffffff22; }
+.hm-tab.is-on { background: var(--hm-claro-2); color: var(--hm-marino); border-color: var(--hm-claro-2); }
+.hm-tab.is-on b { opacity: .65; }
+
+.hm-buscador {
+  display: grid; grid-template-columns: minmax(150px, 210px) 1fr auto;
+  gap: 8px; background: #fff; padding: 8px; border-radius: 16px;
+  box-shadow: 0 18px 44px #00000038;
+}
+.hm-buscador select,
+.hm-buscador input {
+  min-height: 50px; padding: 0 14px; border: 1px solid var(--hm-linea);
+  border-radius: 11px; background: #fff; color: var(--hm-tinta);
+  font-family: inherit; font-size: 15px; font-weight: 500; width: 100%;
+}
+.hm-buscador select { cursor: pointer; }
+.hm-buscador input::placeholder { color: var(--hm-tinta-3); }
+.hm-buscador select:focus, .hm-buscador input:focus {
+  outline: none; border-color: var(--hm-marino-3);
+  box-shadow: 0 0 0 3px #1b4d8a24;
+}
+.hm-btn-buscar {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px; padding: 0 22px; border: none; border-radius: 11px;
+  background: var(--hm-marino); color: #fff;
+  font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
+  transition: background .2s;
+}
+.hm-btn-buscar:hover { background: var(--hm-marino-3); }
+
+/* Atajo por código: los asesores comparten HOUSE-xxx todo el día. */
+.hm-codigo { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.hm-codigo input {
+  min-height: 44px; width: 150px; padding: 0 13px;
+  border: 1.5px solid #ffffff3d; border-radius: 11px;
+  background: #ffffff14; color: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 600;
+}
+.hm-codigo input::placeholder { color: #ffffff7d; }
+.hm-codigo input:focus { outline: none; border-color: var(--hm-claro); background: #ffffff20; }
+.hm-codigo button {
+  min-height: 44px; padding: 0 18px; border-radius: 11px;
+  border: 1.5px solid #ffffff3d; background: transparent; color: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.hm-codigo button:hover { background: #ffffff1a; border-color: #fff; }
+
+/* ─── Secciones ─────────────────────────────────────────────────────── */
+
+.hm-sec { padding: 34px 18px; }
+.hm-sec.hm-gris { background: var(--hm-gris); }
+.hm-sec-head {
+  max-width: 1140px; margin: 0 auto 20px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+}
+.hm-sec-head.hm-centro { display: block; text-align: center; max-width: 620px; }
+
+.hm-vertodo {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  min-height: 42px; padding: 0 14px; border-radius: 10px;
+  border: 1.5px solid var(--hm-linea); background: #fff; color: var(--hm-marino);
+  font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.hm-vertodo:hover { border-color: var(--hm-marino-3); background: var(--hm-claro-3); }
+
+/* ─── Carrusel ──────────────────────────────────────────────────────── */
+
+.hm-carr-wrap { position: relative; max-width: 1140px; margin: 0 auto; }
+.hm-carr {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 264px;
+  gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 4px 2px 12px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.hm-carr::-webkit-scrollbar { display: none; }
+.hm-carr > * { scroll-snap-align: start; }
+
+.hm-flecha {
+  position: absolute; top: 40%; z-index: 3;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--hm-linea); background: #fff; color: var(--hm-marino);
+  cursor: pointer; display: none; place-items: center;
+  box-shadow: 0 6px 18px #0d2a5226;
+}
+.hm-flecha:hover { background: var(--hm-claro-3); }
+.hm-izq { left: -14px; }
+.hm-der { right: -14px; }
+/* Las flechas sólo donde hay ratón: en el teléfono se desliza con el dedo
+   y estorbarían encima de las tarjetas. */
+@media (hover: hover) and (min-width: 1024px) {
+  .hm-flecha { display: grid; }
+}
+
+/* ─── Tarjeta ───────────────────────────────────────────────────────── */
+
+.hm-card {
+  background: #fff; border: 1px solid var(--hm-linea); border-radius: 16px;
+  overflow: hidden; cursor: pointer;
+  transition: transform .22s, box-shadow .22s, border-color .22s;
+}
+.hm-card:hover { transform: translateY(-3px); box-shadow: 0 16px 36px #0d2a5218; border-color: var(--hm-claro); }
+.hm-card:focus-visible { outline: 3px solid var(--hm-marino-3); outline-offset: 2px; }
+
+.hm-card-img { position: relative; background: var(--hm-gris); }
+.hm-card-img img { width: 100%; height: auto; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.hm-nofoto {
+  aspect-ratio: 4/3; display: grid; place-items: center;
+  color: var(--hm-tinta-3); background: var(--hm-gris);
+}
+.hm-modo {
+  position: absolute; top: 9px; left: 9px;
+  background: #0d2a52e8; color: #fff;
+  padding: 5px 11px; border-radius: 100px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+}
+
+.hm-card-body { padding: 13px 14px 15px; }
+/* El precio primero y grande: es el dato por el que se descarta o se
+   sigue mirando. */
+.hm-precio {
+  font-size: 19px; font-weight: 900; color: var(--hm-marino);
+  line-height: 1.1; letter-spacing: -.02em;
+}
+.hm-precio span { font-size: 12.5px; font-weight: 700; color: var(--hm-tinta-3); }
+.hm-tipo { font-size: 13.5px; font-weight: 700; margin-top: 6px; color: var(--hm-tinta); }
+.hm-ubic {
+  display: flex; align-items: center; gap: 5px; margin-top: 4px;
+  font-size: 12.5px; color: var(--hm-tinta-2); font-weight: 500;
+}
+.hm-especs {
+  margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--hm-linea);
+  font-size: 12px; color: var(--hm-tinta-2); font-weight: 600;
+}
+
+/* ─── Sectores ──────────────────────────────────────────────────────── */
+
+.hm-chips {
+  max-width: 1140px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; gap: 9px;
+}
+.hm-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 46px; padding: 0 16px; border-radius: 100px;
+  border: 1.5px solid var(--hm-linea); background: #fff; color: var(--hm-tinta);
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: border-color .2s, background .2s, transform .2s;
+}
+.hm-chip svg { color: var(--hm-marino-3); flex-shrink: 0; }
+.hm-chip b {
+  background: var(--hm-claro-3); color: var(--hm-marino-3);
+  padding: 2px 8px; border-radius: 100px; font-size: 12px; font-weight: 800;
+}
+.hm-chip:hover { border-color: var(--hm-marino-3); transform: translateY(-2px); }
+
+/* ─── Tipos ─────────────────────────────────────────────────────────── */
+
+.hm-tipos {
+  max-width: 1140px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px;
+}
+.hm-tipo-card {
+  display: flex; align-items: center; gap: 13px; text-align: left;
+  padding: 15px 16px; border-radius: 15px;
+  border: 1px solid var(--hm-linea); background: #fff; cursor: pointer;
+  font-family: inherit; transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.hm-tipo-card:hover { transform: translateY(-3px); box-shadow: 0 14px 32px #0d2a5214; border-color: var(--hm-claro); }
+.hm-tipo-ic {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  background: var(--hm-claro-3); color: var(--hm-marino-3);
+  display: grid; place-items: center;
+}
+.hm-tipo-tx b { display: block; font-size: 14.5px; font-weight: 800; color: var(--hm-tinta); }
+.hm-tipo-tx span { display: block; font-size: 12.5px; color: var(--hm-tinta-3); font-weight: 600; margin-top: 2px; }
+
+/* ─── Franja del diferencial ────────────────────────────────────────── */
+
+.hm-marino {
+  background: linear-gradient(160deg, var(--hm-marino), var(--hm-marino-3));
+  color: #fff; padding: 42px 18px 46px;
+}
+.hm-marino h2 { color: #fff; }
+.hm-3 {
+  max-width: 1140px; margin: 26px auto 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+.hm-vent {
+  background: #ffffff12; border: 1px solid #ffffff26;
+  border-radius: 16px; padding: 20px;
+}
+.hm-vent-ic {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: #ffffff1f; color: var(--hm-claro-2);
+  display: grid; place-items: center; margin-bottom: 13px;
+}
+.hm-vent h3 { color: #fff; }
+.hm-vent p { font-size: 13.5px; line-height: 1.6; color: #ffffffb3; font-weight: 500; margin: 0; }
+
+.hm-cta-fila {
+  max-width: 1140px; margin: 26px auto 0;
+  display: flex; gap: 11px; justify-content: center; flex-wrap: wrap;
+}
+.hm-btn-claro, .hm-btn-linea {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; padding: 0 24px; border-radius: 13px;
+  font-family: inherit; font-size: 15px; font-weight: 800;
+  text-decoration: none; cursor: pointer; transition: transform .2s, background .2s, border-color .2s;
+}
+.hm-btn-claro { background: var(--hm-claro-2); color: var(--hm-marino); border: none; }
+.hm-btn-claro:hover { background: var(--hm-claro); transform: translateY(-2px); }
+.hm-btn-linea { background: transparent; color: #fff; border: 1.6px solid #ffffff59; }
+.hm-btn-linea:hover { border-color: #fff; background: #ffffff14; }
+
+/* ═════════════════════════════ TELÉFONO ═════════════════════════════ */
+
+@media (max-width: 860px) {
+  .hm-3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  /* 44px es el mínimo cómodo para el pulgar; se quedaban en 42. */
+  .hm-tab, .hm-vertodo { min-height: 44px; }
+
+  /* Hueco para el menú inferior fijo de la app, que si no tapa el final
+     de la última sección. */
+  #homeC { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+
+  .hm-hero { padding: 26px 15px 26px; }
+  .hm-sec { padding: 28px 15px; }
+  .hm-marino { padding: 34px 15px 38px; }
+
+  /* El buscador se apila: tres controles en una línea de 375px dejan
+     campos de 90px donde no se lee lo que se escribe. */
+  .hm-buscador { grid-template-columns: 1fr; gap: 7px; border-radius: 14px; }
+  .hm-btn-buscar { width: 100%; }
+
+  .hm-sec-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .hm-vertodo { align-self: stretch; justify-content: center; }
+
+  /* Tarjeta más angosta: se ve la siguiente asomando y así se entiende
+     que el carrusel se desliza. */
+  .hm-carr { grid-auto-columns: 78vw; gap: 11px; }
+  .hm-tipos { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .hm-tipo-card { padding: 12px; gap: 10px; }
+  .hm-tipo-ic { width: 38px; height: 38px; border-radius: 10px; }
+  .hm-tipo-tx b { font-size: 13px; }
+  .hm-tipo-tx span { font-size: 11.5px; }
+  .hm-cta-fila { flex-direction: column; }
+  .hm-cta-fila > * { width: 100%; }
+}
+@media (max-width: 400px) {
+  .hm-carr { grid-auto-columns: 84vw; }
+  .hm-tipos { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #homeC *, .hm-carr { transition: none !important; scroll-behavior: auto !important; }
+}
