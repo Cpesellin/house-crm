@@ -149,9 +149,16 @@ El azul marino manda. El azul claro es **acento**, no fondo: se usa para lo
 que debe resaltar (el precio, la palabra clave del titular, un icono), nunca
 para grandes superficies.
 
+**Velo sobre fotografía.** El hero va sobre foto, así que hace falta un
+velo que garantice el contraste del texto blanco. Usar marino, no negro:
+`linear-gradient(180deg, rgba(13,42,82,.72), rgba(13,42,82,.45) 45%, rgba(13,42,82,.80))`.
+Un velo negro apaga la foto y despega el hero del resto de la marca; el
+marino la integra. El texto blanco sobre ese velo debe medir **4.5:1 como
+mínimo** contra el punto más claro de la fotografía.
+
 **Prohibido:** verde como color de marca (existe en otra página del sitio y
-está fuera de la identidad), cremas beige, y cualquier degradado de tres o
-más colores.
+está fuera de la identidad), cremas beige, cualquier degradado de tres o
+más colores, y velos negros sobre las fotos.
 
 ### 4.2 Tipografía
 
@@ -226,33 +233,59 @@ Fija al hacer scroll, fondo marino con leve transparencia.
 - Derecha: `Ver inmuebles` (secundario) + `WhatsApp` (verde, prominente).
 - En el teléfono el logo se mantiene y `Ver inmuebles` se oculta.
 
-### 6.2 Bloque marino con buscador — LO MÁS IMPORTANTE DE LA PÁGINA
+### 6.2 Hero a sangre con buscador encima — LO MÁS IMPORTANTE DE LA PÁGINA
 
 Es lo que Fincaraiz hace mejor y lo que hay que adoptar sin dudar: **el
-buscador es el protagonista, no un adorno en la esquina.**
+buscador es el protagonista, no un adorno en la esquina.** Y va sobre una
+**fotografía a sangre**, de borde a borde, no sobre un fondo plano.
 
-Contenido, en este orden:
-1. Rótulo espaciado + píldora de contexto.
-2. **Titular** con una palabra clave en azul claro. Propuesta:
-   *"Encuentra tu inmueble en **Pereira** y el Eje Cafetero"*.
-3. Subtítulo con la cifra viva: *"174 inmuebles verificados, con asesor que
-   te acompaña."*
-4. **Pestañas de modalidad con conteo real**: `Todos 174` · `Venta 163` ·
-   `Arriendo 10`. La activa en azul claro con texto marino.
-5. **Buscador en una tarjeta blanca elevada**: selector de tipo (con conteo
-   por tipo) + campo de texto libre (barrio, sector o palabra clave) + botón
-   marino con lupa.
-6. **Atajo "Buscar por código"**: campo pequeño + botón. Aquí pesa más que
-   en un portal nacional, porque los asesores comparten códigos `HOUSE-259`
-   por WhatsApp todo el día. Debe aceptar `259` y `house 259`, no sólo el
-   formato exacto.
-7. A la derecha (o debajo en móvil): la **foto de la fachada** con un
-   pie que diga la dirección, y el acento manuscrito.
+Medido en su captura (ventana de 1366×768): el hero ocupa **~690px de
+alto**, la foto llega a los cuatro bordes sin esquinas redondeadas, y
+encima va un velo oscuro que permite leer el texto blanco.
 
-El bloque termina en **corte diagonal**.
+Contenido, centrado, en este orden:
 
-**En el teléfono el buscador se apila.** Tres controles en 375px dejan
-campos de 90px donde no se lee lo que se escribe.
+1. **Titular en blanco, centrado, ~48px, peso 800.** Una sola línea, sin
+   subtítulo debajo. Ellos ponen *"El portal inmobiliario #1 de Colombia"*
+   y nada más: la seguridad viene de no explicarse.
+   Propuesta nuestra: **"Tu próximo hogar está en Pereira"** o
+   **"Inmuebles verificados en Pereira y el Eje Cafetero"**.
+   Una palabra clave puede ir en azul claro.
+
+2. **Control segmentado de modalidad.** Contenedor oscuro translúcido con
+   radio completo; la pestaña **activa es una píldora BLANCA con texto
+   marino**, las inactivas van translúcidas con texto blanco. Es un patrón
+   distinto del de las píldoras de filtro y se lee mucho mejor sobre foto.
+   Con el conteo real: `Todos 174` · `Venta 163` · `Arriendo 10`.
+
+3. **Barra de búsqueda: una sola tarjeta blanca**, no tres controles
+   suertos. Dentro, de izquierda a derecha:
+   `[ selector de tipo ⌄ | campo de texto | botón azul con lupa ]`
+   El botón es un **cuadrado de esquinas redondeadas a la altura completa
+   de la barra**, pegado al extremo derecho. Ellos lo hacen así y es lo que
+   hace que la barra se lea como un solo objeto.
+
+4. **"Buscar por código" va DEBAJO y a la derecha**, como botón secundario
+   translúcido pequeño — no dentro de la barra. Ellos lo resuelven
+   exactamente así. En nuestro caso pesa más que en un portal nacional,
+   porque los asesores comparten códigos `HOUSE-259` por WhatsApp todo el
+   día: debe aceptar `259` y `house 259`, no sólo el formato exacto.
+
+**Qué foto va en el hero.** No la fachada de la oficina: eso va más abajo,
+en "quiénes somos". Aquí va la **mejor fotografía de inmueble del
+portafolio** — hay una casa campestre en Cerritos con piscina y terraza que
+sirve. Debe elegirse a mano, no automáticamente: el hero es la única imagen
+que no puede fallar.
+
+El bloque termina en **corte diagonal** hacia el blanco.
+
+**En el teléfono:** el titular baja a `clamp(30px,7vw,…)`, la barra de
+búsqueda **se apila** en tres filas (tres controles en 375px dejan campos de
+90px donde no se lee lo que se escribe), y el alto del hero se limita a
+~72vh para que se intuya que hay más abajo.
+
+**Lo que NO copiamos de su hero:** la tarjeta de pauta abajo a la derecha
+(Click Living). Ellos venden publicidad; nosotros inmuebles.
 
 ### 6.3 Tira de datos
 Justo debajo, montada sobre la diagonal (margen negativo), tarjeta blanca
@@ -274,17 +307,38 @@ Nada de repetir estas cifras en otra parte de la misma pantalla.
 - La tarjeta del móvil debe medir ~84vw para que **asome la siguiente**: es
   lo que comunica que hay más.
 
-**Anatomía de la tarjeta** (importante, es la pieza que más se repite):
+**Anatomía de la tarjeta.** Es la pieza que más se repite en todo el sitio,
+así que va medida contra la referencia. El orden de Fincaraiz es el
+correcto y lo adoptamos tal cual:
+
 ```
-[foto 4:3, con píldora "En arriendo"/"En venta" arriba-izquierda]
-$1.700.000/mes          ← precio PRIMERO, 19px, 900, marino
-Apartamento             ← tipo, 13.5px, 700
-📍 Molivento · Dosquebradas
-──────────────────────
-3 hab · 2 baños · 70 m²
+┌──────────────────────────────┐
+│ [foto ~4:3]              ♡   │  ← corazón arriba-derecha, contorno
+│  (píldora "En arriendo")     │     blanco SIN círculo de fondo
+├──────────────────────────────┤
+│ $ 1.700.000 /mes             │  ← 1º PRECIO · 20px · 800 · marino
+│ Molivento · Dosquebradas     │  ← 2º ubicación · 14px · gris
+│ 🛏 3   🛁 2   ⬜ 70 m²        │  ← 3º especificaciones con iconos de línea
+│ Apartamento en arriendo      │  ← 4º frase descriptiva · 14px · 700
+│ en Molivento                 │     recortada con puntos suspensivos
+└──────────────────────────────┘
 ```
-El precio va primero y grande porque es el dato por el que se descarta o se
-sigue mirando. Fincaraiz lo hace así y tienen razón.
+
+Cuatro decisiones concretas tomadas de la referencia:
+
+1. **El precio va primero y grande.** Es el dato por el que se descarta o se
+   sigue mirando. Ellos incluso dejan un espacio tras el `$`.
+2. **La frase descriptiva va al FINAL**, no arriba. Al ojo le sirve más
+   precio → dónde → cuánto mide → y por último qué es.
+3. **Sólo dos o tres especificaciones**, no cinco. Ellos muestran baños y
+   metros y ya. Nosotros: alcobas, baños y m². El resto está en la ficha.
+4. **El corazón va sin círculo de fondo**, sólo el contorno blanco sobre la
+   foto.
+
+Una diferencia deliberada: **nosotros añadimos la píldora de modalidad**
+("En venta" / "En arriendo") sobre la foto. Ellos no la necesitan porque la
+frase del final ya lo dice; nosotros sí, porque con 163 ventas contra 10
+arriendos el visitante necesita distinguirlo de un golpe.
 
 ### 6.5 Explora por sector
 Chips con icono de ubicación, nombre y conteo:
@@ -330,6 +384,73 @@ Logo, lema espaciado `MÁS QUE INMUEBLES, CREAMOS HOGARES`, dirección,
 teléfono y correo. **Rejilla adaptable**: 4 columnas en escritorio, 2 en
 tableta, 1 en teléfono. Nunca columnas fijas — ya provocó que la página se
 desplazara en horizontal en el teléfono.
+
+---
+
+## 6.12 Anatomía medida de la referencia
+
+Medidas y patrones leídos directamente de las capturas de Fincaraiz
+(ventana de 1366px). Se dan para que no haya que improvisar la jerarquía.
+
+### Títulos de sección
+**Centrados**, no alineados a la izquierda. Color azul marino, ~32px, peso
+**medio-alto (600-700), no extra-negro**. Sin rótulo espaciado encima.
+
+Ejemplos suyos: `Destacados`, `Últimos Ingresos`, `Proyectos`.
+
+Cuando la sección necesita explicarse, ponen un subtítulo gris centrado
+debajo y, si hay un enlace de "ver todo", va **a la derecha en su propia
+línea** con una flecha: `Ver todos los proyectos →`.
+
+→ **Decisión para nosotros:** adoptamos el centrado y el peso medio. Los
+rótulos espaciados de la marca House se reservan para los bloques marinos,
+donde funcionan; en secciones claras compiten con el título.
+
+### Carrusel
+- **4 tarjetas visibles** en escritorio, con la quinta asomando por el borde
+  derecho. Eso es lo que comunica que hay más.
+- **Flechas circulares**, fondo blanco, sin borde marcado, **centradas
+  verticalmente sobre el área de la FOTO** (no sobre la tarjeta completa), y
+  **medio fuera del borde** de la primera y última tarjeta.
+- Sin puntos indicadores.
+
+### Bloque de ciudades (el que nosotros reemplazamos por sectores)
+Cuatro columnas. Cada una: **fotografía de la ciudad** (~16:10, esquinas
+redondeadas), nombre en negrita debajo, y **cinco enlaces** de barrios en
+azul, uno por línea, con buen aire entre ellos.
+
+→ **Decisión:** el patrón visual es bueno pero nosotros no tenemos cuatro
+ciudades. Se traslada a **sectores de Pereira**, y si no hay fotografía de
+sector disponible, se usan chips con conteo en vez de tarjetas con foto.
+**Nunca una tarjeta con foto genérica de banco de imágenes**: se nota y
+resta credibilidad a una inmobiliaria local.
+
+### Pie
+Ocho columnas de enlaces con título en negrita y enlaces en azul separados
+por un filete finísimo. Una columna de redes con icono + nombre.
+
+→ **Decisión:** ese pie sirve a escala nacional para posicionamiento en
+buscadores. A escala local es ruido. Nosotros vamos a **cuatro columnas**:
+Explorar · Servicios · Contacto · marca y lema. Con la dirección completa
+visible, que es lo que ellos no tienen y nosotros sí.
+
+### Insignias sobre la foto
+Usan píldoras oscuras con estrella: `★ DESTACADO BLACK`. Es un producto
+publicitario suyo.
+
+→ **Decisión:** no lo copiamos como categoría de pago, pero **el patrón
+visual sí sirve** para nuestra píldora de modalidad ("En arriendo") y para
+un `NUEVO` en las fichas de los últimos siete días.
+
+### Cabecera
+Fondo blanco, no transparente sobre la foto. Logo a la izquierda, menú con
+chevrones, y a la derecha una acción de texto (`Publica tu propiedad`), el
+usuario y una campana con contador.
+
+→ **Decisión:** nuestra cabecera va **marina translúcida** para asentarse
+sobre la foto del hero, y la acción de la derecha es **WhatsApp en verde**,
+que es nuestro canal real. Sin campana: en el home público no hay
+notificaciones que mostrar.
 
 ---
 
@@ -452,6 +573,9 @@ vacía ("excelente oportunidad de inversión", "ubicación privilegiada").
   1.000.
 - Un solo acento manuscrito en toda la página.
 - El buscador visible sin hacer scroll en un teléfono de 375×667.
+- El titular del hero legible sobre la fotografía: 4.5:1 contra el punto más
+  claro de la imagen, comprobado, no estimado.
+- La foto del hero por debajo de 250 KB en escritorio y 90 KB en teléfono.
 
 ---
 
