@@ -33,7 +33,25 @@
 --   No hay vuelta atrás por SQL: se pierde el casing original. Hay
 --   respaldo previo en ../house-crm-backups (inmuebles.json).
 --
--- STATUS: pendiente de ejecutar
+-- STATUS: APLICADO el 2026-09-08, pero NO con este SQL.
+--
+--   Se hizo por la API REST (129 filas de 173), porque el rol anon sí
+--   puede escribir estas columnas y así no hubo que pedirle al usuario
+--   que pegara SQL en el editor de Supabase.
+--
+--   Respaldo previo de las tres columnas:
+--   ../house-crm-backups/ciudad-tipo-barrio-20260908-1939.json
+--
+--   Resultado: ciudad 31 -> 22 valores distintos, tipo 14 -> 8.
+--   'Pereira' quedó en una sola entrada con 110 inmuebles.
+--
+--   Dos diferencias frente al SQL de abajo, que initcap() no sabe hacer:
+--     · Los conectores van en minúscula salvo al inicio, como en español:
+--       'Santa Rosa de Cabal', no 'Santa Rosa De Cabal'.
+--     · 'Aparta Estudio' (1) se unificó con 'Apartaestudio' (9): mismo
+--       concepto, y la diferencia de volumen no deja dudas de cuál gana.
+--
+--   NO ejecutar este archivo: initcap() desharía lo de los conectores.
 -- ============================================================
 
 BEGIN;

@@ -300,6 +300,39 @@ async function _handleGoogleCredential(response) {
   try {
     // CRÍTICO: validar firma del JWT contra JWKS de Google ANTES de confiar
     // en el payload. Cierra MEDIO-03 del security audit.
+    // ── Camino nativo: sesión REAL de Supabase ──────────────────────
+    //
+    // Es el arreglo de fondo de que entrar con Google sacara de la cuenta
+    // en cada recarga: el camino de abajo sólo puede dejar un token de
+    // apaño 'google:<email>', que no es una sesión y no sobrevive a
+    // cerrar el navegador.
+    //
+    // Hoy esto falla con provider_disabled, porque Google está apagado en
+    // Authentication › Providers. Queda escrito a propósito: el día que se
+    // habilite empieza a crear sesiones de verdad sin tocar el código.
+    //
+    // Sólo se acepta si el usuario de Auth corresponde a una ficha activa
+    // en `usuarios`. Si no coincide, se deshace y se sigue por el camino
+    // de siempre: es preferible el apaño conocido a dejar a alguien dentro
+    // con una identidad que no sabemos de quién es.
+    try {
+      const nativo = await SB.auth.signInWithIdToken({ provider: 'google', token });
+      const ses = nativo?.data?.session;
+      if (!nativo?.error && ses?.user?.id) {
+        const userData = await _hydrateUserStoreFromDB(ses.user.id, ses.access_token);
+        if (userData) {
+          console.log('[auth] Google con sesión nativa de Supabase:', userData.nombre);
+          _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
+          return;
+        }
+        console.warn('[auth] Sesión de Google sin ficha activa en usuarios — se descarta');
+        try { await SB.auth.signOut(); } catch (e) { /* noop */ }
+      }
+    } catch (e) {
+      // provider_disabled u otro fallo: no es excepcional, es el estado
+      // actual del proyecto. Se continúa sin ruido.
+    }
+
     const payload = await _verifyGoogleIdToken(token);
     if (!payload) {
       _emitAuth(AUTH_EVENTS.LOGIN_ERROR, 'Token de Google inválido o expirado');
