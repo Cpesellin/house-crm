@@ -36,18 +36,20 @@
   <meta name="apple-mobile-web-app-title" content="House">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <!-- Auto-redirect root to portafolio (skip if explicit login/reg query) -->
-  <script>
-    (function(){
-      var h = location.hash;
-      var s = location.search;
-      // Skip redirect when an explicit query param is present (?login=1, ?reg=1, etc.)
-      if (s && s.length > 1) return;
-      if (!h || h === '#' || h === '#/') {
-        location.replace(location.pathname + '#/portafolio');
-      }
-    })();
-  </script>
+  <!-- Aquí había un script que redirigía la raíz a #/portafolio antes de
+       que cargara la app. Se elimina: el enrutador ya resuelve la raíz sin
+       hash mostrando el home, y esta redirección lo pisaba siempre.
+
+       Dos cosas que enseñó:
+
+       · Estaba en el HTML, no en el JS, así que ningún arreglo del
+         enrutador podía tener efecto. Es el mismo patrón de los cuatro
+         botones de compartir: arreglar la copia que no se ejecuta.
+
+       · Llevaba `if (location.search) return`, o sea que se desactivaba
+         con cualquier parámetro en la URL. Las pruebas con ?v=1 pasaban
+         justo porque saltaban esta redirección. Un falso positivo. -->
+
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
