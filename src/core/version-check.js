@@ -21,6 +21,29 @@
  * deja que decida.
  */
 
+// ── Limpiar el ?_v= de la barra de direcciones ────────────────────────
+//
+// El aviso de versión nueva recarga con ?_v=<hora> para que el navegador
+// no devuelva el HTML cacheado. El problema es que ese parámetro SE QUEDA
+// en la barra, y quien copie la URL para compartirla manda algo así:
+//
+//   inmobiliariahouse.com.co/?_v=1788989548501#/portafolio
+//
+// Pasó: el usuario compartió esa URL y el enlace no llevaba al home.
+// Se quita en cuanto la página ya cargó — el parámetro sólo tenía que
+// engañar a la caché de la petición, no vivir en la URL.
+//
+// Se conserva el hash: si estaba viendo un inmueble, ahí se queda.
+(function limpiarCacheBuster() {
+  try {
+    const p = new URLSearchParams(location.search);
+    if (!p.has('_v')) return;
+    p.delete('_v');
+    const q = p.toString();
+    history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
+  } catch (e) { /* si el navegador no deja, no pasa nada grave */ }
+})();
+
 const CADA = 5 * 60 * 1000; // cada 5 minutos
 const RX_BUNDLE = /assets\/index-[A-Za-z0-9_-]+\.js/;
 
