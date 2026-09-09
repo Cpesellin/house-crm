@@ -30,7 +30,7 @@ function buildFooter() {
   const wa = tenantWaUrl('Hola, quiero más información');
 
   return `<footer class="v2-footer">
-    <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:40px">
+    <div class="v2-footer-grid">
       <div>
         <div style="display:flex;align-items:center;gap:9px">
           <span style="width:30px;height:30px;border-radius:9px;background:var(--v2-primary);color:#fff;display:grid;place-items:center">${icon('home', 17)}</span>

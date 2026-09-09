@@ -548,6 +548,35 @@ html[data-design="v2"] .v2-footer a {
   padding: 3px 0;
 }
 html[data-design="v2"] .v2-footer a:hover { color: var(--v2-cream); }
+/* Rejilla del pie.
+ *
+ * Estaba en estilo en línea con cuatro columnas fijas y 40px de
+ * separación. En un teléfono de 375px eso pide 536px, así que la página
+ * entera se desplazaba en horizontal — el defecto se veía en toda la app,
+ * porque el pie es del shell.
+ *
+ * Al pasarla a CSS se puede adaptar: cuatro columnas en escritorio, dos
+ * en tableta y una en el teléfono. */
+html[data-design="v2"] .v2-footer-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+@media (max-width: 860px) {
+  html[data-design="v2"] .v2-footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 24px;
+  }
+}
+@media (max-width: 520px) {
+  html[data-design="v2"] .v2-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
 html[data-design="v2"] .v2-footer-col-title {
   font-size: 10.5px;
   font-weight: 700;

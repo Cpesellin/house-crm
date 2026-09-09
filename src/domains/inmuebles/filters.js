@@ -491,7 +491,14 @@ window.doSearch = function () {
         if (F.neg.has('venta') && F.neg.has('arriendo') && eA2(p)) ok = true;
         if (!ok) return false;
       }
-      if (F.ciu.size > 0 && !Array.from(F.ciu).some((x) => c.includes(x.toLowerCase()))) return false;
+      // Se compara sin tildes: el panel ofrece los nombres oficiales del
+      // DANE ('Alcalá', 'Guatapé', 'Medellín') y en los datos hay ciudades
+      // escritas sin acentos. Comparando tal cual, elegir 'Alcalá' no
+      // encontraría los inmuebles guardados como 'Alcala'.
+      if (F.ciu.size > 0) {
+        const cK = claveBusqueda(c);
+        if (!Array.from(F.ciu).some((x) => cK.includes(claveBusqueda(x)))) return false;
+      }
       if (F.tipo.size > 0 && !Array.from(F.tipo).some((x) => t.includes(x.toLowerCase()))) return false;
       // Filtro por sector (barrio). Lo usan los chips del home.
       //
