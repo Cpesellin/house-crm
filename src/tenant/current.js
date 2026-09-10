@@ -175,5 +175,19 @@ export function initTenant() {
 
 // Exposición para debug + acceso desde otros módulos legacy
 if (typeof window !== 'undefined') {
-  window.__tenant = { get: getCurrentTenant, init: initTenant, slug: getCurrentTenantSlug };
+  // `set` existe para poder VERIFICAR el comportamiento multi-inquilino
+  // sin crear inmobiliarias de prueba en la base de datos.
+  //
+  // Hace falta: el home es de marca blanca y hay que comprobar que
+  // funciona con otro nombre, otro color, sin logo, sin foto de hero y
+  // con inventarios de 3 o de 3.000 inmuebles. Sin esta entrada la única
+  // forma sería ensuciar los datos reales del cliente.
+  //
+  // No cambia nada si nadie la llama, y el arranque normal nunca la usa.
+  window.__tenant = {
+    get: getCurrentTenant,
+    init: initTenant,
+    slug: getCurrentTenantSlug,
+    set: (t) => { _currentTenant = t || DEFAULT_TENANT; return _currentTenant; },
+  };
 }

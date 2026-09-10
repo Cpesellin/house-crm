@@ -191,10 +191,17 @@ function tarjeta(p) {
   const donde = titulo(p.barrio) || titulo(p.ciudad);
   const frase = `${titulo(p.tipo) || 'Inmueble'} ${modoTx}${donde ? ' en ' + donde : ''}`;
 
-  const ref = esc(p.codigo_house || p.id);
-
-  return `<article class="hm-card" onclick="window._hmAbrir('${ref}')" tabindex="0"
-      onkeydown="if(event.key==='Enter')window._hmAbrir('${ref}')"
+  // El id y el código viajan como atributos, no interpolados dentro del
+  // onclick. Dos motivos:
+  //
+  //   · Un código con comilla rompería la cadena del onclick. Los códigos
+  //     los escribe gente, y tarde o temprano aparece una.
+  //   · Con el id delante no hace falta buscar el inmueble en memoria al
+  //     pulsar — y eso es lo que rompía el enlace cuando el inventario
+  //     rotaba entre pintar la tarjeta y hacer clic.
+  return `<article class="hm-card" data-id="${esc(p.id || '')}" data-cod="${esc(p.codigo_house || '')}"
+      onclick="window._hmAbrir(this)" tabindex="0"
+      onkeydown="if(event.key==='Enter')window._hmAbrir(this)"
       aria-label="${esc(titulo(p.tipo))} en ${esc(ubic)}">
     <div class="hm-card-img">
       ${img
@@ -260,6 +267,27 @@ export function renderHomeV2(container) {
   const titular = marca.ciudad
     ? `Encuentra tu inmueble en <span>${esc(marca.ciudad)}</span>`
     : 'Encuentra tu próximo inmueble';
+
+  // El color se vuelve a fijar AQUÍ, no sólo al arrancar.
+  //
+  // tenant/branding lo pone en :root una vez, después de resolver el
+  // inquilino. Si el home se pinta antes de que esa resolución termine
+  // —o si se vuelve a pintar tras cambiar de inquilino— la paleta se
+  // queda con la del render anterior. Toda la paleta del home se deriva
+  // de esta variable con color-mix, así que basta con reponerla en el
+  // contenedor: el pintado siempre sale con el color de quien manda.
+  // Se pone en #sec-home y no en el contenedor interno: la paleta se
+  // declara en esa regla, y una variable definida en un hijo no la
+  // alcanza (se resolvería con el valor heredado, no con éste).
+  const raiz = (typeof cont.closest === 'function' && cont.closest('#sec-home')) || cont;
+  //
+  // Sin color se fija el neutro en vez de borrar la variable: borrarla
+  // deja a la vista el valor que branding puso en :root, que es el del
+  // inquilino anterior. Un inquilino que no eligió color debe salir gris,
+  // nunca con la marca de otro.
+  try {
+    raiz.style.setProperty('--color-primario', t.color_primario || '#334155');
+  } catch (e) { /* navegador sin custom props en style: no es crítico */ }
   const d = D();
 
   // Sólo con foto: una portada de marcadores grises no vende. Los demás
@@ -356,6 +384,10 @@ export function renderHomeV2(container) {
   </section>` : ''}
 
   <!-- ═════════════════════════ POR TIPO ══════════════════════════ -->
+  <!-- Un inquilino recién dado de alta puede no tener ni un inmueble:
+       entonces esta sección salía con su título y nada debajo. Salió en la
+       prueba de estrés con el perfil "inmobiliaria nueva sin inventario". -->
+  ${c.tipos.length ? `
   <section class="hm-sec">
     <div class="hm-sec-head">
       <div>
@@ -370,7 +402,7 @@ export function renderHomeV2(container) {
           <span class="hm-tipo-tx"><b>${esc(t)}</b><span>${verCifras ? `${n} ${n === 1 ? 'inmueble' : 'inmuebles'}` : 'Ver disponibles'}</span></span>
         </button>`).join('')}
     </div>
-  </section>
+  </section>` : ''}
 
   <!-- ══════════════════════ EN ARRIENDO ══════════════════════════ -->
   ${arriendos.length ? `
@@ -550,46 +582,45 @@ if (typeof window !== 'undefined') {
     buscar({});
   };
 
-  window._hmAbrir = function (ref) {
-    // Se abre la MISMA ficha que abre el listado del marketplace, con el
-    // mismo par de llamadas: registrar la visita y mostrar la vista
-    // pública. Si el home abriera otra cosa, el visitante vería dos
-    // fichas distintas del mismo inmueble según por dónde entrara.
-    //
-    // Historia de dos errores míos, por si alguien repite el camino:
-    //
-    //   1. Primero llamaba a window.oM, la ficha del CRM. Con un
-    //      visitante no hacía nada: ni modal, ni error. La tarjeta no
-    //      llevaba a ninguna parte.
-    //   2. Luego lo mandé a #/p/<código>, la ficha del rediseño v2. Ésa
-    //      SÍ abría algo, pero es una versión que ya se había descartado
-    //      por problemas sin resolver, y se le ven: muestra HABITACIONES,
-    //      BAÑOS y PARQUEADEROS con la etiqueta y sin el número.
-    //
-    // Y descarté showPublicView por una mala medición: pinta fuera del
-    // sistema de secciones, así que al comprobar "qué sección quedó
-    // visible" salía vacío y lo leí como roto. Funcionaba.
-    const d = window.D || [];
-    const p = d.find((x) => x && (x.id === ref || x.codigo_house === ref));
+  window._hmAbrir = function (arg) {
+    // Acepta el elemento de la tarjeta (lleva data-id y data-cod) o un
+    // id/código suelto, que es como lo llama el buscador por código.
+    let id = '', cod = '';
+    if (arg && arg.dataset) { id = arg.dataset.id || ''; cod = arg.dataset.cod || ''; }
+    else {
+      const ref = String(arg || '');
+      const p = (window.D || []).find((x) => x && (x.id === ref || x.codigo_house === ref));
+      id = p?.id || ref; cod = p?.codigo_house || '';
+    }
+    if (!id && !cod) return;
 
     // Asesor con sesión: la ficha del CRM, que es la que puede editar.
     if (window.userStore?.get() && typeof window.oM === 'function') {
-      window.oM(ref);
+      window.oM(id || cod);
       return;
     }
 
-    if (p?.id && typeof window.showPublicView === 'function') {
+    // Visitante: la MISMA ficha que abre el listado del marketplace, con
+    // el mismo par de llamadas. Si el home abriera otra cosa, el mismo
+    // inmueble se vería de dos formas según por dónde se entrara.
+    //
+    // showPublicView consulta la base por id: NO depende de window.D. Por
+    // eso funciona aunque el inventario haya rotado desde que se pintó la
+    // tarjeta, y si el inmueble ya se vendió muestra su propia pantalla de
+    // "este enlace puede haber expirado o el inmueble fue retirado", que
+    // es la respuesta correcta.
+    if (id && typeof window.showPublicView === 'function') {
       if (typeof window.trackPropertyView === 'function') {
-        try { window.trackPropertyView(p.id); } catch (e) { /* la analítica no bloquea */ }
+        try { window.trackPropertyView(id); } catch (e) { /* la analítica no bloquea */ }
       }
-      window.showPublicView(p.id);
+      window.showPublicView(id);
       return;
     }
 
-    // Último recurso: la ruta pública por código. Sólo si el inmueble no
-    // está en memoria (llegó por enlace directo antes de cargar la lista).
-    location.hash = '#/p/' + encodeURIComponent(ref);
+    // Sin id (sólo código): la ruta pública por código.
+    if (cod) location.hash = '#/p/' + encodeURIComponent(cod);
   };
+
 
 
   window._hmPorCodigo = function () {
@@ -601,7 +632,7 @@ if (typeof window !== 'undefined') {
     v = v.replace(/\s+/g, '-').replace(/^HOUSE-?/, 'HOUSE-');
 
     const hit = D().find((p) => String(p.codigo_house || '').toUpperCase() === v);
-    if (hit) { window._hmAbrir(hit.codigo_house || hit.id); return; }
+    if (hit) { window._hmAbrir(hit.id || hit.codigo_house); return; }
     if (window.toast) window.toast(`No encontramos el código ${v}`, 'twarn');
   };
 

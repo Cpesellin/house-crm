@@ -73,7 +73,9 @@ export function tenantBaseUrl() {
 
 /** Color primario (útil para inline styles cuando CSS var no alcanza) */
 export function tenantColor() {
-  return getCurrentTenant()?.color_primario || '#1d4ed8';
+  // Respaldo neutro a propósito: un inquilino sin color no debe salir con
+  // el azul de otra marca. Mismo criterio que tokens-v2.css.
+  return getCurrentTenant()?.color_primario || '#334155';
 }
 
 /** Logo URL */

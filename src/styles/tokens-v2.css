@@ -15,8 +15,14 @@
  */
 
 :root {
-  /* Fallback: si el tenant no cargó todavía, azul por defecto */
-  --color-primario: #1d4ed8;
+  /* Respaldo mientras la ficha del inquilino no ha cargado.
+   *
+   * Era #1d4ed8, un azul que no corresponde a ninguna marca: si el
+   * inquilino no tiene color elegido, la app le pintaba encima una marca
+   * ajena. Salió en la prueba multi-inquilino — un inquilino sin color
+   * heredaba ese azul. Ahora el respaldo es un gris azulado neutro, que
+   * no simula ser de nadie. */
+  --color-primario: #334155;
 }
 
 html[data-design="v2"] {
