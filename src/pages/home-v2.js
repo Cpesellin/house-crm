@@ -551,23 +551,46 @@ if (typeof window !== 'undefined') {
   };
 
   window._hmAbrir = function (ref) {
-    // El visitante va a la ficha PÚBLICA por ruta; el asesor con sesión,
-    // a la ficha del CRM.
+    // Se abre la MISMA ficha que abre el listado del marketplace, con el
+    // mismo par de llamadas: registrar la visita y mostrar la vista
+    // pública. Si el home abriera otra cosa, el visitante vería dos
+    // fichas distintas del mismo inmueble según por dónde entrara.
     //
-    // Antes llamaba siempre a window.oM, que es la ficha interna: con un
-    // visitante no hacía absolutamente nada — ni modal, ni navegación, ni
-    // error en consola. Pulsar una tarjeta del home no llevaba a ninguna
-    // parte. (showPublicView tampoco sirve: deja la página sin ninguna
-    // sección visible.)
+    // Historia de dos errores míos, por si alguien repite el camino:
     //
-    // La ruta #/p/<código> es la misma que se comparte por WhatsApp, así
-    // que es la que está probada de verdad.
+    //   1. Primero llamaba a window.oM, la ficha del CRM. Con un
+    //      visitante no hacía nada: ni modal, ni error. La tarjeta no
+    //      llevaba a ninguna parte.
+    //   2. Luego lo mandé a #/p/<código>, la ficha del rediseño v2. Ésa
+    //      SÍ abría algo, pero es una versión que ya se había descartado
+    //      por problemas sin resolver, y se le ven: muestra HABITACIONES,
+    //      BAÑOS y PARQUEADEROS con la etiqueta y sin el número.
+    //
+    // Y descarté showPublicView por una mala medición: pinta fuera del
+    // sistema de secciones, así que al comprobar "qué sección quedó
+    // visible" salía vacío y lo leí como roto. Funcionaba.
+    const d = window.D || [];
+    const p = d.find((x) => x && (x.id === ref || x.codigo_house === ref));
+
+    // Asesor con sesión: la ficha del CRM, que es la que puede editar.
     if (window.userStore?.get() && typeof window.oM === 'function') {
       window.oM(ref);
       return;
     }
+
+    if (p?.id && typeof window.showPublicView === 'function') {
+      if (typeof window.trackPropertyView === 'function') {
+        try { window.trackPropertyView(p.id); } catch (e) { /* la analítica no bloquea */ }
+      }
+      window.showPublicView(p.id);
+      return;
+    }
+
+    // Último recurso: la ruta pública por código. Sólo si el inmueble no
+    // está en memoria (llegó por enlace directo antes de cargar la lista).
     location.hash = '#/p/' + encodeURIComponent(ref);
   };
+
 
   window._hmPorCodigo = function () {
     const el = document.getElementById('hmCodigo');
