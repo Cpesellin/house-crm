@@ -64,6 +64,8 @@ DECLARE
   v_titulo  text;
   v_mensaje text;
   v_rango   text;
+  v_avisos  integer := 0;
+  v_error   text := NULL;
 BEGIN
   v_nombre := nullif(btrim(coalesce(p_nombre, '')), '');
   v_tel := regexp_replace(coalesce(p_telefono, ''), '[^0-9]', '', 'g');
@@ -130,23 +132,42 @@ BEGIN
   v_mensaje := 'Dejó su WhatsApp en la ficha para que le avisemos cuando entre algo así. ' ||
                'Tel: ' || v_tel || v_rango || '.';
 
+  -- contexto_id es UUID, no text.
+  --
+  -- La primera versión mandaba v_alerta::text y el INSERT reventaba
+  -- entero. Como el error se atrapaba y sólo se registraba como
+  -- warning, la función seguía devolviendo ok y no se creaba ni un
+  -- aviso: 0 de 13. El fallo silencioso costó más que el fallo.
+  --
+  -- inmobiliaria_id va explícito: la tabla lo exige (NOT NULL desde la
+  -- migración 48) y el trigger que lo rellena solo se apoya en el
+  -- usuario de la sesión, que aquí no existe — quien escribe es un
+  -- visitante anónimo.
   BEGIN
     INSERT INTO notificaciones (
-      destinatario_id, tipo, categoria, prioridad, titulo, mensaje,
+      inmobiliaria_id, destinatario_id, tipo, categoria, prioridad, titulo, mensaje,
       icono, color, accion_tipo, accion_seccion, contexto_tipo, contexto_id
     )
-    SELECT u.id, 'busqueda_cliente', 'busqueda', 'alta', v_titulo, v_mensaje,
-           '🔎', '#0ea5e9', 'abrir_seccion', 'alertas', 'alerta_busqueda', v_alerta::text
+    SELECT v_inmo, u.id, 'busqueda_cliente', 'busqueda', 'alta', v_titulo, v_mensaje,
+           '🔎', '#0ea5e9', 'abrir_seccion', 'alertas', 'alerta_busqueda', v_alerta
       FROM usuarios u
      WHERE u.activo = true
        AND coalesce(u.tipo_usuario, 'interno') = 'interno';
+    GET DIAGNOSTICS v_avisos = ROW_COUNT;
   EXCEPTION WHEN others THEN
-    -- Si el aviso falla, la alerta YA quedó guardada. Perder el aviso es
-    -- malo; perder el teléfono del cliente es peor.
-    RAISE WARNING 'alerta guardada pero sin aviso: %', SQLERRM;
+    -- La alerta YA quedó guardada: perder el aviso es malo, perder el
+    -- teléfono del cliente es peor, así que no se aborta. Pero el
+    -- motivo SE DEVUELVE, para que un fallo no vuelva a pasar
+    -- desapercibido.
+    v_error := SQLERRM;
+    RAISE WARNING 'alerta guardada pero sin aviso: %', v_error;
   END;
 
-  RETURN jsonb_build_object('ok', true, 'repetida', false);
+  RETURN jsonb_build_object(
+    'ok', true, 'repetida', false,
+    'avisos', v_avisos,
+    'aviso_error', v_error
+  );
 END $$;
 
 GRANT EXECUTE ON FUNCTION crear_alerta_busqueda(text, text, text, text, text, bigint, bigint, uuid, text)

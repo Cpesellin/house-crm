@@ -89,6 +89,9 @@ BEGIN
   -- de la SUSCRIPCIÓN, que es lo que busca. Antes se guardaba el id de la
   -- inmobiliaria: la comprobación no encontraba nunca el aviso anterior y
   -- el admin habría recibido el mismo mensaje todos los días.
+  --
+  -- Y va SIN ::text: la columna contexto_id es UUID. Con el cast el
+  -- INSERT falla entero (comprobado al aplicar la migración 66).
   WITH pendientes AS (
     SELECT s.id AS suscripcion_id, s.inmobiliaria_id, s.proximo_cobro, i.nombre, i.slug,
            (SELECT id FROM usuarios u WHERE u.inmobiliaria_id = s.inmobiliaria_id AND u.rol = 'admin' LIMIT 1) AS admin_id
@@ -98,7 +101,7 @@ BEGIN
       AND s.proximo_cobro = CURRENT_DATE + interval '3 days'
       AND NOT EXISTS (
         SELECT 1 FROM notificaciones n
-        WHERE n.contexto_id = s.id::text
+        WHERE n.contexto_id = s.id
           AND n.tipo = 'trial_3d'
           AND n.created_at > CURRENT_DATE - interval '1 day'
       )
@@ -111,7 +114,7 @@ BEGIN
     inmobiliaria_id, admin_id, 'trial_3d', 'pago',
     '⏰ Tu prueba vence en 3 días',
     'Regulariza el pago para no perder el acceso a ' || nombre || '. Puedes hacerlo desde Facturación.',
-    '⏰', '#f59e0b', 'suscripcion', suscripcion_id::text, 'alta'
+    '⏰', '#f59e0b', 'suscripcion', suscripcion_id, 'alta'
   FROM pendientes
   WHERE admin_id IS NOT NULL;
   GET DIAGNOSTICS n_alertas_3d = ROW_COUNT;
@@ -126,7 +129,7 @@ BEGIN
       AND s.proximo_cobro = CURRENT_DATE + interval '1 day'
       AND NOT EXISTS (
         SELECT 1 FROM notificaciones n
-        WHERE n.contexto_id = s.id::text
+        WHERE n.contexto_id = s.id
           AND n.tipo = 'trial_1d'
           AND n.created_at > CURRENT_DATE - interval '1 day'
       )
@@ -139,7 +142,7 @@ BEGIN
     inmobiliaria_id, admin_id, 'trial_1d', 'pago',
     '🚨 URGENTE: tu prueba vence MAÑANA',
     'Si no regularizas hoy, mañana perderás el acceso a ' || nombre || '.',
-    '🚨', '#ef4444', 'suscripcion', suscripcion_id::text, 'alta'
+    '🚨', '#ef4444', 'suscripcion', suscripcion_id, 'alta'
   FROM pendientes
   WHERE admin_id IS NOT NULL;
   GET DIAGNOSTICS n_alertas_1d = ROW_COUNT;
