@@ -102,6 +102,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Multi-tenant: detecta subdominio + fetch config + aplica branding.
   // Con window.__MULTITENANT__ OFF (default) devuelve House sin fetch.
+  //
+  // ?mt=1 lo enciende sólo para quien lo escribe en su URL.
+  //
+  // Hace falta para PROBARLO antes de encenderlo para todos: sin esto la
+  // única forma de comprobar que la ficha real de la base llega bien al
+  // home era activarlo en el código y desplegarlo, o sea probarlo encima
+  // de los usuarios. Con el parámetro se abre una URL, se mira, y nadie
+  // más se entera.
+  try {
+    if (new URLSearchParams(location.search).get('mt') === '1') {
+      window.__MULTITENANT__ = true;
+    }
+  } catch (e) { /* URL rara: se queda apagado, que es lo seguro */ }
+
   try {
     await initTenant();
     applyBranding();
