@@ -19,6 +19,8 @@
 import { getSupabaseClient } from '../../config/supabase.js';
 import { tenantPhone, tenantShortName, tenantBaseUrl } from '../../tenant/config.js';
 import { icon } from '../../ui/icons.js';
+import { splashHTML } from '../../ui/splash.js';
+import { getCurrentTenant } from '../../tenant/current.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
@@ -134,13 +136,14 @@ export async function showPublicViewV2(id) {
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Loading
-  app.innerHTML = `<div style="min-height:100vh;background:var(--v2-cream);display:grid;place-items:center">
-    <div style="text-align:center;color:var(--v2-ink-3)">
-      <div style="width:52px;height:52px;border-radius:var(--v2-r-lg);background:var(--v2-cream-3);display:grid;place-items:center;margin:0 auto 14px" class="v2-skeleton"></div>
-      <div style="font-size:14px;font-weight:600">Cargando inmueble…</div>
-    </div>
-  </div>`;
+  // Los primeros segundos de quien llega desde WhatsApp: la marca, no un
+  // cuadro gris. Ver ui/splash.
+  const _t = getCurrentTenant() || {};
+  app.innerHTML = splashHTML({
+    nombre: _t.nombre || 'Inmobiliaria',
+    color: _t.color_primario,
+    sub: 'Cargando inmueble…',
+  });
 
   try {
     const { data: p } = await SB().from('inmuebles')

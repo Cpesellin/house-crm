@@ -34,7 +34,8 @@ import './pages/portfolio-list-v2.js';
 import './pages/portfolio-app-v2.js';
 import './pages/home-v2.js';
 // NUEVA ESTRUCTURA — módulos por dominio (scaffolding multi-tenant)
-import { initTenant } from './tenant/current.js';
+import { initTenant, getCurrentTenant } from './tenant/current.js';
+import { splashHTML } from './ui/splash.js';
 import { applyBranding, applyAccessBanner } from './tenant/branding.js';
 import { installAccessGate } from './tenant/access-gate.js';
 import './tenant/config.js';
@@ -144,7 +145,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // /api/ver para los bots.
     console.log('[main] Public view mode for:', verId);
     const app = document.getElementById('app');
-    app.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)"><div style="text-align:center"><div style="font-size:32px;margin-bottom:12px">🏠</div><div style="font-size:14px;color:var(--sub);font-weight:600">Cargando inmueble...</div></div></div>';
+    // Antes salía un emoji de casita sobre fondo claro, y en cuanto
+    // resolvía, la ficha pintaba OTRA pantalla de carga distinta: dos
+    // pantallas seguidas, ninguna de la marca, para quien acaba de abrir
+    // un enlace de WhatsApp. Ahora las dos son la misma pieza.
+    app.innerHTML = splashHTML({
+      nombre: getCurrentTenant()?.nombre || 'Inmobiliaria',
+      color: getCurrentTenant()?.color_primario,
+      sub: 'Cargando inmueble…',
+    });
     await new Promise(resolve => {
       const check = () => (typeof window.supabase !== 'undefined') ? resolve() : setTimeout(check, 100);
       check();
