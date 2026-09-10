@@ -34,6 +34,100 @@ function specCard(iconName, valor, label) {
   </div>`;
 }
 
+/**
+ * Otros inmuebles del portafolio, al pie de la ficha.
+ *
+ * POR QUÉ
+ *   Quien llega por un enlace compartido cae en una pantalla sin salida:
+ *   si ese inmueble no le sirve, se va. No había forma de pasar de la
+ *   ficha al resto del portafolio salvo un botón genérico.
+ *
+ * QUÉ SE OFRECE
+ *   Sólo inmuebles PUBLICADOS POR LA OFICINA. El día que la plataforma
+ *   reciba inmuebles de terceros, la ficha de un tercero no promociona
+ *   el inventario propio ni al revés: `publicado_por_tipo` ya distingue
+ *   los dos casos (hoy los 176 son internos).
+ *
+ * CÓMO SE ELIGEN
+ *   Misma ciudad, con foto y disponibles. Primero los del mismo tipo y
+ *   con precio parecido — un apartamento de $200M al lado de una finca
+ *   de $3.000M no es una sugerencia, es relleno.
+ *
+ * Se carga DESPUÉS de pintar la ficha: es información secundaria y no
+ * puede retrasar lo que la persona vino a ver.
+ */
+async function cargarSugerencias(p) {
+  const cont = document.getElementById('pub-sug');
+  if (!cont) return;
+
+  // Ficha de un tercero: no se le cuelga el inventario de la oficina.
+  const tipoPub = p.publicado_por_tipo || 'interno';
+  if (tipoPub !== 'interno') { cont.remove(); return; }
+
+  const precioRef = p.precio_venta || p.precio_arriendo || 0;
+  const esArriendo = !p.precio_venta && p.precio_arriendo > 0;
+
+  try {
+    let q = SB().from('inmuebles')
+      .select('id,codigo_house,tipo,ciudad,barrio,precio_venta,precio_arriendo,publicado_por_tipo,estado,fotos(url,url_thumb,orden)')
+      .eq('eliminado', false)
+      .neq('id', p.id)
+      .in('estado', ['Disponible', 'Aún Disponible'])
+      .limit(40);
+    if (p.ciudad) q = q.eq('ciudad', p.ciudad);
+    const { data } = await q;
+
+    let lista = (data || [])
+      .filter((x) => (x.publicado_por_tipo || 'interno') === 'interno')
+      .filter((x) => x.fotos && x.fotos.length)
+      // El mismo negocio: a quien mira una casa en venta no se le
+      // ofrecen arriendos.
+      .filter((x) => (esArriendo ? x.precio_arriendo > 0 : x.precio_venta > 0));
+
+    const precioDe = (x) => (esArriendo ? x.precio_arriendo : x.precio_venta) || 0;
+    lista.sort((a, b) => {
+      const mismoTipo = (x) => (x.tipo === p.tipo ? 0 : 1);
+      if (mismoTipo(a) !== mismoTipo(b)) return mismoTipo(a) - mismoTipo(b);
+      if (!precioRef) return 0;
+      return Math.abs(precioDe(a) - precioRef) - Math.abs(precioDe(b) - precioRef);
+    });
+    lista = lista.slice(0, 8);
+
+    if (!lista.length) { cont.remove(); return; }
+
+    const tarjeta = (x) => {
+      const f = [...x.fotos].sort((a, b) => (a.orden || 0) - (b.orden || 0))[0];
+      const precio = esArriendo
+        ? fm(x.precio_arriendo) + '<span style="font-size:11px;font-weight:600;color:var(--v2-ink-3)">/mes</span>'
+        : fm(x.precio_venta);
+      return `<button onclick="window.showPublicView&&window.showPublicView('${esc(x.id)}')"
+        style="all:unset;cursor:pointer;flex:0 0 216px;scroll-snap-align:start;border:1px solid var(--v2-line);border-radius:var(--v2-r-lg);overflow:hidden;background:var(--v2-paper);display:block"
+        aria-label="Ver ${esc(x.tipo || 'inmueble')} en ${esc(x.barrio || x.ciudad || '')}">
+        <img src="${esc(f.url_thumb || f.url)}" alt="" loading="lazy"
+             style="width:100%;height:132px;object-fit:cover;display:block;background:var(--v2-cream-3)"
+             onerror="window.drFallback&&window.drFallback(this)">
+        <div style="padding:11px 12px 13px">
+          <div style="font-size:15px;font-weight:800;letter-spacing:-.02em">${precio}</div>
+          <div style="font-size:12.5px;color:var(--v2-ink-3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.tipo || '')}${x.barrio ? ' · ' + esc(x.barrio) : ''}</div>
+        </div>
+      </button>`;
+    };
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px">
+        <h2 style="margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em">Otros en ${esc(p.ciudad || 'el portafolio')}</h2>
+        <a href="/#/portafolio" style="font-size:13px;font-weight:700;color:var(--v2-primary);text-decoration:none;flex-shrink:0">Ver todos</a>
+      </div>
+      <div style="display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+        ${lista.map(tarjeta).join('')}
+      </div>`;
+  } catch (e) {
+    // Sin sugerencias no pasa nada: la ficha ya está completa.
+    console.debug('[view-v2] sugerencias:', e?.message || e);
+    cont.remove();
+  }
+}
+
 export async function showPublicViewV2(id) {
   const lov = document.getElementById('lov');
   if (lov) lov.style.display = 'none';
@@ -164,6 +258,7 @@ export async function showPublicViewV2(id) {
           <span style="width:30px;height:30px;border-radius:9px;background:var(--v2-primary);color:#fff;display:grid;place-items:center;flex-shrink:0">${icon('home', 17)}</span>
           <span style="font-size:15.5px;font-weight:800;letter-spacing:-.02em">${esc(tenantShortName())}</span>
           <div style="flex:1"></div>
+          <button onclick="window.abrirInteres&&window.abrirInteres('${id}')" aria-label="Guardar este inmueble y que un asesor me contacte" title="Me interesa" style="width:36px;height:36px;border-radius:var(--v2-r-full);background:var(--v2-cream-2);border:1px solid var(--v2-line);color:var(--v2-ink-2);cursor:pointer;display:grid;place-items:center">${icon('heart', 16)}</button>
           <button onclick="window.shareInmueble&&window.shareInmueble('${esc(cod || id)}','${esc((p.tipo || 'Inmueble') + ' en ' + (p.barrio || p.ciudad || ''))}')" aria-label="Compartir" style="width:36px;height:36px;border-radius:var(--v2-r-full);background:var(--v2-cream-2);border:1px solid var(--v2-line);color:var(--v2-ink-2);cursor:pointer;display:grid;place-items:center">${icon('share', 16)}</button>
         </div>
 
@@ -212,25 +307,31 @@ export async function showPublicViewV2(id) {
             <a href="${waUrl}" target="_blank" rel="noopener" class="v2-btn" style="background:#25d366;color:#fff;border:none;padding:0 16px;text-decoration:none;flex-shrink:0">${icon('chat', 15)}Escribir</a>
           </div>
 
-          <div style="margin-top:28px;padding:24px;border-radius:var(--v2-r-xl);background:linear-gradient(100deg,var(--v2-primary-tint) 0%,var(--v2-paper) 70%);border:1px solid var(--v2-line);text-align:center">
-            <div style="font-size:19px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px">¿Buscás algo parecido?</div>
-            <div style="font-size:14px;color:var(--v2-ink-3);margin-bottom:16px">Tenemos más inmuebles verificados en ${esc(p.ciudad || 'la zona')}.</div>
-            <a href="/#/portafolio" class="v2-btn v2-btn-solid" style="padding:0 22px;text-decoration:none">Ver todo el portafolio${icon('chevronRight', 15)}</a>
-          </div>
+          <!-- Se llena tras pintar la ficha; si no hay nada que ofrecer, se quita solo. -->
+          <div id="pub-sug" style="margin-top:32px"></div>
 
           <div style="height:32px"></div>
         </div>
 
         <div style="position:fixed;bottom:0;left:0;right:0;z-index:60;background:rgba(250,246,241,.96);backdrop-filter:blur(12px);border-top:1px solid var(--v2-line);padding:12px 16px max(12px,env(safe-area-inset-bottom))">
-          <div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px">
-            <button class="v2-btn v2-btn-solid" style="width:100%;height:48px;font-size:15px" onclick="window.abrirInteres&&window.abrirInteres('${id}')">${icon('heart', 17)}Me interesa este inmueble</button>
-            <div style="display:flex;gap:8px">
-              <a href="${waUrl}" target="_blank" rel="noopener" class="v2-btn" style="flex:1;height:44px;background:#25d366;color:#fff;border:none;text-decoration:none" onclick="window.trackEvent&&window.trackEvent('compartir_wa',${trk})">${icon('chat', 16)}WhatsApp</a>
-              <a href="${telUrl}" class="v2-btn v2-btn-outline" style="flex:1;height:44px;text-decoration:none" onclick="window.trackEvent&&window.trackEvent('llamar',${trk})">${icon('phone', 16)}Llamar</a>
-            </div>
+          <!--
+            Sin el botón grande de "Me interesa".
+
+            Ocupaba una fila entera encima de los dos CTAs y competía con
+            ellos: tres botones apilados tapaban la foto y la estética de
+            la ficha. Los dos que quedan son los que de verdad abren una
+            conversación. Guardar el inmueble pasó a ser un icono en la
+            cabecera, donde no estorba.
+          -->
+          <div style="max-width:760px;margin:0 auto;display:flex;gap:10px">
+            <a href="${waUrl}" target="_blank" rel="noopener" class="v2-btn" style="flex:1;height:50px;font-size:15px;background:#25d366;color:#fff;border:none;text-decoration:none" onclick="window.trackEvent&&window.trackEvent('compartir_wa',${trk})">${icon('chat', 17)}WhatsApp</a>
+            <a href="${telUrl}" class="v2-btn v2-btn-outline" style="flex:1;height:50px;font-size:15px;text-decoration:none" onclick="window.trackEvent&&window.trackEvent('llamar',${trk})">${icon('phone', 17)}Llamar</a>
           </div>
         </div>
       </div>`;
+
+    // Secundario: no bloquea lo que la persona vino a ver.
+    cargarSugerencias(p);
 
     // Estado de la galería
     window._pubFotos = fotos.map((f) => f.url);
