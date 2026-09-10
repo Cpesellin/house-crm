@@ -22,6 +22,8 @@
  *   abrirCrearInteresado, abrirDetalleInteresado
  */
 
+import { getSupabaseClient } from '../../config/supabase.js';
+
 // ─── Shortcuts locales ───────────────────────────────────────────────
 const U = () => window.userStore?.get();
 const D = () => window.D || [];
@@ -363,6 +365,74 @@ window.oM = function (ref) {
         }).join('') + (leads.length > 8 ? `<div style="font-size:10px;color:var(--sub);margin-top:4px">+ ${leads.length - 8} más en <a onclick="closeModal&&closeModal();go(\`interesados\`)" style="color:var(--b600);cursor:pointer;font-weight:700">Interesados</a></div>` : '');
       } catch (e) { console.warn('[oM interesados]', e); }
     }, 100);
+
+    // ── QUIÉN ESTÁ ESPERANDO ALGO ASÍ ──────────────────────────────
+    //
+    // El bloque de arriba muestra a los interesados EN ESTE inmueble.
+    // Éste muestra lo contrario, y es lo que convierte las alertas de
+    // búsqueda en llamadas: gente que dejó su WhatsApp en otra ficha
+    // pidiendo que le avisáramos cuando entrara algo así — y esto es
+    // "algo así".
+    //
+    // Cruza ciudad, tipo, negocio y el rango de precio que la persona
+    // pidió. Aparece en la ficha del inmueble, que es donde el asesor
+    // ya está cuando lo publica o lo revisa: no hay que acordarse de
+    // abrir ninguna pantalla.
+    b += `<div id="oMEsp-${p.id}"></div>`;
+    setTimeout(async () => {
+      const cont = document.getElementById('oMEsp-' + p.id);
+      if (!cont) return;
+      try {
+        const SB = getSupabaseClient();
+        if (!SB) return;
+        const pv = p.precio_venta || 0;
+        const pa = p.precio_arriendo || 0;
+        const negocio = pv > 0 ? 'venta' : 'arriendo';
+        const precio = pv || pa || 0;
+
+        let q = SB.from('alerta_busqueda')
+          .select('id,nombre,telefono,ciudad,tipo,negocio,precio_min,precio_max,created_at')
+          .eq('estado', 'activa')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (p.ciudad) q = q.eq('ciudad', p.ciudad);
+        const { data, error } = await q;
+        // Sin la migración aplicada, o sin permiso, no se muestra nada.
+        if (error || !data || !data.length) return;
+
+        const encaja = data.filter((a) => {
+          if (a.negocio && a.negocio !== negocio) return false;
+          if (a.tipo && p.tipo && a.tipo !== p.tipo) return false;
+          // El rango es del cliente; si no lo dejó, no descarta.
+          if (precio && a.precio_min && precio < a.precio_min) return false;
+          if (precio && a.precio_max && precio > a.precio_max) return false;
+          return true;
+        });
+        if (!encaja.length) return;
+
+        const wa = (tel, nombre) => {
+          const desc = (p.tipo || 'inmueble') + (p.barrio ? ' en ' + p.barrio : '');
+          const txt = 'Hola ' + (nombre || '').split(' ')[0] +
+            ', nos dejaste tus datos buscando ' + (p.tipo || 'inmueble').toLowerCase() +
+            '. Acabamos de recibir este: ' + desc + '.';
+          return 'https://wa.me/57' + String(tel).replace(/\D/g, '').replace(/^57/, '') +
+                 '?text=' + encodeURIComponent(txt);
+        };
+
+        cont.innerHTML = `<div style="margin-top:14px;padding:12px;background:#0ea5e912;border:1.5px solid #0ea5e955;border-radius:10px">
+          <div style="font-size:12px;font-weight:800;color:#0369a1;margin-bottom:8px">🔎 ${encaja.length} ${encaja.length === 1 ? 'cliente está esperando' : 'clientes están esperando'} algo así</div>
+          ${encaja.slice(0, 6).map((a) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;background:var(--cd);border:1px solid var(--brd);border-radius:6px;margin-bottom:4px">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:700;color:var(--tx)">${String(a.nombre || '').slice(0, 40)}</div>
+                <div style="font-size:10px;color:var(--sub)">${a.telefono || '—'}${a.tipo ? ' · buscaba ' + a.tipo : ''}</div>
+              </div>
+              <a href="${wa(a.telefono, a.nombre)}" target="_blank" rel="noopener" style="flex-shrink:0;padding:5px 10px;background:#25d366;color:#fff;border-radius:6px;font-size:11px;font-weight:800;text-decoration:none">Escribir</a>
+            </div>`).join('')}
+          ${encaja.length > 6 ? `<div style="font-size:10px;color:var(--sub);margin-top:4px">+ ${encaja.length - 6} más en Alertas › Buscan inmueble</div>` : ''}
+        </div>`;
+      } catch (e) { console.debug('[oM esperando]', e?.message || e); }
+    }, 140);
   }
 
   // SAVE

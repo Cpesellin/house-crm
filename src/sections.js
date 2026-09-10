@@ -328,6 +328,10 @@ const NOTIF_TABS = [
   { id: 'inmueble',       label: 'Inmuebles',        emoji: '🏠' },
   { id: 'favorito',       label: 'Favoritos',        emoji: '❤️' },
   { id: 'inmueble_nuevo', label: 'Inmuebles nuevos', emoji: '🆕' },
+  // Clientes que dejaron su WhatsApp en una ficha pidiendo que les
+  // avisemos cuando entre algo parecido. La pestaña se oculta sola
+  // mientras no haya ninguno.
+  { id: 'busqueda',       label: 'Buscan inmueble',  emoji: '🔎' },
   { id: 'perfil_nuevo',   label: 'Perfiles nuevos',  emoji: '🧑‍💼' },
   { id: 'moderacion',     label: 'Moderación',       emoji: '🛡️' },
   { id: 'calificacion',   label: 'Calificación',     emoji: '⭐' },
