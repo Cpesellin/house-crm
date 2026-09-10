@@ -130,6 +130,86 @@ async function cargarSugerencias(p) {
   }
 }
 
+/**
+ * Guarda la alerta de búsqueda desde la ficha.
+ *
+ * El rango de precio no se le pregunta a nadie: sale del inmueble que
+ * estaba viendo, ±25%. Alguien que mira una casa de $400M busca en ese
+ * orden de magnitud, y un campo más es un campo que hace abandonar.
+ *
+ * Se escribe con un RPC (crear_alerta_busqueda). Escribir directo a la
+ * tabla obligaría a abrirle la tabla al rol anon — que en este proyecto
+ * es también el visitante público — y los teléfonos de los interesados
+ * quedarían al alcance de cualquiera con la llave del navegador.
+ */
+async function enviarAlerta(inmuebleId) {
+  const nom = document.getElementById('al-nom');
+  const tel = document.getElementById('al-tel');
+  const btn = document.getElementById('al-btn');
+  const msg = document.getElementById('al-msg');
+  if (!nom || !tel || !msg) return;
+
+  const nombre = nom.value.trim();
+  const telefono = tel.value.trim();
+  const decir = (texto, mal) => {
+    msg.textContent = texto;
+    msg.style.color = mal ? 'var(--v2-red, #b91c1c)' : 'var(--v2-ink-3)';
+  };
+
+  if (!nombre) { decir('Falta tu nombre.', true); nom.focus(); return; }
+  if (telefono.replace(/\D/g, '').length < 7) { decir('Ese número no parece completo.', true); tel.focus(); return; }
+
+  btn.disabled = true;
+  const antes = btn.textContent;
+  btn.textContent = 'Enviando…';
+  decir('');
+
+  try {
+    const p = window._alertaCtx || {};
+    const ref = p.precio || 0;
+    const { data, error } = await SB().rpc('crear_alerta_busqueda', {
+      p_nombre: nombre,
+      p_telefono: telefono,
+      p_ciudad: p.ciudad || null,
+      p_tipo: p.tipo || null,
+      p_negocio: p.negocio || null,
+      p_precio_min: ref ? Math.round(ref * 0.75) : null,
+      p_precio_max: ref ? Math.round(ref * 1.25) : null,
+      p_inmueble_id: inmuebleId || null,
+      p_slug: p.slug || 'house',
+    });
+    if (error) throw error;
+    if (data && data.ok === false) {
+      decir(data.error === 'telefono_invalido' ? 'Revisa el número, no parece válido.' : 'Falta tu nombre.', true);
+      btn.disabled = false; btn.textContent = antes;
+      return;
+    }
+
+    // Confirmación en el sitio de la caja: un aviso flotante en el pie de
+    // una página larga se lo pierde quien está mirando arriba.
+    const caja = document.getElementById('pub-alerta');
+    if (caja) {
+      caja.innerHTML = `<div style="text-align:center;padding:8px 4px">
+        <div style="width:46px;height:46px;border-radius:var(--v2-r-full);background:var(--v2-green-soft,#dcfce7);color:#059669;display:grid;place-items:center;margin:0 auto 12px">${icon('check', 22)}</div>
+        <div style="font-size:17px;font-weight:800;letter-spacing:-.02em">Listo, ${esc(nombre.split(' ')[0])}</div>
+        <div style="font-size:14px;color:var(--v2-ink-3);line-height:1.5;margin-top:5px">Te escribimos por WhatsApp apenas entre algo que encaje con lo que buscas.</div>
+      </div>`;
+    }
+    if (window.trackEvent) {
+      try { window.trackEvent('alerta_busqueda', { inmueble_id: inmuebleId, ciudad: p.ciudad, tipo: p.tipo }); } catch (e) { /* noop */ }
+    }
+  } catch (e) {
+    console.error('[alerta]', e);
+    // 404 del RPC = la migración 64 no está aplicada todavía.
+    decir(/function|404|schema cache/i.test(e?.message || '')
+      ? 'No pudimos guardarlo. Escríbenos por WhatsApp y lo hacemos nosotros.'
+      : 'No se pudo enviar. Intenta de nuevo.', true);
+    btn.disabled = false; btn.textContent = antes;
+  }
+}
+
+if (typeof window !== 'undefined') window._alertaEnviar = enviarAlerta;
+
 export async function showPublicViewV2(id) {
   const lov = document.getElementById('lov');
   if (lov) lov.style.display = 'none';
@@ -313,6 +393,33 @@ export async function showPublicViewV2(id) {
           <!-- Se llena tras pintar la ficha; si no hay nada que ofrecer, se quita solo. -->
           <div id="pub-sug" style="margin-top:32px"></div>
 
+          <!--
+            El que reemplaza al botón grande de "Me interesa".
+
+            Aquel exigía crear cuenta, que es donde se cae la gente. Y
+            sólo servía para ESTE inmueble: quien decide que no es el
+            suyo se iba, aunque la semana siguiente entrara el que sí.
+            Con un inventario que rota, eso es perder al cliente por una
+            cuestión de calendario.
+
+            Dos campos, sin registro. Va al final: primero que vea el
+            inmueble y los otros, y si nada le sirvió, aquí está la
+            salida que deja su nombre.
+          -->
+          <div id="pub-alerta" style="margin-top:32px;padding:22px;border-radius:var(--v2-r-xl);background:linear-gradient(100deg,var(--v2-primary-tint) 0%,var(--v2-paper) 72%);border:1px solid var(--v2-line)">
+            <div style="font-size:18px;font-weight:800;letter-spacing:-.02em">¿No es el que buscabas?</div>
+            <div style="font-size:14px;color:var(--v2-ink-3);line-height:1.5;margin-top:5px">Déjanos tus datos y te avisamos apenas entre algo parecido a este en ${esc(p.ciudad || 'la zona')}. Sin crear cuenta.</div>
+            <div style="display:flex;flex-direction:column;gap:9px;margin-top:15px">
+              <input id="al-nom" type="text" autocomplete="name" placeholder="Tu nombre" aria-label="Tu nombre"
+                     style="height:46px;padding:0 14px;border:1px solid var(--v2-line);border-radius:var(--v2-r-md);background:var(--v2-paper);font:inherit;font-size:15px;color:var(--v2-ink);width:100%;box-sizing:border-box">
+              <input id="al-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="Tu WhatsApp" aria-label="Tu número de WhatsApp"
+                     style="height:46px;padding:0 14px;border:1px solid var(--v2-line);border-radius:var(--v2-r-md);background:var(--v2-paper);font:inherit;font-size:15px;color:var(--v2-ink);width:100%;box-sizing:border-box">
+              <button id="al-btn" class="v2-btn v2-btn-solid" style="height:46px;font-size:15px"
+                      onclick="window._alertaEnviar&&window._alertaEnviar('${esc(p.id)}')">Avísenme</button>
+            </div>
+            <div id="al-msg" role="status" style="font-size:13px;margin-top:10px;min-height:18px;color:var(--v2-ink-3)"></div>
+          </div>
+
           <div style="height:32px"></div>
         </div>
 
@@ -335,6 +442,15 @@ export async function showPublicViewV2(id) {
 
     // Secundario: no bloquea lo que la persona vino a ver.
     cargarSugerencias(p);
+
+    // Contexto de la alerta: qué buscaba y en qué orden de precio.
+    window._alertaCtx = {
+      ciudad: p.ciudad || null,
+      tipo: p.tipo || null,
+      negocio: pa > 0 && pv <= 0 ? 'arriendo' : 'venta',
+      precio: pv || pa || 0,
+      slug: (getCurrentTenant() || {}).slug || 'house',
+    };
 
     // Estado de la galería
     window._pubFotos = fotos.map((f) => f.url);
