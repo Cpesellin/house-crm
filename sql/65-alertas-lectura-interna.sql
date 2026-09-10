@@ -35,14 +35,25 @@
 -- Se apoya en tipo_usuario ('interno' | 'publico', sql/25). Los
 -- registros antiguos sin ese campo se tratan como internos, que es lo
 -- que eran: el público llegó después.
+-- Va en plpgsql y no en sql a propósito. Una función `LANGUAGE sql`
+-- valida su cuerpo en el momento de crearla, y en el SQL Editor esa
+-- validación falló con 42P01 ("public.usuarios no existe") aunque la
+-- tabla está ahí — el editor resolvió el nombre con otro search_path.
+-- plpgsql resuelve al ejecutar, así que se crea sin pelear con eso.
 CREATE OR REPLACE FUNCTION public.es_usuario_interno()
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT COALESCE(
-    (SELECT COALESCE(tipo_usuario, 'interno') = 'interno'
-       FROM public.usuarios WHERE id = auth.uid() LIMIT 1),
-    false
-  );
-$$;
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v boolean;
+BEGIN
+  SELECT COALESCE(tipo_usuario, 'interno') = 'interno'
+    INTO v
+    FROM usuarios
+   WHERE id = auth.uid()
+   LIMIT 1;
+  -- Sin fila (no hay sesión, o la sesión no corresponde a un usuario de
+  -- la casa) NO se concede acceso.
+  RETURN COALESCE(v, false);
+END $$;
 
 COMMENT ON FUNCTION public.es_usuario_interno IS
   'Helper RLS: true si quien consulta es del equipo de la inmobiliaria, no un cliente del público.';
