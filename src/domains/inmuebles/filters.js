@@ -65,15 +65,57 @@ const NEG_OPTS = [
 // datos para que no vuelva a existir una lista inventada.
 const CIU_EMOJI = { Pereira: '🏙️', Dosquebradas: '🌆', Armenia: '🌄', Manizales: '⛰️', 'Bogotá, D.C.': '🏛️', Medellín: '🌇', Cali: '🌴', Cartagena: '🏖️' };
 
-/** Ciudades presentes en el portafolio, de más a menos inmuebles. */
+// Índice de los 1.122 municipios por su clave sin tildes, para reconocer
+// el municipio real detrás de lo que se escribió en la ficha.
+const MUNI_POR_CLAVE = new Map(MUNICIPIOS.map((m) => [claveBusqueda(m.municipio), m.municipio]));
+
+// Nombres que la gente escribe de otra forma que el DANE. Sólo formas
+// oficiales alternativas de un mismo municipio — nada que suponga
+// decidir dónde queda un inmueble.
+//
+// "Bogotá" sin más entraba aquí como si fuera un sector, porque en el
+// listado oficial figura como "Bogotá, D.C.".
+[['bogota', 'Bogotá, D.C.'], ['bogota d.c.', 'Bogotá, D.C.'], ['bogota dc', 'Bogotá, D.C.']]
+  .forEach(([k, v]) => MUNI_POR_CLAVE.set(k, v));
+
+/** Nombre oficial del municipio detrás de lo escrito; si no lo es, tal cual. */
+function canonMunicipio(v) {
+  return MUNI_POR_CLAVE.get(claveBusqueda(v)) || String(v == null ? '' : v);
+}
+
+// Valores que no dicen nada de dónde queda el inmueble. No se ofrecen
+// como ciudad: un cliente que ve "Pendiente 📍 1 inmueble" en el
+// buscador no aprende nada, y sí se entera de que el dato está sin
+// terminar. El inmueble sigue en el listado y sigue siendo buscable.
+const CIU_SIN_VALOR = new Set(['pendiente', 'por confirmar', 'sin definir', 'n/a', '-']);
+
+/**
+ * Ciudades presentes en el portafolio, de más a menos inmuebles.
+ *
+ * Se agrupa por MUNICIPIO, no por el texto tal cual está escrito. Sin
+ * esto, "Alcala" y "Alcalá" salían como dos ciudades distintas en el
+ * desplegable —el mismo municipio, ofrecido dos veces con dos inmuebles
+ * y uno— y quien eligiera una no veía los del otro.
+ *
+ * Lo que no corresponde a ningún municipio (un corredor vial como "Via
+ * Armenia") se conserva, pero marcado, para mostrarlo aparte.
+ */
 function ciudadesConInventario() {
   const m = new Map();
   D().forEach((p) => {
-    const v = String(p.ciudad || '').replace(/\s+/g, ' ').trim();
-    if (!v) return;
-    m.set(v, (m.get(v) || 0) + 1);
+    const bruto = String(p.ciudad || '').replace(/\s+/g, ' ').trim();
+    if (!bruto) return;
+    const k = claveBusqueda(bruto);
+    if (CIU_SIN_VALOR.has(k)) return;
+    // El nombre oficial manda sobre cómo se haya escrito en la ficha.
+    const v = MUNI_POR_CLAVE.get(k) || bruto;
+    const prev = m.get(v);
+    if (prev) prev.n += 1;
+    else m.set(v, { n: 1, esMunicipio: MUNI_POR_CLAVE.has(k) });
   });
-  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([v, n]) => ({ v, n }));
+  return [...m.entries()]
+    .sort((a, b) => b[1].n - a[1].n)
+    .map(([v, x]) => ({ v, n: x.n, esMunicipio: x.esMunicipio }));
 }
 
 const CIU_OPTS = [];
@@ -161,9 +203,16 @@ function renderPanelCiudad(q) {
   let cuerpo = '';
 
   if (!k) {
+    // Los corredores viales ("Via Armenia") van en su propio grupo, al
+    // final: son sectores reales que el cliente reconoce, pero no son
+    // municipios y mezclarlos entre las ciudades da la impresión de que
+    // el listado está mal hecho.
+    const munis = conInv.filter((c) => c.esMunicipio);
+    const sectores = conInv.filter((c) => !c.esMunicipio);
+    const fila = (c) => filaCiudad(c.v, `${c.n} ${c.n === 1 ? 'inmueble' : 'inmuebles'}`, CIU_EMOJI[c.v]);
     cuerpo = conInv.length
-      ? `<div class="ciu-grupo">En nuestro portafolio</div>` +
-        conInv.map((c) => filaCiudad(c.v, `${c.n} ${c.n === 1 ? 'inmueble' : 'inmuebles'}`, CIU_EMOJI[c.v])).join('') +
+      ? (munis.length ? `<div class="ciu-grupo">En nuestro portafolio</div>` + munis.map(fila).join('') : '') +
+        (sectores.length ? `<div class="ciu-grupo">Sectores y corredores</div>` + sectores.map(fila).join('') : '') +
         `<div class="ciu-nota">Escribe para buscar entre los 1.122 municipios del país</div>`
       : `<div class="ciu-nota">Escribe el nombre de un municipio</div>`;
   } else {
@@ -495,9 +544,22 @@ window.doSearch = function () {
       // DANE ('Alcalá', 'Guatapé', 'Medellín') y en los datos hay ciudades
       // escritas sin acentos. Comparando tal cual, elegir 'Alcalá' no
       // encontraría los inmuebles guardados como 'Alcala'.
+      //
+      // Se comparan los nombres OFICIALES de ambos lados, y de forma
+      // exacta. Dos razones:
+      //
+      //   El desplegable ofrece "Bogotá, D.C." y la ficha dice "Bogotá":
+      //   comparando el texto tal cual, elegir Bogotá devolvía cero
+      //   inmuebles teniéndolos.
+      //
+      //   Y antes se comparaba con `includes`, así que "Alcalá" también
+      //   se llevaba los de "Via Alcala": el desplegable decía 3 y la
+      //   lista traía 4. Un filtro que no cuadra con su propio conteo
+      //   hace dudar de todo lo demás. Los corredores viales se eligen
+      //   por su propia entrada, en el grupo de sectores.
       if (F.ciu.size > 0) {
-        const cK = claveBusqueda(c);
-        if (!Array.from(F.ciu).some((x) => cK.includes(claveBusqueda(x)))) return false;
+        const cCanon = claveBusqueda(canonMunicipio(c));
+        if (!Array.from(F.ciu).some((x) => cCanon === claveBusqueda(canonMunicipio(x)))) return false;
       }
       if (F.tipo.size > 0 && !Array.from(F.tipo).some((x) => t.includes(x.toLowerCase()))) return false;
       // Filtro por sector (barrio). Lo usan los chips del home.
