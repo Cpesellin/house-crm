@@ -48,7 +48,13 @@ DECLARE
   v_slug text;
   v_exists boolean;
 BEGIN
-  v_slug := lower(regexp_replace(trim(coalesce(p_slug,'')), '[^a-z0-9-]', '', 'g'));
+  -- lower() PRIMERO y limpieza después.
+  --
+  -- Al revés —que es como estaba— la limpieza borra las mayúsculas antes
+  -- de que lower() llegue a convertirlas: "MiCasa" quedaba en "iasa" y el
+  -- registro le decía a la persona que su nombre estaba disponible con
+  -- una dirección que no había escrito.
+  v_slug := regexp_replace(lower(trim(coalesce(p_slug,''))), '[^a-z0-9-]', '', 'g');
 
   -- Slugs reservados (deben coincidir con signup_tenant en sql/53)
   IF v_slug IN ('www','app','api','admin','superadmin','house','plataforma','test','demo','staging') THEN
@@ -79,8 +85,12 @@ DECLARE
   n_alertas_1d integer := 0;
 BEGIN
   -- 3 días antes: aviso general
+  -- El candado anti-repetición mira `contexto_id`, así que ahí va el id
+  -- de la SUSCRIPCIÓN, que es lo que busca. Antes se guardaba el id de la
+  -- inmobiliaria: la comprobación no encontraba nunca el aviso anterior y
+  -- el admin habría recibido el mismo mensaje todos los días.
   WITH pendientes AS (
-    SELECT s.inmobiliaria_id, s.proximo_cobro, i.nombre, i.slug,
+    SELECT s.id AS suscripcion_id, s.inmobiliaria_id, s.proximo_cobro, i.nombre, i.slug,
            (SELECT id FROM usuarios u WHERE u.inmobiliaria_id = s.inmobiliaria_id AND u.rol = 'admin' LIMIT 1) AS admin_id
     FROM suscripcion s
     JOIN inmobiliaria i ON i.id = s.inmobiliaria_id
@@ -100,15 +110,15 @@ BEGIN
   SELECT
     inmobiliaria_id, admin_id, 'trial_3d', 'pago',
     '⏰ Tu prueba vence en 3 días',
-    'Regularizá el pago para no perder acceso a ' || nombre || '. Podés hacerlo desde Facturación.',
-    '⏰', '#f59e0b', 'suscripcion', inmobiliaria_id::text, 'alta'
+    'Regulariza el pago para no perder el acceso a ' || nombre || '. Puedes hacerlo desde Facturación.',
+    '⏰', '#f59e0b', 'suscripcion', suscripcion_id::text, 'alta'
   FROM pendientes
   WHERE admin_id IS NOT NULL;
   GET DIAGNOSTICS n_alertas_3d = ROW_COUNT;
 
   -- 1 día antes: aviso urgente
   WITH pendientes AS (
-    SELECT s.inmobiliaria_id, s.proximo_cobro, i.nombre, i.slug,
+    SELECT s.id AS suscripcion_id, s.inmobiliaria_id, s.proximo_cobro, i.nombre, i.slug,
            (SELECT id FROM usuarios u WHERE u.inmobiliaria_id = s.inmobiliaria_id AND u.rol = 'admin' LIMIT 1) AS admin_id
     FROM suscripcion s
     JOIN inmobiliaria i ON i.id = s.inmobiliaria_id
@@ -128,8 +138,8 @@ BEGIN
   SELECT
     inmobiliaria_id, admin_id, 'trial_1d', 'pago',
     '🚨 URGENTE: tu prueba vence MAÑANA',
-    'Si no regularizás hoy, mañana perderás acceso a ' || nombre || '.',
-    '🚨', '#ef4444', 'suscripcion', inmobiliaria_id::text, 'alta'
+    'Si no regularizas hoy, mañana perderás el acceso a ' || nombre || '.',
+    '🚨', '#ef4444', 'suscripcion', suscripcion_id::text, 'alta'
   FROM pendientes
   WHERE admin_id IS NOT NULL;
   GET DIAGNOSTICS n_alertas_1d = ROW_COUNT;
