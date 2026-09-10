@@ -85,10 +85,15 @@ CREATE POLICY alerta_busqueda_gestion ON alerta_busqueda
 
 SELECT proname AS funcion FROM pg_proc WHERE proname = 'es_usuario_interno';
 
-SELECT polname AS policy, cmd, roles::text
-  FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
- WHERE c.relname = 'alerta_busqueda'
- ORDER BY polname;
+-- Se consulta pg_policies (la vista), no pg_policy (el catálogo): la
+-- columna `cmd` sólo existe en la vista. En el catálogo se llama
+-- `polcmd`, y pedirla como `cmd` aborta el bloque entero — el editor lo
+-- corre en una transacción, así que se pierde también lo que ya iba
+-- bien.
+SELECT policyname, cmd, roles::text
+  FROM pg_policies
+ WHERE tablename = 'alerta_busqueda'
+ ORDER BY policyname;
 
 -- Se esperan dos policies: alerta_busqueda_gestion (UPDATE) y
 -- alerta_busqueda_lectura (SELECT), las dos para {authenticated}.
