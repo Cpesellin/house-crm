@@ -23,6 +23,7 @@
  */
 
 import { getSupabaseClient } from '../../config/supabase.js';
+import { COLUMNAS_USUARIO } from '../../core/auth.js';
 
 const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
@@ -128,7 +129,7 @@ const _RM = {
 };
 
 window.abrirCambiarRol = async function (userId, direccion) {
-  const { data: usr } = await SB().from('usuarios').select('*').eq('id', userId).single();
+  const { data: usr } = await SB().from('usuarios').select(COLUMNAS_USUARIO).eq('id', userId).single();
   if (!usr) { window.toast('Usuario no encontrado', 'terr'); return; }
   const curRol = usr.es_gestor_arriendos ? 'gestor' : (usr.tipo_usuario === 'publico' ? 'publico' : usr.rol);
   const curMeta = _RM[curRol] || _RM.publico;

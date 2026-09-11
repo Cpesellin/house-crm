@@ -20,6 +20,38 @@
 import { userStore } from './user.js';
 import { getSupabaseClient } from '../config/supabase.js';
 
+/**
+ * Columnas de `usuarios` que la aplicación puede pedir.
+ *
+ * Es la lista completa de la tabla MENOS `password_hash`.
+ *
+ * POR QUÉ EXISTE
+ *   Hasta ahora estos sitios pedían `select('*')`, y `*` incluye el hash
+ *   de la contraseña. Medido contra producción: la API devolvía 36 hashes
+ *   a cualquiera con la llave pública, que va dentro del navegador.
+ *
+ *   El paso siguiente es quitarle a la API el permiso de leer esa
+ *   columna. En cuanto eso ocurra, un `select('*')` deja de funcionar
+ *   —PostgREST responde 403 si se pide una columna sin permiso— y se
+ *   llevaría por delante el login. De ahí esta lista: pedir por nombre
+ *   lo que de verdad se usa.
+ *
+ * AL AÑADIR UNA COLUMNA a `usuarios`, añadirla también aquí. La
+ * alternativa (seguir con `*`) es la que nos trajo el problema.
+ */
+export const COLUMNAS_USUARIO = [
+  'id', 'usuario', 'email', 'nombre', 'rol', 'activo', 'foto', 'created_at',
+  'telefono_contacto', 'es_gestor_arriendos', 'tipo_usuario',
+  'notificaciones_email', 'perfiles_publicos',
+  'comprador_credito_aprobado', 'comprador_monto_credito', 'comprador_tipo_pago',
+  'comprador_proposito', 'comprador_notas_admin', 'comprador_calificado',
+  'comprador_calificado_at', 'comprador_calificado_por',
+  'puede_publicar', 'puede_referir', 'intencion_registro',
+  'telefono', 'foto_url', 'estado_usuario', 'ultimo_login', 'creado_por',
+  'notas_admin', 'auth_migrated', 'auth_migrated_at', 'needs_password_reset',
+  'inmobiliaria_id',
+].join(',');
+
 // ─── Environment variables ───────────────────────────────────────
 // Vite: import.meta.env.VITE_*
 // Fallback: window.__ENV__ for non-Vite setups
@@ -347,7 +379,7 @@ async function _handleGoogleCredential(response) {
     // Lookup user in BD
     const { data: usr } = await SB
       .from('usuarios')
-      .select('*')
+      .select(COLUMNAS_USUARIO)
       .eq('email', email)
       .eq('activo', true)
       .single();
@@ -429,7 +461,7 @@ async function _hydrateUserStoreFromDB(userId, authToken = null) {
   const SB = getSB();
   const { data: user, error } = await SB
     .from('usuarios')
-    .select('*')
+    .select(COLUMNAS_USUARIO)
     .eq('id', userId)
     .eq('activo', true)
     .maybeSingle();
