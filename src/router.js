@@ -21,6 +21,7 @@ const ROUTES = {
   'agenda':   { section: 'sec-agenda',   label: 'Agenda',         icon: '\u{1F4C5}', auth: true, internal: true, roles: ['admin', 'oficina', 'gestor'] },
   'users':    { section: 'sec-users',    label: 'Usuarios',       icon: '\u{1F465}', auth: true, internal: true, roles: ['admin'] },
   'perfil':   { section: 'sec-perfil',   label: 'Mi Perfil',      icon: '\u2699\uFE0F', auth: true, internal: true },
+  'desactivados': { section: 'sec-desactivados', label: 'Desactivados', icon: '⏸️', auth: true, internal: true },
   'papelera': { section: 'sec-papelera', label: 'Papelera',       icon: '\u{1F5D1}\uFE0F', auth: true, internal: true, roles: ['admin'] },
   'ver':      { section: null,           label: 'Vista P\u00FAblica', auth: false },
   // v2 \u2014 nueva ficha de propiedad editorial. Hash: #/p/HOUSE-178
@@ -72,6 +73,7 @@ const ROUTE_RENDERERS = {
   'agenda':   'rAgenda',
   'users':    'rUsers',
   'perfil':   'rPerfil',
+  'desactivados': 'rDesact',
   'papelera': 'rPapelera',
   // External
   'portafolio': 'rPortafolio',

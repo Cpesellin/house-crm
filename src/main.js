@@ -46,6 +46,7 @@ import './domains/leads/index.js';
 import './domains/cierres/index.js';
 import './domains/notifications/index.js';
 import './domains/inmuebles/detail-modal.js';
+import './domains/inmuebles/desactivados.js';
 import './domains/public/view.js';
 import './domains/referrals/index.js';
 import './domains/inmuebles/lifecycle.js';

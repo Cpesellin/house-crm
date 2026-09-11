@@ -332,6 +332,22 @@ window.oM = function (ref) {
   if (canEdit) b += `<div class="ainp" style="flex-direction:column;gap:6px"><textarea id="ant" placeholder="Agregar anotación..."></textarea><div style="display:flex;gap:6px;align-items:center"><select id="ant_vis" class="esel" style="font-size:10px;padding:5px 8px"><option value="privada">🔒 Solo admin y yo</option><option value="equipo">👥 Equipo</option></select><button class="bt bsm bp" onclick="addA('${p.id}')">Agregar</button></div></div>`;
   b += `</div>`;
 
+  // VITRINA — sacar / volver a poner, y el historial de por qué
+  //
+  // Va antes de Eliminar y separado de él a propósito: son cosas
+  // distintas y confundirlas se paga caro. Sacar de la vitrina deja el
+  // inmueble intacto con sus fotos e interesados; eliminar lo manda a
+  // la papelera.
+  if (canEdit) {
+    const retirado = p.estado === 'Retirado';
+    b += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--g100);display:flex;gap:6px">
+      ${retirado
+        ? `<button class="bt" style="flex:1;background:var(--greenbg);color:#065f46;border:1.5px solid var(--gb)" onclick="reactivarInmueble('${p.id}')">▶️ Volver a la vitrina</button>`
+        : `<button class="bt" style="flex:1;background:var(--cd);color:var(--tx);border:1.5px solid var(--brd)" onclick="desactivarInmueble('${p.id}')">⏸️ Sacar de la vitrina</button>`}
+      <button class="bt" style="flex:0 0 auto;background:var(--cd);color:var(--sub);border:1.5px solid var(--brd)" onclick="verHistorialEstado('${p.id}')" title="Historial de estados">🕓</button>
+    </div>`;
+  }
+
   // DELETE (admin)
   if (u && u.rol === 'admin') b += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)"><button class="bt bd" style="width:100%" onclick="eliminarInm('${p.id}')">🗑️ Eliminar</button></div>`;
 
