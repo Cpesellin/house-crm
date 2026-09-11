@@ -130,6 +130,7 @@ function renderShell(container) {
     <button class="mi act" data-s="inv" onclick="go('inv')"><span class="mic">\u{1F3E0}</span>Inventario</button>
     <button class="mi" data-s="interesados" onclick="go('interesados')" id="minteresados" style="display:none"><span class="mic">\u{1F464}</span>Interesados<span class="mib" id="mintb" style="display:none">0</span></button>
     <button class="mi" data-s="reg" onclick="go('reg')"><span class="mic">\u2795</span>Registrar</button>
+    <button class="mi" data-s="desactivados" onclick="go('desactivados')"><span class="mic">⏸️</span>Desactivados</button>
     <button class="mi" data-s="alertas" onclick="go('alertas')"><span class="mic">\u{1F514}</span>Alertas<span class="mib" id="malb" style="display:none">0</span></button>
     <button class="mi" data-s="portales" onclick="go('portales')" id="mport" style="display:none"><span class="mic">\u{1F310}</span>Portales</button>
     <button class="mi" data-s="dash" onclick="go('dash')"><span class="mic">\u{1F4CA}</span>Dashboard</button>
@@ -419,7 +420,7 @@ function sApp() {
     const estadoInfo = document.getElementById('filterEstadoInfo');
     if (estadoInfo) estadoInfo.style.display = 'none';
     // Hide internal sections from sidebar that shouldn't show
-    ['mis','reg','alertas','portales','dash','comando','citas','mis-negocios'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
+    ['mis','reg','alertas','desactivados','portales','dash','comando','citas','mis-negocios'].forEach(s => { const b = document.querySelector('.mi[data-s="'+s+'"]'); if (b) b.style.display = 'none'; });
     document.getElementById('uname').textContent = U.nombre;
     document.getElementById('muname').textContent = U.nombre;
     // Dynamic role label based on capabilities
