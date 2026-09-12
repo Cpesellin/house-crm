@@ -49,9 +49,17 @@ END $$;
 
 BEGIN;
 
-CREATE TEMP TABLE _resultado (
-  tabla text, policy text, operacion text, decision text, motivo text
-) ON COMMIT DROP;
+-- ⚠️ SIN TABLA TEMPORAL, a propósito.
+--
+-- La primera versión guardaba el reporte en una TEMP TABLE y lo leía al
+-- final. En el SQL Editor de Supabase falló con "relation _resultado
+-- does not exist": el editor ejecuta cada sentencia por una conexión
+-- distinta del pooler, y una tabla temporal sólo existe en la conexión
+-- que la creó. El cierre SÍ se aplicó (verificado desde fuera: diez
+-- tablas pasaron a 0 filas); lo que se perdió fue el reporte.
+--
+-- Ahora el reporte es un SELECT normal sobre pg_policies, después del
+-- cambio. No depende de estado entre sentencias.
 
 DO $$
 DECLARE
@@ -89,15 +97,11 @@ BEGIN
 
     IF n > 0 THEN
       EXECUTE format('DROP POLICY IF EXISTS %I ON %I', r.policyname, r.tablename);
-      INSERT INTO _resultado VALUES (
-        r.tablename, r.policyname, r.cmd, 'CERRADA',
-        'los usuarios con sesión la cubren con ' || n || ' policy(s)'
-      );
+      RAISE NOTICE 'CERRADA  %.% (%): cubierta por % policy(s) para usuarios con sesión',
+        r.tablename, r.policyname, r.cmd, n;
     ELSE
-      INSERT INTO _resultado VALUES (
-        r.tablename, r.policyname, r.cmd, 'se deja',
-        'NO hay policy para usuarios con sesión: cerrarla dejaría sin acceso a la app'
-      );
+      RAISE NOTICE 'se deja  %.% (%): NO hay policy para usuarios con sesión',
+        r.tablename, r.policyname, r.cmd;
     END IF;
   END LOOP;
 END $$;
@@ -108,11 +112,19 @@ COMMIT;
 -- RESULTADO
 -- ============================================================
 --
--- ⚠️ La tabla temporal se borra al terminar la transacción, así que
--- este SELECT va antes del corte. Si sale vacío, es que ya estaba todo
--- cerrado.
+-- Lo que queda de `anon` en esas tablas. Deberían quedar sólo los
+-- INSERT (no se tocan) y la lectura pública legítima. Un anon_select o
+-- anon_update aquí significa que esa tabla no tenía cobertura para
+-- usuarios con sesión y se dejó a propósito.
 
-SELECT * FROM _resultado ORDER BY decision, tabla, operacion;
+SELECT tablename, policyname, cmd
+  FROM pg_policies
+ WHERE schemaname = 'public'
+   AND 'anon' = ANY(roles)
+   AND tablename = ANY(ARRAY['historial','alertas','permisos_rol','referidos','citas_inmueble',
+                             'intereses_inmueble','logros_usuario','sugerencias_enviadas',
+                             'inmuebles_interesados','interesados_historial','niveles_referidor'])
+ ORDER BY tablename, cmd;
 
 -- ============================================================
 -- ESTADO DE QUIÉN GOBIERNA LA PLATAFORMA
