@@ -252,6 +252,7 @@ function renderShell(container) {
 <div class="sec" id="sec-agenda"><div style="max-width:700px;margin:0 auto;padding:10px 14px 60px" id="agc"></div></div>
 <div class="sec" id="sec-users"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F465}</div><div><div class="cht">Usuarios</div></div></div><button class="bt bsm bp" onclick="newUsr()">+ Nuevo</button></div><div class="cdb" id="usrl"></div></div></div>
 <div class="sec" id="sec-perfil"><div class="fsec"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u2699\uFE0F</div><div><div class="cht">Mi Perfil</div></div></div></div><div class="cdb" id="perfilc"></div></div></div></div>
+<div class="sec" id="sec-superadmin"><div id="saPanel"></div></div>
 <div class="sec" id="sec-desactivados"><div class="card"><div class="cdh"><div class="chl"><div class="chi">⏸️</div><div><div class="cht">Desactivados</div><div class="chsb">Fuera de la vitrina, con su motivo</div></div></div></div><div class="cdb" id="desc"></div></div></div>
 <div class="sec" id="sec-papelera"><div class="card"><div class="cdh"><div class="chl"><div class="chi">\u{1F5D1}\uFE0F</div><div><div class="cht">Papelera</div><div class="chsb">Inmuebles eliminados</div></div></div></div><div class="cdb" id="papc"></div></div></div>
 
