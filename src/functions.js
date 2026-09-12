@@ -23,6 +23,7 @@
  */
 
 import { getSupabaseClient } from './config/supabase.js';
+import { COLUMNAS_USUARIO } from './core/auth.js';
 import { HOUSE_PHONE, HOUSE_PHONE_DISPLAY, houseWaUrl } from './core/constants.js';
 import { analyzeContent } from './core/contentModerator.js';
 
@@ -1292,7 +1293,10 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
   const perfiles = quierePublicar ? ['comprador','vendedor'] : ['comprador'];
   try {
     // Check if user already exists (could be inactive)
-    const { data: existingUser } = await SB().from('usuarios').select('*').eq('email', email).single();
+    // Columnas por nombre, no '*'. Con '*' la consulta falla (la API ya
+    // no puede leer password_hash), existingUser queda en null y el
+    // alta crearía un usuario DUPLICADO para alguien que ya existía.
+    const { data: existingUser } = await SB().from('usuarios').select(COLUMNAS_USUARIO).eq('email', email).single();
     if (existingUser) {
       // Reactivate existing user (preserve interno tipo)
       const keepTipo = existingUser.tipo_usuario === 'interno' ? 'interno' : 'publico';

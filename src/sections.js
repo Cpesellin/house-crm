@@ -8,6 +8,7 @@
  */
 
 import { getSupabaseClient } from './config/supabase.js';
+import { COLUMNAS_USUARIO } from './core/auth.js';
 import { HOUSE_PHONE, HOUSE_PHONE_TEL, HOUSE_PHONE_DISPLAY, houseWaUrl } from './core/constants.js';
 
 const SB = () => getSupabaseClient();
@@ -2281,7 +2282,10 @@ window.rUsers = async function() {
   h += `</div>`;
 
   if (window._usersTab === 'equipo') {
-    const { data } = await SB().from('usuarios').select('*').order('nombre');
+    // Columnas por nombre, no '*': desde que la API no puede leer
+    // password_hash, '*' responde 401 y esta pestaña mostraba una X en
+    // lugar del equipo. Ver COLUMNAS_USUARIO en core/auth.
+    const { data } = await SB().from('usuarios').select(COLUMNAS_USUARIO).order('nombre');
     if (!data) { el.innerHTML = h + '<div class="emp"><span class="emp-i">❌</span></div>'; return; }
     const _RM = { admin:{badge:'🔴 Admin',color:'#DC2626',nivel:1}, oficina:{badge:'🟠 Oficina',color:'#EA580C',nivel:2}, gestor:{badge:'🟢 Gestor',color:'#059669',nivel:3}, asesor:{badge:'🔵 Asesor',color:'#2563EB',nivel:3}, publico:{badge:'⚫ Público',color:'#6B7280',nivel:4} };
     const _EST = { activo:{l:'✅ Activo',c:'#10b981'}, inactivo:{l:'⚪ Inactivo',c:'#999'}, suspendido:{l:'🔴 Suspendido',c:'#ef4444'}, pendiente:{l:'⏳ Pendiente',c:'#f59e0b'} };
