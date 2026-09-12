@@ -42,12 +42,26 @@ const SB = () => getSupabaseClient();
 const U = () => window.userStore?.get();
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-/** Chequea si el usuario logueado es superadmin (admin de House).
- *  El filtro por rol se mantiene aquí — evita consultar para quien de
- *  todos modos no puede serlo — y la consulta va al helper memorizado. */
+/**
+ * ¿Puede ver el panel de la plataforma?
+ *
+ * La autoridad es el RPC `is_superadmin()`, que desde la migración 69
+ * lee la lista `plataforma_admin`. Aquí sólo se descarta lo que no hace
+ * falta preguntar.
+ *
+ * ANTES se exigía `u.rol === 'admin'`, porque superadmin significaba
+ * "admin de House". Con la lista explícita eso deja de ser cierto: un
+ * administrador de la plataforma puede no administrar ninguna
+ * inmobiliaria, y con el filtro viejo se le habría negado el panel
+ * aunque la base dijera que sí.
+ *
+ * Se conserva el descarte de los clientes del público: nunca van a
+ * estar en la lista, y así no se consulta de más.
+ */
 export async function esSuperadmin() {
   const u = U();
-  if (!u || u.rol !== 'admin') return false;
+  if (!u) return false;
+  if ((u.tipo_usuario || 'interno') === 'publico') return false;
   return _esSuperadminRPC();
 }
 
