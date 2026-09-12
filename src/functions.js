@@ -23,7 +23,7 @@
  */
 
 import { getSupabaseClient } from './config/supabase.js';
-import { COLUMNAS_USUARIO } from './core/auth.js';
+import { COLUMNAS_USUARIO, buscarUsuarioPorEmail } from './core/auth.js';
 import { HOUSE_PHONE, HOUSE_PHONE_DISPLAY, houseWaUrl } from './core/constants.js';
 import { analyzeContent } from './core/contentModerator.js';
 
@@ -1112,7 +1112,10 @@ window.registerExternal = async function() {
 
   try {
     // Check if email already exists
-    const { data: existing } = await SB().from('usuarios').select('id,activo,tipo_usuario').eq('email', email).single();
+    // Búsqueda acotada (sql/71), no lectura de la tabla: este formulario
+    // corre sin sesión y leer `usuarios` obligaba a dejarla abierta al
+    // público. Ver buscarUsuarioPorEmail en core/auth.
+    const existing = await buscarUsuarioPorEmail(email);
     if (existing) {
       if (existing.activo) {
         errEl.textContent = 'Este email ya está registrado. Intenta iniciar sesión.';
@@ -1172,7 +1175,10 @@ window._registrarConIntencion = async function(intencion) {
   if (errEl) errEl.style.display = 'none';
 
   try {
-    const { data: existing } = await SB().from('usuarios').select('id,activo').eq('email', email).maybeSingle();
+    // Búsqueda acotada (sql/71), no lectura de la tabla: este formulario
+    // corre sin sesión y leer `usuarios` obligaba a dejarla abierta al
+    // público. Ver buscarUsuarioPorEmail en core/auth.
+    const existing = await buscarUsuarioPorEmail(email);
     if (existing?.activo) { show('Este email ya está registrado. Inicia sesión.'); return; }
 
     const h2 = await window.hashPwd(pwd);
@@ -2416,7 +2422,10 @@ window._registerFromModal = async function(contexto) {
   if (pass.length < 6) return showErr('Contraseña mínimo 6 caracteres');
   try {
     // Check if email already exists
-    const { data: existing } = await SB().from('usuarios').select('id').eq('email', email).maybeSingle();
+    // Búsqueda acotada (sql/71), no lectura de la tabla: este formulario
+    // corre sin sesión y leer `usuarios` obligaba a dejarla abierta al
+    // público. Ver buscarUsuarioPorEmail en core/auth.
+    const existing = await buscarUsuarioPorEmail(email);
     if (existing) return showErr('Ese email ya está registrado. Inicia sesión.');
     const hash = await window.hashPwd(pass);
     const { data: newUser, error } = await SB().from('usuarios').insert({

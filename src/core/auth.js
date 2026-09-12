@@ -485,6 +485,92 @@ async function _hydrateUserStoreFromDB(userId, authToken = null) {
   return userData;
 }
 
+// ─── Búsquedas de usuario sin sesión ─────────────────────────────
+//
+// El login y el registro necesitan saber algo de UNA persona antes de que
+// exista sesión. Hasta ahora lo resolvían leyendo la tabla `usuarios`
+// como anónimos, y eso obligaba a mantenerla abierta: cualquiera con la
+// llave del navegador descargaba nombre, correo y rol de todos.
+//
+// Ahora preguntan a funciones acotadas (sql/71) que responden por una
+// persona cada vez y sólo con lo que ese flujo usa.
+//
+// RESPALDO
+//   Si la función todavía no está en la base, se usa la consulta de
+//   siempre. Así este código se puede desplegar ANTES de correr el SQL
+//   sin romper el login — que es lo que habría pasado con la primera
+//   versión de este cambio, sin respaldo.
+//
+// COMODINES
+//   El texto que escribe la persona NUNCA llega crudo a un filtro. La
+//   consulta antigua hacía `.or(usuario.ilike.${usr},...)`: con `%`
+//   coincidía con todos y devolvía el correo del primer usuario activo, y
+//   con comas o paréntesis se podía alterar el propio filtro.
+
+function _rpcNoInstalada(error) {
+  return /PGRST202|42883|does not exist|Could not find the function/i
+    .test(`${error?.message || ''} ${error?.code || ''}`);
+}
+
+// Caracteres con significado en la sintaxis de filtros de PostgREST o
+// comodín en ilike. Ningún usuario ni correo real los tiene (verificado
+// sobre los 43 activos: cero).
+//
+// El `_` va aparte a propósito: también es comodín en ilike, pero SÍ
+// aparece en datos reales (un usuario y un correo lo llevan). Bloquearlo
+// siempre habría dejado a esa persona sin poder entrar.
+const _RX_SINTAXIS = /[%,()*\\]/;
+
+async function _buscarUsuarioLogin(SB, identificador) {
+  const ident = String(identificador || '').trim().toLowerCase();
+  if (!ident || _RX_SINTAXIS.test(ident)) return null;
+
+  // La función compara con igualdad exacta: aquí `_` no es comodín.
+  const { data, error } = await SB.rpc('login_buscar_usuario', { p_identificador: ident });
+  if (!error) return data || null;
+  if (!_rpcNoInstalada(error)) {
+    console.warn('[auth] login_buscar_usuario falló:', error.message);
+    return null;
+  }
+
+  // Respaldo mientras sql/71 no esté aplicada.
+  //
+  // Con `_` se busca por igualdad y no con ilike: en ilike `_` coincide
+  // con cualquier carácter y podría devolver a otra persona.
+  const col = 'id, email, usuario, auth_migrated, activo';
+  const q = SB.from('usuarios').select(col).eq('activo', true).limit(1);
+  const { data: rows } = ident.includes('_')
+    ? await q.or(`usuario.eq.${ident},email.eq.${ident}`)
+    : await q.or(`usuario.ilike.${ident},email.ilike.${ident}`);
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+/**
+ * ¿Existe ya una cuenta con este correo? Para los formularios de registro.
+ * @returns {Promise<{id:string, activo:boolean, tipo_usuario:string}|null>}
+ */
+export async function buscarUsuarioPorEmail(email) {
+  const SB = getSB();
+  const e = String(email || '').trim().toLowerCase();
+  // `_` es válido en un correo; aquí no hay ilike, así que no es comodín.
+  if (!e || !e.includes('@') || _RX_SINTAXIS.test(e)) return null;
+
+  const { data, error } = await SB.rpc('registro_buscar_email', { p_email: e });
+  if (!error) return data || null;
+  if (!_rpcNoInstalada(error)) {
+    console.warn('[auth] registro_buscar_email falló:', error.message);
+    return null;
+  }
+
+  // Respaldo mientras sql/71 no esté aplicada.
+  const { data: row } = await SB
+    .from('usuarios')
+    .select('id, activo, tipo_usuario')
+    .eq('email', e)
+    .maybeSingle();
+  return row || null;
+}
+
 export async function loginWithCredentials(username, password) {
   const usr = (username || '').trim().toLowerCase();
   const pwd = (password || '').trim();
@@ -503,13 +589,7 @@ export async function loginWithCredentials(username, password) {
     //   - Supabase Auth (si auth_migrated=true)
     //   - Edge Function migrate-user con service_role (si auth_migrated=false)
     // Case-insensitive: el usuario puede teclear 'Cristhian.M' y la BD tener 'cristhian.m' o viceversa
-    const { data: userRows } = await SB
-      .from('usuarios')
-      .select('id, email, usuario, auth_migrated, activo')
-      .or(`usuario.ilike.${usr},email.ilike.${usr}`)
-      .eq('activo', true)
-      .limit(1);
-    const userRow = Array.isArray(userRows) && userRows.length ? userRows[0] : null;
+    const userRow = await _buscarUsuarioLogin(SB, usr);
 
     if (!userRow) {
       const msg = 'Usuario o contraseña incorrectos';
