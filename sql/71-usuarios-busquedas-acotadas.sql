@@ -58,9 +58,14 @@ DECLARE
   r record;
 BEGIN
   v_id := lower(btrim(coalesce(p_identificador, '')));
-  -- Un identificador vacío o con comodines no busca nada. Con `ilike`,
-  -- un '%' devolvería al primer usuario de la tabla.
-  IF v_id = '' OR v_id ~ '[%_]' THEN
+  -- Un identificador vacío o con caracteres de sintaxis no busca nada.
+  --
+  -- La comparación es de igualdad exacta (no ilike), así que aquí ni '%'
+  -- ni '_' serían comodines. Se rechazan igual los de sintaxis de filtro
+  -- por defensa en profundidad. El '_' NO se rechaza: aparece en datos
+  -- reales (un usuario y un correo lo llevan) y bloquearlo dejaría a esa
+  -- persona sin poder entrar.
+  IF v_id = '' OR v_id ~ '[%,()*\\]' THEN
     RETURN NULL;
   END IF;
 
