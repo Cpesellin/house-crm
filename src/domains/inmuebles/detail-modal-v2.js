@@ -28,6 +28,7 @@
 
 import { icon } from '../../ui/icons.js';
 import { getSupabaseClient } from '../../config/supabase.js';
+import { guardarOrdenFotos, eliminarFotos, activarArrastre } from './fotos-editor.js';
 
 const U = () => window.userStore?.get();
 const D = () => window.D || [];
@@ -48,6 +49,14 @@ const st = {
   // Modo selección de fotos: borrar de una en una pedía una confirmación
   // por foto y recargaba el inventario entero cada vez.
   selFotos: null,   // null = modo normal; Set = modo selección
+  // Modo ordenar con botones. Arrastrar funciona con ratón y con el dedo,
+  // pero en un teléfono con 17 fotos las flechas son más precisas.
+  ordenando: false,
+  // Último orden que la BASE confirmó. Si un guardado falla, se vuelve a
+  // él: la pantalla nunca muestra un orden que no está guardado.
+  ordenGuardado: [],
+  tGuardarOrden: null,
+  estadoOrden: '',  // '' | 'guardando' | 'guardado' | 'error'
 };
 
 // ══════════════════════════════════════════════════════════════════════
@@ -201,7 +210,48 @@ function tabResumen(p, perm) {
 }
 
 // ── Tab: Fotos ───────────────────────────────────────────────────────
+//
+// Tres modos:
+//   normal      arrastrar para ordenar (ratón, o mantener pulsado con el
+//               dedo) y la X para eliminar una
+//   ordenar     flechas y "Portada" en cada foto: lo más preciso en un
+//               teléfono, donde arrastrar entre muchas fotos cuesta
+//   seleccionar marcar varias y eliminarlas de una vez
+//
+// Las tarjetas NO usan la clase `foto-prev-item`. La reutilizaba antes, y
+// una regla de global.css la fija a 72×72 px: por eso las fotos salían
+// diminutas, pegadas a la izquierda de cada celda, con la X tapando media
+// foto. Tampoco usan `foto-sortable`, que activa el arrastre antiguo de
+// functions.js — el que no funcionaba en táctil.
+
+const FOTOS_CSS = `
+.fv2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+@media (max-width:640px){.fv2-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}}
+@media (max-width:380px){.fv2-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fv2-item{position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:var(--v2-cream-3);
+  border:1px solid var(--v2-line);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  touch-action:manipulation}
+.fv2-item img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-drag:none}
+.fv2-arrastrable{cursor:grab}
+.fv2-hueco{opacity:.28;outline:2px dashed var(--v2-primary);outline-offset:-3px}
+.fv2-btn{position:absolute;display:grid;place-items:center;border:none;cursor:pointer;
+  background:rgba(255,255,255,.95);color:var(--v2-ink);box-shadow:0 1px 4px rgba(0,0,0,.18);padding:0}
+.fv2-btn:disabled{opacity:.35;cursor:default}
+.fv2-mover{bottom:6px;width:36px;height:36px;border-radius:999px}
+.fv2-portada{top:6px;right:6px;height:28px;padding:0 9px;border-radius:999px;font-family:inherit;font-size:11px;font-weight:800;color:var(--v2-primary)}
+@media (max-width:640px){.fv2-mover{width:34px;height:34px;bottom:5px}}
+`;
+
+function inyectarCssFotos() {
+  if (document.getElementById('fv2-css')) return;
+  const el = document.createElement('style');
+  el.id = 'fv2-css';
+  el.textContent = FOTOS_CSS;
+  document.head.appendChild(el);
+}
+
 function tabFotos(p, perm) {
+  inyectarCssFotos();
   const _cld = window.cldOpt || ((u) => u);
   if (!st.fotos.length) {
     return `<div style="text-align:center;padding:56px 20px;max-width:380px;margin:0 auto">
@@ -212,46 +262,98 @@ function tabFotos(p, perm) {
     </div>`;
   }
 
-  const seleccionando = st.selFotos !== null;
+  // Sin ids no se puede borrar ni ordenar: se espera a asegurarIdsFotos.
+  const idsListos = st.fotos.every((f) => f.id);
+  const seleccionando = idsListos && st.selFotos !== null;
+  const ordenando = idsListos && !seleccionando && st.ordenando;
+  const puedeArrastrar = idsListos && perm.puedeEditar && !seleccionando && !ordenando;
+  const total = st.fotos.length;
 
   const grid = st.fotos.map((f, i) => {
     const marcada = seleccionando && st.selFotos.has(f.id);
-    // En modo selección la tarjeta entera es el objetivo táctil: acertar a
-    // una casilla de 20px con el pulgar es justo lo que se quiere evitar.
-    const clic = seleccionando
-      ? `onclick="window._oM2TogglFoto('${f.id}')"`
+    const clic = seleccionando ? `onclick="window._oM2TogglFoto('${f.id}')"` : '';
+    const esPortada = i === 0;
+
+    const etiquetaPortada = esPortada && !seleccionando
+      ? `<span style="position:absolute;top:6px;left:6px;background:var(--v2-primary);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:5px">Portada</span>`
       : '';
+
+    const casilla = seleccionando
+      ? `<span style="position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:999px;display:grid;place-items:center;background:${marcada ? 'var(--v2-primary)' : 'rgba(255,255,255,.94)'};color:${marcada ? '#fff' : 'var(--v2-ink-4)'};border:1px solid ${marcada ? 'var(--v2-primary)' : 'var(--v2-line-3)'}">${marcada ? icon('check', 15) : ''}</span>`
+      : '';
+
+    // En modo ordenar el número sube arriba: abajo van las flechas.
+    const numero = (ordenando && esPortada)
+      ? ''
+      : `<span style="position:absolute;${ordenando ? 'top:6px' : 'bottom:6px'};left:6px;background:rgba(0,0,0,.62);color:#fff;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:4px;font-variant-numeric:tabular-nums">${i + 1}</span>`;
+
+    const borrar = puedeArrastrar
+      ? `<button class="fv2-btn" onclick="event.stopPropagation();window._oM2BorrarUna('${f.id}')" aria-label="Eliminar foto ${i + 1}" style="top:6px;right:6px;width:30px;height:30px;border-radius:999px;color:var(--v2-red)">${icon('close', 15)}</button>`
+      : '';
+
+    const controles = ordenando
+      ? `${esPortada ? '' : `<button class="fv2-btn fv2-portada" onclick="event.stopPropagation();window._oM2Portada('${f.id}')" aria-label="Poner la foto ${i + 1} de portada">★ Portada</button>`}
+         <button class="fv2-btn fv2-mover" style="left:6px" ${i === 0 ? 'disabled' : ''} onclick="event.stopPropagation();window._oM2Mover('${f.id}',-1)" aria-label="Mover la foto ${i + 1} hacia atrás">${icon('chevronLeft', 18)}</button>
+         <button class="fv2-btn fv2-mover" style="right:6px" ${i === total - 1 ? 'disabled' : ''} onclick="event.stopPropagation();window._oM2Mover('${f.id}',1)" aria-label="Mover la foto ${i + 1} hacia adelante">${icon('chevronRight', 18)}</button>`
+      : '';
+
     return `
-    <div class="foto-prev-item${seleccionando ? '' : ' foto-sortable'}" ${seleccionando ? '' : 'draggable="true"'}
-      data-foto-id="${f.id}" data-foto-idx="${i}" data-inm-id="${p.id}" ${clic}
-      style="position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;border:${marcada ? '2px solid var(--v2-primary)' : '1px solid var(--v2-line)'};background:var(--v2-cream-3);cursor:${seleccionando ? 'pointer' : 'grab'}">
-      <img src="${esc(_cld(f.url_thumb || f.url, 300))}" style="width:100%;height:100%;object-fit:cover;pointer-events:none${marcada ? ';opacity:.55' : ''}">
-      ${i === 0 && !seleccionando ? `<span style="position:absolute;top:6px;left:6px;background:var(--v2-primary);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px">Portada</span>` : ''}
-      ${seleccionando ? `<span style="position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:${marcada ? 'var(--v2-primary)' : 'rgba(255,255,255,.92)'};color:${marcada ? '#fff' : 'var(--v2-ink-4)'};border:1px solid ${marcada ? 'var(--v2-primary)' : 'var(--v2-line-3)'}">${marcada ? icon('check', 14) : ''}</span>` : ''}
-      <span style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">${i + 1}</span>
-      ${perm.puedeEditar && !seleccionando ? `<button onclick="event.stopPropagation();window.delFoto&&window.delFoto('${f.id}','${p.id}')" aria-label="Eliminar foto" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:999px;background:rgba(255,255,255,.94);border:none;cursor:pointer;display:grid;place-items:center;color:var(--v2-red)">${icon('close', 14)}</button>` : ''}
+    <div class="fv2-item${puedeArrastrar ? ' fv2-arrastrable' : ''}" data-foto-id="${f.id}" ${clic}
+      style="${marcada ? 'border:2px solid var(--v2-primary);' : ''}${seleccionando ? 'cursor:pointer;' : ''}">
+      <img src="${esc(_cld(f.url_thumb || f.url, 400))}" alt="Foto ${i + 1}" draggable="false" loading="lazy" style="${marcada ? 'opacity:.55' : ''}">
+      ${etiquetaPortada}${casilla}${numero}${borrar}${controles}
     </div>`;
   }).join('');
 
   const nSel = seleccionando ? st.selFotos.size : 0;
   const BTN = 'height:36px;padding:0 13px;border-radius:9px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer';
+  const BTN_CLARO = `${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)`;
+
+  const ayuda = seleccionando
+    ? 'Toca las fotos que quieres eliminar.'
+    : ordenando
+      ? 'Usa las flechas para mover cada foto, o ★ Portada para ponerla primera. Se guarda solo.'
+      : 'Arrastra una foto para cambiarla de lugar; en el celular, mantenla pulsada un momento antes de moverla. La primera es la portada.';
+
+  const estado = ({
+    guardando: `<span style="color:var(--v2-ink-3)">Guardando orden…</span>`,
+    guardado: `<span style="color:#067a52">✓ Orden guardado</span>`,
+    error: `<span style="color:var(--v2-red)">No se guardó el orden</span>`,
+  })[st.estadoOrden] || '';
+
+  let acciones = '';
+  if (perm.puedeEditar && !idsListos) {
+    acciones = '<span style="font-size:12px;color:var(--v2-ink-3)">Cargando fotos…</span>';
+  } else if (perm.puedeEditar) {
+    if (seleccionando) {
+      acciones = `
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+          <button onclick="window._oM2SelTodas()" style="${BTN_CLARO}">${nSel === total ? 'Ninguna' : 'Todas'}</button>
+          <button onclick="window._oM2SelModo(false)" style="${BTN_CLARO}">Cancelar</button>
+          <button onclick="window._oM2BorrarSel()" ${nSel ? '' : 'disabled'} style="${BTN};border:none;background:${nSel ? 'var(--v2-red)' : 'var(--v2-line-3)'};color:#fff;cursor:${nSel ? 'pointer' : 'default'}">Eliminar${nSel ? ' (' + nSel + ')' : ''}</button>
+        </div>`;
+    } else if (ordenando) {
+      acciones = `<button onclick="window._oM2Ordenar(false)" style="${BTN};border:none;background:var(--v2-primary);color:#fff">Listo</button>`;
+    } else {
+      acciones = `
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          ${total > 1 ? `<button onclick="window._oM2Ordenar(true)" style="${BTN_CLARO}">Ordenar</button>` : ''}
+          <button onclick="window._oM2SelModo(true)" style="${BTN_CLARO}">Seleccionar</button>
+        </div>`;
+    }
+  }
 
   return `<div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-      <div style="min-width:0">
-        <div style="font-size:15px;font-weight:700">Fotos <span style="color:var(--v2-ink-3);font-weight:500">· ${st.fotos.length}</span></div>
-        ${perm.puedeEditar ? `<div style="font-size:12px;color:var(--v2-ink-3);margin-top:2px">${seleccionando ? 'Tocá las fotos que querés eliminar.' : 'Arrastrá para reordenar. La primera es la portada.'}</div>` : ''}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:15px;font-weight:700">Fotos <span style="color:var(--v2-ink-3);font-weight:500">· ${total}</span>
+          <span id="fv2Estado" style="font-size:12px;font-weight:600;margin-left:6px">${estado}</span></div>
+        ${perm.puedeEditar ? `<div style="font-size:12px;color:var(--v2-ink-3);margin-top:3px;line-height:1.45">${ayuda}</div>` : ''}
       </div>
-      ${perm.puedeEditar ? (seleccionando ? `
-        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
-          <button onclick="window._oM2SelTodas()" style="${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)">${nSel === st.fotos.length ? 'Ninguna' : 'Todas'}</button>
-          <button onclick="window._oM2SelModo(false)" style="${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)">Cancelar</button>
-          <button onclick="window._oM2BorrarSel()" ${nSel ? '' : 'disabled'} style="${BTN};border:none;background:${nSel ? 'var(--v2-red)' : 'var(--v2-line-3)'};color:#fff;cursor:${nSel ? 'pointer' : 'default'}">Eliminar${nSel ? ' (' + nSel + ')' : ''}</button>
-        </div>` : `
-        <button onclick="window._oM2SelModo(true)" style="${BTN};border:1px solid var(--v2-line-3);background:var(--v2-paper);color:var(--v2-ink)">Seleccionar</button>`) : ''}
+      ${acciones}
     </div>
-    <div id="fotoSortWrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">${grid}</div>
-    ${perm.puedeEditar ? `<div style="margin-top:16px" id="fotoUpModal"></div>` : ''}
+    <div id="fotoSortWrap" class="fv2-grid">${grid}</div>
+    ${perm.puedeEditar && !ordenando && !seleccionando ? `<div style="margin-top:16px" id="fotoUpModal"></div>` : ''}
   </div>`;
 }
 
@@ -473,6 +575,11 @@ export function oMv2(ref) {
   st.precioTocado = false;
   st.guardando = false;
   st.fotos = p.fotos ? [...p.fotos].sort((a, b) => a.orden - b.orden) : [];
+  st.ordenGuardado = st.fotos.map((f) => f.id);
+  asegurarIdsFotos(p.id);
+  st.ordenando = false;
+  st.selFotos = null;
+  st.estadoOrden = '';
 
   // El modal v1 deja este flag encendido entre aperturas; si no lo
   // limpiamos, la ficha abre creyendo que ya hay cambios pendientes.
@@ -567,6 +674,7 @@ function pintar() {
   </div>`;
 
   actualizarBarra();
+  montarArrastreFotos();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -639,6 +747,193 @@ window._oM2Touch = function (id, esPrecio) {
   actualizarBarra();
 };
 
+/**
+ * Garantiza que cada foto tenga su id antes de poder editarla.
+ *
+ * La carga pública del portafolio pide las fotos SIN id (sólo url y
+ * orden), porque para mostrarlas no hace falta. Si la ficha se abría con
+ * esos datos —por ejemplo antes de que terminara la carga interna—, todas
+ * las fotos compartían el mismo "id" vacío: eliminar y reordenar no
+ * podían funcionar. Se detectó al probar el panel sin sesión.
+ */
+async function asegurarIdsFotos(inmId) {
+  if (!inmId || !st.fotos.length || st.fotos.every((f) => f.id)) return;
+  try {
+    const { data } = await getSupabaseClient()
+      .from('fotos')
+      .select('id,url,url_thumb,origen,orden')
+      .eq('inmueble_id', inmId)
+      .order('orden', { ascending: true });
+    if (!Array.isArray(data) || st.p?.id !== inmId) return;
+    st.fotos = data;
+    st.ordenGuardado = data.map((f) => f.id);
+    sincronizarFotosFuera();
+    pintar();
+  } catch (e) {
+    console.warn('[fotos] no se pudieron recargar con id:', e?.message || e);
+  }
+}
+
+// ── Orden de las fotos ───────────────────────────────────────────────
+//
+// El cambio se ve al instante y se guarda poco después, en UNA sola
+// llamada con el orden completo. Si la base no lo acepta, la pantalla
+// vuelve al último orden que sí quedó guardado y lo dice.
+//
+// Antes: el orden se movía en la pantalla pero no en la lista en memoria
+// (st.fotos), así que el siguiente repintado —por ejemplo al borrar una
+// foto— devolvía todas a su sitio anterior. Y el aviso "Orden
+// actualizado" salía aunque no se hubiera guardado nada.
+
+const ESPERA_GUARDADO = 700; // ms tras el último movimiento
+
+/** Reordena st.fotos según una lista de ids. */
+function aplicarOrden(ids) {
+  const porId = new Map(st.fotos.map((f) => [f.id, f]));
+  const nuevas = ids.map((id) => porId.get(id)).filter(Boolean);
+  // Por si alguna no vino en la lista, no se pierde: va al final.
+  st.fotos.forEach((f) => { if (!ids.includes(f.id)) nuevas.push(f); });
+  nuevas.forEach((f, i) => { f.orden = i; });
+  st.fotos = nuevas;
+  sincronizarFotosFuera();
+}
+
+/** Mantiene iguales la ficha, el inventario en memoria y la portada. */
+function sincronizarFotosFuera() {
+  if (st.p) st.p.fotos = st.fotos;
+  const enD = (window.D || []).find((x) => x.id === st.p?.id);
+  if (enD) enD.fotos = st.fotos;
+}
+
+/** Actualiza sólo el indicador de guardado, sin repintar la ficha. */
+function pintarEstadoOrden() {
+  const el = document.getElementById('fv2Estado');
+  if (!el) return;
+  el.innerHTML = ({
+    guardando: `<span style="color:var(--v2-ink-3)">Guardando orden…</span>`,
+    guardado: `<span style="color:#067a52">✓ Orden guardado</span>`,
+    error: `<span style="color:var(--v2-red)">No se guardó el orden</span>`,
+  })[st.estadoOrden] || '';
+}
+
+function programarGuardadoOrden() {
+  clearTimeout(st.tGuardarOrden);
+  st.estadoOrden = 'guardando';
+  pintarEstadoOrden();
+  st.tGuardarOrden = setTimeout(guardarOrdenAhora, ESPERA_GUARDADO);
+}
+
+async function guardarOrdenAhora() {
+  st.tGuardarOrden = null;
+  const inmId = st.p?.id;
+  if (!inmId) return;
+  const ids = st.fotos.map((f) => f.id);
+  if (ids.join('|') === st.ordenGuardado.join('|')) {
+    st.estadoOrden = '';
+    pintarEstadoOrden();
+    return;
+  }
+
+  const r = await guardarOrdenFotos(inmId, ids);
+
+  // Si mientras se guardaba la persona volvió a mover algo, ese nuevo
+  // guardado ya está en camino: no se pisa el estado.
+  if (st.tGuardarOrden) return;
+
+  if (r.ok) {
+    st.ordenGuardado = ids;
+    // Cambió la portada posible: la vista previa de WhatsApp usa la fecha
+    // del inmueble como versión. La función de la base ya la toca; esto
+    // cubre el camino de respaldo.
+    tocarInmueble(inmId);
+    st.estadoOrden = 'guardado';
+    pintarEstadoOrden();
+    // El aviso de guardado se apaga solo: no hace falta que se quede.
+    setTimeout(() => { if (st.estadoOrden === 'guardado') { st.estadoOrden = ''; pintarEstadoOrden(); } }, 2500);
+  } else {
+    aplicarOrden(st.ordenGuardado);
+    st.estadoOrden = 'error';
+    pintar();
+    window.toast?.('❌ ' + r.error, 'terr');
+  }
+}
+
+/** Engancha el arrastre a la cuadrícula recién pintada. */
+function montarArrastreFotos() {
+  const wrap = document.getElementById('fotoSortWrap');
+  if (!wrap || !st.perm?.puedeEditar || st.selFotos !== null || st.ordenando) return;
+  activarArrastre(wrap, {
+    onSoltar(ids) {
+      aplicarOrden(ids);
+      pintar();
+      programarGuardadoOrden();
+    },
+  });
+}
+
+window._oM2Ordenar = function (activar) {
+  st.ordenando = !!activar;
+  st.selFotos = null;
+  pintar();
+  // Al salir con "Listo" se guarda ya, sin esperar: la persona puede
+  // cerrar la ficha justo después.
+  if (!activar && st.tGuardarOrden) { clearTimeout(st.tGuardarOrden); guardarOrdenAhora(); }
+};
+
+window._oM2Mover = function (id, delta) {
+  const i = st.fotos.findIndex((f) => f.id === id);
+  const j = i + delta;
+  if (i < 0 || j < 0 || j >= st.fotos.length) return;
+  const ids = st.fotos.map((f) => f.id);
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  aplicarOrden(ids);
+  pintar();
+  programarGuardadoOrden();
+};
+
+window._oM2Portada = function (id) {
+  const ids = st.fotos.map((f) => f.id).filter((x) => x !== id);
+  ids.unshift(id);
+  aplicarOrden(ids);
+  st.galIdx = 0;
+  pintar();
+  programarGuardadoOrden();
+  window.toast?.('★ Nueva portada');
+};
+
+/** Elimina una foto desde su X. */
+window._oM2BorrarUna = async function (id) {
+  const i = st.fotos.findIndex((f) => f.id === id);
+  if (i < 0 || !st.p) return;
+  const esPortada = i === 0;
+
+  const ok = await window.cfShow(
+    '🗑️',
+    '¿Eliminar esta foto?',
+    esPortada && st.fotos.length > 1
+      ? 'Es la portada. Si la eliminas, la siguiente foto pasa a ser la portada. Es permanente.'
+      : 'La eliminación es permanente.'
+  );
+  if (!ok) return;
+
+  // Si había un orden sin guardar, se guarda antes: si no, el borrado
+  // compararía contra una lista vieja.
+  if (st.tGuardarOrden) { clearTimeout(st.tGuardarOrden); await guardarOrdenAhora(); }
+
+  const r = await eliminarFotos(st.p.id, [id]);
+  if (!r.ok) { window.toast?.('❌ ' + r.error, 'terr'); return; }
+
+  st.fotos = st.fotos.filter((f) => f.id !== id);
+  st.fotos.forEach((f, k) => { f.orden = k; });
+  st.ordenGuardado = st.fotos.map((f) => f.id);
+  sincronizarFotosFuera();
+  tocarInmueble(st.p.id);
+  st.galIdx = 0;
+  pintar();
+  setTimeout(montarUpload, 60);
+  window.toast?.('📷 Foto eliminada');
+};
+
 // ── Selección múltiple de fotos ──────────────────────────────────────
 //
 // Borrar de una en una pedía una confirmación por foto Y recargaba el
@@ -679,21 +974,24 @@ window._oM2BorrarSel = async function () {
     n === 1 ? '¿Eliminar la foto?' : `¿Eliminar ${n} fotos?`,
     borraTodas
       ? 'Se eliminan TODAS las fotos del inmueble. Sin ellas no se puede mostrar en el portafolio ni compartir por WhatsApp. Es permanente.'
-      : 'La eliminación es permanente. Si borrás la primera, la portada pasa a ser la siguiente.'
+      : 'La eliminación es permanente. Si borras la primera, la portada pasa a ser la siguiente.'
   );
   if (!ok) return;
 
   try {
-    const { error } = await getSupabaseClient().from('fotos').delete().in('id', ids);
-    if (error) throw error;
+    // Antes: delete directo sin mirar cuántas filas tocaba. Si la base lo
+    // rechazaba, respondía OK igual, las fotos desaparecían de la pantalla
+    // y volvían al recargar.
+    if (st.tGuardarOrden) { clearTimeout(st.tGuardarOrden); await guardarOrdenAhora(); }
+    const r = await eliminarFotos(st.p?.id, ids);
+    if (!r.ok) throw new Error(r.error);
 
     // Se actualiza el estado en memoria en vez de recargar el inventario
     // completo: recargar reabría el modal y perdía la pestaña y el scroll.
     st.fotos = st.fotos.filter((f) => !st.selFotos.has(f.id));
-    if (st.p) st.p.fotos = st.fotos;
-    const enD = (window.D || []).find((x) => x.id === st.p?.id);
-    if (enD) enD.fotos = st.fotos;
-
+    st.fotos.forEach((f, k) => { f.orden = k; });
+    st.ordenGuardado = st.fotos.map((f) => f.id);
+    sincronizarFotosFuera();
     tocarInmueble(st.p?.id);
 
     st.selFotos = null;
@@ -702,7 +1000,7 @@ window._oM2BorrarSel = async function () {
     window.toast(n === 1 ? '📷 Foto eliminada' : `📷 ${n} fotos eliminadas`);
   } catch (e) {
     console.error('[fotos] borrado múltiple:', e);
-    window.toast('❌ No se pudieron eliminar: ' + (e.message || 'error'), 'terr');
+    window.toast('❌ ' + (e.message || 'No se pudieron eliminar'), 'terr');
   }
 };
 
