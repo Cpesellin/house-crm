@@ -419,6 +419,7 @@ async function _handleGoogleCredential(response) {
     // Persist and notify
     userStore.set(userData);
     _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
+    _avisarGoogleSinSesion();
 
   } catch (e) {
     console.error('[auth] Google login error:', e);
@@ -426,6 +427,41 @@ async function _handleGoogleCredential(response) {
   }
 }
 
+
+// ─── Aviso: sesión de Google sin identidad en la base ────────────
+//
+// Mientras el proveedor de Google esté deshabilitado en Supabase, entrar
+// con Google deja una sesión de apaño ('google:<correo>'): la app muestra
+// a la persona como conectada, pero la base de datos no sabe quién es.
+// Desde que se cerró el acceso anónimo a los datos internos, eso
+// significa pantallas vacías y cambios que no se guardan — sin ninguna
+// explicación.
+//
+// Este aviso lo dice y ofrece la salida. NO cierra la sesión solo: quien
+// esté trabajando decide cuándo cambiar, y no se le saca de la cuenta al
+// actualizar (que fue lo que se pidió evitar).
+function _avisarGoogleSinSesion() {
+  if (typeof document === 'undefined') return;
+  const pintar = () => {
+    if (document.getElementById('avisoGoogleSinSesion')) return;
+    const el = document.createElement('div');
+    el.id = 'avisoGoogleSinSesion';
+    el.setAttribute('role', 'alert');
+    el.style.cssText =
+      'position:fixed;left:0;right:0;top:0;z-index:9990;display:flex;align-items:center;gap:12px;flex-wrap:wrap;' +
+      'padding:10px 16px;background:#7c2d12;color:#fff;font-family:inherit;font-size:13px;line-height:1.4;' +
+      'box-shadow:0 2px 10px rgba(0,0,0,.25)';
+    el.innerHTML =
+      '<span style="flex:1;min-width:220px"><b>Entraste con Google, pero esa opción todavía no está activada en el servidor.</b> ' +
+      'Puedes consultar, pero los cambios no se guardan (fotos, notas, interesados). Entra con tu usuario y contraseña.</span>' +
+      '<button type="button" id="avisoGoogleSalir" style="flex:0 0 auto;padding:7px 14px;border:none;border-radius:8px;' +
+      'background:#fff;color:#7c2d12;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer">Entrar con contraseña</button>';
+    document.body.appendChild(el);
+    el.querySelector('#avisoGoogleSalir').addEventListener('click', () => { logout(); });
+  };
+  if (document.body) pintar();
+  else document.addEventListener('DOMContentLoaded', pintar, { once: true });
+}
 
 // ─── Credential login ────────────────────────────────────────────
 // Preserved from original loginCred()
@@ -723,7 +759,7 @@ let _restauracion = Promise.resolve(null);
  *
  * @param {Object} [options]
  * @param {HTMLElement} [options.googleButtonContainer] - Element to render Google button into
- * @param {boolean} [options.autoSelect=true] - Google auto-select returning users
+ * @param {boolean} [options.autoSelect=false] - Google elige la cuenta solo al cargar (desactivado: se adelantaba al login con contraseña)
  *
  * @returns {{ hasSession: boolean }} Whether a previous session was found
  */
@@ -847,6 +883,7 @@ export function initAuth(options = {}) {
         const esCredLegacy = !u?.token || u.token.startsWith('cred:');
         if (u?.token?.startsWith('google:')) {
           console.warn('[auth] Sesión de Google sin Supabase Auth (proveedor deshabilitado) — se mantiene');
+          _avisarGoogleSinSesion();
         }
         if (esCredLegacy) {
           console.warn('[auth] ⚠️ Sesión legacy detectada sin Supabase Auth → forzar re-login');
@@ -938,7 +975,17 @@ function _initGoogle(options) {
   google.accounts.id.initialize({
     client_id: GID,
     callback: _handleGoogleCredential,
-    auto_select: options.autoSelect !== false,
+    // SIN inicio automático, a propósito.
+    //
+    // Con auto_select, Google elegía la cuenta solo al cargar la página y
+    // metía a la persona en su sesión de Google ANTES de que pudiera
+    // escribir la contraseña. Mientras el proveedor de Google siga
+    // deshabilitado en Supabase, esa sesión no tiene identidad en la base:
+    // se ven las pantallas, pero no se puede guardar nada (ni borrar una
+    // foto). Pasó: el administrador no conseguía entrar con contraseña
+    // porque Google se adelantaba cada vez. Google sigue disponible, pero
+    // sólo si alguien lo pulsa.
+    auto_select: options.autoSelect === true,
   });
 
   // Render button if container provided
