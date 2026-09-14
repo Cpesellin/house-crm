@@ -90,6 +90,16 @@
     padding: 14px 14px 96px !important;
   }
 
+  /* …pero SÓLO en Resumen.
+
+     Subirlo arriba estaba bien pensado para la primera pantalla, pero se
+     aplicaba a todas las pestañas: al tocar "Fotos" aparecían otra vez
+     precio, estado y acciones —626px— y las fotos quedaban una pantalla
+     entera más abajo. Quien toca una pestaña quiere ver esa pestaña. */
+  html[data-design="v2"] .oM2:not([data-tab="resumen"]) .oM2-rail {
+    display: none !important;
+  }
+
   /* El precio manda: es lo primero que se mira al abrir. */
   html[data-design="v2"] .oM2-precio {
     padding: 12px 14px !important;

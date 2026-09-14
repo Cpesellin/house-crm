@@ -52,6 +52,9 @@ const st = {
   // Modo ordenar con botones. Arrastrar funciona con ratón y con el dedo,
   // pero en un teléfono con 17 fotos las flechas son más precisas.
   ordenando: false,
+  // Reordenar tocando: primero se toca la foto que se quiere mover
+  // (queda elegida) y después la posición a la que va.
+  moverDesde: null,
   // Último orden que la BASE confirmó. Si un guardado falla, se vuelve a
   // él: la pantalla nunca muestra un orden que no está guardado.
   ordenGuardado: [],
@@ -271,7 +274,11 @@ function tabFotos(p, perm) {
 
   const grid = st.fotos.map((f, i) => {
     const marcada = seleccionando && st.selFotos.has(f.id);
-    const clic = seleccionando ? `onclick="window._oM2TogglFoto('${f.id}')"` : '';
+    const clic = seleccionando
+      ? `onclick="window._oM2TogglFoto('${f.id}')"`
+      : ordenando ? `onclick="window._oM2TocarOrden('${f.id}')"` : '';
+    const elegida = ordenando && st.moverDesde === f.id;
+    const hayElegida = ordenando && !!st.moverDesde;
     const esPortada = i === 0;
 
     const etiquetaPortada = esPortada && !seleccionando
@@ -291,15 +298,17 @@ function tabFotos(p, perm) {
       ? `<button class="fv2-btn" onclick="event.stopPropagation();window._oM2BorrarUna('${f.id}')" aria-label="Eliminar foto ${i + 1}" style="top:6px;right:6px;width:30px;height:30px;border-radius:999px;color:var(--v2-red)">${icon('close', 15)}</button>`
       : '';
 
+    // Las flechas se quitaron: en una miniatura de celular eran tres
+    // botones apretados y llevar la foto 16 a la 2 costaba 14 toques.
+    // Ahora son dos: la foto y su destino.
     const controles = ordenando
-      ? `${esPortada ? '' : `<button class="fv2-btn fv2-portada" onclick="event.stopPropagation();window._oM2Portada('${f.id}')" aria-label="Poner la foto ${i + 1} de portada">★ Portada</button>`}
-         <button class="fv2-btn fv2-mover" style="left:6px" ${i === 0 ? 'disabled' : ''} onclick="event.stopPropagation();window._oM2Mover('${f.id}',-1)" aria-label="Mover la foto ${i + 1} hacia atrás">${icon('chevronLeft', 18)}</button>
-         <button class="fv2-btn fv2-mover" style="right:6px" ${i === total - 1 ? 'disabled' : ''} onclick="event.stopPropagation();window._oM2Mover('${f.id}',1)" aria-label="Mover la foto ${i + 1} hacia adelante">${icon('chevronRight', 18)}</button>`
+      ? `${esPortada || hayElegida ? '' : `<button class="fv2-btn fv2-portada" onclick="event.stopPropagation();window._oM2Portada('${f.id}')" aria-label="Poner la foto ${i + 1} de portada">★ Portada</button>`}
+         ${elegida ? `<span style="position:absolute;left:0;right:0;bottom:0;background:var(--v2-primary);color:#fff;font-size:11.5px;font-weight:800;text-align:center;padding:6px 4px">Toca dónde va</span>` : ''}`
       : '';
 
     return `
     <div class="fv2-item${puedeArrastrar ? ' fv2-arrastrable' : ''}" data-foto-id="${f.id}" ${clic}
-      style="${marcada ? 'border:2px solid var(--v2-primary);' : ''}${seleccionando ? 'cursor:pointer;' : ''}">
+      style="${marcada ? 'border:2px solid var(--v2-primary);' : ''}${elegida ? 'outline:3px solid var(--v2-primary);outline-offset:-3px;' : ''}${hayElegida && !elegida ? 'opacity:.82;' : ''}${seleccionando || ordenando ? 'cursor:pointer;' : ''}">
       <img src="${esc(_cld(f.url_thumb || f.url, 400))}" alt="Foto ${i + 1}" draggable="false" loading="lazy" style="${marcada ? 'opacity:.55' : ''}">
       ${etiquetaPortada}${casilla}${numero}${borrar}${controles}
     </div>`;
@@ -312,7 +321,9 @@ function tabFotos(p, perm) {
   const ayuda = seleccionando
     ? 'Toca las fotos que quieres eliminar.'
     : ordenando
-      ? 'Usa las flechas para mover cada foto, o ★ Portada para ponerla primera. Se guarda solo.'
+      ? (st.moverDesde
+        ? 'Ahora toca la foto en cuya posición quieres ponerla. Toca la misma otra vez para cancelar.'
+        : 'Toca la foto que quieres mover y luego toca dónde va. ★ Portada la pone primera. Se guarda solo.')
       : 'Arrastra una foto para cambiarla de lugar; en el celular, mantenla pulsada un momento antes de moverla. La primera es la portada.';
 
   const estado = ({
@@ -337,7 +348,7 @@ function tabFotos(p, perm) {
     } else {
       acciones = `
         <div style="display:flex;gap:7px;flex-wrap:wrap">
-          ${total > 1 ? `<button onclick="window._oM2Ordenar(true)" style="${BTN_CLARO}">Ordenar</button>` : ''}
+          ${total > 1 ? `<button onclick="window._oM2Ordenar(true)" style="${BTN};border:none;background:var(--v2-primary);color:#fff">Cambiar orden</button>` : ''}
           <button onclick="window._oM2SelModo(true)" style="${BTN_CLARO}">Seleccionar</button>
         </div>`;
     }
@@ -633,7 +644,7 @@ function pintar() {
   // Todos los tabs se renderizan; se oculta el inactivo (contrato saveAll)
   const panel = (id, html) => `<div data-panel="${id}" style="display:${st.tab === id ? 'block' : 'none'}">${html}</div>`;
 
-  mbd.innerHTML = `<div class="oM2" style="display:flex;flex-direction:column;flex:1;min-height:0;background:var(--v2-cream);position:relative">
+  mbd.innerHTML = `<div class="oM2" data-tab="${esc(st.tab)}" style="display:flex;flex-direction:column;flex:1;min-height:0;background:var(--v2-cream);position:relative">
 
     <div class="oM2-head" style="flex-shrink:0;padding:14px 20px;border-bottom:1px solid var(--v2-line);background:var(--v2-paper);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <div class="oM2-id" style="min-width:0;flex:1">
@@ -682,6 +693,9 @@ function pintar() {
 // ══════════════════════════════════════════════════════════════════════
 window._oM2Tab = function (id) {
   st.tab = id;
+  // El CSS del móvil lo usa: el bloque de precio y acciones sólo se
+  // muestra en Resumen (ver ficha-movil.css).
+  document.querySelector('.oM2')?.setAttribute('data-tab', id);
   document.querySelectorAll('.oM2 [data-panel]').forEach((el) => {
     el.style.display = el.getAttribute('data-panel') === id ? 'block' : 'none';
   });
@@ -873,6 +887,7 @@ function montarArrastreFotos() {
 
 window._oM2Ordenar = function (activar) {
   st.ordenando = !!activar;
+  st.moverDesde = null;
   st.selFotos = null;
   pintar();
   // Al salir con "Listo" se guarda ya, sin esperar: la persona puede
@@ -887,6 +902,26 @@ window._oM2Mover = function (id, delta) {
   const ids = st.fotos.map((f) => f.id);
   [ids[i], ids[j]] = [ids[j], ids[i]];
   aplicarOrden(ids);
+  pintar();
+  programarGuardadoOrden();
+};
+
+window._oM2TocarOrden = function (id) {
+  if (!st.ordenando) return;
+  if (!st.moverDesde) { st.moverDesde = id; pintar(); return; }
+  if (st.moverDesde === id) { st.moverDesde = null; pintar(); return; }
+
+  const ids = st.fotos.map((f) => f.id);
+  const desde = ids.indexOf(st.moverDesde);
+  const hasta = ids.indexOf(id);
+  st.moverDesde = null;
+  if (desde < 0 || hasta < 0) { pintar(); return; }
+
+  // Ocupa la posición de la foto tocada; las demás se corren un lugar.
+  ids.splice(desde, 1);
+  ids.splice(hasta, 0, st.fotos[desde].id);
+  aplicarOrden(ids);
+  if (hasta === 0) st.galIdx = 0;
   pintar();
   programarGuardadoOrden();
 };
