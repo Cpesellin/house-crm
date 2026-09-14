@@ -1001,6 +1001,45 @@ function _initGoogle(options) {
     document.getElementById('g_id_signin');
 
   if (container) {
+    // El botón sólo se muestra si Google está ACTIVADO en Supabase.
+    //
+    // Con el proveedor apagado, entrar con Google deja una sesión sin
+    // identidad en la base: se ve todo, no se guarda nada. Y el botón que
+    // pinta Google se personaliza ("Continuar como Cristhian"), así que
+    // parece EL acceso y se pulsa sin pensar: el administrador volvía a
+    // esa sesión rota cada vez que intentaba entrar con contraseña.
+    //
+    // Se pregunta a Supabase en vez de apagarlo a mano: el día que se
+    // active Google, el botón vuelve solo.
+    _googleHabilitadoEnSupabase().then((ok) => {
+      if (ok) _pintarBotonGoogle(container);
+      else {
+        container.innerHTML = '';
+        // El separador "o ingresa con" sobra si no hay botón encima.
+        const sep = container.parentElement?.querySelector('.lor');
+        if (sep) sep.style.display = 'none';
+      }
+    });
+  }
+}
+
+let _googleHabilitado = null;
+async function _googleHabilitadoEnSupabase() {
+  if (_googleHabilitado !== null) return _googleHabilitado;
+  try {
+    const r = await fetch(SUPA_URL.replace(/\/+$/, '') + '/auth/v1/settings', { headers: { apikey: SUPA_KEY } });
+    const j = r.ok ? await r.json() : null;
+    _googleHabilitado = !!(j && j.external && j.external.google);
+    if (typeof window !== 'undefined') window.__googleHabilitado = _googleHabilitado;
+  } catch (e) {
+    // Sin respuesta, se oculta: mostrarlo es lo que causa el daño.
+    _googleHabilitado = false;
+  }
+  return _googleHabilitado;
+}
+
+function _pintarBotonGoogle(container) {
+  if (container) {
     google.accounts.id.renderButton(container, {
       theme: 'outline',
       size: 'large',

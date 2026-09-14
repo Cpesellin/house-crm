@@ -965,7 +965,10 @@ window.toggleRegForm = function() {
   // Render Google button in register panel if not already done
   if (showingLogin && typeof google !== 'undefined' && google.accounts) {
     const regGoogleBtn = document.getElementById('g_id_signin_reg');
-    if (regGoogleBtn && !regGoogleBtn.hasChildNodes()) {
+    // Mismo criterio que el botón de acceso (core/auth): sólo si Google está
+    // activado en Supabase. Registrarse con Google con el proveedor apagado
+    // crea una cuenta que después no puede guardar nada.
+    if (regGoogleBtn && !regGoogleBtn.hasChildNodes() && window.__googleHabilitado === true) {
       google.accounts.id.renderButton(regGoogleBtn, { theme: 'outline', size: 'large', width: 260, text: 'signup_with', shape: 'pill' });
     }
   }
