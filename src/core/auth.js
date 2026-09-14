@@ -453,11 +453,19 @@ function _avisarGoogleSinSesion() {
       'box-shadow:0 2px 10px rgba(0,0,0,.25)';
     el.innerHTML =
       '<span style="flex:1;min-width:220px"><b>Entraste con Google, pero esa opción todavía no está activada en el servidor.</b> ' +
-      'Puedes consultar, pero los cambios no se guardan (fotos, notas, interesados). Entra con tu usuario y contraseña.</span>' +
+      'Puedes consultar, pero los cambios no se guardan (fotos, notas, interesados). Entra con tu usuario y contraseña — no con el botón de Google.</span>' +
       '<button type="button" id="avisoGoogleSalir" style="flex:0 0 auto;padding:7px 14px;border:none;border-radius:8px;' +
       'background:#fff;color:#7c2d12;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer">Entrar con contraseña</button>';
     document.body.appendChild(el);
-    el.querySelector('#avisoGoogleSalir').addEventListener('click', () => { logout(); });
+    // Cierra la sesión y abre DIRECTAMENTE el formulario de usuario y
+    // contraseña (?login=1). Con logout() a secas se volvía al portafolio
+    // público, y ahí lo natural era pulsar otra vez Google: la persona
+    // entraba de nuevo sin identidad en la base y la franja no se iba nunca.
+    el.querySelector('#avisoGoogleSalir').addEventListener('click', async () => {
+      try { await getSB().auth.signOut(); } catch (e) { /* noop */ }
+      userStore.clear();
+      location.replace(location.origin + '/?login=1');
+    });
   };
   if (document.body) pintar();
   else document.addEventListener('DOMContentLoaded', pintar, { once: true });
