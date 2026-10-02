@@ -281,9 +281,16 @@ export async function showPublicViewV2(id) {
     window._closePubView = () => { try { history.back(); } catch (e) { restore(); } };
 
     // ── Galería ──────────────────────────────────────────────────
+    // La altura se limita, además de la proporción.
+    //
+    // Con sólo `aspect-ratio:16/10` sobre el ancho completo, en un monitor
+    // de 1366px la foto medía más de 850px de alto: no cabía en pantalla y
+    // había que desplazarse para ver siquiera el precio. El tope deja la
+    // foto grande pero con sitio para lo que viene debajo; en el celular
+    // no cambia nada, porque ahí 16/10 ya es más bajo que el tope.
     const galeria = fotos.length ? `
       <div style="position:relative;background:var(--v2-ink)" id="pub-gal">
-        <img id="pub-img" src="${esc(fotos[0].url)}" alt="${esc(p.tipo || 'Inmueble')}" style="width:100%;aspect-ratio:16/10;object-fit:cover;display:block" onerror="window.drFallback&&window.drFallback(this)">
+        <img id="pub-img" src="${esc(fotos[0].url)}" alt="${esc(p.tipo || 'Inmueble')}" style="width:100%;aspect-ratio:16/10;max-height:min(52vh,560px);object-fit:cover;display:block" onerror="window.drFallback&&window.drFallback(this)">
         ${fotos.length > 1 ? `
           <button onclick="pubNav(-1)" aria-label="Foto anterior" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);width:40px;height:40px;border-radius:var(--v2-r-full);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:none;color:var(--v2-ink);cursor:pointer;display:grid;place-items:center">${icon('chevronLeft', 18)}</button>
           <button onclick="pubNav(1)" aria-label="Foto siguiente" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);width:40px;height:40px;border-radius:var(--v2-r-full);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:none;color:var(--v2-ink);cursor:pointer;display:grid;place-items:center">${icon('chevronRight', 18)}</button>` : ''}
@@ -293,7 +300,7 @@ export async function showPublicViewV2(id) {
         <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--v2-paper);border-bottom:1px solid var(--v2-line);scrollbar-width:none">
           ${fotos.map((f, i) => `<img src="${esc(f.url_thumb || f.url)}" onclick="pubGo(${i})" data-pub-thumb="${i}" alt="Foto ${i + 1}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--v2-r-sm);cursor:pointer;border:2px solid ${i === 0 ? 'var(--v2-primary)' : 'transparent'};opacity:${i === 0 ? '1' : '.55'};flex-shrink:0;transition:opacity .15s,border-color .15s" onerror="window.drFallback&&window.drFallback(this)">`).join('')}
         </div>` : ''}`
-      : `<div style="aspect-ratio:16/10;background:var(--v2-cream-3);display:grid;place-items:center;color:var(--v2-ink-4);gap:10px">
+      : `<div style="aspect-ratio:16/10;max-height:min(52vh,560px);background:var(--v2-cream-3);display:grid;place-items:center;color:var(--v2-ink-4);gap:10px">
           ${icon('camera', 34)}<span style="font-size:13px;font-weight:600">Sin fotos disponibles</span>
         </div>`;
 

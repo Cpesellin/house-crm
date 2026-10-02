@@ -232,6 +232,9 @@ export function activarArrastre(wrap, { onSoltar }) {
     if (rafScroll) { cancelAnimationFrame(rafScroll); rafScroll = null; }
 
     if (activo) {
+      // Al soltar, el navegador manda un 'click' sobre la tarjeta: sin esta
+      // marca, cada reordenamiento terminaría abriendo el visor de fotos.
+      try { window.__ultimoArrastreFotos = Date.now(); } catch (e) { }
       fantasma?.remove();
       fantasma = null;
       item?.classList.remove('fv2-hueco');

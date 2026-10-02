@@ -29,6 +29,7 @@
 import { icon } from '../../ui/icons.js';
 import { getSupabaseClient } from '../../config/supabase.js';
 import { guardarOrdenFotos, eliminarFotos, activarArrastre } from './fotos-editor.js';
+import { buildShareUrl, buildShareMessage } from '../sharing/index.js';
 
 const U = () => window.userStore?.get();
 const D = () => window.D || [];
@@ -153,16 +154,19 @@ function renderTabsBar(perm) {
 function tabResumen(p, perm) {
   const f0 = st.fotos[0];
   const _cld = window.cldOpt || ((u) => u);
+  // La foto abre el visor: antes no había forma de verla en grande desde
+  // la ficha interna, ni para el captador ni para la gerencia.
   const media = f0
-    ? `<img src="${esc(_cld(f0.url_thumb || f0.url, 600))}" style="width:100%;height:100%;object-fit:cover" onerror="window.drFallback&&window.drFallback(this)">
-       <span style="position:absolute;bottom:9px;right:9px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;font-variant-numeric:tabular-nums">1/${st.fotos.length}</span>`
+    ? `<img src="${esc(_cld(f0.url_thumb || f0.url, 600))}" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in" onclick="window._oM2Visor(0)" onerror="window.drFallback&&window.drFallback(this)">
+       <span style="position:absolute;bottom:9px;right:9px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;font-variant-numeric:tabular-nums;pointer-events:none">1/${st.fotos.length}</span>
+       <button onclick="window._oM2Visor(0)" aria-label="Ver las fotos en grande" style="position:absolute;top:9px;right:9px;height:30px;padding:0 11px;border-radius:999px;border:none;background:rgba(0,0,0,.55);color:#fff;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px">${icon('search', 13)}Ampliar</button>`
     : `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:var(--v2-cream-2);border:1.5px dashed var(--v2-line-3);border-radius:12px">
         ${icon('camera', 30, { color: 'var(--v2-ink-4)' })}
         <span style="font-size:13px;font-weight:700;color:var(--v2-ink-3)">Sin fotos</span>
         ${perm.puedeEditar ? `<button onclick="window._oM2Tab('fotos')" style="height:34px;padding:0 14px;border-radius:9px;border:none;background:var(--v2-primary);color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">Subir fotos</button>` : ''}
       </div>`;
 
-  const thumbs = st.fotos.slice(1, 4).map((f) => `<div style="width:56px;height:42px;border-radius:7px;overflow:hidden;background:var(--v2-cream-3)"><img src="${esc(_cld(f.url_thumb || f.url, 200))}" style="width:100%;height:100%;object-fit:cover"></div>`).join('');
+  const thumbs = st.fotos.slice(1, 4).map((f, k) => `<div onclick="window._oM2Visor(${k + 1})" style="width:56px;height:42px;border-radius:7px;overflow:hidden;background:var(--v2-cream-3);cursor:zoom-in"><img src="${esc(_cld(f.url_thumb || f.url, 200))}" style="width:100%;height:100%;object-fit:cover"></div>`).join('');
   const resto = st.fotos.length > 4
     ? `<button onclick="window._oM2Tab('fotos')" style="width:56px;height:42px;border-radius:7px;background:var(--v2-cream-2);border:1px dashed var(--v2-line-3);color:var(--v2-ink-3);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer">+${st.fotos.length - 4}</button>` : '';
 
@@ -274,9 +278,11 @@ function tabFotos(p, perm) {
 
   const grid = st.fotos.map((f, i) => {
     const marcada = seleccionando && st.selFotos.has(f.id);
+    // Fuera de los modos seleccionar/ordenar, tocar la foto la abre en
+    // grande. Si se viene de arrastrar, _oM2Visor descarta ese clic.
     const clic = seleccionando
       ? `onclick="window._oM2TogglFoto('${f.id}')"`
-      : ordenando ? `onclick="window._oM2TocarOrden('${f.id}')"` : '';
+      : ordenando ? `onclick="window._oM2TocarOrden('${f.id}')"` : `onclick="window._oM2Visor(${i})"`;
     const elegida = ordenando && st.moverDesde === f.id;
     const hayElegida = ordenando && !!st.moverDesde;
     const esPortada = i === 0;
@@ -308,7 +314,7 @@ function tabFotos(p, perm) {
 
     return `
     <div class="fv2-item${puedeArrastrar ? ' fv2-arrastrable' : ''}" data-foto-id="${f.id}" ${clic}
-      style="${marcada ? 'border:2px solid var(--v2-primary);' : ''}${elegida ? 'outline:3px solid var(--v2-primary);outline-offset:-3px;' : ''}${hayElegida && !elegida ? 'opacity:.82;' : ''}${seleccionando || ordenando ? 'cursor:pointer;' : ''}">
+      style="${marcada ? 'border:2px solid var(--v2-primary);' : ''}${elegida ? 'outline:3px solid var(--v2-primary);outline-offset:-3px;' : ''}${hayElegida && !elegida ? 'opacity:.82;' : ''}${seleccionando || ordenando ? 'cursor:pointer;' : 'cursor:zoom-in;'}">
       <img src="${esc(_cld(f.url_thumb || f.url, 400))}" alt="Foto ${i + 1}" draggable="false" loading="lazy" style="${marcada ? 'opacity:.55' : ''}">
       ${etiquetaPortada}${casilla}${numero}${borrar}${controles}
     </div>`;
@@ -478,7 +484,7 @@ function tabPublicacion(p, perm) {
         <div style="flex:1;min-width:0;font-family:var(--v2-font-mono);font-size:12px;color:var(--v2-ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--v2-cream-2);padding:10px;border-radius:8px">${esc(link)}</div>
         <button onclick="window._oM2Copiar('${esc(link)}')" class="v2-btn v2-btn-ghost" style="padding:0 14px;flex-shrink:0">Copiar</button>
       </div>
-      <button onclick="window.shareInm&&window.shareInm('${p.id}')" class="v2-btn v2-btn-solid" style="width:100%;margin-top:10px">${icon('share', 15)}Compartir con cliente</button>
+      <button onclick="window._oM2Compartir()" class="v2-btn v2-btn-solid" style="width:100%;margin-top:10px">${icon('share', 15)}Compartir con cliente</button>
     </div>
   </div>`;
 }
@@ -547,7 +553,7 @@ function renderRail(p, perm) {
     <div style="${CARD}">
       <div style="${LABEL};margin-bottom:9px">Acciones</div>
       <div style="display:flex;flex-direction:column;gap:7px">
-        <button onclick="window.shareInm&&window.shareInm('${p.id}')" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('share', 16, { color: 'var(--v2-ink-3)' })}Compartir con cliente</button>
+        <button onclick="window._oM2Compartir()" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('share', 16, { color: 'var(--v2-ink-3)' })}Compartir o copiar enlace</button>
         <button onclick="window._oM2Tab('notas')" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('chat', 16, { color: 'var(--v2-ink-3)' })}Nota rápida</button>
         <button onclick="window._oM2Tab('interesados')" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('user', 16, { color: 'var(--v2-ink-3)' })}Registrar interesado</button>
       </div>
@@ -1262,6 +1268,128 @@ async function cargarInteresados(p) {
     }).join('');
   } catch (e) { console.warn('[oM2 interesados]', e); }
 }
+
+// ── Visor de fotos ───────────────────────────────────────────────────
+//
+// Hasta ahora las fotos de la ficha interna no se podían ampliar: ni en el
+// resumen ni en la pestaña de fotos. Para revisar el detalle de un acabado
+// había que abrir la ficha pública. Ahora cualquier foto abre el visor.
+//
+// Teclado (Esc, ← →), deslizar con el dedo y clic en el fondo para cerrar.
+window._oM2Visor = function (indice) {
+  // Al soltar una foto arrastrada el navegador manda un 'click': ese no es
+  // un toque para ampliar.
+  if (window.__ultimoArrastreFotos && Date.now() - window.__ultimoArrastreFotos < 350) return;
+  if (!st.fotos.length) return;
+
+  const _cld = window.cldOpt || ((u) => u);
+  let i = Math.max(0, Math.min(indice | 0, st.fotos.length - 1));
+  document.getElementById('fv2Visor')?.remove();
+
+  const d = document.createElement('div');
+  d.id = 'fv2Visor';
+  d.style.cssText = 'position:fixed;inset:0;z-index:10060;background:rgba(10,8,6,.95);display:flex;flex-direction:column;user-select:none;-webkit-user-select:none';
+  const BTN_NAV = 'position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:999px;border:none;background:rgba(255,255,255,.92);color:#111;cursor:pointer;display:grid;place-items:center';
+  d.innerHTML = `
+    <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;color:#fff">
+      <span id="fv2VisorCont" style="font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.92"></span>
+      <button id="fv2VisorX" aria-label="Cerrar" style="width:42px;height:42px;border-radius:999px;border:none;background:rgba(255,255,255,.16);color:#fff;cursor:pointer;display:grid;place-items:center">${icon('close', 20)}</button>
+    </div>
+    <div id="fv2VisorMedio" style="flex:1;min-height:0;position:relative;display:grid;place-items:center;padding:0 10px 16px">
+      <img id="fv2VisorImg" alt="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;display:block">
+      <button id="fv2VisorPrev" aria-label="Foto anterior" style="${BTN_NAV};left:10px">${icon('chevronLeft', 22)}</button>
+      <button id="fv2VisorNext" aria-label="Foto siguiente" style="${BTN_NAV};right:10px">${icon('chevronRight', 22)}</button>
+    </div>`;
+  document.body.appendChild(d);
+
+  const img = d.querySelector('#fv2VisorImg');
+  const cont = d.querySelector('#fv2VisorCont');
+  const unaSola = st.fotos.length < 2;
+  if (unaSola) {
+    d.querySelector('#fv2VisorPrev').style.display = 'none';
+    d.querySelector('#fv2VisorNext').style.display = 'none';
+  }
+
+  const pintar = () => {
+    const f = st.fotos[i];
+    img.src = _cld(f.url || f.url_thumb, 1600);
+    cont.textContent = (i + 1) + ' / ' + st.fotos.length + (i === 0 ? ' · portada' : '');
+  };
+  const ir = (paso) => { i = (i + paso + st.fotos.length) % st.fotos.length; pintar(); };
+  pintar();
+
+  const cerrar = () => { document.removeEventListener('keydown', teclas); d.remove(); };
+  function teclas(ev) {
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); cerrar(); }
+    else if (ev.key === 'ArrowRight') ir(1);
+    else if (ev.key === 'ArrowLeft') ir(-1);
+  }
+  document.addEventListener('keydown', teclas);
+
+  d.querySelector('#fv2VisorX').onclick = cerrar;
+  d.querySelector('#fv2VisorPrev').onclick = (e) => { e.stopPropagation(); ir(-1); };
+  d.querySelector('#fv2VisorNext').onclick = (e) => { e.stopPropagation(); ir(1); };
+  // Clic en el fondo —no en la foto ni en los botones— cierra.
+  d.addEventListener('click', (e) => { if (e.target === d || e.target.id === 'fv2VisorMedio') cerrar(); });
+
+  // Deslizar con el dedo para pasar de foto.
+  let x0 = null;
+  d.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  d.addEventListener('touchend', (e) => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    x0 = null;
+    if (!unaSola && Math.abs(dx) > 45) ir(dx < 0 ? 1 : -1);
+  }, { passive: true });
+};
+
+// ── Compartir: WhatsApp, enlace solo o ficha completa ────────────────
+//
+// El único botón abría el menú de compartir del teléfono (en el computador,
+// WhatsApp). El enlace a secas estaba únicamente en la pestaña Publicación,
+// que la gerencia y los asesores sin permiso no ven: quien quería pegar el
+// link en un correo o en otro portal no lo tenía.
+window._oM2Compartir = function () {
+  const p = st.p;
+  if (!p) return;
+  const url = buildShareUrl(p.codigo_house || p.id, null, p.updated_at || p.created_at);
+  const completo = buildShareMessage(p) + '\n' + url;
+  const wa = 'https://wa.me/?text=' + encodeURIComponent(completo);
+  window.__oM2Compartible = { url, completo };
+
+  const BTN = 'width:100%;height:48px;border-radius:11px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;text-decoration:none';
+  const d = document.createElement('div');
+  d.id = 'fv2Compartir';
+  d.style.cssText = 'position:fixed;inset:0;z-index:10055;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  d.onclick = (ev) => { if (ev.target === d) d.remove(); };
+  d.innerHTML = `<div onclick="event.stopPropagation()" style="background:var(--v2-paper);border-radius:16px;max-width:420px;width:100%;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div style="font-size:17px;font-weight:800;letter-spacing:-.02em">Compartir este inmueble</div>
+    <div style="font-size:12.5px;color:var(--v2-ink-3);margin-top:3px">${esc(p.codigo_house || '')}${p.barrio ? ' · ' + esc(p.barrio) : ''}</div>
+    <div style="margin-top:13px;font-size:11.5px;color:var(--v2-ink-2);background:var(--v2-cream-2);border:1px solid var(--v2-line);border-radius:9px;padding:10px;word-break:break-all">${esc(url || '')}</div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:13px">
+      <a href="${esc(wa)}" target="_blank" rel="noopener" onclick="document.getElementById('fv2Compartir').remove()" style="${BTN};background:#25d366;color:#fff;border:none">${icon('chat', 17)}Enviar por WhatsApp</a>
+      <button onclick="window._oM2CopiarCompartible('enlace')" style="${BTN};background:var(--v2-paper);color:var(--v2-ink);border:1.5px solid var(--v2-line-3)">${icon('share', 16)}Copiar solo el enlace</button>
+      <button onclick="window._oM2CopiarCompartible('mensaje')" style="${BTN};background:var(--v2-paper);color:var(--v2-ink);border:1.5px solid var(--v2-line-3)">${icon('chat', 16)}Copiar la ficha completa</button>
+      <button onclick="document.getElementById('fv2Compartir').remove()" style="${BTN};background:transparent;color:var(--v2-ink-3);border:none;height:40px">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+};
+
+window._oM2CopiarCompartible = async function (que) {
+  const c = window.__oM2Compartible || {};
+  const texto = que === 'enlace' ? c.url : c.completo;
+  if (!texto) return;
+  try {
+    await navigator.clipboard.writeText(texto);
+    window.toast?.(que === 'enlace' ? '🔗 Enlace copiado' : '📋 Ficha copiada');
+  } catch (e) {
+    // Sin permiso de portapapeles (http, navegador viejo): se muestra para
+    // copiar a mano en vez de fallar en silencio.
+    prompt('Copia el texto:', texto);
+  }
+  document.getElementById('fv2Compartir')?.remove();
+};
 
 if (typeof window !== 'undefined') {
   window.oMv2 = oMv2;
