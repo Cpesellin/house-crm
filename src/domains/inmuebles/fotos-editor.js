@@ -37,8 +37,35 @@ function rpcNoInstalada(error) {
     .test(`${error?.message || ''} ${error?.code || ''}`);
 }
 
+// La base responde "sin permiso" tanto a quien no es captador como a quien
+// perdió la sesión, y son dos problemas muy distintos: el primero no tiene
+// arreglo desde la pantalla, el segundo se resuelve volviendo a entrar.
+// Decirle "no tienes permiso" al dueño del inmueble lo manda a buscar el
+// fallo donde no está (pasó con HOUSE-273).
+let _sesionViva = true;
+export async function comprobarSesion() {
+  try {
+    const { data } = await SB().auth.getSession();
+    _sesionViva = !!data?.session?.user?.id;
+  } catch (e) { _sesionViva = true; }  // ante la duda, no culpar a la sesión
+  return _sesionViva;
+}
+
+/**
+ * Igual que motivo(), pero comprobando antes si la sesión sigue viva
+ * cuando el rechazo fue por permisos. Se consulta solo en ese caso: es una
+ * llamada de red y no vale la pena en los demás.
+ */
+async function explicar(codigo) {
+  if (codigo === 'sin_permiso') await comprobarSesion();
+  return motivo(codigo);
+}
+
 /** Traduce el motivo técnico a algo que la persona pueda entender. */
 function motivo(codigo) {
+  if (codigo === 'sin_permiso' && !_sesionViva) {
+    return 'Tu sesión caducó: la aplicación te muestra conectado, pero el servidor ya no te reconoce. Vuelve a entrar con tu usuario y contraseña y repite el cambio.';
+  }
   return ({
     sin_permiso: 'No tienes permiso para editar las fotos de este inmueble.',
     lista_desactualizada: 'Alguien cambió las fotos mientras editabas. Cierra y vuelve a abrir el inmueble.',
@@ -61,7 +88,7 @@ export async function guardarOrdenFotos(inmuebleId, ids) {
 
   if (!error) {
     if (data?.ok) return { ok: true };
-    return { ok: false, error: motivo(data?.error) };
+    return { ok: false, error: await explicar(data?.error) };
   }
   if (!rpcNoInstalada(error)) {
     console.warn('[fotos] fotos_reordenar:', error.message);
@@ -78,7 +105,7 @@ export async function guardarOrdenFotos(inmuebleId, ids) {
       .select('id');
     if (filas && filas.length) escritas++;
   }
-  if (escritas !== ids.length) return { ok: false, error: motivo(escritas === 0 ? 'sin_permiso' : 'sin_cambios') };
+  if (escritas !== ids.length) return { ok: false, error: await explicar(escritas === 0 ? 'sin_permiso' : 'sin_cambios') };
   return { ok: true };
 }
 
@@ -92,7 +119,7 @@ export async function eliminarFotos(inmuebleId, ids) {
   const { data, error } = await SB().rpc('fotos_eliminar', { p_inmueble: inmuebleId, p_ids: ids });
 
   if (!error) {
-    if (!data?.ok) return { ok: false, error: motivo(data?.error) };
+    if (!data?.ok) return { ok: false, error: await explicar(data?.error) };
     if (!data.eliminadas) return { ok: false, error: motivo('sin_cambios') };
     return { ok: true, eliminadas: data.eliminadas };
   }
@@ -107,7 +134,7 @@ export async function eliminarFotos(inmuebleId, ids) {
     .in('id', ids).eq('inmueble_id', inmuebleId)
     .select('id');
   if (e2) return { ok: false, error: motivo() };
-  if (!filas || !filas.length) return { ok: false, error: motivo('sin_permiso') };
+  if (!filas || !filas.length) return { ok: false, error: await explicar('sin_permiso') };
   return { ok: true, eliminadas: filas.length };
 }
 

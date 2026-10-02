@@ -441,7 +441,19 @@ async function _handleGoogleCredential(response) {
 // esté trabajando decide cuándo cambiar, y no se le saca de la cuenta al
 // actualizar (que fue lo que se pidió evitar).
 function _avisarGoogleSinSesion() {
+  _avisarSinSesion('google');
+}
+
+// `motivo` = 'google'   → entró con Google y el proveedor está apagado
+//            'expirada' → tenía sesión de verdad y Supabase la descartó
+//
+// El segundo caso no se avisaba de ninguna forma y es el más engañoso: la
+// app seguía mostrando a la persona conectada, con su nombre y su menú,
+// mientras la base la trataba como visitante anónimo. Todo lo que fuera
+// guardar fallaba con un "no tienes permiso" que no era cierto.
+function _avisarSinSesion(motivo) {
   if (typeof document === 'undefined') return;
+  const esGoogle = motivo === 'google';
   const pintar = () => {
     if (document.getElementById('avisoGoogleSinSesion')) return;
     const el = document.createElement('div');
@@ -452,10 +464,14 @@ function _avisarGoogleSinSesion() {
       'padding:10px 16px;background:#7c2d12;color:#fff;font-family:inherit;font-size:13px;line-height:1.4;' +
       'box-shadow:0 2px 10px rgba(0,0,0,.25)';
     el.innerHTML =
-      '<span style="flex:1;min-width:220px"><b>Entraste con Google, pero esa opción todavía no está activada en el servidor.</b> ' +
-      'Puedes consultar, pero los cambios no se guardan (fotos, notas, interesados). Entra con tu usuario y contraseña — no con el botón de Google.</span>' +
+      '<span style="flex:1;min-width:220px">' + (esGoogle
+        ? '<b>Entraste con Google, pero esa opción todavía no está activada en el servidor.</b> ' +
+          'Puedes consultar, pero los cambios no se guardan (fotos, notas, interesados). Entra con tu usuario y contraseña — no con el botón de Google.'
+        : '<b>Tu sesión caducó.</b> El servidor ya no te reconoce, así que nada de lo que cambies se guardaría ' +
+          '(fotos, notas, interesados). Vuelve a entrar con tu usuario y contraseña.') + '</span>' +
       '<button type="button" id="avisoGoogleSalir" style="flex:0 0 auto;padding:7px 14px;border:none;border-radius:8px;' +
-      'background:#fff;color:#7c2d12;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer">Entrar con contraseña</button>';
+      'background:#fff;color:#7c2d12;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer">' +
+      (esGoogle ? 'Entrar con contraseña' : 'Volver a entrar') + '</button>';
     document.body.appendChild(el);
     // Cierra la sesión y abre DIRECTAMENTE el formulario de usuario y
     // contraseña (?login=1). Con logout() a secas se volvía al portafolio
@@ -889,11 +905,26 @@ export function initAuth(options = {}) {
         // El arreglo de fondo es habilitar Google en Supabase Auth y usar
         // signInWithIdToken(); mientras tanto, no echar a nadie.
         const esCredLegacy = !u?.token || u.token.startsWith('cred:');
+
+        // ⚠️ El tercer caso, que no estaba contemplado y es el que más
+        // confunde: un token de Supabase AUTÉNTICO (un JWT, 'eyJ…') cuya
+        // sesión ya no existe. Pasa cuando el token caduca y la renovación
+        // falla: supabase-js borra la sesión del navegador, pero nuestra
+        // copia del usuario seguía intacta. No empieza por 'cred:' ni por
+        // 'google:', así que no entraba en ninguna rama: la app restauraba
+        // la sesión como si nada y la persona trabajaba una hora creyéndose
+        // conectada, mientras la base la veía como visitante. Así se perdió
+        // el reordenamiento de fotos de HOUSE-273 (2026-10-02).
+        const esJwtHuerfano = !esCredLegacy && !u?.token?.startsWith('google:');
+        if (esJwtHuerfano) {
+          console.warn('[auth] ⚠️ Token de Supabase sin sesión viva → caducada, se avisa y se pide re-login');
+          _avisarSinSesion('expirada');
+        }
         if (u?.token?.startsWith('google:')) {
           console.warn('[auth] Sesión de Google sin Supabase Auth (proveedor deshabilitado) — se mantiene');
           _avisarGoogleSinSesion();
         }
-        if (esCredLegacy) {
+        if (esCredLegacy || esJwtHuerfano) {
           console.warn('[auth] ⚠️ Sesión legacy detectada sin Supabase Auth → forzar re-login');
           userStore.clear();
           // No emitir SESSION_RESTORED para que la app muestre la pantalla de login
@@ -911,8 +942,15 @@ export function initAuth(options = {}) {
     const SB = getSB();
     SB.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
-        // Si Supabase cierra sesión pero userStore aún la tiene (legacy), no hacemos nada
-        // El logout explícito se encarga de limpiar ambos
+        // Supabase cerró la sesión por su cuenta (el token caducó y la
+        // renovación falló, o se cerró desde otra pestaña). NO se limpia el
+        // userStore aquí: si la persona está a mitad de un formulario, se
+        // le borraría lo escrito. Pero callar tampoco vale — seguiría
+        // "trabajando" sin que nada se guarde. Se avisa y ella decide.
+        //
+        // Con Google el aviso es otro y lo pone su propio camino.
+        const u = userStore.get();
+        if (u && !String(u.token || '').startsWith('google:')) _avisarSinSesion('expirada');
       } else if (event === 'TOKEN_REFRESHED' && session?.user?.id) {
         // Actualizar token en userStore silenciosamente
         const u = userStore.get();

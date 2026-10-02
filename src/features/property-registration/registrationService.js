@@ -34,7 +34,7 @@ export async function submitProperty() {
   registration.setStatus('submitting');
   registration.updateField('_saveMemory', true); // triggers memory save in reset
 
-  const payload = registration.buildPayload(user.id);
+  const payload = registration.buildPayload(user.id, user.inmobiliaria_id);
 
   // ── 1. Lo único crítico: crear el inmueble ────────────────────────
   // Va en su propio try. Antes, este insert compartía bloque con las

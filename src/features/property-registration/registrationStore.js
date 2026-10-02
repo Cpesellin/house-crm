@@ -240,11 +240,19 @@ const registration = {
 
   // ── Build Supabase payload ─────────────────────────────────
 
-  buildPayload(userId) {
+  // `inmobiliariaId` es la del usuario que registra. Hasta ahora no se
+  // mandaba: el inmueble nacía con la inmobiliaria que pusiera el valor por
+  // defecto de la columna, y si no coincidía con la del captador, la base
+  // le negaba editar sus propias fotos ("No tienes permiso…") — el inmueble
+  // era de otro dueño para el aislamiento multi-tenant.
+  buildPayload(userId, inmobiliariaId) {
     const fd = _state.formData;
     const neg = fd.negociacion === 'AMBAS' ? 'Venta y Arriendo' : fd.negociacion === 'VENTA' ? 'Venta' : 'Arriendo';
     return {
       captador_id: userId,
+      // Si el usuario no la trae, se omite para no escribir null y dejar
+      // que actúe el valor por defecto de la columna.
+      ...(inmobiliariaId ? { inmobiliaria_id: inmobiliariaId } : {}),
       tipo: fd.tipo,
       negociacion: neg,
       direccion: fd.direccion,
