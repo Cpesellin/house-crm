@@ -359,6 +359,15 @@ async function _handleGoogleCredential(response) {
     try {
       const nativo = await SB.auth.signInWithIdToken({ provider: 'google', token });
       const ses = nativo?.data?.session;
+      // Por qué falló, dicho en voz alta. Antes se callaba "porque Google
+      // está apagado y ya lo sabemos": desde que se activó (2026-10-02) un
+      // fallo aquí es una AVERÍA, y sin este mensaje no hay forma de saber
+      // si fue el nonce, el Client ID o el origen.
+      if (nativo?.error) {
+        console.warn('[auth] Google nativo RECHAZADO →', nativo.error.message,
+          '| código:', nativo.error.code || nativo.error.status || '(sin código)');
+        window.__googleUltimoError = nativo.error.message;
+      }
       if (!nativo?.error && ses?.user?.id) {
         const userData = await _hydrateUserStoreFromDB(ses.user.id, ses.access_token);
         if (userData) {
@@ -373,8 +382,8 @@ async function _handleGoogleCredential(response) {
         window.__googleAuthUid = ses.user.id;
       }
     } catch (e) {
-      // provider_disabled u otro fallo: no es excepcional, es el estado
-      // actual del proyecto. Se continúa sin ruido.
+      console.warn('[auth] Google nativo lanzó excepción →', e?.message || e);
+      window.__googleUltimoError = e?.message || String(e);
     }
 
     const payload = await _verifyGoogleIdToken(token);
