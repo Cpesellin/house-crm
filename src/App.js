@@ -133,6 +133,7 @@ function renderShell(container) {
     <button class="mi" data-s="desactivados" onclick="go('desactivados')"><span class="mic">⏸️</span>Desactivados</button>
     <button class="mi" data-s="alertas" onclick="go('alertas')"><span class="mic">\u{1F514}</span>Alertas<span class="mib" id="malb" style="display:none">0</span></button>
     <button class="mi" data-s="portales" onclick="go('portales')" id="mport" style="display:none"><span class="mic">\u{1F310}</span>Portales</button>
+    <button class="mi" onclick="abrirVistaCliente()" id="mvistacliente" style="display:none"><span class="mic">\u{1F441}</span>Ver como cliente</button>
     <button class="mi" data-s="dash" onclick="go('dash')"><span class="mic">\u{1F4CA}</span>Dashboard</button>
     <button class="mi" data-s="comando" onclick="go('comando')" id="mcomando" style="display:none"><span class="mic">\u{1F3AF}</span>Centro Comando<span class="mib" id="mcmdb" style="display:none">0</span></button>
     <button class="mi" data-s="agenda" onclick="go('agenda')" id="magenda" style="display:none"><span class="mic">\u{1F4C5}</span>Agenda<span class="mib" id="magb" style="display:none">0</span></button>
@@ -452,6 +453,10 @@ function sApp() {
     document.getElementById('muname').textContent = U.nombre;
     document.getElementById('murole').textContent = U.rol;
     document.getElementById('mport').style.display = 'flex';
+    // Ver la marketplace como la ve un cliente. Para todo interno: el
+    // asesor tambien necesita comprobar como queda lo que publica.
+    const vcEl = document.getElementById('mvistacliente');
+    if (vcEl) vcEl.style.display = 'flex';
 
     // Show asesor filter for admin/oficina
     const aseF = document.getElementById('asesorFilter');

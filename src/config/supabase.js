@@ -26,6 +26,29 @@ export function getSupabaseClient() {
     throw new Error('[supabase] SDK not loaded');
   }
 
+  // ── Vista de cliente ──────────────────────────────────────────────
+  //
+  // La pestaña abierta con `?cliente=1` tiene que consultar como un
+  // visitante, no como el admin que la abrió: si usara la sesión de
+  // siempre, vería inmuebles sin publicar y datos reservados, y la vista
+  // no serviría para lo único que se quiere revisar — qué ve el cliente.
+  //
+  // Se crea un cliente propio, sin sesión y con su propia llave de
+  // almacenamiento. Esa llave distinta es lo que impide que pise la sesión
+  // del CRM abierta en la otra pestaña (comparten localStorage).
+  let esVistaCliente = false;
+  try { esVistaCliente = new URLSearchParams(location.search).get('cliente') === '1'; } catch (e) { }
+  if (esVistaCliente) {
+    _client = window.supabase.createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        storageKey: 'hcrm-vista-cliente',
+      },
+    });
+    return _client;
+  }
+
   // Este es el ÚNICO cliente de la aplicación. No crear otro con
   // createClient() en ningún módulo: dos clientes comparten la llave de
   // almacenamiento de la sesión, compiten al renovar el token y acaban

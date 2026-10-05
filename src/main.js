@@ -60,6 +60,7 @@ import { installBridge } from './design-v2/bridge.js';
 import { installShellV2 } from './design-v2/shell.js';
 import { initApp } from './App.js';
 import { init as initRouter, navigateTo } from './router.js';
+import { pintarFranjaVistaCliente } from './ui/vista-cliente.js';
 import { getSupabaseClient } from './config/supabase.js';
 
 // ---------------------------------------------------------------------------
@@ -101,6 +102,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDesignFlag();
   installBridge();
   installShellV2();
+
+  // Pestaña abierta con ?cliente=1: franja fija recordando que lo que se
+  // ve es la marketplace pública, no el CRM.
+  pintarFranjaVistaCliente();
 
   // Multi-tenant: detecta subdominio + fetch config + aplica branding.
   // Con window.__MULTITENANT__ OFF (default) devuelve House sin fetch.

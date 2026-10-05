@@ -554,6 +554,7 @@ function renderRail(p, perm) {
       <div style="${LABEL};margin-bottom:9px">Acciones</div>
       <div style="display:flex;flex-direction:column;gap:7px">
         <button onclick="window._oM2Compartir()" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('share', 16, { color: 'var(--v2-ink-3)' })}Compartir o copiar enlace</button>
+        <button onclick="window.abrirVistaCliente&&window.abrirVistaCliente('${esc(p.codigo_house || p.id)}')" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('search', 16, { color: 'var(--v2-ink-3)' })}Ver como cliente</button>
         <button onclick="window._oM2Tab('notas')" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('chat', 16, { color: 'var(--v2-ink-3)' })}Nota rápida</button>
         <button onclick="window._oM2Tab('interesados')" class="v2-btn v2-btn-ghost" style="width:100%;height:40px;justify-content:flex-start;padding:0 12px">${icon('user', 16, { color: 'var(--v2-ink-3)' })}Registrar interesado</button>
       </div>
