@@ -288,19 +288,25 @@ export async function showPublicViewV2(id) {
     // había que desplazarse para ver siquiera el precio. El tope deja la
     // foto grande pero con sitio para lo que viene debajo; en el celular
     // no cambia nada, porque ahí 16/10 ya es más bajo que el tope.
+    inyectarCssGaleria();
+    const clasesGal = 'pgal' + (fotos.length === 1 ? ' pgal-1' : fotos.length === 2 ? ' pgal-2' : '');
     const galeria = fotos.length ? `
-      <div style="position:relative;background:var(--v2-ink)" id="pub-gal">
-        <img id="pub-img" src="${esc(fotos[0].url)}" alt="${esc(p.tipo || 'Inmueble')}" style="width:100%;aspect-ratio:16/10;max-height:min(52vh,560px);object-fit:cover;display:block" onerror="window.drFallback&&window.drFallback(this)">
+      <div class="${clasesGal}" id="pub-gal">
+        <div class="pgal-main">
+        <img id="pub-img" src="${esc(fotos[0].url)}" alt="${esc(p.tipo || 'Inmueble')}" onerror="window.drFallback&&window.drFallback(this)">
         ${fotos.length > 1 ? `
           <button onclick="pubNav(-1)" aria-label="Foto anterior" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);width:40px;height:40px;border-radius:var(--v2-r-full);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:none;color:var(--v2-ink);cursor:pointer;display:grid;place-items:center">${icon('chevronLeft', 18)}</button>
           <button onclick="pubNav(1)" aria-label="Foto siguiente" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);width:40px;height:40px;border-radius:var(--v2-r-full);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:none;color:var(--v2-ink);cursor:pointer;display:grid;place-items:center">${icon('chevronRight', 18)}</button>` : ''}
         <div id="pub-ct" class="v2-photo-count" style="bottom:14px;right:14px;font-size:12px;padding:5px 10px">${icon('camera', 12)}1 / ${fotos.length}</div>
+        </div>
+        ${fotos.length > 1 ? `<div class="pgal-sec" onclick="window.pubGoV2(${1 % fotos.length})"><img id="pub-sec1" src="${esc(fotos[1 % fotos.length].url)}" alt="Foto 2" onerror="window.drFallback&&window.drFallback(this)"></div>` : ''}
+        ${fotos.length > 2 ? `<div class="pgal-sec" onclick="window.pubGoV2(${2 % fotos.length})"><img id="pub-sec2" src="${esc(fotos[2 % fotos.length].url)}" alt="Foto 3" onerror="window.drFallback&&window.drFallback(this)"></div>` : ''}
       </div>
       ${fotos.length > 1 ? `
         <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--v2-paper);border-bottom:1px solid var(--v2-line);scrollbar-width:none">
           ${fotos.map((f, i) => `<img src="${esc(f.url_thumb || f.url)}" onclick="pubGo(${i})" data-pub-thumb="${i}" alt="Foto ${i + 1}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--v2-r-sm);cursor:pointer;border:2px solid ${i === 0 ? 'var(--v2-primary)' : 'transparent'};opacity:${i === 0 ? '1' : '.55'};flex-shrink:0;transition:opacity .15s,border-color .15s" onerror="window.drFallback&&window.drFallback(this)">`).join('')}
         </div>` : ''}`
-      : `<div style="aspect-ratio:16/10;max-height:min(52vh,560px);background:var(--v2-cream-3);display:grid;place-items:center;color:var(--v2-ink-4);gap:10px">
+      : `<div style="aspect-ratio:16/10;max-height:min(42vh,420px);background:var(--v2-cream-3);display:grid;place-items:center;color:var(--v2-ink-4);gap:10px">
           ${icon('camera', 34)}<span style="font-size:13px;font-weight:600">Sin fotos disponibles</span>
         </div>`;
 
@@ -485,6 +491,50 @@ export async function showPublicViewV2(id) {
   }
 }
 
+// ── CSS de la galería pública ────────────────────────────────────────
+//
+// En el celular manda una sola foto: es lo que cabe y así se ha visto
+// siempre. En el computador, una sola foto a todo lo ancho (1366px) se
+// recorta tanto por arriba y por abajo que deja de entenderse qué es la
+// habitación — el encuadre que tomó el asesor era vertical, no una franja.
+// Por eso en pantalla ancha ese mismo alto se reparte entre tres fotos:
+// una grande y dos al lado. Se ve más del inmueble y cada una conserva una
+// proporción razonable.
+//
+// Con una o dos fotos la rejilla se adapta (pgal-1 / pgal-2); con una
+// sola, además, se muestra ENTERA sobre fondo oscuro en vez de recortarla.
+function inyectarCssGaleria() {
+  if (document.getElementById('pgal-css')) return;
+  const st = document.createElement('style');
+  st.id = 'pgal-css';
+  st.textContent = `
+    .pgal { position:relative; background:var(--v2-ink); }
+    .pgal-main { position:relative; }
+    .pgal-main img { width:100%; aspect-ratio:16/10; max-height:min(52vh,560px); object-fit:cover; display:block; }
+    .pgal-sec { display:none; }
+    @media (min-width:900px) {
+      /* Se limita el ancho además del alto: a pantalla completa (1366px y
+         más) cada foto salía con proporción 3:1 y seguía siendo una
+         franja, aunque fueran tres. */
+      .pgal { display:grid; grid-template-columns:1.7fr 1fr; grid-template-rows:1fr 1fr;
+              gap:5px; height:min(56vh,520px); max-width:1180px; margin:0 auto; }
+      .pgal-main { grid-row:1 / span 2; height:100%; min-height:0; }
+      .pgal-main img { aspect-ratio:auto; height:100%; max-height:none; }
+      .pgal-sec { display:block; height:100%; min-height:0; cursor:pointer; overflow:hidden; }
+      .pgal-sec img { width:100%; height:100%; object-fit:cover; display:block;
+                      transition:transform .25s ease; }
+      .pgal-sec:hover img { transform:scale(1.04); }
+      /* Dos fotos: la segunda ocupa toda la columna. Una sola: sin rejilla
+         y entera, que es la única forma de que un encuadre vertical no
+         quede convertido en una franja. */
+      .pgal.pgal-2 { grid-template-rows:1fr; }
+      .pgal.pgal-1 { display:block; height:auto; }
+      .pgal.pgal-1 .pgal-main img { height:min(54vh,520px); object-fit:contain; background:var(--v2-ink); }
+    }
+  `;
+  document.head.appendChild(st);
+}
+
 /**
  * pubGo v2: además de cambiar la foto, actualiza el borde del thumbnail
  * activo y el contador con formato "n / total".
@@ -503,6 +553,22 @@ export function pubGoV2(i) {
 
   const ct = document.getElementById('pub-ct');
   if (ct) ct.innerHTML = `${icon('camera', 12)}${i + 1} / ${f.length}`;
+
+  // Las dos del lado acompañan: muestran las siguientes, para que al
+  // tocarlas se avance por el inmueble y no se quede uno dando vueltas
+  // entre las mismas tres.
+  const s1 = document.getElementById('pub-sec1');
+  const s2 = document.getElementById('pub-sec2');
+  if (s1 && f.length > 1) {
+    const j = (i + 1) % f.length;
+    s1.src = f[j];
+    s1.parentElement.onclick = () => window.pubGoV2(j);
+  }
+  if (s2 && f.length > 2) {
+    const k = (i + 2) % f.length;
+    s2.src = f[k];
+    s2.parentElement.onclick = () => window.pubGoV2(k);
+  }
 
   document.querySelectorAll('[data-pub-thumb]').forEach((t, j) => {
     t.style.border = '2px solid ' + (j === i ? 'var(--v2-primary)' : 'transparent');
