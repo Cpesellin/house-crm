@@ -339,14 +339,23 @@ async function _handleGoogleCredential(response) {
     // apaño 'google:<email>', que no es una sesión y no sobrevive a
     // cerrar el navegador.
     //
-    // Hoy esto falla con provider_disabled, porque Google está apagado en
-    // Authentication › Providers. Queda escrito a propósito: el día que se
-    // habilite empieza a crear sesiones de verdad sin tocar el código.
+    // Desde el 2026-10-02 el proveedor está ACTIVO en Supabase, así que
+    // este camino es el normal, no el futuro.
     //
-    // Sólo se acepta si el usuario de Auth corresponde a una ficha activa
-    // en `usuarios`. Si no coincide, se deshace y se sigue por el camino
-    // de siempre: es preferible el apaño conocido a dejar a alguien dentro
-    // con una identidad que no sabemos de quién es.
+    // Si la sesión es buena pero no hay ficha con ese id, hay dos casos
+    // muy distintos y antes se trataban igual (cerrando la sesión):
+    //
+    //   · Alguien nuevo → no tiene ficha todavía. Se conserva la sesión y
+    //     el alta la crea CON ESE MISMO id, que es lo que hace que luego
+    //     pueda guardar: toda la seguridad compara `usuarios.id` con
+    //     `auth.uid()`.
+    //   · Alguien del equipo de antes → su ficha existe con otro id,
+    //     porque nunca entró con contraseña y no tenía usuario de Auth.
+    //     Ese caso no se arregla aquí (cambiar el id rompería todo lo que
+    //     cuelga de él): tiene que entrar una vez con usuario y clave.
+    //
+    // Cerrar la sesión aquí, además, dejaba al alta leyendo `usuarios` sin
+    // sesión — que es justo lo que la migración 72 prohíbe.
     try {
       const nativo = await SB.auth.signInWithIdToken({ provider: 'google', token });
       const ses = nativo?.data?.session;
@@ -357,8 +366,11 @@ async function _handleGoogleCredential(response) {
           _emitAuth(AUTH_EVENTS.LOGIN_SUCCESS, userData);
           return;
         }
-        console.warn('[auth] Sesión de Google sin ficha activa en usuarios — se descarta');
-        try { await SB.auth.signOut(); } catch (e) { /* noop */ }
+        // Sesión buena, sin ficha: se MANTIENE y se pasa al alta, que la
+        // creará con este id. Antes se hacía signOut() y el alta corría
+        // sin sesión.
+        console.warn('[auth] Sesión de Google sin ficha en usuarios — se mantiene para el alta');
+        window.__googleAuthUid = ses.user.id;
       }
     } catch (e) {
       // provider_disabled u otro fallo: no es excepcional, es el estado

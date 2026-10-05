@@ -1298,11 +1298,48 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
   const quierePublicar = tipo === 'vendedor';
   const perfiles = quierePublicar ? ['comprador','vendedor'] : ['comprador'];
   try {
-    // Check if user already exists (could be inactive)
-    // Columnas por nombre, no '*'. Con '*' la consulta falla (la API ya
-    // no puede leer password_hash), existingUser queda en null y el
-    // alta crearía un usuario DUPLICADO para alguien que ya existía.
-    const { data: existingUser } = await SB().from('usuarios').select(COLUMNAS_USUARIO).eq('email', email).single();
+    // Desde que Google está activo en Supabase (2026-10-02) este alta corre
+    // CON sesión: _handleGoogleCredential ya no la cierra. De ahí sale el
+    // id con el que hay que crear la ficha — toda la seguridad compara
+    // `usuarios.id` con `auth.uid()`, así que una ficha con otro id nace
+    // sin poder guardar nada.
+    let authUid = window.__googleAuthUid || null;
+    if (!authUid) {
+      try { authUid = (await SB().auth.getSession()).data.session?.user?.id || null; } catch (e) { authUid = null; }
+    }
+
+    // ¿Ya existe alguien con ese correo? Se pregunta por la función
+    // acotada, no leyendo la tabla: `usuarios` deja de ser legible sin
+    // sesión y una consulta denegada devolvería "no existe" — creando un
+    // usuario DUPLICADO para alguien que ya estaba.
+    const yaExiste = await buscarUsuarioPorEmail(email);
+
+    // Ficha vieja con otro id: es alguien del equipo que nunca entró con
+    // contraseña, así que no tiene usuario de Auth y Google le acaba de
+    // crear uno nuevo. No se puede unir aquí (cambiar `usuarios.id`
+    // arrastraría inmuebles, notas y notificaciones), y seguir dejaría dos
+    // cuentas con el mismo correo. Se dice qué hacer.
+    if (yaExiste && authUid && yaExiste.id !== authUid) {
+      try { await SB().auth.signOut(); } catch (e) { /* noop */ }
+      if (modal) modal.remove();
+      window.toast('Ya existe una cuenta con ' + email + '. Entra una vez con tu usuario y contraseña; después podrás entrar con Google.', 'terr');
+      return;
+    }
+
+    const { data: existingUser } = yaExiste
+      ? await SB().from('usuarios').select(COLUMNAS_USUARIO).eq('id', yaExiste.id).single()
+      : { data: null };
+
+    // Sabemos que existe, pero no pudimos leer su ficha: pasa cuando no
+    // hay sesión (el acceso nativo de Google falló y `usuarios` no es
+    // legible sin sesión). Si siguiéramos, el insert de abajo crearía una
+    // segunda cuenta con el mismo correo.
+    if (yaExiste && !existingUser) {
+      if (modal) modal.remove();
+      window.toast('Ya existe una cuenta con ' + email + ', pero no pudimos abrirla. Entra con tu usuario y contraseña.', 'terr');
+      return;
+    }
+
     if (existingUser) {
       // Reactivate existing user (preserve interno tipo)
       const keepTipo = existingUser.tipo_usuario === 'interno' ? 'interno' : 'publico';
@@ -1317,6 +1354,9 @@ window.selectProfile = async function(tipo, email, nombre, foto) {
       return;
     }
     const { data: newUser, error } = await SB().from('usuarios').insert({
+      // El id de la sesión, para que la ficha y la identidad sean la misma
+      // persona. Si no hubiera sesión se deja que la base genere uno.
+      ...(authUid ? { id: authUid } : {}),
       email, nombre: nombre || email.split('@')[0], foto: foto || null,
       rol: 'asesor', tipo_usuario: 'publico', activo: true,
       usuario: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,''),

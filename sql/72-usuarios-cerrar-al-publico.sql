@@ -35,11 +35,26 @@
 --   · Filas: el público sólo ve a los asesores activos. Los clientes que
 --     se registraron en la marketplace dejan de ser visibles para otros.
 --
+-- ⚠️ CORREGIDO EL 2026-10-05
+--   Este archivo decía que el alta con Google (functions.js,
+--   selectProfile) "hoy no corre porque el proveedor está deshabilitado".
+--   Google se ACTIVÓ el 2026-10-02, así que sí corre — y leía el perfil
+--   completo por correo sin sesión. Con esta migración esa lectura queda
+--   denegada, y una consulta denegada se parece a "no existe": el alta
+--   habría creado un usuario DUPLICADO para alguien que ya estaba.
+--
+--   Arreglado en el código ANTES de esta migración:
+--     · el acceso con Google ya no cierra la sesión cuando no encuentra
+--       ficha, así que el alta corre CON sesión y crea la ficha con el
+--       mismo id del usuario de Auth (que es lo que compara la seguridad);
+--     · la comprobación de "¿ya existe este correo?" usa la función
+--       acotada registro_buscar_email, no la tabla;
+--     · si existe y no se puede abrir, se avisa y se para, en vez de
+--       insertar otra cuenta.
+--   Todo eso tiene que estar desplegado antes de correr esto.
+--
 -- LO QUE NO SE CIERRA TODAVÍA
---   El alta con Google (functions.js, selectProfile) lee el perfil
---   completo por correo. Hoy no corre porque el proveedor de Google está
---   deshabilitado en Supabase; cuando se active, lo hará con sesión real y
---   no dependerá de esta lectura pública.
+--   Los INSERT públicos (formularios sin sesión). Van en otra fase.
 --
 -- CÓMO SE REVIERTE: al final del archivo.
 -- ============================================================
