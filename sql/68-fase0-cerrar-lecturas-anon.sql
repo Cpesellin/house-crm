@@ -51,9 +51,17 @@
 --   el mismo nombre y condición que tenían.
 -- ============================================================
 
+-- Guardia de proyecto.
+--
+-- Antes comprobaba solo que existiera `usuarios`, y PropietarioSoft
+-- TAMBIEN tiene una tabla `usuarios`: el 2026-10-05 la migracion 71 acabo
+-- aplicada en el proyecto equivocado y tardamos en verlo porque el guardia
+-- no se quejo. `codigo_house` solo existe aqui.
 DO $$ BEGIN
-  IF to_regclass('public.usuarios') IS NULL THEN
-    RAISE EXCEPTION 'PROYECTO EQUIVOCADO. Esto es de HOUSE CRM (ref keasjfgcjkskvdcudoml).';
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = 'public' AND table_name = 'inmuebles'
+                    AND column_name = 'codigo_house') THEN
+    RAISE EXCEPTION 'PROYECTO EQUIVOCADO: aqui no existe inmuebles.codigo_house. Esto es de HOUSE CRM (ref keasjfgcjkskvdcudoml).';
   END IF;
 END $$;
 

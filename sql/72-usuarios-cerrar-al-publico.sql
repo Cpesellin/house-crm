@@ -59,9 +59,14 @@
 -- CÓMO SE REVIERTE: al final del archivo.
 -- ============================================================
 
+-- Guardia de proyecto. Comprobar solo `usuarios` no basta: PropietarioSoft
+-- también tiene esa tabla, y por eso la 71 acabó aplicada allí el
+-- 2026-10-05 sin que nada se quejara. `codigo_house` solo existe aquí.
 DO $$ BEGIN
-  IF to_regclass('public.usuarios') IS NULL THEN
-    RAISE EXCEPTION 'PROYECTO EQUIVOCADO. Esto es de HOUSE CRM (ref keasjfgcjkskvdcudoml).';
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = 'public' AND table_name = 'inmuebles'
+                    AND column_name = 'codigo_house') THEN
+    RAISE EXCEPTION 'PROYECTO EQUIVOCADO: aqui no existe inmuebles.codigo_house. Esto es de HOUSE CRM (ref keasjfgcjkskvdcudoml).';
   END IF;
   IF to_regprocedure('public.login_buscar_usuario(text)') IS NULL
      OR to_regprocedure('public.registro_buscar_email(text)') IS NULL THEN
