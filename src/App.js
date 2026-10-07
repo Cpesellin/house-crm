@@ -34,7 +34,14 @@ function renderShell(container) {
 
     <!-- PANEL LOGIN (default) -->
     <div id="lov_login">
-      <div id="g_id_signin" style="margin-bottom:12px"></div>
+      <div id="g_id_signin" style="margin-bottom:8px"></div>
+      <!-- Segundo camino para Google, por redireccion. El de arriba es One
+           Tap y depende del origen autorizado en Google Cloud; Brave ademas
+           lo bloquea de serie. Este navega a Google y vuelve, asi que
+           funciona cuando el otro ni siquiera se dibuja. -->
+      <button type="button" onclick="entrarConGoogleRedirect()" style="width:100%;height:40px;margin-bottom:12px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#e2e8f0;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span style="font-size:14px">\u{1F310}</span>Entrar con Google (ventana de Google)
+      </button>
       <div class="lor"><span>o ingresa con</span></div>
       <div class="lfrm">
         <input id="lin_usr" type="text" placeholder="Usuario" autocomplete="username">

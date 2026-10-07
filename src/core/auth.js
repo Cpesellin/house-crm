@@ -323,6 +323,44 @@ async function _verifyGoogleIdToken(token) {
 }
 
 
+// ─── Entrar con Google por redirección (sin One Tap) ─────────────
+//
+// POR QUÉ EXISTE ESTE SEGUNDO CAMINO
+//   One Tap (el botón incrustado de Google) depende de que el ORIGEN del
+//   sitio esté autorizado en Google Cloud, y Brave lo bloquea de serie
+//   ("Allow Google login buttons on third party sites"). El 2026-10-06 eso
+//   dejó al admin sin poder entrar con Google aunque el proveedor ya
+//   estuviera activo en Supabase: Google rechazaba antes de empezar
+//   ("The given origin is not allowed for the given client ID").
+//
+//   Este camino no usa la librería de Google: navega a la página de Google
+//   y vuelve. No hay iframe, ni origen que autorizar, ni nonce. Solo
+//   necesita que en Google Cloud esté el URI de redirección de Supabase,
+//   que es otra casilla distinta.
+//
+// AL VOLVER no hay que hacer nada especial: supabase-js deja la sesión
+// guardada y el arranque la encuentra con getSession() — el mismo camino
+// que usa el login con contraseña.
+export async function entrarConGoogleRedirect() {
+  const SB = getSB();
+  try {
+    const { error } = await SB.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + '/' },
+    });
+    if (error) {
+      console.error('[auth] Google por redirección falló →', error.message);
+      window.toast?.('No se pudo abrir el acceso de Google: ' + error.message, 'terr');
+      return false;
+    }
+    return true;  // el navegador ya se está yendo a Google
+  } catch (e) {
+    console.error('[auth] Google por redirección excepción →', e?.message || e);
+    window.toast?.('No se pudo abrir el acceso de Google', 'terr');
+    return false;
+  }
+}
+
 // ─── Google One Tap callback ─────────────────────────────────────
 
 async function _handleGoogleCredential(response) {
@@ -1075,6 +1113,8 @@ function _initGoogle(options) {
 // Expose on window during migration. Remove once fully modular.
 
 if (typeof window !== 'undefined') {
+  window.entrarConGoogleRedirect = entrarConGoogleRedirect;
+
   window.initAuth = initAuth;
   window.loginWithCredentials = loginWithCredentials;
   window.loginCred = async function () {
