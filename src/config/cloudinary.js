@@ -107,6 +107,39 @@ function validateFile(file) {
   return { ok: true };
 }
 
+// ─── Conversión a JPG antes de subir ────────────────────────────
+//
+// Cloudinary rechaza AVIF y HEIC con "Image file format avif not allowed"
+// (medido contra la cuenta real el 2026-10-07): su lista de formatos
+// permitidos es más corta que la del navegador. Se podría ampliar en el
+// panel de Cloudinary, pero eso deja el arreglo colgando de una casilla
+// que nadie recuerda y que no está en este repositorio.
+//
+// Así que lo convertimos aquí: el navegador ya sabe dibujar la imagen
+// —para eso la muestra en la vista previa—, y lo que sale del lienzo es un
+// JPG normal. Sube igual de bien y al cliente le llega lo mismo.
+const FORMATOS_QUE_CLOUDINARY_ACEPTA = new Set([
+  'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
+]);
+const LADO_MAXIMO = 2400;  // de sobra para una ficha; recorta fotos enormes
+
+async function convertirAJpg(file) {
+  // createImageBitmap decodifica con el motor del navegador, que entiende
+  // AVIF en Chrome/Edge/Brave y HEIC en Safari.
+  const bitmap = await createImageBitmap(file);
+  const escala = Math.min(1, LADO_MAXIMO / Math.max(bitmap.width, bitmap.height));
+  const lienzo = document.createElement('canvas');
+  lienzo.width = Math.round(bitmap.width * escala);
+  lienzo.height = Math.round(bitmap.height * escala);
+  lienzo.getContext('2d').drawImage(bitmap, 0, 0, lienzo.width, lienzo.height);
+  bitmap.close?.();
+
+  const blob = await new Promise((r) => lienzo.toBlob(r, 'image/jpeg', 0.92));
+  if (!blob) throw new Error('no se pudo convertir');
+  const nombre = String(file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+  return new File([blob], nombre, { type: 'image/jpeg' });
+}
+
 /**
  * Upload a single file to Cloudinary with client-side validation.
  * @param {File} file
@@ -125,8 +158,22 @@ export async function uploadToCloudinary(file) {
     throw new Error(`${file.name}: el contenido no coincide con una imagen válida.`);
   }
 
+  // Si Cloudinary no admite el formato, se convierte antes de mandarlo.
+  let aSubir = file;
+  const tipo = tipoDe(file);
+  if (tipo.startsWith('image/') && !FORMATOS_QUE_CLOUDINARY_ACEPTA.has(tipo)) {
+    try {
+      aSubir = await convertirAJpg(file);
+      console.log('[cloudinary]', file.name, '→ convertida a JPG antes de subir');
+    } catch (e) {
+      // Caso real: un HEIC de iPhone abierto en Chrome, que no sabe
+      // decodificarlo. Mejor decirlo que dejar un "error" a secas.
+      throw new Error(`${file.name}: este navegador no puede leer ese formato. Ábrela y guárdala como JPG, o súbela desde el iPhone con Safari.`);
+    }
+  }
+
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('file', aSubir);
   fd.append('upload_preset', CLOUD_PRESET);
   fd.append('folder', 'fichas_inmobiliarias');
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method: 'POST', body: fd });
