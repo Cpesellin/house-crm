@@ -24,8 +24,28 @@ const MAX_FOTOS = 30;
 
 const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
+  // AVIF y HEIC/HEIF entran desde 2026-10-07. Son los formatos que salen
+  // hoy de un iPhone (HEIC) y de guardar una imagen desde el navegador
+  // (AVIF): se rechazaban en silencio y parecía una avería del sistema.
+  // Cloudinary los acepta y los convierte con f_auto, así que al cliente
+  // le siguen llegando JPG/WebP.
+  'image/avif', 'image/heic', 'image/heif',
   'video/mp4', 'video/quicktime', 'video/webm',
 ]);
+
+// Algunos navegadores no saben qué es un HEIC y mandan file.type vacío.
+// Sin esto, el archivo se caía por "tipo no permitido" sin que el tipo
+// tuviera nada de malo.
+const MIME_POR_EXTENSION = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  gif: 'image/gif', avif: 'image/avif', heic: 'image/heic', heif: 'image/heif',
+  mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+};
+function tipoDe(file) {
+  if (file.type) return file.type;
+  const ext = String(file.name || '').split('.').pop().toLowerCase();
+  return MIME_POR_EXTENSION[ext] || '';
+}
 const MAX_SIZE_IMAGE = 10 * 1024 * 1024;   // 10 MB para imágenes
 const MAX_SIZE_VIDEO = 50 * 1024 * 1024;   // 50 MB para videos
 
@@ -39,15 +59,24 @@ const MAGIC_BYTES = [
   // Videos comienzan con variedad de headers — no chequeamos magic bytes para ellos
 ];
 
+// AVIF, HEIC y HEIF no empiezan por una firma propia: son contenedores
+// ISO-BMFF y llevan 'ftyp' a partir del byte 4 (los 4 primeros son el
+// tamaño de la caja). Comprobarlos con la tabla de arriba daba siempre
+// "el contenido no coincide con una imagen válida".
+function esContenedorIso(buf) {
+  return buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70; // 'ftyp'
+}
+
 async function checkMagicBytes(file) {
   // Solo validamos magic bytes para imágenes (videos tienen muchas variantes)
-  if (!file.type.startsWith('image/')) return true;
+  if (!tipoDe(file).startsWith('image/')) return true;
   try {
     const slice = file.slice(0, 12);
     const buf = new Uint8Array(await slice.arrayBuffer());
     for (const sig of MAGIC_BYTES) {
       if (sig.bytes.every((b, i) => buf[i] === b)) return true;
     }
+    if (esContenedorIso(buf)) return true;
     // Ningún magic byte de imagen coincide
     return false;
   } catch (e) {
@@ -58,11 +87,12 @@ async function checkMagicBytes(file) {
 
 function validateFile(file) {
   // 1. Tipo MIME
-  if (!ALLOWED_MIME.has(file.type)) {
-    return { ok: false, reason: 'tipo_no_permitido', detail: `Tipo "${file.type}" no permitido. Solo JPG, PNG, WebP, GIF, MP4.` };
+  const tipo = tipoDe(file);
+  if (!ALLOWED_MIME.has(tipo)) {
+    return { ok: false, reason: 'tipo_no_permitido', detail: `${file.name}: el formato ${tipo || 'desconocido'} no se admite. Usa JPG, PNG, WebP, HEIC, AVIF o MP4.` };
   }
   // 2. Tamaño
-  const isVideo = file.type.startsWith('video/');
+  const isVideo = tipo.startsWith('video/');
   const maxSize = isVideo ? MAX_SIZE_VIDEO : MAX_SIZE_IMAGE;
   if (file.size > maxSize) {
     const mb = Math.round(file.size / 1024 / 1024);
@@ -140,7 +170,13 @@ export async function processFileUploads(files, onEach, onProgress, existingCoun
       results.push(result);
       if (onEach) onEach(result);
     } catch (e) {
-      if (typeof window !== 'undefined' && window.toast) window.toast('Error subiendo: ' + toUpload[i].name, 'terr');
+      // El motivo, no solo el nombre. Decir "Error subiendo: foto.avif" y
+      // callar que el formato no se admite convierte un archivo rechazado
+      // en una aparente avería del sistema (pasó el 2026-10-07).
+      console.warn('[cloudinary] fallo al subir', toUpload[i].name, '→', e?.message || e);
+      if (typeof window !== 'undefined' && window.toast) {
+        window.toast('No se pudo subir — ' + (e?.message || toUpload[i].name), 'terr');
+      }
     }
   }
   if (onProgress) onProgress(100);
@@ -162,7 +198,7 @@ export function initFotoUpload(containerId, onAdd, existingCount) {
     return;
   }
 
-  el.innerHTML = `<div class="foto-up" id="${containerId}_drop" onclick="document.getElementById('${containerId}_input').click()"><div class="foto-up-ico">📷</div><div class="foto-up-txt">Toca para agregar fotos o videos</div><div class="foto-up-sub">JPG, PNG, MP4 · Máx 10MB · Quedan ${remaining} de ${MAX_FOTOS}</div></div><input type="file" id="${containerId}_input" multiple accept="image/*,video/*" style="display:none"><div class="foto-progress" id="${containerId}_prog" style="display:none"><span style="width:0%"></span></div><div class="foto-prev" id="${containerId}_prev"></div>`;
+  el.innerHTML = `<div class="foto-up" id="${containerId}_drop" onclick="document.getElementById('${containerId}_input').click()"><div class="foto-up-ico">📷</div><div class="foto-up-txt">Toca para agregar fotos o videos</div><div class="foto-up-sub">JPG, PNG, HEIC, AVIF, MP4 · Máx 10MB · Quedan ${remaining} de ${MAX_FOTOS}</div></div><input type="file" id="${containerId}_input" multiple accept="image/*,video/*" style="display:none"><div class="foto-progress" id="${containerId}_prog" style="display:none"><span style="width:0%"></span></div><div class="foto-prev" id="${containerId}_prev"></div>`;
 
   const inp = document.getElementById(containerId + '_input');
   const drop = document.getElementById(containerId + '_drop');
