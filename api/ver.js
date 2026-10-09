@@ -75,9 +75,14 @@ function tituloInmueble(p) {
 function tituloPreview(p) {
   const tipo = String(p.tipo || 'Inmueble').toUpperCase();
   const neg = String(p.negociacion || '').toLowerCase();
-  const accion = neg.includes('arriendo') && !neg.includes('venta') ? 'EN ARRIENDO'
-    : neg.includes('venta') && !neg.includes('arriendo') ? 'EN VENTA'
-    : 'EN VENTA Y ARRIENDO';
+  // Igual que el mensaje (domains/sharing): manda el precio, no la
+  // etiqueta. HOUSE-274 figura como 'Arriendo' con los dos precios
+  // guardados, y la tarjeta anunciaba solo uno.
+  const hayArriendo = !!p.precio_arriendo || neg.includes('arriendo');
+  const hayVenta = !!p.precio_venta || neg.includes('venta');
+  const accion = hayVenta && hayArriendo ? 'EN VENTA Y ARRIENDO'
+    : hayArriendo ? 'EN ARRIENDO'
+    : 'EN VENTA';
 
   const hab = p.habitaciones
     ? p.habitaciones + (Number(p.habitaciones) === 1 ? ' HABITACIÓN' : ' HABITACIONES')
@@ -89,16 +94,9 @@ function tituloPreview(p) {
     .map(function (s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); })
     .filter(Boolean).join(', ').toUpperCase();
 
-  // Un precio a secas se lee como precio de venta. Si el que mostramos es
-  // el arriendo lleva "/mes", que si no un local en venta Y arriendo
-  // aparenta venderse por el valor de un mes.
-  const arriendo = fmtCOP(p.precio_arriendo);
-  const venta = fmtCOP(p.precio_venta);
-  const precio = neg.includes('arriendo') && arriendo ? arriendo + '/mes'
-    : venta || (arriendo ? arriendo + '/mes' : '');
-
-  const cabeza = [tipo, accion, hab, ubic && '· ' + ubic].filter(Boolean).join(' ');
-  return precio ? cabeza + ' - ' + precio : cabeza;
+  // El precio NO va aquí: va en la descripción, la línea de debajo. En el
+  // título se cortaba cuando el inmueble tenía los dos precios.
+  return [tipo, accion, hab, ubic && '· ' + ubic].filter(Boolean).join(' ');
 }
 
 // Segunda línea de la vista previa.
@@ -273,18 +271,17 @@ export default async function handler(req, res) {
     const redirectTo = SITE_URL + '/#/p/' + encodeURIComponent(codeForUrl);
 
     const html = renderHTML({
-      // La tarjeta se queda con la foto y nada más.
+      // La tarjeta lleva qué es, dónde y CUÁNTO (2026-10-09, a petición).
       //
-      // Antes llevaba el titular con el precio y una segunda línea con la
-      // ficha; el mensaje repite las dos cosas justo debajo, en viñetas.
-      // Ver dos veces lo mismo no aporta y alarga el mensaje.
+      // Durante un tiempo se dejó solo con la foto porque el mensaje
+      // repite la ficha debajo en viñetas. Pero la tarjeta viaja sola: en
+      // cuanto alguien reenvía únicamente el enlace —que es lo que más
+      // pasa— el precio desaparecía del todo.
       //
-      // No se deja el título en blanco del todo: sin ningún título
-      // WhatsApp puede decidir no dibujar la tarjeta, y con ella se iría
-      // la foto. Se pone la marca, que es lo único que el texto de abajo
-      // no repite.
-      title: 'Inmobiliaria House',
-      description: '',
+      // El precio va en la descripción y no en el título: con los dos
+      // precios el título se cortaba y se perdía la ubicación.
+      title: tituloPreview(p),
+      description: precioTxt(p),
       image: ogImage,
       sizedOG: sizedOG,
       imageAlt: tituloInmueble(p) + ' - foto del inmueble',
