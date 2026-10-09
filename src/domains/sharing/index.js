@@ -80,8 +80,21 @@ function negociacionDe(p) {
   const venta = fmtCOP(p.precio_venta);
   const arriendo = fmtCOP(p.precio_arriendo);
 
-  const ofreceArriendo = neg.includes('arriendo') || (!neg && !!arriendo);
-  const ofreceVenta = neg.includes('venta') || (!neg && !!venta);
+  // Manda el PRECIO, no la etiqueta.
+  //
+  // HOUSE-274 estaba marcado como 'Arriendo' y tenía los dos precios
+  // guardados ($7.500.000/mes y $1.550.000.000 de venta). Al fiarse de la
+  // etiqueta, el mensaje de WhatsApp anunciaba solo el arriendo y la venta
+  // no salía en ninguna parte, mientras la tarjeta del portafolio —que va
+  // por los precios— sí mostraba las dos. Quien recibía el mensaje no se
+  // enteraba de que el inmueble también se vendía.
+  //
+  // La etiqueta se desincroniza (se cambia el negocio y queda el precio
+  // viejo, o al revés); un precio escrito es una decisión explícita de
+  // alguien. Además el portafolio público ya enseña ambos, así que esto no
+  // destapa nada que no estuviera a la vista.
+  const ofreceArriendo = !!arriendo || neg.includes('arriendo');
+  const ofreceVenta = !!venta || neg.includes('venta');
 
   if (ofreceVenta && ofreceArriendo && venta && arriendo) {
     return { titulo: 'EN VENTA Y ARRIENDO', precios: ['Venta: ' + venta, 'Arriendo: ' + arriendo + '/mes'] };
