@@ -380,6 +380,17 @@ function sApp() {
   const tipoU = U.tipo_usuario || 'interno';
   const isExterno = tipoU === 'publico';
 
+  // Cuántos inmuebles hay (190 total · 170 venta · 19 arriendo) es
+  // información de la oficina, no del cliente: dice el tamaño de la
+  // cartera y cómo está repartida. Por decisión de gerencia no se enseña
+  // fuera (2026-10-27).
+  //
+  // Se marca al ESPECTADOR y el CSS esconde el bloque salvo que diga
+  // 'interno'. Al revés —esconder cuando sea cliente— los números
+  // asomarían el instante que tarda en restaurarse la sesión, y en un
+  // visitante sin sesión no se esconderían nunca.
+  document.documentElement.setAttribute('data-espectador', isExterno ? 'cliente' : 'interno');
+
   document.getElementById('lov').style.display = 'none';
   document.getElementById('mhdr').style.display = 'block';
   // Clear visitor portal to prevent duplicate headers

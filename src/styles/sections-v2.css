@@ -281,3 +281,17 @@ html[data-design="v2"] [onclick*="_usersTab"] {
   font-family: var(--v2-font-sans) !important;
   font-weight: 600 !important;
 }
+
+/* ── Conteo de inmuebles: solo para la oficina ────────────────────────
+ *
+ * El bloque "190 TOTAL · 170 VENTA · 19 ARRIENDO · 1 AMBAS" dice el tamaño
+ * de la cartera y cómo está repartida. Por decisión de gerencia no se
+ * muestra a los clientes (2026-10-27).
+ *
+ * Oculto POR DEFECTO y visible solo con data-espectador="interno", que
+ * pone App.js al iniciar la sesión. Si fuera al revés, los números
+ * asomarían mientras se restaura la sesión, y a un visitante sin sesión no
+ * se le ocultarían nunca.
+ */
+.inv-h-stats { display: none !important; }
+html[data-espectador="interno"] .inv-h-stats { display: flex !important; }
