@@ -127,8 +127,30 @@ export function renderV2(ls) {
   }
 
   ls = filtered;
+
+  // ── Cuántos hay: solo cuando el cliente está filtrando ─────────────
+  //
+  // El total de la cartera no se le enseña al cliente (decisión de
+  // gerencia, igual que el bloque de las cuatro cifras). Pero el contador
+  // sí sirve cuando busca: "23 inmuebles" es el resultado de SU búsqueda,
+  // no el tamaño de la oficina. Sin él, filtrar queda a ciegas.
+  //
+  // Se deduce del propio listado en vez de preguntar por los filtros: si
+  // lo que se muestra es menos que todo el catálogo disponible, es que
+  // hay un filtro puesto. Así no depende de cómo estén implementados los
+  // filtros hoy, que son varios (ciudad, precio, texto, favoritos).
+  const totalDisponible = D.filter((p) => !FINAL.includes(p.estado)).length;
+  const hayFiltro = filtered.length < totalDisponible;
+  const mostrarConteo = !_isExt || hayFiltro;
+
   const rcEl = document.getElementById('resCount');
-  if (rcEl) rcEl.textContent = ls.length;
+  if (rcEl) {
+    rcEl.textContent = ls.length;
+    // Se oculta la línea entera ("190 inmuebles"), no solo el número: con
+    // el número vacío quedaba un " inmuebles" suelto.
+    const linea = rcEl.parentElement;
+    if (linea) linea.style.display = mostrarConteo ? '' : 'none';
+  }
 
   const visibles = ls.slice(0, 60);
 
@@ -272,8 +294,13 @@ export function renderV2(ls) {
 
   // Paginación / conteo
   if (ls.length > 60) {
+    // Al cliente que no filtra se le dice cuántos ve, no de cuántos: "de
+    // 190" era el total de la cartera por la puerta de atrás.
+    const pie = mostrarConteo
+      ? `Mostrando 60 de <b class="v2-num">${ls.length}</b>`
+      : 'Mostrando los primeros 60';
     h += `<div style="margin-top:36px;display:flex;flex-direction:column;align-items:center;gap:14px">
-      <div style="font-size:13px;color:var(--v2-ink-3)">Mostrando 60 de <b class="v2-num">${ls.length}</b></div>
+      <div style="font-size:13px;color:var(--v2-ink-3)">${pie}</div>
     </div>`;
   }
 
